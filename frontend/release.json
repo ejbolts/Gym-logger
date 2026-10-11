@@ -1,11 +1,12 @@
 {
   "version": "0.4.0",
-  "title": "Add Gym Logger to your Home Screen",
-  "summary": "New accounts now get a short guide to opening Gym Logger like an app on their phone.",
+  "title": "Meet your Gym Logger",
+  "summary": "Take a guided tour, install the phone app, and tell us what you think.",
   "changes": [
-    "After creating an account and closing What's new, see illustrated steps for adding Gym Logger to your iPhone Home Screen.",
-    "Open Settings and tap Show steps under Add to Home Screen to see the guide again.",
-    "The guide is skipped when Gym Logger is already open from your Home Screen."
+    "Follow the feature tour with highlighted controls, Next, Back and Skip.",
+    "Send private feedback at the end, or find out how to contribute on GitHub.",
+    "Replay the tour and find illustrated Home Screen installation steps in Settings.",
+    "See illustrated release announcements and open their screenshots full size."
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040"
 }
