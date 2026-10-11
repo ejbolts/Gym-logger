@@ -3479,6 +3479,16 @@ html.edge-swipe-ready .edge-swipe-indicator {
   content: '·';
 }
 
+small.custom-exercise-label,
+.progress-exercise-results small.custom-exercise-label {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--p-accent-text);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .exercise-picker .exercise-option-selected {
   width: 1.5rem;
   height: 1.5rem;

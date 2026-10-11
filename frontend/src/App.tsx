@@ -4005,6 +4005,7 @@ function MovementCard({
               </svg>
             </button>
           </h2>
+          {movement.exercise.is_custom && <small className="custom-exercise-label">Custom</small>}
           <p>
             {[movement.exercise.muscle_group, movement.exercise.equipment]
               .filter(Boolean)
@@ -4869,6 +4870,7 @@ function ExercisePicker({
             <strong>
               <FuzzyHighlightedText value={exercise.name} query={query} />
             </strong>
+            {exercise.is_custom && <small className="custom-exercise-label">Custom</small>}
             <small className="exercise-option-tags">
               <em>{exercise.muscle_group}</em>
               {exercise.equipment && <em>{exercise.equipment}</em>}

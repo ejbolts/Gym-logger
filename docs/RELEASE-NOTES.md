@@ -1,5 +1,14 @@
 # Gym Logger release notes
 
+## 0.4.1
+
+- Exercises you create show a small **Custom** label under their name in **Select Exercise**, on the exercise card in a workout, and in the **Progress** exercise search. Built-in exercises are unchanged.
+- Custom exercises stay private to the account that created them. Other accounts cannot find them in search, open their progress or favorite them, and can still create their own exercise with the same name.
+
+<img src="screenshots/releases/0.4.1-custom-exercise-label.png" alt="Select Exercise search results for press, where Landmine Press shows a small blue Custom label between its name and its Shoulders and Barbell tags." width="390">
+
+A sample account's custom Landmine Press in the exercise picker, captured at phone width in the isolated verification environment.
+
 ## 0.4.0
 
 - New accounts get a feature tour after closing **What's new**. Annotations highlight the real Today, Start, History, Progress, Body and Cardio controls, plus Videos when the account has access. Move with **Next** and **Back**, or **Skip guide** at any time. The tour does not start workouts or uploads.
