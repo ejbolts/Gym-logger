@@ -16,7 +16,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/60287d9847414e463fad04c512874bd4985c993d/docs/screenshots/releases/0.4.0-volume-weight-prs.png",
-    "alt": "Workout logger showing a Volume PR popup for nine Barbell Bench Press reps at 100 kg."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/b49180820cb3c9f3432e437dc7c1beed6b21437d/docs/screenshots/releases/0.4.0-volume-weight-prs.png",
+    "alt": "Workout logger showing a five-second Volume PR popup for nine Barbell Bench Press reps at 100 kg, with a blue countdown bar along the bottom."
   }
 }
