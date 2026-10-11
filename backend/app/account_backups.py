@@ -66,6 +66,8 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "server_settings": None,
     "app_settings": None,
     "account_backups": None,
+    # Feedback is sent to administrators, rather than part of a user's training archive.
+    "app_feedback": None,
 }
 
 

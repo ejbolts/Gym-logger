@@ -1,16 +1,18 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
 export function PopupDialog({
   title,
   kicker,
   className = '',
+  style,
   onClose,
   children,
 }: {
   title: string;
   kicker?: string;
   className?: string;
+  style?: CSSProperties;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -30,6 +32,7 @@ export function PopupDialog({
     <dialog
       ref={dialogRef}
       className={`popup-dialog ${className}`.trim()}
+      style={style}
       aria-modal="true"
       aria-labelledby={titleId}
       onCancel={(event) => {

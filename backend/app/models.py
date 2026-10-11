@@ -114,6 +114,19 @@ class User(Base):
     )
 
 
+class AppFeedback(Base):
+    __tablename__ = "app_feedback"
+    __table_args__ = (UniqueConstraint("user_id", "submission_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    submission_id: Mapped[str] = mapped_column(String(36))
+    message: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now(), index=True
+    )
+
+
 class ServerSetting(Base):
     """Deployment-wide switches an admin changes at runtime; unset keys fall back to .env."""
 

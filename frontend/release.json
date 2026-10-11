@@ -1,15 +1,18 @@
 {
-  "version": "0.3.1",
-  "title": "See what's changed",
-  "summary": "Release announcements now include screenshots of visible changes, such as the recent username-based signup screen.",
+  "version": "0.4.0",
+  "title": "Meet your Gym Logger",
+  "summary": "Take a guided tour, install the phone app, and tell us what you think.",
   "changes": [
-    "See a screenshot alongside the update notes when one is available.",
-    "Select the screenshot to view it full size.",
-    "Read illustrated release notes on GitHub."
+    "Follow the feature tour with highlighted controls, Next, Back and Skip.",
+    "Send private feedback or feature requests from Settings or the tour, with clear delivery details.",
+    "See Home Screen installation steps before the tour ends, using gym-logger.duckdns.org.",
+    "Open Settings from every main tab to replay the guide or find installation help.",
+    "Expand the next-workout arrow to read its explanation and last-session details.",
+    "See illustrated release announcements and open their screenshots full size."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#031",
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/735bdf2124331a84c5427ef41f5035f0232c4152/docs/screenshots/releases/0.3.0-username-signup.png",
-    "alt": "Username-based signup, with no email field."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/13105ce957b4525972f0a45fe878e79d4e05601a/docs/screenshots/releases/0.4.0-settings-feedback.png",
+    "alt": "Settings has a dedicated Feedback and feature requests form explaining that messages go privately to the app administrators."
   }
 }
