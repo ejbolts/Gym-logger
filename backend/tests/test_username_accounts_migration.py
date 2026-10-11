@@ -23,9 +23,9 @@ from app.models import (
 )
 
 
-def load_migration():
-    path = Path(__file__).parents[1] / "migrations/versions/0030_username_accounts.py"
-    spec = importlib.util.spec_from_file_location("username_migration", path)
+def load_migration(name: str = "0030_username_accounts"):
+    path = Path(__file__).parents[1] / f"migrations/versions/{name}.py"
+    spec = importlib.util.spec_from_file_location(f"migration_{name}", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -165,8 +165,11 @@ def test_migration_preserves_accounts_and_children_and_assigns_unique_usernames(
         }
         with Operations.context(MigrationContext.configure(connection)):
             migration.upgrade()
+            # The current User model also has the later profile photo column.
+            load_migration("0032_profile_photos").upgrade()
         columns = {column["name"] for column in inspect(connection).get_columns("users")}
         assert "username" in columns and "email" not in columns
+        assert "profile_photo_filename" in columns
         assert connection.execute(text("PRAGMA foreign_key_check")).all() == []
         for name, rows in before.items():
             assert connection.execute(select(Base.metadata.tables[name])).all() == rows

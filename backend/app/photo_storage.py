@@ -15,6 +15,7 @@ CHUNK_SIZE = 1024 * 1024
 ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "HEIF", "HEIC"}
 FULL_MAX_SIZE = (1800, 1800)
 THUMBNAIL_MAX_SIZE = (360, 360)
+PROFILE_PHOTO_SIZE = (512, 512)
 MAX_SOURCE_PIXELS = 50_000_000
 
 register_heif_opener()
@@ -54,6 +55,54 @@ def machine_photo_paths(
     )
 
 
+async def _receive_upload(upload: UploadFile, target_path: Path, max_bytes: int) -> int:
+    """Stream ``upload`` to ``target_path``, refusing anything over ``max_bytes``."""
+    total = 0
+    with target_path.open("xb") as target:
+        while chunk := await upload.read(CHUNK_SIZE):
+            total += len(chunk)
+            if total > max_bytes:
+                raise PhotoValidationError(
+                    "photo_too_large",
+                    f"Photos can be up to {max(1, max_bytes // (1024 * 1024))} MB.",
+                    status_code=413,
+                )
+            target.write(chunk)
+    if total == 0:
+        raise PhotoValidationError("invalid_photo", "The selected photo is empty.")
+    return total
+
+
+def _decode_photo(path: Path) -> Image.Image:
+    """Open a received photo, refusing unsupported or oversized images, upright and in RGB(A)."""
+    try:
+        with Image.open(path) as source:
+            if source.format not in ALLOWED_IMAGE_FORMATS:
+                raise PhotoValidationError(
+                    "unsupported_photo_type",
+                    "Choose a JPEG, PNG, WebP, HEIF, or HEIC image.",
+                    status_code=415,
+                )
+            if source.width * source.height > MAX_SOURCE_PIXELS:
+                raise PhotoValidationError(
+                    "photo_dimensions_too_large",
+                    "The selected photo has more than 50 megapixels.",
+                    status_code=413,
+                )
+            source.load()
+            oriented = ImageOps.exif_transpose(source)
+            if oriented.mode not in {"RGB", "RGBA"}:
+                oriented = oriented.convert("RGBA" if "transparency" in oriented.info else "RGB")
+            return oriented
+    except PhotoValidationError:
+        raise
+    except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError) as error:
+        raise PhotoValidationError(
+            "invalid_photo",
+            "The selected file is not a readable JPEG, PNG, WebP, HEIF, or HEIC image.",
+        ) from error
+
+
 async def store_machine_photo(
     *, upload: UploadFile, settings: Settings, max_bytes: int
 ) -> StoredMachinePhoto:
@@ -68,59 +117,19 @@ async def store_machine_photo(
     full_path, thumbnail_path = machine_photo_paths(settings, full_filename, thumbnail_filename)
     full_partial = settings.machine_photos_dir / f"{full_filename}.partial"
     thumbnail_partial = settings.machine_photos_dir / f"{thumbnail_filename}.partial"
-    total = 0
     stored = False
     try:
-        with upload_partial.open("xb") as target:
-            while chunk := await upload.read(CHUNK_SIZE):
-                total += len(chunk)
-                if total > max_bytes:
-                    raise PhotoValidationError(
-                        "photo_too_large",
-                        f"Photos can be up to {max(1, max_bytes // (1024 * 1024))} MB.",
-                        status_code=413,
-                    )
-                target.write(chunk)
-        if total == 0:
-            raise PhotoValidationError("invalid_photo", "The selected photo is empty.")
+        total = await _receive_upload(upload, upload_partial, max_bytes)
+        oriented = _decode_photo(upload_partial)
 
-        try:
-            with Image.open(upload_partial) as source:
-                source_format = source.format
-                if source_format not in ALLOWED_IMAGE_FORMATS:
-                    raise PhotoValidationError(
-                        "unsupported_photo_type",
-                        "Choose a JPEG, PNG, WebP, HEIF, or HEIC image.",
-                        status_code=415,
-                    )
-                if source.width * source.height > MAX_SOURCE_PIXELS:
-                    raise PhotoValidationError(
-                        "photo_dimensions_too_large",
-                        "The selected photo has more than 50 megapixels.",
-                        status_code=413,
-                    )
-                source.load()
-                oriented = ImageOps.exif_transpose(source)
-                if oriented.mode not in {"RGB", "RGBA"}:
-                    oriented = oriented.convert(
-                        "RGBA" if "transparency" in oriented.info else "RGB"
-                    )
+        full = oriented.copy()
+        full.thumbnail(FULL_MAX_SIZE, Image.Resampling.LANCZOS)
+        width, height = full.size
+        full.save(full_partial, format="WEBP", quality=90, method=6)
 
-                full = oriented.copy()
-                full.thumbnail(FULL_MAX_SIZE, Image.Resampling.LANCZOS)
-                width, height = full.size
-                full.save(full_partial, format="WEBP", quality=90, method=6)
-
-                thumbnail = full.copy()
-                thumbnail.thumbnail(THUMBNAIL_MAX_SIZE, Image.Resampling.LANCZOS)
-                thumbnail.save(thumbnail_partial, format="WEBP", quality=82, method=6)
-        except PhotoValidationError:
-            raise
-        except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError) as error:
-            raise PhotoValidationError(
-                "invalid_photo",
-                "The selected file is not a readable JPEG, PNG, WebP, HEIF, or HEIC image.",
-            ) from error
+        thumbnail = full.copy()
+        thumbnail.thumbnail(THUMBNAIL_MAX_SIZE, Image.Resampling.LANCZOS)
+        thumbnail.save(thumbnail_partial, format="WEBP", quality=82, method=6)
 
         full_partial.replace(full_path)
         thumbnail_partial.replace(thumbnail_path)
@@ -152,4 +161,43 @@ def delete_machine_photo_files(
     settings: Settings, full_filename: str, thumbnail_filename: str
 ) -> None:
     for path in machine_photo_paths(settings, full_filename, thumbnail_filename):
+        path.unlink(missing_ok=True)
+
+
+def profile_photo_path(settings: Settings, filename: str) -> Path | None:
+    """The stored profile photo, or None if the name could point outside its folder."""
+    if Path(filename).name != filename:
+        return None
+    return settings.profile_photos_dir / filename
+
+
+async def store_profile_photo(*, upload: UploadFile, settings: Settings, max_bytes: int) -> str:
+    """Store an uploaded image as an upright, centre-cropped square WebP; return its filename."""
+    token = uuid.uuid4().hex
+    upload_partial = settings.profile_photos_dir / f"{token}.upload.partial"
+    filename = f"{token}.webp"
+    photo_partial = settings.profile_photos_dir / f"{filename}.partial"
+    try:
+        await _receive_upload(upload, upload_partial, max_bytes)
+        oriented = _decode_photo(upload_partial)
+        side = min(PROFILE_PHOTO_SIZE[0], oriented.width, oriented.height)
+        square = ImageOps.fit(oriented, (side, side), Image.Resampling.LANCZOS)
+        square.save(photo_partial, format="WEBP", quality=88, method=6)
+        photo_partial.replace(settings.profile_photos_dir / filename)
+        return filename
+    except PhotoValidationError:
+        raise
+    except OSError as error:
+        raise PhotoValidationError(
+            "photo_write_failed", f"Could not save the profile photo: {error}", status_code=500
+        ) from error
+    finally:
+        await upload.close()
+        upload_partial.unlink(missing_ok=True)
+        photo_partial.unlink(missing_ok=True)
+
+
+def delete_profile_photo_file(settings: Settings, filename: str | None) -> None:
+    path = profile_photo_path(settings, filename) if filename else None
+    if path is not None:
         path.unlink(missing_ok=True)

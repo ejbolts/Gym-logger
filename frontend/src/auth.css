@@ -260,9 +260,26 @@
 }
 
 .profile-summary {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.profile-summary-main {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+  min-width: 0;
+}
+
+.profile-photo-controls {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.profile-photo-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 
 .profile-avatar,
@@ -277,9 +294,22 @@
 }
 
 .profile-avatar {
-  width: 3.4rem;
-  height: 3.4rem;
-  font-size: 1.4rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 1.75rem;
+}
+
+.profile-avatar.has-photo,
+.profile-button-initial.has-photo {
+  overflow: hidden;
+  background: var(--p-surface-2);
+}
+
+.profile-avatar img,
+.profile-button-initial img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-button-initial {

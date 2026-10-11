@@ -92,6 +92,10 @@ class Settings(BaseSettings):
         return self.data_dir / "machine-photos"
 
     @property
+    def profile_photos_dir(self) -> Path:
+        return self.data_dir / "profile-photos"
+
+    @property
     def account_backups_dir(self) -> Path:
         return self.data_dir / "account-backups"
 
@@ -102,6 +106,7 @@ class Settings(BaseSettings):
             self.normalized_dir,
             self.output_dir,
             self.machine_photos_dir,
+            self.profile_photos_dir,
         ):
             directory.mkdir(parents=True, exist_ok=True)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)

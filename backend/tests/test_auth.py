@@ -169,7 +169,9 @@ def test_register_signs_in_and_me_returns_the_user(anonymous_client):
         "is_admin",
         "can_upload_videos",
         "created_at",
+        "profile_photo_url",
     }
+    assert body["profile_photo_url"] is None
     assert body["username"] == "lifter"
     assert body["display_name"] == "Lee Lifter"
     assert body["is_admin"] is True

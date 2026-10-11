@@ -11,8 +11,9 @@
 - The suggested next workout starts with its explanation and last-session details collapsed. Select the arrow beside the workout title to show or hide them; exercises and Start remain visible.
 - The closing screen and Settings link to the GitHub repository and contribution instructions. Contributions use focused branches, sample data, project checks, accessible controls and reviewed UI evidence.
 - The tour waits behind release announcements, loading, active workout/upload screens and other dialogs. Older queued installation guides still work; new accounts use the feature tour and can open installation steps from Settings.
+- Add a **profile photo** in **Profile**. Choose any JPEG, PNG, WebP, HEIF or HEIC image; Gym Logger rotates it upright and crops it to a square. The photo replaces your initial on the **Today** profile button and in Profile. **Change photo** replaces it and **Remove** goes back to your initial. Photos stay private to your account, follow the existing photo upload size limit, are included in account backups and are deleted with the account.
 - Release announcements support screenshots that open full size and remain usable when images cannot load.
-- Existing installations should run `alembic upgrade head` for migration `0031_app_feedback` before serving the updated frontend. Feedback is removed when its account is deleted. No account/workout records are changed by this migration.
+- Existing installations should run `alembic upgrade head` for migrations `0031_app_feedback` and `0032_profile_photos` before serving the updated frontend. Feedback is removed when its account is deleted. Profile photo files are stored under `data/profile-photos/`. No account/workout records are changed by these migrations.
 
 <img src="screenshots/releases/0.4.0-app-guide.png" alt="App guide highlighting the Start button with a feature description, Next, Back and Skip guide." width="390">
 
@@ -33,6 +34,10 @@ After the final feature annotation, **Show steps** opens installation help befor
 <img src="screenshots/releases/0.4.0-next-workout.png" alt="Today with the workout explanation collapsed behind the arrow beside Lower body day, and the Settings button at the top right." width="390">
 
 Workout details start collapsed; the arrow expands them. Settings is available across tabs. All captures use isolated sample records. [Watch the short tour recording](screenshots/releases/0.4.0-app-guide.webm) to see the feature annotations, installation before feedback, a sample feedback submission, the dedicated Settings feedback section and the workout dropdown.
+
+<img src="screenshots/releases/0.4.0-profile-photo.png" alt="Profile screen showing a round profile photo next to the account name, with Change photo and Remove buttons." width="390">
+
+A sample account's profile photo in the isolated mobile verification environment.
 
 ## 0.3.1
 

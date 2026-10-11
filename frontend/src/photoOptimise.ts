@@ -22,8 +22,13 @@ export function scaledSize(
   };
 }
 
-export function needsOptimising(bytes: number, width: number, height: number): boolean {
-  return bytes > SMALL_ENOUGH_BYTES || Math.max(width, height) > PHOTO_MAX_DIMENSION;
+export function needsOptimising(
+  bytes: number,
+  width: number,
+  height: number,
+  maxDimension = PHOTO_MAX_DIMENSION,
+): boolean {
+  return bytes > SMALL_ENOUGH_BYTES || Math.max(width, height) > maxDimension;
 }
 
 export function jpegFileName(name: string): string {
@@ -65,7 +70,7 @@ async function decode(file: File): Promise<DecodedImage> {
 }
 
 /** The photo to upload: shrunk and re-encoded when that helps, otherwise the original. */
-export async function optimisePhoto(file: File): Promise<File> {
+export async function optimisePhoto(file: File, maxDimension = PHOTO_MAX_DIMENSION): Promise<File> {
   let image: DecodedImage;
   try {
     image = await decode(file);
@@ -73,8 +78,8 @@ export async function optimisePhoto(file: File): Promise<File> {
     return file; // The server decodes formats this browser cannot, such as HEIC elsewhere.
   }
   try {
-    if (!needsOptimising(file.size, image.width, image.height)) return file;
-    const size = scaledSize(image.width, image.height);
+    if (!needsOptimising(file.size, image.width, image.height, maxDimension)) return file;
+    const size = scaledSize(image.width, image.height, maxDimension);
     const canvas = document.createElement('canvas');
     canvas.width = size.width;
     canvas.height = size.height;

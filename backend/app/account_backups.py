@@ -27,6 +27,7 @@ from .models import AccountBackup, AccountBackupKind, User, new_uuid, utc_now
 BACKUP_DATABASE = "database.db"
 MANIFEST = "manifest.json"
 PHOTOS = "machine-photos"
+PROFILE_PHOTOS = "profile-photos"
 LEGACY_DATABASE = "gym-video-logger.db"
 # Data folders kept from a pre-accounts backup. Server secrets, keys and logs are left out.
 LEGACY_FOLDERS = ("machine-photos", "uploads", "outputs", "normalized")
@@ -97,7 +98,7 @@ def legacy_data_owner(db: Session) -> User | None:
 def create_account_snapshot(
     db: Session, settings: Settings, user: User, label: str | None = None
 ) -> AccountBackup:
-    """Back up ``user``'s rows and machine photos, and nobody else's."""
+    """Back up ``user``'s rows, machine photos and profile photo, and nobody else's."""
     created_at = utc_now()
     label = clean_label(label or f"Snapshot {created_at:%Y-%m-%d %H:%M} UTC")
     backup_id = new_uuid()
@@ -106,6 +107,7 @@ def create_account_snapshot(
         database = staging / BACKUP_DATABASE
         tables = copy_account_rows(settings.database_path, database, user.id)
         missing = copy_photos(database, settings.machine_photos_dir, staging / PHOTOS)
+        missing += copy_profile_photo(user, settings.profile_photos_dir, staging / PROFILE_PHOTOS)
         return finish_backup(
             db,
             settings,
@@ -263,6 +265,19 @@ def copy_photos(database: Path, photos_dir: Path, target_dir: Path) -> list[str]
         target_dir.mkdir(exist_ok=True)
         shutil.copy2(source, target_dir / name)
     return missing
+
+
+def copy_profile_photo(user: User, photos_dir: Path, target_dir: Path) -> list[str]:
+    """Copy the account's profile photo, if it has one; return it if it was missing."""
+    name = user.profile_photo_filename
+    if not name:
+        return []
+    source = photos_dir / name
+    if Path(name).name != name or not source.is_file():
+        return [name]
+    target_dir.mkdir(exist_ok=True)
+    shutil.copy2(source, target_dir / name)
+    return []
 
 
 def finish_backup(

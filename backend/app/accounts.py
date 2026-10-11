@@ -9,12 +9,14 @@ import threading
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .account_limits import load_account_limits
 from .auth import (
     ACCOUNT_LOGIN_MAX_FAILURES,
     MAX_PASSWORD_LENGTH,
@@ -65,7 +67,13 @@ from .models import (
     WorkoutSet,
     movement_machine_photos,
 )
-from .photo_storage import delete_machine_photo_files
+from .photo_storage import (
+    PhotoValidationError,
+    delete_machine_photo_files,
+    delete_profile_photo_file,
+    profile_photo_path,
+    store_profile_photo,
+)
 from .server_settings import load_runtime_settings
 from .storage import remove_session_files
 from .tracker import (
@@ -173,6 +181,8 @@ class UserRead(BaseModel):
     is_admin: bool
     can_upload_videos: bool
     created_at: datetime
+    # Versioned by the stored file's name, so a new photo never shows a cached old one.
+    profile_photo_url: str | None = None
 
 
 def user_to_read(db: Session, user: User, settings: Settings) -> UserRead:
@@ -184,6 +194,11 @@ def user_to_read(db: Session, user: User, settings: Settings) -> UserRead:
         is_admin=user.is_admin,
         can_upload_videos=can_upload_videos(user, video_uploads),
         created_at=as_utc(user.created_at),
+        profile_photo_url=(
+            f"/api/profile/photo?v={user.profile_photo_filename.removesuffix('.webp')}"
+            if user.profile_photo_filename
+            else None
+        ),
     )
 
 
@@ -249,6 +264,7 @@ def create_user(
 def delete_account(db: Session, settings: Settings, user: User, app_state=None) -> None:
     """Delete a user and everything they own, including files on disk."""
     user_id = user.id
+    profile_photo_filename = user.profile_photo_filename
     photo_files = [
         (row.full_filename, row.thumbnail_filename)
         for row in db.execute(
@@ -302,6 +318,7 @@ def delete_account(db: Session, settings: Settings, user: User, app_state=None) 
 
     for full_filename, thumbnail_filename in photo_files:
         delete_machine_photo_files(settings, full_filename, thumbnail_filename)
+    delete_profile_photo_file(settings, profile_photo_filename)
     for session_id in session_ids:
         remove_session_files(session_id, settings)
     shutil.rmtree(settings.account_backups_dir / user_id, ignore_errors=True)
@@ -462,6 +479,60 @@ def update_profile(
         ) from error
     db.refresh(user)
     return user_to_read(db, user, settings)
+
+
+@profile_router.put("/photo", response_model=UserRead)
+async def upload_profile_photo(
+    user: CurrentUser,
+    db: DbDependency,
+    settings: AppSettings,
+    file: Annotated[UploadFile, File(...)],
+) -> UserRead:
+    limits = load_account_limits(db, settings)
+    try:
+        filename = await store_profile_photo(
+            upload=file, settings=settings, max_bytes=limits.photo_upload_megabytes * 1024 * 1024
+        )
+    except PhotoValidationError as error:
+        raise api_error(error.status_code, error.code, error.message) from error
+    previous = user.profile_photo_filename
+    user.profile_photo_filename = filename
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        delete_profile_photo_file(settings, filename)
+        raise
+    delete_profile_photo_file(settings, previous)
+    db.refresh(user)
+    return user_to_read(db, user, settings)
+
+
+@profile_router.delete("/photo", response_model=UserRead)
+def delete_profile_photo(user: CurrentUser, db: DbDependency, settings: AppSettings) -> UserRead:
+    previous = user.profile_photo_filename
+    user.profile_photo_filename = None
+    db.commit()
+    delete_profile_photo_file(settings, previous)
+    db.refresh(user)
+    return user_to_read(db, user, settings)
+
+
+@profile_router.get("/photo")
+def get_profile_photo(user: CurrentUser, settings: AppSettings) -> FileResponse:
+    path = (
+        profile_photo_path(settings, user.profile_photo_filename)
+        if user.profile_photo_filename
+        else None
+    )
+    if path is None or not path.is_file():
+        raise api_error(404, "profile_photo_not_found", "No profile photo has been added.")
+    # Each upload has a new URL, so the browser may keep this one; it is never shared.
+    return FileResponse(
+        path,
+        media_type="image/webp",
+        headers={"Cache-Control": "private, max-age=31536000, immutable"},
+    )
 
 
 def _check_current_password(user: User, password: str, throttle: LoginThrottle) -> None:

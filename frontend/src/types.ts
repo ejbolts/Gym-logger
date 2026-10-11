@@ -481,6 +481,8 @@ export interface User {
   is_admin: boolean;
   can_upload_videos: boolean;
   created_at: string;
+  /** Versioned URL of the account's profile photo; null when it has none. */
+  profile_photo_url?: string | null;
 }
 
 /** Who may upload workout videos: nobody, administrators only, or every account. */

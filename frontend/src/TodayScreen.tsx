@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from './Icon';
+import { ProfileAvatar } from './ProfileAvatar';
 import { Meter, SparkBars, Sparkline } from './PulseCharts';
 import {
   averageOf,
@@ -89,6 +90,7 @@ export interface TodayScreenProps {
   onOpenProfile?: () => void;
   /** Shown on the profile button so the signed-in account is visible at a glance. */
   profileLabel?: string;
+  profilePhotoUrl?: string | null;
   calendar?: ReactNode;
   today?: string;
 }
@@ -113,6 +115,7 @@ export function TodayScreen({
   onOpenVideos,
   onOpenProfile,
   profileLabel,
+  profilePhotoUrl,
   calendar,
   today = localDate(),
 }: TodayScreenProps) {
@@ -198,9 +201,14 @@ export function TodayScreen({
                 aria-label={profileLabel ? `Profile: ${profileLabel}` : 'Profile'}
               >
                 {profileLabel ? (
-                  <span className="profile-button-initial" aria-hidden="true">
-                    {profileLabel.trim().charAt(0).toUpperCase() || '?'}
-                  </span>
+                  <ProfileAvatar
+                    className="profile-button-initial"
+                    user={{
+                      display_name: profileLabel,
+                      username: '',
+                      profile_photo_url: profilePhotoUrl,
+                    }}
+                  />
                 ) : (
                   <Icon name="user" />
                 )}

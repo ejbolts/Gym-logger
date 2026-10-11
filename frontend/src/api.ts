@@ -165,6 +165,12 @@ export const api = {
       headers: jsonHeaders,
       body: JSON.stringify(payload),
     }),
+  uploadProfilePhoto: (file: File) => {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return request<User>('/api/profile/photo', { method: 'PUT', body: form });
+  },
+  removeProfilePhoto: () => request<User>('/api/profile/photo', { method: 'DELETE' }),
   changePassword: (payload: { current_password: string; new_password: string }) =>
     request<void>('/api/profile/password', {
       method: 'PUT',

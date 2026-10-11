@@ -33,6 +33,7 @@ def reset_database():
     # Disk totals and processors must not see uploads left behind by another test.
     for folder in (
         settings.machine_photos_dir,
+        settings.profile_photos_dir,
         settings.uploads_dir,
         settings.normalized_dir,
         settings.output_dir,
@@ -46,6 +47,7 @@ def reset_database():
     yield
     Base.metadata.drop_all(engine)
     shutil.rmtree(settings.machine_photos_dir, ignore_errors=True)
+    shutil.rmtree(settings.profile_photos_dir, ignore_errors=True)
     shutil.rmtree(get_settings().account_backups_dir, ignore_errors=True)
 
 
