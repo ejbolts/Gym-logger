@@ -132,7 +132,7 @@ import {
 import { AppTabBar } from './AppTabBar';
 import { Icon } from './Icon';
 import { TrendChart, type GoalPath, type TrendPoint } from './PulseCharts';
-import { PageHeader, TodayScreen, TodaySkeleton } from './TodayScreen';
+import { PageHeader, SettingsButton, TodayScreen, TodaySkeleton } from './TodayScreen';
 import {
   compactSetSummary,
   dayMonth,
@@ -986,6 +986,9 @@ export function App() {
           title={nestedHeader.title}
           subtitle={nestedHeader.subtitle}
           onBack={navigateBack}
+          actions={
+            tab !== 'settings' ? <SettingsButton onClick={() => setTab('settings')} /> : undefined
+          }
         />
       )}
 
@@ -1101,6 +1104,7 @@ export function App() {
               onDelete={deleteMeasurement}
               onDataChange={refreshAfterMutation}
               trendPreference={bodyTrendPreference}
+              onOpenSettings={() => setTab('settings')}
             />
           </CachedTabPanel>
         )}
@@ -1120,6 +1124,7 @@ export function App() {
               initialOpenId={historyOpenId}
               section={historySection}
               onSectionChange={(section) => setTab(section)}
+              onOpenSettings={() => setTab('settings')}
               onOpenExercise={(exerciseId) => openHistorySection('progress', exerciseId)}
               onOpenWorkout={(workoutId, exerciseId) => {
                 setHistoryOpenId(workoutId);
@@ -5226,6 +5231,7 @@ function ProgressScreen({
   embedded = false,
   initialExerciseId = null,
   defaultExerciseId = null,
+  onOpenSettings,
 }: {
   exercises: Exercise[];
   measurements: BodyMeasurement[];
@@ -5233,6 +5239,7 @@ function ProgressScreen({
   embedded?: boolean;
   initialExerciseId?: string | null;
   defaultExerciseId?: string | null;
+  onOpenSettings?: () => void;
 }) {
   const strengthExercises = exercises.filter((exercise) => exercise.kind === 'strength');
   const [exerciseId, setExerciseId] = useState(() => {
@@ -5335,6 +5342,7 @@ function ProgressScreen({
             : 'Exercise progress'
         }
         title={selectedExercise?.name ?? 'Progress'}
+        onOpenSettings={onOpenSettings}
         actions={
           <button
             className="icon-button-pulse"
@@ -6311,6 +6319,7 @@ export function BodyCompositionScreen({
   onDataChange,
   entryRequest = 0,
   trendPreference = DEFAULT_BODY_TREND_PREFERENCE,
+  onOpenSettings,
 }: {
   measurements: BodyMeasurement[];
   onSave: (payload: {
@@ -6323,6 +6332,7 @@ export function BodyCompositionScreen({
   onDataChange: () => Promise<void>;
   entryRequest?: number;
   trendPreference?: BodyTrendPreference;
+  onOpenSettings?: () => void;
 }) {
   const [measurementDate, setMeasurementDate] = useState(localDate());
   const [entryOpen, setEntryOpen] = useState(false);
@@ -6491,6 +6501,7 @@ export function BodyCompositionScreen({
       <PageHeader
         eyebrow={`${measurements.length} ${measurements.length === 1 ? 'check-in' : 'check-ins'}${latest ? ` · latest ${shortDate(latest.measurement_date)}` : ''}`}
         title="Body"
+        onOpenSettings={onOpenSettings}
         actions={
           <button
             className="icon-button-pulse accent"
@@ -7746,6 +7757,7 @@ function HistoryScreen({
   onResumeWorkout,
   onStartWorkout,
   onReplaceActiveWorkout,
+  onOpenSettings,
 }: {
   workouts: TrackedWorkout[];
   categoryColors: WorkoutTypeColors;
@@ -7769,6 +7781,7 @@ function HistoryScreen({
   onResumeWorkout: () => void;
   onStartWorkout: (workoutDate?: string) => void;
   onReplaceActiveWorkout: (workoutDate: string) => void;
+  onOpenSettings: () => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
   const [visibleCount, setVisibleCount] = useState(() => {
@@ -7826,6 +7839,7 @@ function HistoryScreen({
                 : `${workouts.length} ${workouts.length === 1 ? 'workout' : 'workouts'} logged`
             }
             title={section === 'cardio' ? 'Cardio' : 'History'}
+            onOpenSettings={onOpenSettings}
             actions={
               section === 'history' ? (
                 <button
@@ -7875,6 +7889,7 @@ function HistoryScreen({
             embedded
             initialExerciseId={initialExerciseId}
             defaultExerciseId={defaultExerciseId}
+            onOpenSettings={onOpenSettings}
           />
         </CachedTabPanel>
       )}

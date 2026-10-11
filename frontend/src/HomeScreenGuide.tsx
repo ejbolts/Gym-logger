@@ -28,9 +28,8 @@ function SafariIcon({ name }: { name: keyof typeof SAFARI_PATHS }) {
   );
 }
 
-function siteHost(): string {
-  return typeof window === 'undefined' ? 'gym-logger' : window.location.host;
-}
+const APPLICATION_URL = 'https://gym-logger.duckdns.org';
+const APPLICATION_HOST = 'gym-logger.duckdns.org';
 
 function ToolbarShot() {
   return (
@@ -42,7 +41,7 @@ function ToolbarShot() {
         <span className="home-guide-target home-guide-page-menu">
           <SafariIcon name="pageMenu" />
         </span>
-        <span className="home-guide-host">{siteHost()}</span>
+        <span className="home-guide-host">{APPLICATION_HOST}</span>
         <SafariIcon name="reload" />
       </span>
       <span className="home-guide-round">
@@ -84,7 +83,7 @@ function ShareSheetShot() {
         <img src="/apple-touch-icon.png" alt="" width={34} height={34} />
         <span>
           <strong>Gym Video Logger</strong>
-          <small>{siteHost()}</small>
+          <small>{APPLICATION_HOST}</small>
         </span>
       </div>
       <div className="home-guide-actions">
@@ -181,6 +180,38 @@ const STEPS: { text: ReactNode; shot: ReactNode }[] = [
   },
 ];
 
+export function HomeScreenGuideContent() {
+  return (
+    <div className="home-guide-body">
+      <p className="home-guide-intro" tabIndex={-1}>
+        Open Gym Logger like an app: full screen and one tap away. On iPhone, workout notifications
+        also need the Home Screen app.
+      </p>
+      <p className="home-guide-site">
+        Start at{' '}
+        <a href={APPLICATION_URL} target="_blank" rel="noopener noreferrer">
+          {APPLICATION_URL}
+        </a>
+        .
+      </p>
+      <ol className="home-guide-steps">
+        {STEPS.map((step, index) => (
+          <li key={index}>
+            <p>{step.text}</p>
+            <div className="home-guide-shot" aria-hidden="true">
+              {step.shot}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="home-guide-note">
+        On Android, open Chrome's <strong>⋮</strong> menu and tap{' '}
+        <strong>Add to Home screen</strong> or <strong>Install app</strong>.
+      </p>
+    </div>
+  );
+}
+
 export function HomeScreenGuide({ onClose }: { onClose: () => void }) {
   return (
     <PopupDialog
@@ -189,26 +220,7 @@ export function HomeScreenGuide({ onClose }: { onClose: () => void }) {
       className="home-guide"
       onClose={onClose}
     >
-      <div className="home-guide-body">
-        <p className="home-guide-intro">
-          Open Gym Logger like an app: full screen and one tap away. On iPhone, workout
-          notifications also need the Home Screen app.
-        </p>
-        <ol className="home-guide-steps">
-          {STEPS.map((step, index) => (
-            <li key={index}>
-              <p>{step.text}</p>
-              <div className="home-guide-shot" aria-hidden="true">
-                {step.shot}
-              </div>
-            </li>
-          ))}
-        </ol>
-        <p className="home-guide-note">
-          On Android, open Chrome's <strong>⋮</strong> menu and tap{' '}
-          <strong>Add to Home screen</strong> or <strong>Install app</strong>.
-        </p>
-      </div>
+      <HomeScreenGuideContent />
       <footer className="popup-dialog-actions">
         <button type="button" className="popup-primary-action" onClick={onClose}>
           Got it

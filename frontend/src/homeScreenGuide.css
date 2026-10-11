@@ -11,12 +11,26 @@
 }
 
 .home-guide-intro,
+.home-guide-site,
 .home-guide-steps p,
 .home-guide-note {
   margin: 0;
   color: var(--p-ink-2);
   font-size: 0.9375rem;
   line-height: 1.55;
+}
+
+.home-guide-site {
+  margin-top: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.home-guide-site a {
+  color: var(--p-accent-text);
+}
+
+.home-guide-intro:focus {
+  outline: none;
 }
 
 .home-guide-steps strong,

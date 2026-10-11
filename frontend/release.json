@@ -5,12 +5,14 @@
   "changes": [
     "Follow the feature tour with highlighted controls, Next, Back and Skip.",
     "Send private feedback at the end, or find out how to contribute on GitHub.",
-    "Replay the tour and find illustrated Home Screen installation steps in Settings.",
+    "See Home Screen installation steps before the tour ends, using gym-logger.duckdns.org.",
+    "Open Settings from every main tab to replay the guide or find installation help.",
+    "Expand the next-workout arrow to read its explanation and last-session details.",
     "See illustrated release announcements and open their screenshots full size."
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/3bd17c41538d2674474a05dddc6f8fc5781bd05c/docs/screenshots/releases/0.4.0-app-guide.png",
-    "alt": "The Gym Logger feature tour highlights Start and offers Next, Back and Skip guide."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/6b1115d449204b0047d668628ed20e8b01e59c88/docs/screenshots/releases/0.4.0-home-screen-install.png",
+    "alt": "Home Screen installation inside the tour shows gym-logger.duckdns.org, illustrated Safari steps and Skip guide, Back and Next."
   }
 }

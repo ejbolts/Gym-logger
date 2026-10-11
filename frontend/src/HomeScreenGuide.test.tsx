@@ -9,7 +9,7 @@ vi.mock('react-dom', async (importOriginal) => ({
 }));
 beforeEach(() => {
   vi.stubGlobal('document', { body: {} });
-  vi.stubGlobal('window', { location: { host: 'gym.example.com' } });
+  vi.stubGlobal('window', { location: { host: 'mainpc.tail494810.ts.net:8447' } });
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -30,7 +30,9 @@ describe('home screen guide popup', () => {
       'Tap Add, then open Gym Logger from your Home Screen.',
     ]);
     expect(markup.match(/class="home-guide-shot" aria-hidden="true"/g)).toHaveLength(5);
-    expect(markup).toContain('gym.example.com');
+    expect(markup).toContain('href="https://gym-logger.duckdns.org"');
+    expect(markup.match(/>gym-logger.duckdns.org</g)).toHaveLength(2);
+    expect(markup).not.toContain('mainpc.tail494810.ts.net');
     expect(markup).toContain('>Got it</button>');
   });
 });

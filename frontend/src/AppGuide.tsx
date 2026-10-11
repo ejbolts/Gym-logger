@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { api } from './api';
 import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
+import { HomeScreenGuideContent } from './HomeScreenGuide';
 import { appGuideSteps, CONTRIBUTING_URL, PROJECT_URL } from './appGuideSteps';
 import type { AppTab } from './appNavigation';
 
@@ -26,7 +27,8 @@ export function AppGuide({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const feedbackId = useId();
   const step = steps[index];
-  const finished = !step;
+  const installing = index === steps.length;
+  const finished = index > steps.length;
   const tab = step?.tab;
   const target = step?.target;
 
@@ -35,7 +37,10 @@ export function AppGuide({
   }, [tab, onNavigate]);
 
   useEffect(() => {
-    titleRef.current?.focus({ preventScroll: true });
+    const title =
+      titleRef.current ?? document.querySelector<HTMLElement>('.app-guide .home-guide-intro');
+    title?.focus({ preventScroll: true });
+    document.querySelector('.app-guide')?.scrollTo(0, 0);
   }, [index]);
 
   useEffect(() => {
@@ -44,8 +49,9 @@ export function AppGuide({
     const measure = () => {
       if (!element) return;
       const rect = element.getBoundingClientRect();
-      if (!element.closest('.app-tab-bar') && rect.bottom > window.innerHeight - 84) {
-        window.scrollBy(0, rect.bottom - (window.innerHeight - 84));
+      // Browsers round scroll offsets; a sub-pixel remainder must not prevent measurement.
+      if (!element.closest('.app-tab-bar') && rect.bottom > window.innerHeight - 83) {
+        window.scrollBy(0, Math.ceil(rect.bottom - (window.innerHeight - 84)));
         return;
       }
       const top = Math.max(4, rect.top - 5);
@@ -103,16 +109,22 @@ export function AppGuide({
   // Put the annotation opposite the highlighted control, leaving it visible behind the modal.
   const position = box && box.top + box.height / 2 > window.innerHeight / 2 ? 'top' : 'bottom';
   const availableHeight =
-    box && !finished
+    box && step
       ? position === 'top'
         ? box.top - 32
         : window.innerHeight - box.top - box.height - 32
       : null;
   return (
     <PopupDialog
-      title="App guide"
-      kicker={finished ? 'YOU ARE READY' : `QUICK TOUR · ${index + 1} OF ${steps.length}`}
-      className={`app-guide ${finished ? 'app-guide-finish' : `app-guide-${position}`}`}
+      title={installing ? 'Add to Home Screen' : 'App guide'}
+      kicker={
+        finished
+          ? 'YOU ARE READY'
+          : installing
+            ? 'SET UP YOUR PHONE'
+            : `QUICK TOUR · ${index + 1} OF ${steps.length}`
+      }
+      className={`app-guide ${installing ? 'home-guide app-guide-install' : finished ? 'app-guide-finish' : `app-guide-${position}`}`}
       style={
         availableHeight
           ? ({ '--guide-max-height': `${Math.max(180, availableHeight)}px` } as CSSProperties)
@@ -120,94 +132,98 @@ export function AppGuide({
       }
       onClose={onClose}
     >
-      {!finished && box && <div className="app-guide-spotlight" style={box} aria-hidden="true" />}
-      <div className="app-guide-body">
-        <div className="app-guide-step" key={index}>
-          <span className="app-guide-glyph">
-            <Icon name={step?.icon ?? 'heart'} />
-          </span>
-          <h3 ref={titleRef} tabIndex={-1}>
-            {step?.title ?? 'Thanks for trying Gym Logger!'}
-          </h3>
-          <p>
-            {step?.description ??
-              'We hope it makes your next workout a little easier. What worked well, and what could be better?'}
-          </p>
-        </div>
-        {finished ? (
-          <>
-            <form
-              className="guide-feedback"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void sendFeedback();
-              }}
-            >
-              {status === 'sent' ? (
-                <p role="status" className="guide-feedback-success">
-                  Thanks! Your feedback has been sent.
-                </p>
-              ) : (
-                <>
-                  <label htmlFor={feedbackId}>
-                    Your feedback <span>(optional)</span>
-                  </label>
-                  <textarea
-                    id={feedbackId}
-                    value={feedback}
-                    maxLength={2000}
-                    rows={3}
-                    placeholder="I would love to see…"
-                    disabled={status === 'sending'}
-                    onChange={(event) => {
-                      setFeedback(event.target.value);
-                      setError(null);
-                      submissionId.current = null;
-                    }}
-                    aria-describedby={`${feedbackId}-privacy`}
-                  />
-                  <small id={`${feedbackId}-privacy`}>
-                    Sent privately to the app administrators with your username. Please leave out
-                    passwords and sensitive information.
-                  </small>
-                  {error && (
-                    <p className="inline-error" role="alert">
-                      {error}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    className="profile-secondary"
-                    disabled={!feedback.trim() || status === 'sending'}
-                  >
-                    {status === 'sending' ? 'Sending…' : 'Send feedback'}
-                  </button>
-                </>
-              )}
-            </form>
-            <details className="guide-contribute">
-              <summary>Want to help build Gym Logger?</summary>
-              <p>
-                Check existing issues, discuss bigger changes first, then work on a focused branch
-                or fork. Use sample data, run the project checks and include screenshots for UI
-                changes in your pull request.
-              </p>
-              <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
-                GitHub repository <Icon name="external" />
-              </a>
-              <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
-                Contribution instructions <Icon name="external" />
-              </a>
-            </details>
-          </>
-        ) : (
-          <div className="app-guide-progress" aria-label={`Step ${index + 1} of ${steps.length}`}>
-            {steps.map((item, itemIndex) => (
-              <span key={item.target} className={itemIndex <= index ? 'complete' : ''} />
-            ))}
+      {step && box && <div className="app-guide-spotlight" style={box} aria-hidden="true" />}
+      {installing ? (
+        <HomeScreenGuideContent />
+      ) : (
+        <div className="app-guide-body">
+          <div className="app-guide-step" key={index}>
+            <span className="app-guide-glyph">
+              <Icon name={step?.icon ?? 'heart'} />
+            </span>
+            <h3 ref={titleRef} tabIndex={-1}>
+              {step?.title ?? 'Thanks for trying Gym Logger!'}
+            </h3>
+            <p>
+              {step?.description ??
+                'We hope it makes your next workout a little easier. What worked well, and what could be better?'}
+            </p>
           </div>
-        )}
-      </div>
+          {finished ? (
+            <>
+              <form
+                className="guide-feedback"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void sendFeedback();
+                }}
+              >
+                {status === 'sent' ? (
+                  <p role="status" className="guide-feedback-success">
+                    Thanks! Your feedback has been sent.
+                  </p>
+                ) : (
+                  <>
+                    <label htmlFor={feedbackId}>
+                      Your feedback <span>(optional)</span>
+                    </label>
+                    <textarea
+                      id={feedbackId}
+                      value={feedback}
+                      maxLength={2000}
+                      rows={3}
+                      placeholder="I would love to see…"
+                      disabled={status === 'sending'}
+                      onChange={(event) => {
+                        setFeedback(event.target.value);
+                        setError(null);
+                        submissionId.current = null;
+                      }}
+                      aria-describedby={`${feedbackId}-privacy`}
+                    />
+                    <small id={`${feedbackId}-privacy`}>
+                      Sent privately to the app administrators with your username. Please leave out
+                      passwords and sensitive information.
+                    </small>
+                    {error && (
+                      <p className="inline-error" role="alert">
+                        {error}
+                      </p>
+                    )}
+                    <button
+                      type="submit"
+                      className="profile-secondary"
+                      disabled={!feedback.trim() || status === 'sending'}
+                    >
+                      {status === 'sending' ? 'Sending…' : 'Send feedback'}
+                    </button>
+                  </>
+                )}
+              </form>
+              <details className="guide-contribute">
+                <summary>Want to help build Gym Logger?</summary>
+                <p>
+                  Check existing issues, discuss bigger changes first, then work on a focused branch
+                  or fork. Use sample data, run the project checks and include screenshots for UI
+                  changes in your pull request.
+                </p>
+                <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
+                  GitHub repository <Icon name="external" />
+                </a>
+                <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
+                  Contribution instructions <Icon name="external" />
+                </a>
+              </details>
+            </>
+          ) : (
+            <div className="app-guide-progress" aria-label={`Step ${index + 1} of ${steps.length}`}>
+              {steps.map((item, itemIndex) => (
+                <span key={item.target} className={itemIndex <= index ? 'complete' : ''} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <footer className="popup-dialog-actions">
         <button
           type="button"
@@ -228,7 +244,7 @@ export function AppGuide({
             className="popup-primary-action"
             onClick={() => setIndex(index + 1)}
           >
-            {index === steps.length - 1 ? 'Finish tour' : 'Next'} <span aria-hidden="true">→</span>
+            {index === steps.length - 1 ? 'Show steps' : 'Next'} <span aria-hidden="true">→</span>
           </button>
         )}
       </footer>
