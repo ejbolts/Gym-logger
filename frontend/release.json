@@ -1,19 +1,16 @@
 {
-  "version": "0.4.0",
-  "title": "Meet your Gym Logger",
-  "summary": "Take a guided tour, install the phone app, and tell us what you think.",
+  "version": "0.5.0",
+  "title": "Share your training",
+  "summary": "Share your workouts with other members, choose what else they see, and follow their training.",
   "changes": [
-    "Follow the feature tour with highlighted controls, Next, Back and Skip.",
-    "Send private feedback or feature requests from Settings or the tour, with clear delivery details.",
-    "See Home Screen installation steps before the tour ends, using gym-logger.duckdns.org.",
-    "Open Settings from every main tab to replay the guide or find installation help.",
-    "Expand the next-workout arrow to read its explanation and last-session details.",
-    "Add, change or remove a private profile photo in Profile; it replaces your initial on Today.",
-    "See illustrated release announcements and open their screenshots full size."
+    "Turn on Profile sharing in Profile. Your workouts are shared, and sharing is what lets you see other members.",
+    "Choose separately whether to add body weight, goals, cardio sessions, notes and your profile photo.",
+    "Open Shared profiles to browse other sharing members' workouts and anything else they share.",
+    "Stop sharing at any time; your profile and other profiles become private again straight away."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#050",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/13105ce957b4525972f0a45fe878e79d4e05601a/docs/screenshots/releases/0.4.0-settings-feedback.png",
-    "alt": "Settings has a dedicated Feedback and feature requests form explaining that messages go privately to the app administrators."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/ebd372013c6570381cc3d3d7aaa4237d126ec64b/docs/screenshots/releases/0.5.0-shared-profile.png",
+    "alt": "A shared profile for a sample member, showing workout totals, a body-weight chart with the goal line, goal progress and weekly Zone 2 cardio progress."
   }
 }

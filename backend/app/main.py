@@ -57,6 +57,7 @@ from .schemas import (
     SessionCreate,
     SessionRead,
 )
+from .sharing import sharing_router
 from .storage import (
     UploadValidationError,
     clean_abandoned_partials,
@@ -599,6 +600,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_router)
     app.include_router(feedback_router)
     app.include_router(admin_feedback_router)
+    app.include_router(sharing_router)
     app.include_router(protected)
     app.include_router(video)
     app.include_router(tracker_router)

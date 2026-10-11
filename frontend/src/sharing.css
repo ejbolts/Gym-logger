@@ -1,0 +1,311 @@
+/* Profile sharing choices and the shared profile screens. Uses the Pulse tokens from pulse.css. */
+
+.sharing-state {
+  flex-shrink: 0;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  color: var(--p-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sharing-state.is-on {
+  border-color: rgb(57 135 229 / 55%);
+  background: var(--p-accent-soft);
+  color: var(--p-accent-text);
+}
+
+.sharing-options {
+  border-top: 1px solid var(--p-line);
+  padding-top: 0.75rem;
+}
+
+.sharing-options .notification-setting-row > button.is-locked {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.sharing-never {
+  display: block;
+  margin-top: 0.85rem;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.profile-sharing .sharing-actions,
+.profile-sharing .sharing-start {
+  margin-top: 0.85rem;
+}
+
+.sharing-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sharing-loading,
+.shared-profiles-empty,
+.shared-card-empty {
+  color: var(--p-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.sharing-load-error {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.sharing-locked > .profile-primary {
+  margin-top: 0.25rem;
+}
+
+/* Shared profile list */
+
+.shared-profile-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shared-profile-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border: 1px solid var(--p-line);
+  border-radius: 18px;
+  padding: 0.85rem 0.9rem;
+  background: var(--p-surface);
+  color: var(--p-ink);
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.shared-profile-card:hover {
+  border-color: var(--p-line-strong);
+}
+
+.shared-profile-card > .pulse-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--p-muted);
+}
+
+.shared-profile-avatar {
+  width: 2.9rem;
+  height: 2.9rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--p-accent-soft);
+  color: var(--p-accent-text);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.shared-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shared-profile-copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.shared-profile-copy strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  overflow-wrap: anywhere;
+  font-size: 0.9375rem;
+}
+
+.shared-profile-copy small {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.shared-profile-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.shared-profile-chips em {
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.shared-profiles-empty {
+  margin: 0.9rem 0.25rem 0;
+}
+
+/* One shared profile */
+
+.shared-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.shared-stat-row > div {
+  min-width: 0;
+  border-radius: 12px;
+  padding: 0.55rem 0.65rem;
+  background: var(--p-surface-2);
+}
+
+.shared-stat-row dt {
+  color: var(--p-muted);
+  font-size: 0.6875rem;
+}
+
+.shared-stat-row dd {
+  margin: 0.15rem 0 0;
+  color: var(--p-ink);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.shared-preview-note {
+  margin: 0 !important;
+  color: var(--p-accent-text) !important;
+  font-size: 0.75rem !important;
+}
+
+.shared-card .shared-stat-row {
+  margin-bottom: 0.75rem;
+}
+
+.shared-goal {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.shared-goal + .shared-goal {
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--p-line);
+  padding-top: 0.85rem;
+}
+
+.shared-goal strong {
+  font-size: 0.8125rem;
+}
+
+.shared-goal span,
+.shared-goal small {
+  color: var(--p-ink-2);
+  font-size: 0.8125rem;
+}
+
+.shared-goal small {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.shared-progress {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--p-surface-3);
+}
+
+.shared-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--p-accent);
+}
+
+.shared-cardio-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shared-cardio-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.shared-cardio-list li + li {
+  border-top: 1px solid var(--p-line);
+  padding-top: 0.65rem;
+}
+
+.shared-cardio-date {
+  width: 3.2rem;
+  flex-shrink: 0;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.shared-cardio-list li > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.shared-cardio-list strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+}
+
+.shared-cardio-list strong em {
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  background: rgb(47 184 74 / 14%);
+  color: var(--p-good);
+  font-size: 0.625rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.shared-cardio-list small {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.shared-cardio-list .shared-cardio-notes {
+  color: var(--p-ink-2);
+}
+
+.history-screen.shared-workouts {
+  width: auto;
+  padding-top: 0;
+}
+
+.shared-workouts-header {
+  padding-top: 1.25rem;
+}
+
+.history-exercise-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+}

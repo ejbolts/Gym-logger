@@ -795,7 +795,13 @@ def test_account_deletion_removes_everything_the_user_owns(client, other_client,
 
 
 # These tables were introduced after accounts and require an owner from their first row.
-ACCOUNT_TABLES = {"user_sessions", "user_settings", "account_backups", "app_feedback"}
+ACCOUNT_TABLES = {
+    "user_sessions",
+    "user_settings",
+    "account_backups",
+    "app_feedback",
+    "profile_sharing",
+}
 
 
 def user_owned_tables():

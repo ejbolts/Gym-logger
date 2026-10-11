@@ -30,6 +30,10 @@ import type {
   ServerSettings,
   ServerSettingsUpdate,
   ServerStatus,
+  SharedProfile,
+  SharedProfileSummary,
+  SharedWorkoutPage,
+  SharingChoices,
   TrackedWorkout,
   User,
   WorkoutInput,
@@ -159,6 +163,25 @@ export const api = {
       headers: jsonHeaders,
       body: JSON.stringify({ message, submission_id: submissionId }),
     }),
+  sharing: {
+    choices: () => request<SharingChoices>('/api/sharing'),
+    updateChoices: (choices: SharingChoices) =>
+      request<SharingChoices>('/api/sharing', {
+        method: 'PUT',
+        headers: jsonHeaders,
+        body: JSON.stringify(choices),
+      }),
+    profiles: () => request<SharedProfileSummary[]>('/api/sharing/profiles'),
+    profile: (userId: string) =>
+      request<SharedProfile>(`/api/sharing/profiles/${encodeURIComponent(userId)}`),
+    workouts: (userId: string, offset: number, limit: number) =>
+      request<SharedWorkoutPage>(
+        `/api/sharing/profiles/${encodeURIComponent(userId)}/workouts?${new URLSearchParams({
+          offset: String(offset),
+          limit: String(limit),
+        })}`,
+      ),
+  },
   updateProfile: (payload: ProfileUpdateInput) =>
     request<User>('/api/profile', {
       method: 'PATCH',

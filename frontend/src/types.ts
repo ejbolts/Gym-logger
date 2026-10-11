@@ -573,3 +573,68 @@ export interface AppFeedback {
   message: string;
   created_at: string;
 }
+
+/** What an account shares with other sharing members. Workouts are shared whenever it is on. */
+export interface SharingChoices {
+  enabled: boolean;
+  share_notes: boolean;
+  share_cardio: boolean;
+  share_body_weight: boolean;
+  share_goals: boolean;
+  share_profile_photo: boolean;
+}
+
+export interface SharedProfileSummary {
+  id: string;
+  display_name: string;
+  profile_photo_url: string | null;
+  member_since: string;
+  is_you: boolean;
+  workout_count: number;
+  /** Workouts in the last 30 days. */
+  recent_workout_count: number;
+  last_workout_date: string | null;
+  shares: { notes: boolean; cardio: boolean; body_weight: boolean; goals: boolean };
+}
+
+export interface SharedBodyMeasurement {
+  measurement_date: string;
+  weight_kg: number;
+  body_fat_pct: number | null;
+}
+
+export interface SharedGoals {
+  body_weight: Omit<BodyWeightGoalInput, 'active'> | null;
+  zone2: Zone2Week;
+}
+
+export type SharedCardioSession = Pick<
+  CardioSession,
+  | 'id'
+  | 'session_date'
+  | 'activity_type'
+  | 'duration_minutes'
+  | 'calories_kcal'
+  | 'average_heart_rate_bpm'
+  | 'distance_km'
+  | 'average_speed_kph'
+  | 'incline_percent'
+  | 'average_power_watts'
+  | 'average_mets'
+  | 'zone'
+  | 'qualifies_zone2'
+  | 'notes'
+>;
+
+/** A shared profile; each optional part is null when its owner does not share it. */
+export interface SharedProfile extends SharedProfileSummary {
+  body_weight: SharedBodyMeasurement[] | null;
+  goals: SharedGoals | null;
+  cardio_sessions: SharedCardioSession[] | null;
+}
+
+export interface SharedWorkoutPage {
+  total: number;
+  workouts: TrackedWorkout[];
+  personal_records: PersonalRecord[];
+}

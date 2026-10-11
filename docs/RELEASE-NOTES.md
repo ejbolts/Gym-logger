@@ -1,5 +1,21 @@
 # Gym Logger release notes
 
+## 0.5.0
+
+- **Share your profile** from **Profile > Profile sharing**. Every account starts private. Sharing is reciprocal: only members who share their own profile can see shared profiles, and sharing lets you see theirs.
+- Your **workouts** are always shared while sharing is on, because they are required to see others: exercises, sets, dates and durations. Choose separately whether to add **Body weight** (weigh-ins, body fat and body weight logged with sets), **Goals** (your body-weight goal and weekly Zone 2 target), **Cardio sessions**, **Notes** (workout, exercise, set and cardio notes, including saved video links) and your **Profile photo**. Before you agree, your choices are a draft; afterwards each change saves straight away.
+- **View shared profiles** lists every sharing member, you first, with their workout activity and what they share. Open one to see their totals, any shared body-weight trend and goal line, goal progress and recent cardio, and their workouts in the familiar weekly History cards, read-only and loaded ten at a time. Your own card previews what others see.
+- **Stop sharing** makes your profile private again immediately and hides other profiles until you share again; your choices are kept for next time. Usernames, machine photos, videos and sample data are never shared. Disabled and deleted accounts disappear from the list, and administrators get no extra access.
+- Existing installations should run `alembic upgrade head` for migration `0033_profile_sharing` before serving the updated frontend. It adds the `profile_sharing` table only; sharing choices are included in account backups and deleted with the account. No workout records are changed.
+
+<img src="screenshots/releases/0.5.0-profile-sharing.png" alt="Profile sharing in Profile: Workouts marked Required, Body weight and Goals switched on, Cardio sessions, Notes and Profile photo off, with View shared profiles and Stop sharing buttons." width="390">
+
+Choose what to share in Profile. Workouts are required to see others; everything else is optional.
+
+<img src="screenshots/releases/0.5.0-shared-profile.png" alt="A shared profile for a sample member showing workout totals, a 90-day body-weight chart with the goal line, goal progress and weekly Zone 2 cardio progress." width="390">
+
+Another member's shared profile with their body weight and goals. Both captures use fictional sample accounts in the isolated mobile verification environment.
+
 ## 0.4.0
 
 - New accounts get a feature tour after closing **What's new**. Annotations highlight the real Today, Start, History, Progress, Body and Cardio controls, plus Videos when the account has access. Move with **Next** and **Back**, or **Skip guide** at any time. The tour does not start workouts or uploads.

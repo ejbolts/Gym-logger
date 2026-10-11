@@ -129,6 +129,29 @@ class AppFeedback(Base):
     )
 
 
+class ProfileSharing(Base):
+    """What an account shares with other sharing members. Workouts are always part of it.
+
+    Only accounts that share can see others, so sharing is reciprocal. The optional choices are
+    kept while sharing is off, so turning it back on restores them.
+    """
+
+    __tablename__ = "profile_sharing"
+
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    share_notes: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    share_cardio: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    share_body_weight: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    share_goals: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    share_profile_photo: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now(), onupdate=utc_now
+    )
+
+
 class ServerSetting(Base):
     """Deployment-wide switches an admin changes at runtime; unset keys fall back to .env."""
 
