@@ -1,5 +1,16 @@
 # Gym Logger release notes
 
+## 0.3.2
+
+- Add a **profile photo** in **Profile**. Choose any JPEG, PNG, WebP, HEIF or HEIC image; Gym Logger rotates it upright and crops it to a square.
+- The photo replaces your initial on the **Today** profile button and in Profile. **Change photo** replaces it and **Remove** goes back to your initial.
+- Photos stay private to your account, follow the existing photo upload size limit, are included in account backups and are deleted with the account.
+- Server operators must run migration `0031_profile_photos` (`alembic upgrade head`) before restarting the backend. Photo files are stored under `data/profile-photos/`.
+
+<img src="screenshots/releases/0.3.2-profile-photo.png" alt="Profile screen showing a round profile photo next to the account name, with Change photo and Remove buttons." width="390">
+
+A sample account's profile photo in the isolated mobile verification environment.
+
 ## 0.3.1
 
 - The **What's new** pop-up can show a screenshot alongside the release notes. Select it to view the image full size.

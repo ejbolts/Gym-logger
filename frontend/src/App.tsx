@@ -995,6 +995,7 @@ export function App() {
                 onOpenVideos={videosAllowed ? () => setTab('videos') : undefined}
                 onOpenProfile={user ? () => setTab('profile') : undefined}
                 profileLabel={user?.display_name}
+                profilePhotoUrl={user?.profile_photo_url}
                 calendar={
                   <InteractiveWorkoutCalendar
                     entries={dashboard?.heatmap ?? []}

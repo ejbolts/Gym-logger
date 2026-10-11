@@ -1,15 +1,15 @@
 {
-  "version": "0.3.1",
-  "title": "See what's changed",
-  "summary": "Release announcements now include screenshots of visible changes, such as the recent username-based signup screen.",
+  "version": "0.3.2",
+  "title": "Add a profile photo",
+  "summary": "You can now add a profile photo, shown in place of your initial around the app.",
   "changes": [
-    "See a screenshot alongside the update notes when one is available.",
-    "Select the screenshot to view it full size.",
-    "Read illustrated release notes on GitHub."
+    "Open Profile and tap Add profile photo to choose an image. It is cropped to a square for you.",
+    "Your photo appears on the Today profile button and in Profile.",
+    "Change or remove it at any time; it stays private to your account."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#031",
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#032",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/735bdf2124331a84c5427ef41f5035f0232c4152/docs/screenshots/releases/0.3.0-username-signup.png",
-    "alt": "Username-based signup, with no email field."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/0c67eb5eba72bd0de2ff84743ac3201f3b4d7311/docs/screenshots/releases/0.3.2-profile-photo.png",
+    "alt": "Profile screen with a round profile photo next to the account name, and Change photo and Remove buttons."
   }
 }

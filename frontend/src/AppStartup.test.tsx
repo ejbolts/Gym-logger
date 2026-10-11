@@ -225,6 +225,15 @@ describe('App startup', () => {
     expect(today).toContain('aria-label="Profile: Lifter"');
   });
 
+  it('shows the profile photo on the Today profile button', () => {
+    const today = renderToday({
+      onOpenProfile: vi.fn(),
+      profileLabel: 'Lifter',
+      profilePhotoUrl: '/api/profile/photo?v=abc',
+    });
+    expect(today).toContain('src="/api/profile/photo?v=abc"');
+  });
+
   it('hides the video entry points for accounts that cannot upload videos', () => {
     expect(renderToday({ onOpenVideos: undefined })).not.toContain('aria-label="Video logger"');
 

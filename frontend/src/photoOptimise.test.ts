@@ -16,6 +16,7 @@ describe('photo optimising', () => {
     expect(needsOptimising(400 * 1024, 1200, 900)).toBe(false);
     expect(needsOptimising(400 * 1024, 4032, 3024)).toBe(true);
     expect(needsOptimising(6 * 1024 * 1024, 1600, 1200)).toBe(true);
+    expect(needsOptimising(400 * 1024, 1200, 900, 1024)).toBe(true);
   });
 
   it('names the re-encoded photo as a JPEG', () => {
