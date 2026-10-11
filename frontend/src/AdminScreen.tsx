@@ -405,7 +405,7 @@ export function AdminScreenView({
           <p>
             {feedback.length
               ? 'Latest 100 messages, newest first. Feedback is private to administrators.'
-              : 'No feedback yet. Messages sent from the app guide will appear here.'}
+              : 'No feedback yet. Messages sent from Settings or the app guide will appear here.'}
           </p>
           <ul className="admin-feedback-list">
             {feedback.map((item) => (

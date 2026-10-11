@@ -133,6 +133,7 @@ import { AppTabBar } from './AppTabBar';
 import { Icon } from './Icon';
 import { TrendChart, type GoalPath, type TrendPoint } from './PulseCharts';
 import { PageHeader, SettingsButton, TodayScreen, TodaySkeleton } from './TodayScreen';
+import { FeedbackForm } from './FeedbackForm';
 import {
   compactSetSummary,
   dayMonth,
@@ -5866,7 +5867,7 @@ function SettingsScreen({
             Replay guide
           </button>
         </header>
-        <p>Walk through the features again, leave feedback or find out how to contribute.</p>
+        <p>Walk through the features again or find out how to contribute.</p>
         <div className="guide-contribute">
           <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
             GitHub repository <Icon name="external" />
@@ -5875,6 +5876,16 @@ function SettingsScreen({
             How to contribute <Icon name="external" />
           </a>
         </div>
+      </section>
+      <section className="settings-panel panel" aria-labelledby="feedback-settings-title">
+        <header>
+          <div>
+            <p className="section-kicker">YOUR IDEAS</p>
+            <h2 id="feedback-settings-title">Feedback &amp; feature requests</h2>
+          </div>
+        </header>
+        <p>Tell us what could be better, report a problem or suggest a feature.</p>
+        <FeedbackForm allowAnother />
       </section>
       <section
         className="settings-panel panel"

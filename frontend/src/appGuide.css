@@ -130,43 +130,6 @@ body:has(.app-guide[open]) .tracker-content > .cached-tab-panel:not([hidden]) > 
 .app-guide-finish {
   overflow: auto;
 }
-.guide-feedback {
-  display: grid;
-  gap: 0.7rem;
-  margin-top: 1.25rem;
-}
-.guide-feedback label {
-  font-size: 0.875rem;
-  font-weight: 650;
-}
-.guide-feedback label span {
-  font-weight: 400;
-  color: var(--p-muted);
-}
-.guide-feedback textarea {
-  box-sizing: border-box;
-  width: 100%;
-  resize: vertical;
-  min-height: 5rem;
-  border: 1px solid var(--p-line-strong);
-  border-radius: 0.6rem;
-  background: var(--p-page);
-  color: var(--p-ink);
-  font: inherit;
-  font-size: 1rem;
-  padding: 0.8rem;
-}
-.guide-feedback small {
-  color: var(--p-muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-.guide-feedback .profile-secondary {
-  justify-self: start;
-}
-.guide-feedback-success {
-  color: #8be0b0;
-}
 .guide-contribute {
   margin-top: 1.25rem;
   border-top: 1px solid var(--p-line-strong);

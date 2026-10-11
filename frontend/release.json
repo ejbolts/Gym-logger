@@ -4,7 +4,7 @@
   "summary": "Take a guided tour, install the phone app, and tell us what you think.",
   "changes": [
     "Follow the feature tour with highlighted controls, Next, Back and Skip.",
-    "Send private feedback at the end, or find out how to contribute on GitHub.",
+    "Send private feedback or feature requests from Settings or the tour, with clear delivery details.",
     "See Home Screen installation steps before the tour ends, using gym-logger.duckdns.org.",
     "Open Settings from every main tab to replay the guide or find installation help.",
     "Expand the next-workout arrow to read its explanation and last-session details.",
@@ -12,7 +12,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/6b1115d449204b0047d668628ed20e8b01e59c88/docs/screenshots/releases/0.4.0-home-screen-install.png",
-    "alt": "Home Screen installation inside the tour shows gym-logger.duckdns.org, illustrated Safari steps and Skip guide, Back and Next."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/13105ce957b4525972f0a45fe878e79d4e05601a/docs/screenshots/releases/0.4.0-settings-feedback.png",
+    "alt": "Settings has a dedicated Feedback and feature requests form explaining that messages go privately to the app administrators."
   }
 }

@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
-import { api } from './api';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { FeedbackForm } from './FeedbackForm';
 import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
 import { HomeScreenGuideContent } from './HomeScreenGuide';
@@ -20,12 +20,8 @@ export function AppGuide({
   const steps = appGuideSteps(videosAllowed);
   const [index, setIndex] = useState(0);
   const [box, setBox] = useState<TargetBox | null>(null);
-  const [feedback, setFeedback] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
-  const [error, setError] = useState<string | null>(null);
-  const submissionId = useRef<string | null>(null);
+  const [sendingFeedback, setSendingFeedback] = useState(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const feedbackId = useId();
   const step = steps[index];
   const installing = index === steps.length;
   const finished = index > steps.length;
@@ -92,20 +88,6 @@ export function AppGuide({
     };
   }, [target]);
 
-  async function sendFeedback() {
-    if (!feedback.trim() || status !== 'idle') return;
-    setStatus('sending');
-    setError(null);
-    try {
-      submissionId.current ??= crypto.randomUUID();
-      await api.submitFeedback(feedback.trim(), submissionId.current);
-      setStatus('sent');
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Could not send feedback. Try again.');
-      setStatus('idle');
-    }
-  }
-
   // Put the annotation opposite the highlighted control, leaving it visible behind the modal.
   const position = box && box.top + box.height / 2 > window.innerHeight / 2 ? 'top' : 'bottom';
   const availableHeight =
@@ -151,55 +133,7 @@ export function AppGuide({
           </div>
           {finished ? (
             <>
-              <form
-                className="guide-feedback"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void sendFeedback();
-                }}
-              >
-                {status === 'sent' ? (
-                  <p role="status" className="guide-feedback-success">
-                    Thanks! Your feedback has been sent.
-                  </p>
-                ) : (
-                  <>
-                    <label htmlFor={feedbackId}>
-                      Your feedback <span>(optional)</span>
-                    </label>
-                    <textarea
-                      id={feedbackId}
-                      value={feedback}
-                      maxLength={2000}
-                      rows={3}
-                      placeholder="I would love to see…"
-                      disabled={status === 'sending'}
-                      onChange={(event) => {
-                        setFeedback(event.target.value);
-                        setError(null);
-                        submissionId.current = null;
-                      }}
-                      aria-describedby={`${feedbackId}-privacy`}
-                    />
-                    <small id={`${feedbackId}-privacy`}>
-                      Sent privately to the app administrators with your username. Please leave out
-                      passwords and sensitive information.
-                    </small>
-                    {error && (
-                      <p className="inline-error" role="alert">
-                        {error}
-                      </p>
-                    )}
-                    <button
-                      type="submit"
-                      className="profile-secondary"
-                      disabled={!feedback.trim() || status === 'sending'}
-                    >
-                      {status === 'sending' ? 'Sending…' : 'Send feedback'}
-                    </button>
-                  </>
-                )}
-              </form>
+              <FeedbackForm optional onSendingChange={setSendingFeedback} />
               <details className="guide-contribute">
                 <summary>Want to help build Gym Logger?</summary>
                 <p>
@@ -225,12 +159,7 @@ export function AppGuide({
         </div>
       )}
       <footer className="popup-dialog-actions">
-        <button
-          type="button"
-          className="guide-skip"
-          disabled={status === 'sending'}
-          onClick={onClose}
-        >
+        <button type="button" className="guide-skip" disabled={sendingFeedback} onClick={onClose}>
           {finished ? 'End guide' : 'Skip guide'}
         </button>
         {index > 0 && !finished && (
