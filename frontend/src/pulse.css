@@ -1661,6 +1661,8 @@ button.pulse-card:hover {
 }
 
 .progress-screen .landscape-chart-frame:not(.landscape-chart-expanded) .landscape-chart-toolbar {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: flex-end;
   min-height: 0;
@@ -2634,6 +2636,13 @@ html.edge-swipe-ready .edge-swipe-indicator {
 
 .landscape-chart-expanded .pulse-chart {
   margin: 0;
+  height: 100%;
+}
+
+.landscape-chart-expanded .pulse-chart svg {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
 }
 
 /* ───────── Live workout: details, set rows, and one-tap completion ───────── */

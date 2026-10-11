@@ -1,7 +1,7 @@
 {
   "version": "0.4.0",
   "title": "Meet your Gym Logger",
-  "summary": "Take a guided tour, install the phone app, and tell us what you think.",
+  "summary": "Take a guided tour, explore graphs full screen, install the phone app, and tell us what you think.",
   "changes": [
     "Follow the feature tour with highlighted controls, Next, Back and Skip.",
     "Send private feedback or feature requests from Settings or the tour, with clear delivery details.",
@@ -9,7 +9,8 @@
     "Open Settings from every main tab to replay the guide or find installation help.",
     "Expand the next-workout arrow to read its explanation and last-session details.",
     "Add, change or remove a private profile photo in Profile; it replaces your initial on Today.",
-    "See illustrated release announcements and open their screenshots full size."
+    "See illustrated release announcements and open their screenshots full size.",
+    "View progress and body graphs full screen with accurate touch selection and automatic resizing."
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
   "image": {
