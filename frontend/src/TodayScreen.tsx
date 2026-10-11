@@ -196,6 +196,7 @@ export function TodayScreen({
                 type="button"
                 onClick={onOpenVideos}
                 aria-label="Video logger"
+                data-guide-target="videos"
               >
                 <Icon name="video" />
               </button>
@@ -296,7 +297,12 @@ export function TodayScreen({
             label="Workouts per week, last 12 weeks"
           />
         </button>
-        <button type="button" className="pulse-kpi" onClick={onOpenCardio}>
+        <button
+          type="button"
+          className="pulse-kpi"
+          onClick={onOpenCardio}
+          data-guide-target="cardio"
+        >
           <span>Cardio sessions</span>
           <strong>{cardioSessionsThisWeek ?? '–'}</strong>
           <em>

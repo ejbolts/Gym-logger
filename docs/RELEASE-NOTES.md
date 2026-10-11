@@ -2,9 +2,22 @@
 
 ## 0.4.0
 
-- New accounts see a one-time **Add to Home Screen** guide after closing the **What's new** pop-up. It shows illustrated Safari steps: tap the menu button on the left of the address bar, then **Share**, **View More**, **Add to Home Screen** and **Add**. Android users get the equivalent Chrome menu steps.
-- The guide waits behind the same interruptions as **What's new** (loading, the workout and video screens, and other dialogs). Dismissal is remembered for each account and browser, so it appears only once.
-- The guide is skipped when Gym Logger is already open from the Home Screen. Open **Settings → Add to Home Screen → Show steps** to see it again in the browser.
+- New accounts get a feature tour after closing **What's new**. Annotations highlight the real Today, Start, History, Progress, Body and Cardio controls, plus Videos when the account has access. Move with **Next** and **Back**, or **Skip guide** at any time. The tour does not start workouts or uploads.
+- Finish the tour with a thank-you message and an optional feedback box. **Send feedback** stores your message privately with your username for administrators to read in **Settings > Admin console > App feedback**. Failed submissions keep your text for retry; retrying the same submission does not create duplicates.
+- **Settings > App guide > Replay guide** starts the tour again. Dismissal is remembered per account/browser, including when using the installed app.
+- **Settings > Add to Home Screen > Show steps** opens the illustrated Safari instructions (menu, Share, View More, Add to Home Screen, Add), plus Android Chrome instructions. This remains available in the installed app to help set up another device.
+- The closing screen and Settings link to the GitHub repository and contribution instructions. Contributions use focused branches, sample data, project checks, accessible controls and reviewed UI evidence.
+- The tour waits behind release announcements, loading, active workout/upload screens and other dialogs. Older queued installation guides still work; new accounts use the feature tour and can open installation steps from Settings.
+- Release announcements support screenshots that open full size and remain usable when images cannot load.
+- Existing installations should run `alembic upgrade head` for migration `0031_app_feedback` before serving the updated frontend. Feedback is removed when its account is deleted. No account/workout records are changed by this migration.
+
+<img src="screenshots/releases/0.4.0-app-guide.png" alt="App guide highlighting the Start button with a feature description, Next, Back and Skip guide." width="390">
+
+The feature tour points to the actual controls. Captured at phone width with isolated sample workouts.
+
+<img src="screenshots/releases/0.4.0-guide-feedback.png" alt="The thank-you screen with an optional private feedback box, contribution help and End guide." width="390">
+
+The final screen invites feedback and contributions. [Watch the short tour recording](screenshots/releases/0.4.0-app-guide.webm) to see the annotations move between features, a sample feedback submission, installation help and replay in Settings.
 
 ## 0.3.1
 

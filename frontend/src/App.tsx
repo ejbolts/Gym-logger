@@ -6,6 +6,7 @@ import {
 } from './activeWorkoutTimeout';
 import {
   Fragment,
+  useCallback,
   startTransition,
   useEffect,
   useLayoutEffect,
@@ -65,6 +66,9 @@ import { canShowReleaseAnnouncement } from './releaseAnnouncements';
 import { HomeScreenGuide } from './HomeScreenGuide';
 import { useHomeScreenGuide } from './useHomeScreenGuide';
 import { runningAsInstalledApp } from './homeScreenGuideState';
+import { AppGuide } from './AppGuide';
+import { appGuideWaiting, finishAppGuide } from './appGuideState';
+import { CONTRIBUTING_URL, PROJECT_URL } from './appGuideSteps';
 import { CreateExerciseDialog } from './CreateExerciseDialog';
 import { BackgroundActivityBar } from './BackgroundActivityBar';
 import { CardioEnergyCard } from './CardioEnergyCard';
@@ -450,6 +454,9 @@ export function App() {
   const { user } = useUserSession();
   const announcement = useReleaseAnnouncement(user?.id ?? null);
   const homeScreenGuide = useHomeScreenGuide(user?.id ?? null, announcement.checked);
+  const [guideWaiting, setGuideWaiting] = useState(() => user !== null && appGuideWaiting(user.id));
+  const [guideRequested, setGuideRequested] = useState(false);
+  const guideReturnTab = useRef<AppTab | null>(null);
   const videosAllowed = canUploadVideos(user);
   const isAdmin = user?.is_admin === true;
   const initialHistoryState = isAppHistoryState(window.history.state) ? window.history.state : null;
@@ -548,13 +555,13 @@ export function App() {
     tab !== 'dashboard' ||
     (isAppHistoryState(window.history.state) && window.history.state.index > 0);
 
-  function setTab(nextTab: AppTab, options: { replace?: boolean } = {}) {
-    if (nextTab === tab) return;
+  const setTab = useCallback((nextTab: AppTab, options: { replace?: boolean } = {}) => {
+    if (nextTab === currentTabRef.current) return;
     scrollPositionsRef.current.set(historyIndexRef.current, window.scrollY);
     navigationActionRef.current = options.replace ? 'replace' : 'push';
     setNavDirection('forward');
     setTabState(nextTab);
-  }
+  }, []);
 
   function navigateBack() {
     const currentState = window.history.state;
@@ -940,9 +947,27 @@ export function App() {
       {announcement.open && canShowPrompts && (
         <ReleaseAnnouncement release={announcement.release} onClose={announcement.dismiss} />
       )}
-      {homeScreenGuide.open && !announcement.open && canShowPrompts && (
-        <HomeScreenGuide onClose={homeScreenGuide.dismiss} />
-      )}
+      {(guideRequested || (guideWaiting && announcement.checked)) &&
+        !announcement.open &&
+        canShowPrompts && (
+          <AppGuide
+            videosAllowed={videosAllowed}
+            onNavigate={setTab}
+            onClose={() => {
+              if (user) finishAppGuide(user.id);
+              setGuideWaiting(false);
+              setGuideRequested(false);
+              homeScreenGuide.dismiss();
+              setTab(guideReturnTab.current ?? 'dashboard');
+              guideReturnTab.current = null;
+            }}
+          />
+        )}
+      {homeScreenGuide.open &&
+        !guideRequested &&
+        !guideWaiting &&
+        !announcement.open &&
+        canShowPrompts && <HomeScreenGuide onClose={homeScreenGuide.dismiss} />}
       <EdgeSwipeBack onBack={navigateBack} enabled={canNavigateBack} />
       <BackgroundActivityBar label={backgroundActivityLabel} />
       {message && (
@@ -1135,6 +1160,10 @@ export function App() {
               releaseVersion={announcement.release.version}
               onOpenReleaseNotes={announcement.show}
               onOpenHomeScreenGuide={homeScreenGuide.show}
+              onOpenAppGuide={() => {
+                guideReturnTab.current = tab;
+                setGuideRequested(true);
+              }}
             />
           </CachedTabPanel>
         )}
@@ -5576,10 +5605,12 @@ function SettingsScreen({
   releaseVersion,
   onOpenReleaseNotes,
   onOpenHomeScreenGuide,
+  onOpenAppGuide,
 }: {
   releaseVersion: string;
   onOpenReleaseNotes: () => void;
   onOpenHomeScreenGuide: () => void;
+  onOpenAppGuide: () => void;
   account: User | null;
   onOpenProfile: () => void;
   /** Present only for administrators. */
@@ -5813,24 +5844,54 @@ function SettingsScreen({
         </header>
         <p>Read the latest release notes and see what's changed in Gym Logger.</p>
       </section>
-      {!runningAsInstalledApp() && (
-        <section className="settings-panel panel" aria-labelledby="home-screen-settings-title">
-          <header>
-            <div>
-              <p className="section-kicker">PHONE APP</p>
-              <h2 id="home-screen-settings-title">Add to Home Screen</h2>
-            </div>
-            <button
-              type="button"
-              className="profile-secondary release-settings-action"
-              onClick={onOpenHomeScreenGuide}
-            >
-              Show steps
-            </button>
-          </header>
-          <p>Open Gym Logger full screen from an icon on your phone, like an app.</p>
-        </section>
-      )}
+      <section className="settings-panel panel" aria-labelledby="app-guide-settings-title">
+        <header>
+          <div>
+            <p className="section-kicker">GET STARTED</p>
+            <h2 id="app-guide-settings-title">App guide</h2>
+          </div>
+          <button
+            type="button"
+            className="profile-secondary release-settings-action"
+            onClick={onOpenAppGuide}
+          >
+            Replay guide
+          </button>
+        </header>
+        <p>Walk through the features again, leave feedback or find out how to contribute.</p>
+        <div className="guide-contribute">
+          <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
+            GitHub repository <Icon name="external" />
+          </a>
+          <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
+            How to contribute <Icon name="external" />
+          </a>
+        </div>
+      </section>
+      <section
+        className="settings-panel panel"
+        aria-labelledby="home-screen-settings-title"
+        data-guide-target="installation"
+      >
+        <header>
+          <div>
+            <p className="section-kicker">PHONE APP</p>
+            <h2 id="home-screen-settings-title">Add to Home Screen</h2>
+          </div>
+          <button
+            type="button"
+            className="profile-secondary release-settings-action"
+            onClick={onOpenHomeScreenGuide}
+          >
+            Show steps
+          </button>
+        </header>
+        <p>
+          {runningAsInstalledApp()
+            ? 'You are already using the installed app. View the steps to set up another browser or device.'
+            : 'Open Gym Logger full screen from an icon on your phone, like an app.'}
+        </p>
+      </section>
       {account && (
         <section className="settings-panel panel" aria-labelledby="account-settings-title">
           <header>

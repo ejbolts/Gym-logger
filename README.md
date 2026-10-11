@@ -239,3 +239,9 @@ Each clip is also trimmed by 5 seconds at its start and end before it is normali
 - The in-process worker processes one session at a time and is not suitable for multi-user or distributed deployment.
 - Real YouTube uploads need credentials and internet access; mock mode remains ideal for local verification.
 - Future milestones could add saved workout templates, richer YouTube processing progress, or carefully designed exercise analysis. AI exercise recognition and rep counting are deliberately out of scope here.
+
+## App guide and feedback
+
+New accounts see a guided feature tour after the release announcement. Use **Next**, **Back** or **Skip guide**, then optionally send private feedback from the thank-you screen. Administrators read the latest 100 messages in **Settings > Admin console > App feedback**; feedback is associated with the submitting username and deleted with that account. Messages are limited to 2,000 characters, 100 per account and the existing save-rate limit. A client submission ID prevents duplicates when a request is retried.
+
+Open **Settings > App guide > Replay guide** to see the tour again, or **Add to Home Screen > Show steps** for the illustrated installation instructions. Both remain available from the installed app. Settings and the closing screen link to [contribution instructions](CONTRIBUTING.md). Upgrade existing databases with `alembic upgrade head` for `0031_app_feedback` before serving this frontend.

@@ -9,6 +9,7 @@ import './pulse.css';
 import './auth.css';
 import './releaseAnnouncement.css';
 import './homeScreenGuide.css';
+import './appGuide.css';
 
 registerAppUpdates();
 // Apply before the first paint so the opening screen respects the setting.

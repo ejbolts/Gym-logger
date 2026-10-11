@@ -1,0 +1,237 @@
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import { api } from './api';
+import { Icon } from './Icon';
+import { PopupDialog } from './PopupDialog';
+import { appGuideSteps, CONTRIBUTING_URL, PROJECT_URL } from './appGuideSteps';
+import type { AppTab } from './appNavigation';
+
+type TargetBox = { top: number; left: number; width: number; height: number };
+
+export function AppGuide({
+  videosAllowed,
+  onNavigate,
+  onClose,
+}: {
+  videosAllowed: boolean;
+  onNavigate: (tab: AppTab) => void;
+  onClose: () => void;
+}) {
+  const steps = appGuideSteps(videosAllowed);
+  const [index, setIndex] = useState(0);
+  const [box, setBox] = useState<TargetBox | null>(null);
+  const [feedback, setFeedback] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const submissionId = useRef<string | null>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const feedbackId = useId();
+  const step = steps[index];
+  const finished = !step;
+  const tab = step?.tab;
+  const target = step?.target;
+
+  useEffect(() => {
+    if (tab) onNavigate(tab);
+  }, [tab, onNavigate]);
+
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true });
+  }, [index]);
+
+  useEffect(() => {
+    if (!target) return;
+    let element: HTMLElement | null = null;
+    const measure = () => {
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      if (!element.closest('.app-tab-bar') && rect.bottom > window.innerHeight - 84) {
+        window.scrollBy(0, rect.bottom - (window.innerHeight - 84));
+        return;
+      }
+      const top = Math.max(4, rect.top - 5);
+      const left = Math.max(4, rect.left - 5);
+      setBox({
+        top,
+        left,
+        width: Math.max(
+          0,
+          Math.min(document.documentElement.clientWidth - 4, rect.right + 5) - left,
+        ),
+        height: Math.max(0, Math.min(window.innerHeight - 4, rect.bottom + 5) - top),
+      });
+    };
+    const observer = new ResizeObserver(measure);
+    // The next screen can mount after the tour's navigation effect.
+    const frame = requestAnimationFrame(() => {
+      element = document.querySelector<HTMLElement>(`[data-guide-target="${target}"]`);
+      if (!element) {
+        setBox(null);
+        return;
+      }
+      if (!element.closest('.app-tab-bar')) {
+        element.scrollIntoView({ behavior: 'instant', block: 'start' });
+        // Leave room for the fixed page header; place the annotation beneath these controls.
+        window.scrollBy(0, -96);
+      }
+      measure();
+      observer.observe(element);
+    });
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [target]);
+
+  async function sendFeedback() {
+    if (!feedback.trim() || status !== 'idle') return;
+    setStatus('sending');
+    setError(null);
+    try {
+      submissionId.current ??= crypto.randomUUID();
+      await api.submitFeedback(feedback.trim(), submissionId.current);
+      setStatus('sent');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not send feedback. Try again.');
+      setStatus('idle');
+    }
+  }
+
+  // Put the annotation opposite the highlighted control, leaving it visible behind the modal.
+  const position = box && box.top + box.height / 2 > window.innerHeight / 2 ? 'top' : 'bottom';
+  const availableHeight =
+    box && !finished
+      ? position === 'top'
+        ? box.top - 32
+        : window.innerHeight - box.top - box.height - 32
+      : null;
+  return (
+    <PopupDialog
+      title="App guide"
+      kicker={finished ? 'YOU ARE READY' : `QUICK TOUR · ${index + 1} OF ${steps.length}`}
+      className={`app-guide ${finished ? 'app-guide-finish' : `app-guide-${position}`}`}
+      style={
+        availableHeight
+          ? ({ '--guide-max-height': `${Math.max(180, availableHeight)}px` } as CSSProperties)
+          : undefined
+      }
+      onClose={onClose}
+    >
+      {!finished && box && <div className="app-guide-spotlight" style={box} aria-hidden="true" />}
+      <div className="app-guide-body">
+        <div className="app-guide-step" key={index}>
+          <span className="app-guide-glyph">
+            <Icon name={step?.icon ?? 'heart'} />
+          </span>
+          <h3 ref={titleRef} tabIndex={-1}>
+            {step?.title ?? 'Thanks for trying Gym Logger!'}
+          </h3>
+          <p>
+            {step?.description ??
+              'We hope it makes your next workout a little easier. What worked well, and what could be better?'}
+          </p>
+        </div>
+        {finished ? (
+          <>
+            <form
+              className="guide-feedback"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void sendFeedback();
+              }}
+            >
+              {status === 'sent' ? (
+                <p role="status" className="guide-feedback-success">
+                  Thanks! Your feedback has been sent.
+                </p>
+              ) : (
+                <>
+                  <label htmlFor={feedbackId}>
+                    Your feedback <span>(optional)</span>
+                  </label>
+                  <textarea
+                    id={feedbackId}
+                    value={feedback}
+                    maxLength={2000}
+                    rows={3}
+                    placeholder="I would love to see…"
+                    disabled={status === 'sending'}
+                    onChange={(event) => {
+                      setFeedback(event.target.value);
+                      setError(null);
+                      submissionId.current = null;
+                    }}
+                    aria-describedby={`${feedbackId}-privacy`}
+                  />
+                  <small id={`${feedbackId}-privacy`}>
+                    Sent privately to the app administrators with your username. Please leave out
+                    passwords and sensitive information.
+                  </small>
+                  {error && (
+                    <p className="inline-error" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    className="profile-secondary"
+                    disabled={!feedback.trim() || status === 'sending'}
+                  >
+                    {status === 'sending' ? 'Sending…' : 'Send feedback'}
+                  </button>
+                </>
+              )}
+            </form>
+            <details className="guide-contribute">
+              <summary>Want to help build Gym Logger?</summary>
+              <p>
+                Check existing issues, discuss bigger changes first, then work on a focused branch
+                or fork. Use sample data, run the project checks and include screenshots for UI
+                changes in your pull request.
+              </p>
+              <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
+                GitHub repository <Icon name="external" />
+              </a>
+              <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
+                Contribution instructions <Icon name="external" />
+              </a>
+            </details>
+          </>
+        ) : (
+          <div className="app-guide-progress" aria-label={`Step ${index + 1} of ${steps.length}`}>
+            {steps.map((item, itemIndex) => (
+              <span key={item.target} className={itemIndex <= index ? 'complete' : ''} />
+            ))}
+          </div>
+        )}
+      </div>
+      <footer className="popup-dialog-actions">
+        <button
+          type="button"
+          className="guide-skip"
+          disabled={status === 'sending'}
+          onClick={onClose}
+        >
+          {finished ? 'End guide' : 'Skip guide'}
+        </button>
+        {index > 0 && !finished && (
+          <button type="button" onClick={() => setIndex(index - 1)}>
+            Back
+          </button>
+        )}
+        {!finished && (
+          <button
+            type="button"
+            className="popup-primary-action"
+            onClick={() => setIndex(index + 1)}
+          >
+            {index === steps.length - 1 ? 'Finish tour' : 'Next'} <span aria-hidden="true">→</span>
+          </button>
+        )}
+      </footer>
+    </PopupDialog>
+  );
+}
