@@ -378,6 +378,35 @@ button.pulse-card:hover {
   font-size: 0.8125rem;
 }
 
+.next-session-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.next-session-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.next-session-details > summary h2 {
+  margin: 0;
+}
+
+.next-session-details > summary svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--p-ink-2);
+}
+
+.next-session-details[open] > summary svg {
+  transform: rotate(180deg);
+}
+
 .next-session-exercises {
   display: grid;
   grid-template-columns: 1fr 1fr;

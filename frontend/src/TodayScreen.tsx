@@ -31,10 +31,12 @@ export function PageHeader({
   eyebrow,
   title,
   actions,
+  onOpenSettings,
 }: {
   eyebrow?: string;
   title: string;
   actions?: ReactNode;
+  onOpenSettings?: () => void;
 }) {
   return (
     <header className="page-header">
@@ -42,8 +44,21 @@ export function PageHeader({
         {eyebrow && <p className="page-eyebrow">{eyebrow}</p>}
         <h1>{title}</h1>
       </div>
-      {actions && <div className="page-header-actions">{actions}</div>}
+      {(actions || onOpenSettings) && (
+        <div className="page-header-actions">
+          {actions}
+          {onOpenSettings && <SettingsButton onClick={onOpenSettings} />}
+        </div>
+      )}
     </header>
+  );
+}
+
+export function SettingsButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button className="icon-button-pulse" type="button" onClick={onClick} aria-label="Settings">
+      <Icon name="settings" />
+    </button>
   );
 }
 
@@ -175,6 +190,7 @@ export function TodayScreen({
           month: 'long',
         })}
         title="Today"
+        onOpenSettings={onOpenSettings}
         actions={
           <>
             {onOpenProfile && (
@@ -204,18 +220,11 @@ export function TodayScreen({
                 type="button"
                 onClick={onOpenVideos}
                 aria-label="Video logger"
+                data-guide-target="videos"
               >
                 <Icon name="video" />
               </button>
             )}
-            <button
-              className="icon-button-pulse"
-              type="button"
-              onClick={onOpenSettings}
-              aria-label="Settings"
-            >
-              <Icon name="settings" />
-            </button>
           </>
         }
       />
@@ -234,18 +243,31 @@ export function TodayScreen({
             )}
             {recommendation ? 'Up next' : 'Ready when you are'}
           </p>
-          <h2 id="next-session-title">
-            {recommendationLabel ? `${recommendationLabel} day` : 'Start a workout'}
-          </h2>
-          {recommendation && <p className="next-session-reason">{recommendation.reason}</p>}
-          {template ? (
-            <>
+          <details className="next-session-details">
+            <summary title="Show or hide workout details">
+              <h2 id="next-session-title">
+                {recommendationLabel ? `${recommendationLabel} day` : 'Start a workout'}
+              </h2>
+              <Icon name="chevron-down" />
+            </summary>
+            {recommendation && <p className="next-session-reason">{recommendation.reason}</p>}
+            {template ? (
               <p className="next-session-meta">
                 {template.exercises.length}{' '}
                 {template.exercises.length === 1 ? 'exercise' : 'exercises'} · last{' '}
                 {recommendationLabel?.toLowerCase()}{' '}
                 {shortDate(template.sourceWorkout.workout_date)}
               </p>
+            ) : (
+              <p className="next-session-meta">
+                {recommendation
+                  ? 'No previous session of this type yet. Start empty and add exercises.'
+                  : 'Log your first session to get a suggested next workout.'}
+              </p>
+            )}
+          </details>
+          {template && (
+            <>
               <ul className="next-session-exercises">
                 {template.exercises.slice(0, 4).map(({ exercise, summary }) => (
                   <li key={exercise.id}>
@@ -260,12 +282,6 @@ export function TodayScreen({
                 </p>
               )}
             </>
-          ) : (
-            <p className="next-session-meta">
-              {recommendation
-                ? 'No previous session of this type yet. Start empty and add exercises.'
-                : 'Log your first session to get a suggested next workout.'}
-            </p>
           )}
           <div className="next-session-actions">
             {template ? (
@@ -304,7 +320,12 @@ export function TodayScreen({
             label="Workouts per week, last 12 weeks"
           />
         </button>
-        <button type="button" className="pulse-kpi" onClick={onOpenCardio}>
+        <button
+          type="button"
+          className="pulse-kpi"
+          onClick={onOpenCardio}
+          data-guide-target="cardio"
+        >
           <span>Cardio sessions</span>
           <strong>{cardioSessionsThisWeek ?? '–'}</strong>
           <em>

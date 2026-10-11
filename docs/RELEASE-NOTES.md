@@ -1,13 +1,41 @@
 # Gym Logger release notes
 
-## 0.3.2
+## 0.4.0
 
-- Add a **profile photo** in **Profile**. Choose any JPEG, PNG, WebP, HEIF or HEIC image; Gym Logger rotates it upright and crops it to a square.
-- The photo replaces your initial on the **Today** profile button and in Profile. **Change photo** replaces it and **Remove** goes back to your initial.
-- Photos stay private to your account, follow the existing photo upload size limit, are included in account backups and are deleted with the account.
-- Server operators must run migration `0031_profile_photos` (`alembic upgrade head`) before restarting the backend. Photo files are stored under `data/profile-photos/`.
+- New accounts get a feature tour after closing **What's new**. Annotations highlight the real Today, Start, History, Progress, Body and Cardio controls, plus Videos when the account has access. Move with **Next** and **Back**, or **Skip guide** at any time. The tour does not start workouts or uploads.
+- Choose **Show steps** after **Make Gym Logger your own** to see the illustrated Home Screen installation page, then **Next** for the thank-you message and optional feedback box. **Back** returns to the feature tour; **Skip guide** remains available. **Send feedback** stores your message privately with your username for administrators to read in **Settings > Admin console > App feedback**. Failed submissions keep your text for retry; retrying the same submission does not create duplicates.
+- **Settings > Feedback & feature requests** provides a dedicated form at any time, with **Send another message** after a successful submission. Both this form and the tour explain where messages go: the app's database and private administrator inbox, with your username. Messages are not emailed or posted as GitHub issues.
+- **Settings > App guide > Replay guide** starts the tour again. Dismissal is remembered per account/browser, including when using the installed app.
+- **Settings > Add to Home Screen > Show steps** opens the illustrated Safari instructions (menu, Share, View More, Add to Home Screen, Add), plus Android Chrome instructions. The illustrations use **gym-logger.duckdns.org** and link to the public app address. This remains available in the installed app to help set up another device.
+- Open **Settings** from the top-right button on Today, History, Progress, Body and Cardio, and from the profile, video and admin screens.
+- The suggested next workout starts with its explanation and last-session details collapsed. Select the arrow beside the workout title to show or hide them; exercises and Start remain visible.
+- The closing screen and Settings link to the GitHub repository and contribution instructions. Contributions use focused branches, sample data, project checks, accessible controls and reviewed UI evidence.
+- The tour waits behind release announcements, loading, active workout/upload screens and other dialogs. Older queued installation guides still work; new accounts use the feature tour and can open installation steps from Settings.
+- Add a **profile photo** in **Profile**. Choose any JPEG, PNG, WebP, HEIF or HEIC image; Gym Logger rotates it upright and crops it to a square. The photo replaces your initial on the **Today** profile button and in Profile. **Change photo** replaces it and **Remove** goes back to your initial. Photos stay private to your account, follow the existing photo upload size limit, are included in account backups and are deleted with the account.
+- Release announcements support screenshots that open full size and remain usable when images cannot load.
+- Existing installations should run `alembic upgrade head` for migrations `0031_app_feedback` and `0032_profile_photos` before serving the updated frontend. Feedback is removed when its account is deleted. Profile photo files are stored under `data/profile-photos/`. No account/workout records are changed by these migrations.
 
-<img src="screenshots/releases/0.3.2-profile-photo.png" alt="Profile screen showing a round profile photo next to the account name, with Change photo and Remove buttons." width="390">
+<img src="screenshots/releases/0.4.0-app-guide.png" alt="App guide highlighting the Start button with a feature description, Next, Back and Skip guide." width="390">
+
+The feature tour points to the actual controls. Captured at phone width with isolated sample workouts.
+
+<img src="screenshots/releases/0.4.0-guide-feedback.png" alt="The thank-you screen with an optional private feedback box, contribution help and End guide." width="390">
+
+The final screen invites feedback and contributions.
+
+<img src="screenshots/releases/0.4.0-settings-feedback.png" alt="Dedicated Feedback and feature requests section in Settings with a message box, Send feedback and an explanation of the private admin inbox." width="390">
+
+Send ideas from Settings without replaying the tour. The form states who receives messages and where administrators can read them.
+
+<img src="screenshots/releases/0.4.0-home-screen-install.png" alt="Home Screen installation inside the tour, showing gym-logger.duckdns.org, illustrated Safari steps and Skip guide, Back and Next." width="390">
+
+After the final feature annotation, **Show steps** opens installation help before the thank-you screen. The public app address appears in the instructions and illustrations.
+
+<img src="screenshots/releases/0.4.0-next-workout.png" alt="Today with the workout explanation collapsed behind the arrow beside Lower body day, and the Settings button at the top right." width="390">
+
+Workout details start collapsed; the arrow expands them. Settings is available across tabs. All captures use isolated sample records. [Watch the short tour recording](screenshots/releases/0.4.0-app-guide.webm) to see the feature annotations, installation before feedback, a sample feedback submission, the dedicated Settings feedback section and the workout dropdown.
+
+<img src="screenshots/releases/0.4.0-profile-photo.png" alt="Profile screen showing a round profile photo next to the account name, with Change photo and Remove buttons." width="390">
 
 A sample account's profile photo in the isolated mobile verification environment.
 

@@ -148,4 +148,21 @@ describe('AdminScreenView', () => {
     expect(view({ error: 'Only an administrator can do that.' })).toContain('role="alert"');
     expect(view({ notice: 'Sign-ups are closed.' })).toContain('Sign-ups are closed.');
   });
+
+  it('shows private feedback as text and makes the empty state clear', () => {
+    expect(view({ feedback: [] })).toContain('No feedback yet.');
+    const markup = view({
+      feedback: [
+        {
+          id: 'message',
+          username: 'tester',
+          message: '<script>alert(1)</script>',
+          created_at: '2026-10-11T01:00:00Z',
+        },
+      ],
+    });
+    expect(markup).toContain('@tester');
+    expect(markup).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(markup).not.toContain('<script>');
+  });
 });

@@ -6,6 +6,7 @@ import {
 } from './activeWorkoutTimeout';
 import {
   Fragment,
+  useCallback,
   startTransition,
   useEffect,
   useLayoutEffect,
@@ -62,6 +63,12 @@ import { PopupDialog } from './PopupDialog';
 import { ReleaseAnnouncement } from './ReleaseAnnouncement';
 import { useReleaseAnnouncement } from './useReleaseAnnouncement';
 import { canShowReleaseAnnouncement } from './releaseAnnouncements';
+import { HomeScreenGuide } from './HomeScreenGuide';
+import { useHomeScreenGuide } from './useHomeScreenGuide';
+import { runningAsInstalledApp } from './homeScreenGuideState';
+import { AppGuide } from './AppGuide';
+import { appGuideWaiting, finishAppGuide } from './appGuideState';
+import { CONTRIBUTING_URL, PROJECT_URL } from './appGuideSteps';
 import { CreateExerciseDialog } from './CreateExerciseDialog';
 import { BackgroundActivityBar } from './BackgroundActivityBar';
 import { CardioEnergyCard } from './CardioEnergyCard';
@@ -125,7 +132,8 @@ import {
 import { AppTabBar } from './AppTabBar';
 import { Icon } from './Icon';
 import { TrendChart, type GoalPath, type TrendPoint } from './PulseCharts';
-import { PageHeader, TodayScreen, TodaySkeleton } from './TodayScreen';
+import { PageHeader, SettingsButton, TodayScreen, TodaySkeleton } from './TodayScreen';
+import { FeedbackForm } from './FeedbackForm';
 import {
   compactSetSummary,
   dayMonth,
@@ -446,6 +454,10 @@ function WorkoutCompletionDialog({
 export function App() {
   const { user } = useUserSession();
   const announcement = useReleaseAnnouncement(user?.id ?? null);
+  const homeScreenGuide = useHomeScreenGuide(user?.id ?? null, announcement.checked);
+  const [guideWaiting, setGuideWaiting] = useState(() => user !== null && appGuideWaiting(user.id));
+  const [guideRequested, setGuideRequested] = useState(false);
+  const guideReturnTab = useRef<AppTab | null>(null);
   const videosAllowed = canUploadVideos(user);
   const isAdmin = user?.is_admin === true;
   const initialHistoryState = isAppHistoryState(window.history.state) ? window.history.state : null;
@@ -544,13 +556,13 @@ export function App() {
     tab !== 'dashboard' ||
     (isAppHistoryState(window.history.state) && window.history.state.index > 0);
 
-  function setTab(nextTab: AppTab, options: { replace?: boolean } = {}) {
-    if (nextTab === tab) return;
+  const setTab = useCallback((nextTab: AppTab, options: { replace?: boolean } = {}) => {
+    if (nextTab === currentTabRef.current) return;
     scrollPositionsRef.current.set(historyIndexRef.current, window.scrollY);
     navigationActionRef.current = options.replace ? 'replace' : 'push';
     setNavDirection('forward');
     setTabState(nextTab);
-  }
+  }, []);
 
   function navigateBack() {
     const currentState = window.history.state;
@@ -918,6 +930,12 @@ export function App() {
             : null;
   const activeMainTab = mainTabFor(tab);
   const showTabBar = tab !== 'log';
+  // The home screen guide follows the release announcement, behind the same interruptions.
+  const canShowPrompts = canShowReleaseAnnouncement({
+    loading,
+    tab,
+    hasOtherDialog: message !== null || completionRecords.length > 0,
+  });
 
   function openHistorySection(section: HistorySection, exerciseId: string | null = null) {
     setHistoryOpenId(null);
@@ -927,12 +945,30 @@ export function App() {
 
   return (
     <div className={`tracker-app ${showTabBar ? 'has-tab-bar' : ''}`}>
-      {announcement.open &&
-        canShowReleaseAnnouncement({
-          loading,
-          tab,
-          hasOtherDialog: message !== null || completionRecords.length > 0,
-        }) && <ReleaseAnnouncement release={announcement.release} onClose={announcement.dismiss} />}
+      {announcement.open && canShowPrompts && (
+        <ReleaseAnnouncement release={announcement.release} onClose={announcement.dismiss} />
+      )}
+      {(guideRequested || (guideWaiting && announcement.checked)) &&
+        !announcement.open &&
+        canShowPrompts && (
+          <AppGuide
+            videosAllowed={videosAllowed}
+            onNavigate={setTab}
+            onClose={() => {
+              if (user) finishAppGuide(user.id);
+              setGuideWaiting(false);
+              setGuideRequested(false);
+              homeScreenGuide.dismiss();
+              setTab(guideReturnTab.current ?? 'dashboard');
+              guideReturnTab.current = null;
+            }}
+          />
+        )}
+      {homeScreenGuide.open &&
+        !guideRequested &&
+        !guideWaiting &&
+        !announcement.open &&
+        canShowPrompts && <HomeScreenGuide onClose={homeScreenGuide.dismiss} />}
       <EdgeSwipeBack onBack={navigateBack} enabled={canNavigateBack} />
       <BackgroundActivityBar label={backgroundActivityLabel} />
       {message && (
@@ -951,6 +987,9 @@ export function App() {
           title={nestedHeader.title}
           subtitle={nestedHeader.subtitle}
           onBack={navigateBack}
+          actions={
+            tab !== 'settings' ? <SettingsButton onClick={() => setTab('settings')} /> : undefined
+          }
         />
       )}
 
@@ -1067,6 +1106,7 @@ export function App() {
               onDelete={deleteMeasurement}
               onDataChange={refreshAfterMutation}
               trendPreference={bodyTrendPreference}
+              onOpenSettings={() => setTab('settings')}
             />
           </CachedTabPanel>
         )}
@@ -1086,6 +1126,7 @@ export function App() {
               initialOpenId={historyOpenId}
               section={historySection}
               onSectionChange={(section) => setTab(section)}
+              onOpenSettings={() => setTab('settings')}
               onOpenExercise={(exerciseId) => openHistorySection('progress', exerciseId)}
               onOpenWorkout={(workoutId, exerciseId) => {
                 setHistoryOpenId(workoutId);
@@ -1125,6 +1166,11 @@ export function App() {
               onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
               releaseVersion={announcement.release.version}
               onOpenReleaseNotes={announcement.show}
+              onOpenHomeScreenGuide={homeScreenGuide.show}
+              onOpenAppGuide={() => {
+                guideReturnTab.current = tab;
+                setGuideRequested(true);
+              }}
             />
           </CachedTabPanel>
         )}
@@ -5187,6 +5233,7 @@ function ProgressScreen({
   embedded = false,
   initialExerciseId = null,
   defaultExerciseId = null,
+  onOpenSettings,
 }: {
   exercises: Exercise[];
   measurements: BodyMeasurement[];
@@ -5194,6 +5241,7 @@ function ProgressScreen({
   embedded?: boolean;
   initialExerciseId?: string | null;
   defaultExerciseId?: string | null;
+  onOpenSettings?: () => void;
 }) {
   const strengthExercises = exercises.filter((exercise) => exercise.kind === 'strength');
   const [exerciseId, setExerciseId] = useState(() => {
@@ -5296,6 +5344,7 @@ function ProgressScreen({
             : 'Exercise progress'
         }
         title={selectedExercise?.name ?? 'Progress'}
+        onOpenSettings={onOpenSettings}
         actions={
           <button
             className="icon-button-pulse"
@@ -5565,9 +5614,13 @@ function SettingsScreen({
   onOpenAdmin,
   releaseVersion,
   onOpenReleaseNotes,
+  onOpenHomeScreenGuide,
+  onOpenAppGuide,
 }: {
   releaseVersion: string;
   onOpenReleaseNotes: () => void;
+  onOpenHomeScreenGuide: () => void;
+  onOpenAppGuide: () => void;
   account: User | null;
   onOpenProfile: () => void;
   /** Present only for administrators. */
@@ -5800,6 +5853,64 @@ function SettingsScreen({
           </button>
         </header>
         <p>Read the latest release notes and see what's changed in Gym Logger.</p>
+      </section>
+      <section className="settings-panel panel" aria-labelledby="app-guide-settings-title">
+        <header>
+          <div>
+            <p className="section-kicker">GET STARTED</p>
+            <h2 id="app-guide-settings-title">App guide</h2>
+          </div>
+          <button
+            type="button"
+            className="profile-secondary release-settings-action"
+            onClick={onOpenAppGuide}
+          >
+            Replay guide
+          </button>
+        </header>
+        <p>Walk through the features again or find out how to contribute.</p>
+        <div className="guide-contribute">
+          <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
+            GitHub repository <Icon name="external" />
+          </a>
+          <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
+            How to contribute <Icon name="external" />
+          </a>
+        </div>
+      </section>
+      <section className="settings-panel panel" aria-labelledby="feedback-settings-title">
+        <header>
+          <div>
+            <p className="section-kicker">YOUR IDEAS</p>
+            <h2 id="feedback-settings-title">Feedback &amp; feature requests</h2>
+          </div>
+        </header>
+        <p>Tell us what could be better, report a problem or suggest a feature.</p>
+        <FeedbackForm allowAnother />
+      </section>
+      <section
+        className="settings-panel panel"
+        aria-labelledby="home-screen-settings-title"
+        data-guide-target="installation"
+      >
+        <header>
+          <div>
+            <p className="section-kicker">PHONE APP</p>
+            <h2 id="home-screen-settings-title">Add to Home Screen</h2>
+          </div>
+          <button
+            type="button"
+            className="profile-secondary release-settings-action"
+            onClick={onOpenHomeScreenGuide}
+          >
+            Show steps
+          </button>
+        </header>
+        <p>
+          {runningAsInstalledApp()
+            ? 'You are already using the installed app. View the steps to set up another browser or device.'
+            : 'Open Gym Logger full screen from an icon on your phone, like an app.'}
+        </p>
       </section>
       {account && (
         <section className="settings-panel panel" aria-labelledby="account-settings-title">
@@ -6220,6 +6331,7 @@ export function BodyCompositionScreen({
   onDataChange,
   entryRequest = 0,
   trendPreference = DEFAULT_BODY_TREND_PREFERENCE,
+  onOpenSettings,
 }: {
   measurements: BodyMeasurement[];
   onSave: (payload: {
@@ -6232,6 +6344,7 @@ export function BodyCompositionScreen({
   onDataChange: () => Promise<void>;
   entryRequest?: number;
   trendPreference?: BodyTrendPreference;
+  onOpenSettings?: () => void;
 }) {
   const [measurementDate, setMeasurementDate] = useState(localDate());
   const [entryOpen, setEntryOpen] = useState(false);
@@ -6400,6 +6513,7 @@ export function BodyCompositionScreen({
       <PageHeader
         eyebrow={`${measurements.length} ${measurements.length === 1 ? 'check-in' : 'check-ins'}${latest ? ` · latest ${shortDate(latest.measurement_date)}` : ''}`}
         title="Body"
+        onOpenSettings={onOpenSettings}
         actions={
           <button
             className="icon-button-pulse accent"
@@ -7655,6 +7769,7 @@ function HistoryScreen({
   onResumeWorkout,
   onStartWorkout,
   onReplaceActiveWorkout,
+  onOpenSettings,
 }: {
   workouts: TrackedWorkout[];
   categoryColors: WorkoutTypeColors;
@@ -7678,6 +7793,7 @@ function HistoryScreen({
   onResumeWorkout: () => void;
   onStartWorkout: (workoutDate?: string) => void;
   onReplaceActiveWorkout: (workoutDate: string) => void;
+  onOpenSettings: () => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
   const [visibleCount, setVisibleCount] = useState(() => {
@@ -7735,6 +7851,7 @@ function HistoryScreen({
                 : `${workouts.length} ${workouts.length === 1 ? 'workout' : 'workouts'} logged`
             }
             title={section === 'cardio' ? 'Cardio' : 'History'}
+            onOpenSettings={onOpenSettings}
             actions={
               section === 'history' ? (
                 <button
@@ -7784,6 +7901,7 @@ function HistoryScreen({
             embedded
             initialExerciseId={initialExerciseId}
             defaultExerciseId={defaultExerciseId}
+            onOpenSettings={onOpenSettings}
           />
         </CachedTabPanel>
       )}

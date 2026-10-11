@@ -12,7 +12,7 @@ On a fresh workout database, the app seeds five sample sessions across one week 
 
 The first working path is YouTube mock mode. It accepts a batch, processes it with local ffmpeg, and returns a deterministic mock YouTube URL without any Google credentials.
 
-Accounts use a username and password; no account email is collected. Usernames are case-insensitive, 3–32 ASCII letters, numbers, dots, underscores or hyphens, and start with a letter or number. The separate Name field is how you appear in the app. You can change both in Profile, where you can also add, change or remove a profile photo. Photos are cropped to a 512 px square, stored under `data/profile-photos/`, shown only to their owner, included in account backups and deleted with the account; run migration `0031_profile_photos` before restarting the backend. An admin can reset a forgotten password with `python -m app.manage reset-password --username yourname`.
+Accounts use a username and password; no account email is collected. Usernames are case-insensitive, 3–32 ASCII letters, numbers, dots, underscores or hyphens, and start with a letter or number. The separate Name field is how you appear in the app. You can change both in Profile, where you can also add, change or remove a profile photo. Photos are cropped to a 512 px square, stored under `data/profile-photos/`, shown only to their owner, included in account backups and deleted with the account; run migration `0032_profile_photos` before restarting the backend. An admin can reset a forgotten password with `python -m app.manage reset-password --username yourname`.
 
 When upgrading an email-based account database, migration `0030_username_accounts` derives usernames from the old address's part before `@`, replaces unsupported characters with hyphens, and adds numeric suffixes for duplicates. Short or unusable names become `user`. Account IDs, passwords, sessions, preferences and workout ownership are preserved. Run `python -m app.manage list-users` after migration to see the assigned usernames. The account email column is removed; rolling back requires the pre-upgrade database backup and previous app version. Existing backup archives stay unchanged; new account snapshots use manifest format 2 with an owner username.
 
@@ -239,3 +239,11 @@ Each clip is also trimmed by 5 seconds at its start and end before it is normali
 - The in-process worker processes one session at a time and is not suitable for multi-user or distributed deployment.
 - Real YouTube uploads need credentials and internet access; mock mode remains ideal for local verification.
 - Future milestones could add saved workout templates, richer YouTube processing progress, or carefully designed exercise analysis. AI exercise recognition and rep counting are deliberately out of scope here.
+
+## App guide and feedback
+
+New accounts see a guided feature tour after the release announcement. Use **Next**, **Back** or **Skip guide**, then optionally send private feedback from the thank-you screen. Administrators read the latest 100 messages in **Settings > Admin console > App feedback**; feedback is associated with the submitting username and deleted with that account. Messages are limited to 2,000 characters, 100 per account and the existing save-rate limit. A client submission ID prevents duplicates when a request is retried.
+
+Open **Settings > Feedback & feature requests** to send feedback, report problems or suggest improvements at any time. Messages are stored in the app database with your username and appear privately for administrators in **Settings > Admin console > App feedback**. No email or GitHub issue is created.
+
+Open **Settings > App guide > Replay guide** to see the tour again, or **Add to Home Screen > Show steps** for the illustrated installation instructions. Both remain available from the installed app. Settings and the closing screen link to [contribution instructions](CONTRIBUTING.md). Upgrade existing databases with `alembic upgrade head` for `0031_app_feedback` before serving this frontend.

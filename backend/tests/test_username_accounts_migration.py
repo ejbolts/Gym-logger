@@ -166,7 +166,7 @@ def test_migration_preserves_accounts_and_children_and_assigns_unique_usernames(
         with Operations.context(MigrationContext.configure(connection)):
             migration.upgrade()
             # The current User model also has the later profile photo column.
-            load_migration("0031_profile_photos").upgrade()
+            load_migration("0032_profile_photos").upgrade()
         columns = {column["name"] for column in inspect(connection).get_columns("users")}
         assert "username" in columns and "email" not in columns
         assert "profile_photo_filename" in columns

@@ -16,6 +16,7 @@ import { authErrorMessage } from './authForm';
 import { InlineConfirmButton } from './InlineConfirmButton';
 import type {
   AccountLimits,
+  AppFeedback,
   AccountLimitsSettings,
   AdminUser,
   ServerSettings,
@@ -25,6 +26,7 @@ import type {
 import { useUserSession } from './userContext';
 
 export interface AdminScreenViewProps {
+  feedback?: AppFeedback[] | null;
   currentUserId: string;
   users: AdminUser[] | null;
   settings: ServerSettings | null;
@@ -341,6 +343,7 @@ function UserRow({
 }
 
 export function AdminScreenView({
+  feedback,
   currentUserId,
   users,
   settings,
@@ -391,6 +394,30 @@ export function AdminScreenView({
         />
       )}
       {status && <StatusPanel status={status} />}
+      {feedback && (
+        <section className="settings-panel panel" aria-labelledby="admin-feedback-title">
+          <header>
+            <div>
+              <p className="section-kicker">FROM YOUR USERS</p>
+              <h2 id="admin-feedback-title">App feedback</h2>
+            </div>
+          </header>
+          <p>
+            {feedback.length
+              ? 'Latest 100 messages, newest first. Feedback is private to administrators.'
+              : 'No feedback yet. Messages sent from Settings or the app guide will appear here.'}
+          </p>
+          <ul className="admin-feedback-list">
+            {feedback.map((item) => (
+              <li key={item.id}>
+                <strong>@{item.username}</strong>
+                <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time>
+                <p>{item.message}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className="settings-panel panel" aria-labelledby="admin-users-title">
         <header>
           <div>
@@ -429,6 +456,7 @@ export function AdminScreenView({
 export function AdminScreen({ active }: { active: boolean }) {
   const { user, updateUser } = useUserSession();
   const [users, setUsers] = useState<AdminUser[] | null>(null);
+  const [feedback, setFeedback] = useState<AppFeedback[] | null>(null);
   const [settings, setSettings] = useState<ServerSettings | null>(null);
   const [status, setStatus] = useState<ServerStatus | null>(null);
   const [limits, setLimits] = useState<AccountLimitsSettings | null>(null);
@@ -443,16 +471,18 @@ export function AdminScreen({ active }: { active: boolean }) {
     setLoading(true);
     setError(null);
     try {
-      const [nextUsers, nextSettings, nextStatus, nextLimits] = await Promise.all([
+      const [nextUsers, nextSettings, nextStatus, nextLimits, nextFeedback] = await Promise.all([
         api.admin.users(),
         api.admin.settings(),
         api.admin.status(),
         api.admin.limits(),
+        api.admin.feedback(),
       ]);
       setUsers(nextUsers);
       setSettings(nextSettings);
       setStatus(nextStatus);
       setLimits(nextLimits);
+      setFeedback(nextFeedback);
     } catch (reason) {
       setError(authErrorMessage(reason));
     } finally {
@@ -532,6 +562,7 @@ export function AdminScreen({ active }: { active: boolean }) {
 
   return (
     <AdminScreenView
+      feedback={feedback}
       currentUserId={user.id}
       users={users}
       settings={settings}

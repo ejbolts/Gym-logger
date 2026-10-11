@@ -1,5 +1,6 @@
 import type {
   AccountLimits,
+  AppFeedback,
   AccountLimitsSettings,
   AdminUser,
   BodyMeasurement,
@@ -128,6 +129,7 @@ export const api = {
       request<void>('/api/auth/logout', { method: 'POST' }, { signalExpiredSession: false }),
   },
   admin: {
+    feedback: () => request<AppFeedback[]>('/api/admin/feedback'),
     users: () => request<AdminUser[]>('/api/admin/users'),
     setUserDisabled: (userId: string, disabled: boolean) =>
       request<AdminUser>(`/api/admin/users/${encodeURIComponent(userId)}`, {
@@ -151,6 +153,12 @@ export const api = {
         body: JSON.stringify(values),
       }),
   },
+  submitFeedback: (message: string, submissionId: string) =>
+    request<{ id: string }>('/api/feedback', {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({ message, submission_id: submissionId }),
+    }),
   updateProfile: (payload: ProfileUpdateInput) =>
     request<User>('/api/profile', {
       method: 'PATCH',

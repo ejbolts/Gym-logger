@@ -1,7 +1,7 @@
 """Let each account store a profile photo.
 
-Revision ID: 0031_profile_photos
-Revises: 0030_username_accounts
+Revision ID: 0032_profile_photos
+Revises: 0031_app_feedback
 
 Photo files live under ``data/profile-photos/``. Downgrading drops only the column; the files
 stay on disk.
@@ -10,8 +10,8 @@ stay on disk.
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0031_profile_photos"
-down_revision = "0030_username_accounts"
+revision = "0032_profile_photos"
+down_revision = "0031_app_feedback"
 branch_labels = None
 depends_on = None
 

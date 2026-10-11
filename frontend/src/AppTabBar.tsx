@@ -24,6 +24,7 @@ export function AppTabBar({
   const renderTab = ({ tab, label, icon }: (typeof TABS)[number]) => (
     <button
       key={tab}
+      data-guide-target={tab === 'dashboard' ? 'today' : tab}
       type="button"
       className={`app-tab ${active === tab ? 'active' : ''}`}
       aria-current={active === tab ? 'page' : undefined}
@@ -40,6 +41,7 @@ export function AppTabBar({
       <button
         type="button"
         className={`app-tab app-tab-start ${live ? 'live' : ''}`}
+        data-guide-target="start"
         aria-label={live ? 'Resume active workout' : 'Start workout'}
         onClick={onStart}
       >

@@ -567,3 +567,9 @@ export interface ProfileUpdateInput {
   display_name?: string;
   username?: string;
 }
+export interface AppFeedback {
+  id: string;
+  username: string;
+  message: string;
+  created_at: string;
+}

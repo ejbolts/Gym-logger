@@ -794,7 +794,8 @@ def test_account_deletion_removes_everything_the_user_owns(client, other_client,
     assert row_counts(other_client.user["id"])["workouts"] == 1
 
 
-ACCOUNT_TABLES = {"user_sessions", "user_settings", "account_backups"}
+# These tables were introduced after accounts and require an owner from their first row.
+ACCOUNT_TABLES = {"user_sessions", "user_settings", "account_backups", "app_feedback"}
 
 
 def user_owned_tables():
