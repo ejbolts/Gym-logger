@@ -676,6 +676,10 @@ class PersonalRecord(Base):
     def exercise_name(self) -> str:
         return self.exercise.name
 
+    @property
+    def weight_kg(self) -> float | None:
+        return self.workout_set.weight_kg
+
     __table_args__ = (
         UniqueConstraint(
             "set_id", "record_type", "normalized_weight", name="uq_pr_set_type_weight"

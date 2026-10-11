@@ -17,6 +17,7 @@ import {
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { api } from './api';
+import { PrToast, type PrToastEntry } from './PrToast';
 import type {
   BodyMeasurement,
   BodyWeightGoal,
@@ -362,8 +363,8 @@ function prettyDate(value: string): string {
 
 function recordTypeLabel(type: PersonalRecord['record_type']): string {
   return {
-    weight: 'weight PR',
-    reps_at_weight: 'rep PR',
+    weight: 'Weight PR',
+    reps_at_weight: 'Volume PR',
     estimated_1rm: 'estimated 1RM PR',
     duration: 'duration PR',
     distance: 'distance PR',
@@ -372,11 +373,9 @@ function recordTypeLabel(type: PersonalRecord['record_type']): string {
 
 function WorkoutCompletionDialog({
   records,
-  personalRecords,
   onClose,
 }: {
   records: PersonalRecord[];
-  personalRecords: PersonalRecord[];
   onClose: () => void;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -436,8 +435,8 @@ function WorkoutCompletionDialog({
             <strong>{record.exercise_name}</strong>
             <span>
               {recordTypeLabel(record.record_type)} · {record.value} {record.unit}
-              {record.record_type === 'reps_at_weight' && record.normalized_weight !== null
-                ? ` @ ${record.normalized_weight} ${personalRecords.find((item) => item.exercise_id === record.exercise_id && (item.record_type === 'weight' || item.record_type === 'estimated_1rm'))?.unit ?? 'kg'}`
+              {record.record_type === 'reps_at_weight' && record.weight_kg != null
+                ? ` @ ${record.weight_kg} kg`
                 : ''}
             </span>
           </div>
@@ -755,10 +754,19 @@ export function App() {
     setTab(wasEditing || resumedId ? 'history' : 'dashboard', { replace: true });
     setEditingWorkout(null);
 
-    void api
-      .listPersonalRecords({ workoutId: saved.id })
-      .then(setCompletionRecords)
-      .catch(() => undefined);
+    if (!wasEditing) {
+      const signature = (record: PersonalRecord) =>
+        `${record.exercise_id}:${record.record_type}:${record.weight_kg ?? record.normalized_weight}:${record.record_type === 'weight' ? (record.weight_kg ?? record.value) : record.value}`;
+      const existing = new Set(
+        personalRecords.filter((record) => record.workout_id === resumedId).map(signature),
+      );
+      void api
+        .listPersonalRecords({ workoutId: saved.id })
+        .then((records) =>
+          setCompletionRecords(records.filter((record) => !existing.has(signature(record)))),
+        )
+        .catch(() => undefined);
+    }
     void refreshData({ silent: true, activityLabel: 'Updating workout data…' });
   }
 
@@ -977,7 +985,6 @@ export function App() {
       {completionRecords.length > 0 && (
         <WorkoutCompletionDialog
           records={completionRecords}
-          personalRecords={personalRecords}
           onClose={() => setCompletionRecords([])}
         />
       )}
@@ -1070,7 +1077,6 @@ export function App() {
                 initialWorkout={editingWorkout}
                 resumingWorkout={resumingWorkout}
                 currentBodyweight={measurements[0]?.weight_kg ?? null}
-                personalRecords={personalRecords}
                 historicalWorkouts={workouts}
                 restTimerEnabled={restTimerEnabled}
                 categoryColors={workoutTypeColors}
@@ -1800,7 +1806,6 @@ function WorkoutLogger({
   initialWorkout,
   resumingWorkout,
   currentBodyweight,
-  personalRecords,
   historicalWorkouts,
   restTimerEnabled,
   onExerciseHistory,
@@ -1820,7 +1825,6 @@ function WorkoutLogger({
   initialWorkout: TrackedWorkout | null;
   resumingWorkout: TrackedWorkout | null;
   currentBodyweight: number | null;
-  personalRecords: PersonalRecord[];
   historicalWorkouts: TrackedWorkout[];
   restTimerEnabled: boolean;
   onExerciseHistory: (exerciseId: string) => void;
@@ -2118,8 +2122,13 @@ function WorkoutLogger({
 
   const prBadges = useMemo(
     () =>
-      calculateDraftPrs(movements, personalRecords, historicalWorkouts, initialWorkout?.id ?? null),
-    [movements, personalRecords, historicalWorkouts, initialWorkout?.id],
+      calculateDraftPrs(
+        movements,
+        historicalWorkouts,
+        initialWorkout?.id ?? resumedWorkoutId,
+        workoutDate,
+      ),
+    [movements, historicalWorkouts, initialWorkout?.id, resumedWorkoutId, workoutDate],
   );
   const completedSetKeysRef = useRef(
     new Set(
@@ -2129,10 +2138,26 @@ function WorkoutLogger({
     ),
   );
   const [prConfettiBurst, setPrConfettiBurst] = useState(0);
+  const [prToastEntries, setPrToastEntries] = useState<PrToastEntry[]>([]);
+  const celebratedPrsRef = useRef(
+    new Set(
+      movements.flatMap((movement) =>
+        movement.sets.flatMap((item) => {
+          const labels = prBadges.get(movement.key)?.get(item.key);
+          return item.completed && labels
+            ? [
+                `${movement.exercise.id}:${item.key}:${labels.join(',')}:${item.weight_kg}:${item.reps}`,
+              ]
+            : [];
+        }),
+      ),
+    ),
+  );
+  const closePrToast = useCallback(() => setPrToastEntries([]), []);
 
   useEffect(() => {
     const completedSetKeys = new Set<string>();
-    let achievedNewPr = false;
+    const entries: PrToastEntry[] = [];
     movements.forEach((movement) => {
       movement.sets.forEach((item) => {
         if (!item.completed) return;
@@ -2141,12 +2166,25 @@ function WorkoutLogger({
           !completedSetKeysRef.current.has(item.key) &&
           prBadges.get(movement.key)?.has(item.key)
         ) {
-          achievedNewPr = true;
+          const labels = prBadges.get(movement.key)!.get(item.key)!;
+          const signature = `${movement.exercise.id}:${item.key}:${labels.join(',')}:${item.weight_kg}:${item.reps}`;
+          if (!celebratedPrsRef.current.has(signature)) {
+            celebratedPrsRef.current.add(signature);
+            entries.push({
+              exercise: movement.exercise.name,
+              labels,
+              reps: item.reps!,
+              weightKg: item.weight_kg!,
+            });
+          }
         }
       });
     });
     completedSetKeysRef.current = completedSetKeys;
-    if (achievedNewPr) setPrConfettiBurst((current) => current + 1);
+    if (entries.length) {
+      setPrConfettiBurst((current) => current + 1);
+      setPrToastEntries(entries);
+    }
   }, [movements, prBadges]);
   const recentExerciseIds = useMemo(() => {
     const seen = new Set<string>();
@@ -2561,6 +2599,7 @@ function WorkoutLogger({
 
   return (
     <section className="logger-screen content-page">
+      {prToastEntries.length > 0 && <PrToast entries={prToastEntries} onClose={closePrToast} />}
       {prConfettiBurst > 0 &&
         (motionReduced() ? null : (
           <ConfettiBurst key={prConfettiBurst} onComplete={() => setPrConfettiBurst(0)} />
@@ -5229,6 +5268,7 @@ const RANGE_LABELS: Record<BodyTrendRange, string> = {
 function ProgressScreen({
   exercises,
   measurements,
+  personalRecords,
   onOpenWorkout,
   embedded = false,
   initialExerciseId = null,
@@ -5237,6 +5277,7 @@ function ProgressScreen({
 }: {
   exercises: Exercise[];
   measurements: BodyMeasurement[];
+  personalRecords: PersonalRecord[];
   onOpenWorkout: (workoutId: string, exerciseId: string) => void;
   embedded?: boolean;
   initialExerciseId?: string | null;
@@ -5304,17 +5345,19 @@ function ProgressScreen({
     : null;
   const volumePoint = progress ? personalBestProgressPoint(progress.points, 'volume_kg') : null;
   const bodyweight = measurements[0]?.weight_kg ?? null;
-  const recordIds = useMemo(() => {
-    const ids = new Set<string>();
-    let best = 0;
-    for (const point of progressPointsForChart(progress?.points ?? [], 'estimated_1rm', 'all')) {
-      if (point.estimated_1rm > best) {
-        best = point.estimated_1rm;
-        ids.add(point.workout_id);
-      }
-    }
-    return ids;
-  }, [progress]);
+  const recordIds = useMemo(
+    () =>
+      new Set(
+        personalRecords
+          .filter(
+            (record) =>
+              record.exercise_id === exerciseId &&
+              (record.record_type === 'weight' || record.record_type === 'reps_at_weight'),
+          )
+          .map((record) => record.workout_id),
+      ),
+    [personalRecords, exerciseId],
+  );
   const sessionsNewestFirst = (progress?.points ?? []).slice().reverse();
   const formatMetric = (value: number) =>
     metric === 'volume_kg'
@@ -7896,6 +7939,7 @@ function HistoryScreen({
         <CachedTabPanel active={section === 'progress'}>
           <ProgressScreen
             exercises={exercises}
+            personalRecords={personalRecords}
             measurements={measurements}
             onOpenWorkout={(workoutId, exerciseId) => onOpenWorkout(workoutId, exerciseId)}
             embedded

@@ -1,0 +1,54 @@
+.pr-toast {
+  position: fixed;
+  z-index: 120;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(380px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid #a18132;
+  border-radius: 18px;
+  background: #242015;
+  color: #fff;
+  box-shadow: 0 8px 32px #0008;
+  pointer-events: auto;
+}
+
+.pr-toast-icon {
+  font-size: 26px;
+}
+.pr-toast > div {
+  flex: 1;
+  min-width: 0;
+}
+.pr-toast strong,
+.pr-toast span:not(.pr-toast-icon),
+.pr-toast small {
+  display: block;
+}
+.pr-toast strong {
+  color: #f4d477;
+  font-size: 16px;
+}
+.pr-toast span:not(.pr-toast-icon) {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.pr-toast small {
+  margin-top: 3px;
+  color: #d6caa9;
+  font-size: 12px;
+}
+.pr-toast button {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: #d6caa9;
+  font-size: 24px;
+  padding: 0 4px;
+  min-width: 28px;
+}

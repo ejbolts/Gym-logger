@@ -6,20 +6,24 @@ Rules:
 * A failed set counts toward muscle volume when at least one rep was completed,
   but is PR eligible only when its configured target reps were completed.
 * Primary and secondary muscle contributions default to 1.0 and 0.5.
-* Stored weights are canonical kilograms; PR comparison buckets are rounded to
-  0.1 in the user's preferred display unit.
+* Weight PRs beat the exercise's heaviest completed working set. Volume PRs beat
+  its best reps at the same weight. First attempts establish a baseline.
+* PRs compare canonical kilograms rounded to four decimals, independently of
+  display units. Estimated 1RM remains a progress metric, not a PR trigger.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, timedelta
+from math import floor
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
 from .models import (
     Exercise,
+    ExerciseKind,
     ExerciseMuscleContribution,
     MuscleRole,
     PersonalRecord,
@@ -319,26 +323,36 @@ def rebuild_personal_records(db: Session, user_id: str) -> None:
             )
         )
     )
-    state: dict[str, dict[str, object]] = defaultdict(
-        lambda: {"weight": -1.0, "e1rm": -1.0, "duration": -1.0, "distance": -1.0, "reps": {}}
-    )
+    state: dict[str, dict[str, object]] = defaultdict(lambda: {"weight": -1.0, "reps": {}})
     for workout in workouts:
         for movement in sorted(workout.movements, key=lambda item: item.order_index):
+            if movement.exercise.kind != ExerciseKind.STRENGTH:
+                continue
             current = state[movement.exercise_id]
             for item in sorted(movement.sets, key=lambda set_item: set_item.order_index):
-                if not is_pr_eligible(item):
+                if (
+                    not is_pr_eligible(item)
+                    or item.weight_kg is None
+                    or item.reps is None
+                    or item.reps <= 0
+                ):
                     continue
-                weight = (
-                    normalized_weight(item.weight_kg, unit) if item.weight_kg is not None else None
-                )
-                if weight is not None and weight > float(current["weight"]):
-                    current["weight"] = weight
+                weight = floor(item.weight_kg * 10_000 + 0.5) / 10_000
+                display_weight = normalized_weight(item.weight_kg, unit)
+                if float(current["weight"]) >= 0 and weight > float(current["weight"]):
                     db.add(
                         _pr(
-                            workout, movement, item, PersonalRecordType.WEIGHT, weight, unit, weight
+                            workout,
+                            movement,
+                            item,
+                            PersonalRecordType.WEIGHT,
+                            display_weight,
+                            unit,
+                            display_weight,
                         )
                     )
-                if weight is not None and item.reps is not None:
+                current["weight"] = max(float(current["weight"]), weight)
+                if item.reps is not None:
                     rep_bests = current["reps"]
                     assert isinstance(rep_bests, dict)
                     previous_reps = rep_bests.get(weight)
@@ -351,54 +365,10 @@ def rebuild_personal_records(db: Session, user_id: str) -> None:
                                 PersonalRecordType.REPS_AT_WEIGHT,
                                 float(item.reps),
                                 "reps",
-                                weight,
+                                display_weight,
                             )
                         )
                     rep_bests[weight] = max(int(previous_reps or 0), item.reps)
-                    e1rm_kg = estimated_one_rep_max(item.weight_kg or 0, item.reps)
-                    e1rm = normalized_weight(e1rm_kg, unit)
-                    if e1rm and e1rm > float(current["e1rm"]):
-                        current["e1rm"] = e1rm
-                        db.add(
-                            _pr(
-                                workout,
-                                movement,
-                                item,
-                                PersonalRecordType.ESTIMATED_1RM,
-                                e1rm,
-                                unit,
-                                weight,
-                                EPLEY_FORMULA,
-                            )
-                        )
-                if item.duration_seconds is not None and item.duration_seconds > float(
-                    current["duration"]
-                ):
-                    current["duration"] = float(item.duration_seconds)
-                    db.add(
-                        _pr(
-                            workout,
-                            movement,
-                            item,
-                            PersonalRecordType.DURATION,
-                            float(item.duration_seconds),
-                            "seconds",
-                            weight,
-                        )
-                    )
-                if item.distance_km is not None and item.distance_km > float(current["distance"]):
-                    current["distance"] = float(item.distance_km)
-                    db.add(
-                        _pr(
-                            workout,
-                            movement,
-                            item,
-                            PersonalRecordType.DISTANCE,
-                            float(item.distance_km),
-                            "km",
-                            weight,
-                        )
-                    )
     db.flush()
 
 

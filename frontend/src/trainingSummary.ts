@@ -362,13 +362,12 @@ export function weekGroupLabel(weekStart: string, today: string, weekStartDay: n
 export function recentStrengthRecords(records: PersonalRecord[], limit = 3): PersonalRecord[] {
   const seen = new Set<string>();
   return records
-    .filter((record) => record.record_type === 'estimated_1rm' || record.record_type === 'weight')
+    .filter((record) => record.record_type === 'reps_at_weight' || record.record_type === 'weight')
     .filter((record) => record.value > 0)
     .sort(
       (left, right) =>
         right.achieved_date.localeCompare(left.achieved_date) ||
-        (left.record_type === 'estimated_1rm' ? -1 : 1) -
-          (right.record_type === 'estimated_1rm' ? -1 : 1) ||
+        (left.record_type === 'weight' ? -1 : 1) - (right.record_type === 'weight' ? -1 : 1) ||
         right.value - left.value,
     )
     .filter((record) => {
@@ -384,7 +383,7 @@ export function recentStrengthRecords(records: PersonalRecord[], limit = 3): Per
 export function recordCountsByWorkout(records: PersonalRecord[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const record of records) {
-    if (record.record_type !== 'estimated_1rm' && record.record_type !== 'weight') continue;
+    if (record.record_type !== 'reps_at_weight' && record.record_type !== 'weight') continue;
     counts.set(record.workout_id, (counts.get(record.workout_id) ?? 0) + 1);
   }
   return counts;

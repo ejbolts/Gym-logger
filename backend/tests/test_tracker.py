@@ -1028,8 +1028,7 @@ def test_pr_types_warmups_failed_sets_and_unit_conversion(client):
     first = client.post("/api/workouts", json=payload)
     assert first.status_code == 201
     records = client.get("/api/personal-records").json()
-    assert {item["record_type"] for item in records} == {"weight", "estimated_1rm"}
-    assert {item["normalized_weight"] for item in records} == {100.0}
+    assert records == []  # The first eligible set establishes the baseline.
 
     payload["workout_date"] = (date.today() + timedelta(days=1)).isoformat()
     payload["movements"][0]["sets"] = [{"reps": 6, "weight_kg": 100, "completed": True}]
@@ -1037,19 +1036,20 @@ def test_pr_types_warmups_failed_sets_and_unit_conversion(client):
     second_records = client.get(
         "/api/personal-records", params={"workout_id": second.json()["id"]}
     ).json()
-    assert {item["record_type"] for item in second_records} == {"reps_at_weight", "estimated_1rm"}
+    assert {item["record_type"] for item in second_records} == {"reps_at_weight"}
 
+    payload["workout_date"] = (date.today() + timedelta(days=2)).isoformat()
+    payload["movements"][0]["sets"] = [{"reps": 1, "weight_kg": 102.5, "completed": True}]
+    heavier = client.post("/api/workouts", json=payload).json()
     preferences = {"preferred_weight_unit": "lb", "week_start": "monday", "zone2_goal_minutes": 150}
     assert client.put("/api/training-preferences", json=preferences).status_code == 200
-    converted = client.get(
-        "/api/personal-records", params={"workout_id": first.json()["id"]}
-    ).json()
+    converted = client.get("/api/personal-records", params={"workout_id": heavier["id"]}).json()
     weight_record = next(item for item in converted if item["record_type"] == "weight")
     assert weight_record["unit"] == "lb"
-    assert weight_record["value"] == 220.5
+    assert weight_record["value"] == 226.0
 
 
-def test_estimated_1rm_pr_tracks_new_high_across_different_weights_and_reps(client):
+def test_estimated_1rm_remains_a_progress_metric_without_awarding_prs(client):
     bench = next(
         item
         for item in client.get("/api/exercises").json()
@@ -1076,18 +1076,13 @@ def test_estimated_1rm_pr_tracks_new_high_across_different_weights_and_reps(clie
         assert response.status_code == 200
         return response.json()
 
-    first_1rm = [item for item in records_for(first) if item["record_type"] == "estimated_1rm"]
-    assert len(first_1rm) == 1
-    assert first_1rm[0]["value"] == 126.7  # Epley: 100 * (1 + 8/30)
-    assert first_1rm[0]["formula"] is not None
-
-    assert not any(item["record_type"] == "estimated_1rm" for item in records_for(lower))
+    assert records_for(first) == []
+    assert records_for(lower) == []
     higher_records = records_for(higher)
-    assert {item["record_type"] for item in higher_records} == {"reps_at_weight", "estimated_1rm"}
-    higher_1rm = next(item for item in higher_records if item["record_type"] == "estimated_1rm")
-    assert higher_1rm["value"] == 129.0  # Epley: 90 * (1 + 13/30)
-    assert higher_1rm["normalized_weight"] == 90.0
-    assert not any(item["record_type"] == "estimated_1rm" for item in records_for(tied))
+    assert {item["record_type"] for item in higher_records} == {"reps_at_weight"}
+    assert higher_records[0]["value"] == 13
+    assert higher_records[0]["normalized_weight"] == 90.0
+    assert records_for(tied) == []
 
     progress = client.get(f"/api/progress/{bench['id']}").json()
     assert [point["estimated_1rm"] for point in progress["points"]] == [126.7, 126.0, 129.0, 129.0]
@@ -1112,7 +1107,7 @@ def test_progress_1rm_excludes_sets_that_cannot_earn_a_pr(client):
     progress = client.get(f"/api/progress/{bench['id']}").json()
     assert progress["personal_best_estimated_1rm"] == 129.0
     records = client.get("/api/personal-records", params={"exercise_id": bench["id"]}).json()
-    assert max(item["value"] for item in records if item["record_type"] == "estimated_1rm") == 129.0
+    assert records == []
 
 
 def test_fractional_muscle_volume_and_pr_rebuild_after_edit_delete(client):
@@ -1125,26 +1120,20 @@ def test_fractional_muscle_volume_and_pr_rebuild_after_edit_delete(client):
     payload["movements"][0]["sets"] = [
         {"reps": 10, "weight_kg": 20, "set_type": "warmup", "completed": True},
         {"reps": 5, "weight_kg": 100, "completed": True},
+        {"reps": 6, "weight_kg": 100, "completed": True},
     ]
     created = client.post("/api/workouts", json=payload).json()
     totals = {
         item["muscle_name"]: item["set_total"] for item in client.get("/api/muscle-volume").json()
     }
-    assert totals == {"Front delts": 0.5, "Pectorals": 1.0, "Triceps": 0.5}
+    assert totals == {"Front delts": 1.0, "Pectorals": 2.0, "Triceps": 1.0}
     original_count = len(client.get("/api/personal-records").json())
     assert client.put(f"/api/workouts/{created['id']}", json=payload).status_code == 200
     assert len(client.get("/api/personal-records").json()) == original_count
 
     payload["movements"][0]["sets"] = [{"reps": 5, "weight_kg": 80, "completed": True}]
     assert client.put(f"/api/workouts/{created['id']}", json=payload).status_code == 200
-    assert (
-        max(
-            item["value"]
-            for item in client.get("/api/personal-records").json()
-            if item["record_type"] == "weight"
-        )
-        == 80
-    )
+    assert client.get("/api/personal-records").json() == []
     assert client.delete(f"/api/workouts/{created['id']}").status_code == 204
     assert client.get("/api/personal-records").json() == []
 

@@ -1,119 +1,70 @@
-import type { PersonalRecord, TrackedWorkout } from './types';
+import type { TrackedWorkout, WorkoutSetInput } from './types';
 import type { WorkoutDraftMovement as DraftMovement } from './workoutMovements';
+
+// Compare canonical kilograms, independently of the preferred display unit.
+// Four decimals absorb conversion noise without merging distinct plate weights.
+export const prWeight = (weightKg: number) => Math.round(weightKg * 10_000) / 10_000;
+
+export function isStrengthPrEligible(item: WorkoutSetInput): boolean {
+  return (
+    item.completed &&
+    item.set_type !== 'warmup' &&
+    !item.warmup &&
+    item.weight_kg !== null &&
+    Number.isFinite(item.weight_kg) &&
+    item.weight_kg >= 0 &&
+    item.reps !== null &&
+    Number.isFinite(item.reps) &&
+    item.reps > 0 &&
+    (!item.failed || (item.target_reps != null && item.reps >= item.target_reps))
+  );
+}
 
 export function calculateDraftPrs(
   movements: DraftMovement[],
-  records: PersonalRecord[],
   historicalWorkouts: TrackedWorkout[],
   excludedWorkoutId: string | null,
+  workoutDate: string,
 ): Map<string, Map<string, string[]>> {
-  type State = {
-    weight: number;
-    e1rm: number;
-    duration: number;
-    distance: number;
-    reps: Map<number, number>;
-    unit: 'kg' | 'lb';
-  };
+  type State = { weight: number; reps: Map<number, number> };
   const states = new Map<string, State>();
-  for (const record of records.filter((item) => item.workout_id !== excludedWorkoutId)) {
-    const state = states.get(record.exercise_id) ?? {
-      weight: -1,
-      e1rm: -1,
-      duration: -1,
-      distance: -1,
-      reps: new Map(),
-      unit: record.unit === 'lb' ? 'lb' : 'kg',
-    };
-    if (record.record_type === 'weight') state.weight = Math.max(state.weight, record.value);
-    if (record.record_type === 'estimated_1rm') state.e1rm = Math.max(state.e1rm, record.value);
-    if (record.record_type === 'duration') state.duration = Math.max(state.duration, record.value);
-    if (record.record_type === 'distance') state.distance = Math.max(state.distance, record.value);
-    if (record.record_type === 'reps_at_weight' && record.normalized_weight !== null)
-      state.reps.set(
-        record.normalized_weight,
-        Math.max(state.reps.get(record.normalized_weight) ?? -1, record.value),
-      );
-    states.set(record.exercise_id, state);
-  }
-  for (const workout of historicalWorkouts.filter((item) => item.id !== excludedWorkoutId)) {
+  const excluded = historicalWorkouts.find((workout) => workout.id === excludedWorkoutId);
+  const priorWorkouts = historicalWorkouts.filter(
+    (workout) =>
+      workout.id !== excludedWorkoutId &&
+      (workout.workout_date < workoutDate ||
+        (workout.workout_date === workoutDate &&
+          (!excluded || workout.created_at < excluded.created_at))),
+  );
+
+  // History is the baseline: PR rows alone omit first attempts at each weight.
+  for (const workout of priorWorkouts) {
     for (const movement of workout.movements) {
-      const state = states.get(movement.exercise.id) ?? {
-        weight: -1,
-        e1rm: -1,
-        duration: -1,
-        distance: -1,
-        reps: new Map(),
-        unit: 'kg' as const,
-      };
+      if (movement.exercise.kind !== 'strength') continue;
+      const state = states.get(movement.exercise.id) ?? { weight: -1, reps: new Map() };
       for (const item of movement.sets) {
-        if (!item.completed || item.set_type === 'warmup' || item.warmup) continue;
-        if (item.failed && (item.target_reps === null || (item.reps ?? 0) < item.target_reps))
-          continue;
-        if (item.weight_kg !== null && item.reps !== null) {
-          const weight =
-            Math.round(item.weight_kg * (state.unit === 'lb' ? 2.2046226218 : 1) * 10) / 10;
-          state.reps.set(weight, Math.max(state.reps.get(weight) ?? 0, item.reps));
-        }
+        if (!isStrengthPrEligible(item)) continue;
+        const weight = prWeight(item.weight_kg!);
+        state.weight = Math.max(state.weight, weight);
+        state.reps.set(weight, Math.max(state.reps.get(weight) ?? 0, item.reps!));
       }
       states.set(movement.exercise.id, state);
     }
   }
+
   const result = new Map<string, Map<string, string[]>>();
   for (const movement of movements) {
-    const state = states.get(movement.exercise.id) ?? {
-      weight: -1,
-      e1rm: -1,
-      duration: -1,
-      distance: -1,
-      reps: new Map(),
-      unit: 'kg' as const,
-    };
+    const state = states.get(movement.exercise.id) ?? { weight: -1, reps: new Map() };
     const badges = new Map<string, string[]>();
     for (const item of movement.sets) {
+      if (movement.exercise.kind !== 'strength' || !isStrengthPrEligible(item)) continue;
+      const weight = prWeight(item.weight_kg!);
       const labels: string[] = [];
-      const eligible =
-        item.completed &&
-        item.set_type !== 'warmup' &&
-        !item.warmup &&
-        (!item.failed || (item.target_reps != null && (item.reps ?? 0) >= item.target_reps));
-      if (!eligible) continue;
-      const weight =
-        item.weight_kg === null
-          ? null
-          : Math.round(item.weight_kg * (state.unit === 'lb' ? 2.2046226218 : 1) * 10) / 10;
-      if (weight !== null && weight > state.weight) {
-        state.weight = weight;
-        labels.push('Weight PR');
-      }
-      if (weight !== null && item.reps !== null) {
-        const previousReps = state.reps.get(weight);
-        if (previousReps !== undefined && item.reps > previousReps) {
-          labels.push(`Rep PR @ ${weight} ${state.unit}`);
-        }
-        state.reps.set(weight, Math.max(previousReps ?? 0, item.reps));
-        if (item.reps >= 1 && item.reps <= 30) {
-          const e1rm =
-            Math.round(
-              (item.weight_kg ?? 0) *
-                (1 + item.reps / 30) *
-                (state.unit === 'lb' ? 2.2046226218 : 1) *
-                10,
-            ) / 10;
-          if (e1rm > state.e1rm) {
-            state.e1rm = e1rm;
-            labels.push('Estimated 1RM PR');
-          }
-        }
-      }
-      if ((item.duration_seconds ?? -1) > state.duration) {
-        state.duration = item.duration_seconds ?? -1;
-        labels.push('Duration PR');
-      }
-      if ((item.distance_km ?? -1) > state.distance) {
-        state.distance = item.distance_km ?? -1;
-        labels.push('Distance PR');
-      }
+      if (state.weight >= 0 && weight > state.weight) labels.push('Weight PR');
+      const previousReps = state.reps.get(weight);
+      if (previousReps !== undefined && item.reps! > previousReps) labels.push('Volume PR');
+      state.weight = Math.max(state.weight, weight);
+      state.reps.set(weight, Math.max(previousReps ?? 0, item.reps!));
       if (labels.length) badges.set(item.key, labels);
     }
     states.set(movement.exercise.id, state);
