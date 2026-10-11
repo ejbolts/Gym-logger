@@ -12,7 +12,7 @@
     "See illustrated release announcements and open their screenshots full size.",
     "Earn a Weight PR only for a new heavier completed working set for that exercise.",
     "Earn a Volume PR only for more reps at the same previously logged weight; first attempts establish a baseline.",
-    "See a brief popup naming the PR and set. Ties, warmups, incomplete sets and estimated 1RM increases no longer trigger false celebrations."
+    "See a five-second popup naming the PR and set, with a blue countdown bar. Ties, warmups, incomplete sets and estimated 1RM increases no longer trigger false celebrations."
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
   "image": {

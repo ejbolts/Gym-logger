@@ -2139,6 +2139,7 @@ function WorkoutLogger({
   );
   const [prConfettiBurst, setPrConfettiBurst] = useState(0);
   const [prToastEntries, setPrToastEntries] = useState<PrToastEntry[]>([]);
+  const [prToastId, setPrToastId] = useState(0);
   const celebratedPrsRef = useRef(
     new Set(
       movements.flatMap((movement) =>
@@ -2183,6 +2184,7 @@ function WorkoutLogger({
     completedSetKeysRef.current = completedSetKeys;
     if (entries.length) {
       setPrConfettiBurst((current) => current + 1);
+      setPrToastId((current) => current + 1);
       setPrToastEntries(entries);
     }
   }, [movements, prBadges]);
@@ -2599,7 +2601,9 @@ function WorkoutLogger({
 
   return (
     <section className="logger-screen content-page">
-      {prToastEntries.length > 0 && <PrToast entries={prToastEntries} onClose={closePrToast} />}
+      {prToastEntries.length > 0 && (
+        <PrToast key={`pr-toast-${prToastId}`} entries={prToastEntries} onClose={closePrToast} />
+      )}
       {prConfettiBurst > 0 &&
         (motionReduced() ? null : (
           <ConfettiBurst key={prConfettiBurst} onComplete={() => setPrConfettiBurst(0)} />

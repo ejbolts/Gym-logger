@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import './prToast.css';
 
 export interface PrToastEntry {
@@ -8,7 +9,7 @@ export interface PrToastEntry {
   weightKg: number;
 }
 
-export const PR_TOAST_MS = 3500;
+export const PR_TOAST_MS = 5000;
 
 export function PrToast({ entries, onClose }: { entries: PrToastEntry[]; onClose: () => void }) {
   useEffect(() => {
@@ -17,11 +18,17 @@ export function PrToast({ entries, onClose }: { entries: PrToastEntry[]; onClose
   }, [entries, onClose]);
 
   return (
-    <aside className="pr-toast" role="status" aria-live="polite" aria-atomic="true">
+    <aside
+      className="pr-toast"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      style={{ '--pr-toast-duration': `${PR_TOAST_MS}ms` } as CSSProperties}
+    >
       <span className="pr-toast-icon" aria-hidden="true">
         🏆
       </span>
-      <div>
+      <div className="pr-toast-copy">
         {entries.map((entry, index) => (
           <div key={index}>
             <strong>{entry.labels.join(' + ')}</strong>
@@ -35,6 +42,9 @@ export function PrToast({ entries, onClose }: { entries: PrToastEntry[]; onClose
       <button type="button" onClick={onClose} aria-label="Dismiss personal record popup">
         ×
       </button>
+      <span className="pr-toast-countdown" aria-hidden="true">
+        <span className="pr-toast-countdown-fill" />
+      </span>
     </aside>
   );
 }
