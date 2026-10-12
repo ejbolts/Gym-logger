@@ -49,6 +49,7 @@ import type {
 import { cachedWorkoutsForRevision, readWorkoutCache, writeWorkoutCache } from './workoutCache';
 import { dateRangeQuery, type DateRange } from './dateRanges';
 import { emitAuthExpired, NOT_AUTHENTICATED_CODE } from './authEvents';
+import type { HomeLayout } from './homeLayout';
 
 export class ApiError extends Error {
   constructor(
@@ -390,6 +391,13 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getTrainingPreferences: () => request<TrainingPreferences>('/api/training-preferences'),
+  getHomeLayout: () => request<HomeLayout>('/api/home-layout'),
+  saveHomeLayout: (layout: HomeLayout) =>
+    request<HomeLayout>('/api/home-layout', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(layout),
+    }),
   getWorkoutTypeColors: () => request<WorkoutTypeColors>('/api/workout-type-colors'),
   updateWorkoutTypeColors: (colors: WorkoutTypeColors) =>
     request<WorkoutTypeColors>('/api/workout-type-colors', {

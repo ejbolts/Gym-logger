@@ -8036,7 +8036,6 @@ function HistoryScreen({
           >
             <header className="pulse-card-header">
               <h2>Calendar</h2>
-              <span>Sets per week · swipe for earlier months</span>
             </header>
             <InteractiveWorkoutCalendar
               entries={heatmap}
