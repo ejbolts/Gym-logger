@@ -5,11 +5,12 @@
 This coordinated release includes custom exercise labels (#23), weight and volume records (#24), profile sharing and follow requests (#25), and Home card editing (#26), together with the previously pending guide, feedback and profile-photo improvements. The release is **0.5.3** for the whole batch, as requested; the earlier 0.4.0, 0.4.1 and 0.5.0 proposals were unpublished and are consolidated here.
 
 - Exercises you create show a small **Custom** label under their name in **Select Exercise**, on the exercise card in a workout, and in the **Progress** exercise search. Built-in exercises are unchanged.
-- Custom exercises stay private to the account that created them. Other accounts cannot find them in search, open their progress or favorite them, and can still create their own exercise with the same name.
+- Custom exercises belong to the creator's exercise library. Other accounts cannot find them in their own search, open the creator's personal progress or favorite them, and can still create an exercise with the same name. Exercise names in workouts you choose to share follow your profile-sharing rules.
 
-<img src="screenshots/releases/0.4.1-custom-exercise-label.png" alt="Select Exercise search results for press, where Landmine Press shows a small blue Custom label between its name and its Shoulders and Barbell tags." width="390">
+<img src="screenshots/releases/0.5.3-custom-exercise-label.png" alt="Select Exercise search results for press, where Landmine Press shows a small blue Custom label between its name and its Shoulders and Barbell tags." width="390">
 
 A sample account's custom Landmine Press in the exercise picker, captured at phone width in the isolated verification environment.
+
 - Choose who can see your profile in **Profile > Profile sharing**: **Private** (only you, the default for every account), **Friends only** (followers you approve) or **Public** (every member who shares). Only members who share their own profile can see or follow others.
 - **Follow** a public profile straight away, or **Request to follow** a friends-only one. Requests wait under **Follow requests** in **Shared profiles**, where you **Approve** or **Decline** them; **Profile** shows how many are waiting. **Your followers** lists who follows you, with **Remove**. You can cancel a request or **Unfollow** from someone's profile at any time. Making your profile public approves waiting requests.
 - Your **workouts** and **profile photo** are always shared with anyone who can see your profile. A friends-only profile shows only its name and photo until you are approved. Choose separately whether to add **Machine photos** (photos pinned to exercises in your shared workouts), **Body weight** (weigh-ins, body fat and body weight logged with sets), **Goals** (your body-weight goal and weekly Zone 2 target), **Cardio sessions** and **Notes** (including saved video links). While private, choices are a draft until you choose **Share with friends** or **Make my profile public**; afterwards each change saves straight away.
@@ -21,26 +22,28 @@ A sample account's custom Landmine Press in the exercise picker, captured at pho
 
 Choose who can see your profile. Workouts and your profile photo are always shared; the rest is optional.
 
-<img src="screenshots/releases/0.5.0-shared-profiles.png" alt="Shared profiles with a follow request waiting for approval, a public profile you follow, a friends-only profile you follow, and a friends-only member who follows you with a Request to follow button." width="390">
+<img src="screenshots/releases/0.5.3-shared-profiles.png" alt="Shared profiles with a follow request waiting for approval, a public profile you follow, a friends-only profile you follow, and a friends-only member who follows you with a Request to follow button." width="390">
 
 Approve follow requests and follow other members. Friends-only profiles stay locked until their owner approves you.
 
 <img src="screenshots/releases/0.5.0-shared-machine-photo.png" alt="A shared workout from a public member, expanded to show a pinned machine photo opened full size." width="390">
 
 A shared machine photo inside another member's workout. All captures use fictional sample accounts in the isolated mobile verification environment.
+
 - **Weight PR** means a new heavier completed working set for that exercise. **Volume PR** means more reps in one set at the same previously logged weight for that exercise, including zero added weight. Each exercise and weight has its own baseline; first attempts, ties, lower results and extra total sets do not earn a PR.
 - A dismissible **five-second** popup names **Volume PR** or **Weight PR**, the exercise, reps and weight when you complete a record set. A blue bar along its bottom counts down to automatic dismissal and starts fresh for each new record. Existing records do not celebrate again when you reopen, toggle or save an unchanged workout. History, Today and Progress use the same two record types.
 - Warmups, incomplete sets, zero reps and failed sets below their configured rep target cannot earn records. Drop sets and failed sets that meet their target remain eligible. Kilogram/pound display preferences do not change comparisons. Backdated workouts, edits and deletions rebuild the derived records in date order.
 - Estimated 1RM remains available in Progress, but estimated 1RM, duration and distance increases no longer award PRs. Existing derived PRs are recalculated on backend startup; original workout records are preserved. No database migration is required.
 
-<img src="screenshots/releases/0.4.0-volume-weight-prs.png" alt="Workout logger showing a Volume PR popup for nine bench press reps at 100 kg." width="390">
+<img src="screenshots/releases/0.5.3-volume-weight-prs.png" alt="Workout logger showing a Volume PR popup for ten bench press reps at 100 kg, alongside a Custom exercise label." width="390">
 
-The five-second Volume PR popup with its blue countdown bar, captured in an isolated phone-width environment with synthetic workout records.
+The five-second Volume PR popup with its blue countdown bar and the Custom exercise label in the combined 0.5.3 build. The new 0.5.3 screenshots use fictional accounts and synthetic records on MainPC's isolated 8447 verification route. Earlier guide, sharing-option and machine-photo screenshots are retained from their original feature verification.
+
 - Choose the **pencil icon** on **Today** to arrange the actual Home cards directly. Cards gently wiggle like iOS Home Screen icons, with a **drag handle at the top right** and a **minus button at the top left**. Drag a handle with a mouse or touch, or focus it and use the keyboard arrow keys. Minus hides its card; **Add sections** restores hidden cards in their saved positions. This replaces the separate reorder list. It includes the individual weekly stat boxes, next workout, consistency calendar, muscle sets, cardio goal, bodyweight trend, daily check-in and recent records. Card actions are disabled while editing, and both system and in-app reduced-motion settings turn off the wiggle.
 - **Save layout** keeps the arrangement in your account across devices and sign-ins. **Cancel** discards edits, and **Reset layout** restores the original order with every section visible before saving. Save failures keep your edits for retry. An active workout's **Resume** card always stays visible even when the next-workout section is hidden. Hiding cards does not delete data or remove the other navigation tabs. Layout preferences use existing account settings and backups; no database migration is required.
 - The **History** calendar header no longer shows "Sets per week · swipe for earlier months". Month scrolling and weekly set totals remain available.
 
-<img src="screenshots/releases/0.4.0-home-layout.png" alt="Today in edit mode with the actual workout and stat cards, minus buttons at the top left, drag handles at the top right, Save layout, Cancel and Add sections." width="390">
+<img src="screenshots/releases/0.5.3-home-layout.png" alt="Today in edit mode with the actual workout and stat cards, minus buttons at the top left, drag handles at the top right, Save layout, Cancel and Add sections." width="390">
 
 Arrange the cards directly while they gently wiggle, and restore hidden cards from Add sections. Captured with an isolated sample account at phone width; the wiggle respects reduced-motion settings.
 
