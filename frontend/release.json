@@ -10,5 +10,9 @@
     "Recognise exercises you created by their Custom label in the picker, workout cards and Progress.",
     "Explore the feature tour, Home Screen help, private feedback forms and profile photos."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#053"
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#053",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/c567cd34d5d3c2664a6274e5e0d4e3c314ccc0d7/docs/screenshots/releases/0.4.0-home-layout.png",
+    "alt": "Home editing with the actual workout and stat cards, drag handles, hide buttons, Save layout and Cancel."
+  }
 }
