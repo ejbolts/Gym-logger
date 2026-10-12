@@ -1,11 +1,31 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { authErrorMessage } from './authForm';
-import type { SharingChoices } from './types';
+import { VISIBILITY_LABELS } from './sharedProfileDisplay';
+import type { ProfileVisibility, SharingChoices, SharingSettings } from './types';
 
-type OptionalChoice = Exclude<keyof SharingChoices, 'enabled'>;
+type OptionalChoice = Exclude<keyof SharingChoices, 'visibility'>;
+
+const VISIBILITY_OPTIONS: Array<{ value: ProfileVisibility; description: string }> = [
+  { value: 'private', description: 'Only you. You cannot see or follow other members.' },
+  {
+    value: 'followers',
+    description: 'Followers you approve. Others see only your name and photo.',
+  },
+  { value: 'public', description: 'Every member who shares. Anyone sharing can follow you.' },
+];
+
+const ALWAYS_SHARED = [
+  { label: 'Workouts', description: 'Exercises, sets, dates and durations' },
+  { label: 'Profile photo', description: 'Shown with your name, even before someone follows you' },
+];
 
 const SHARING_OPTIONS: Array<{ key: OptionalChoice; label: string; description: string }> = [
+  {
+    key: 'share_machine_photos',
+    label: 'Machine photos',
+    description: 'Photos pinned to exercises in your shared workouts',
+  },
   {
     key: 'share_body_weight',
     label: 'Body weight',
@@ -26,34 +46,46 @@ const SHARING_OPTIONS: Array<{ key: OptionalChoice; label: string; description: 
     label: 'Notes',
     description: 'Workout, exercise, set and cardio notes, including saved video links',
   },
-  {
-    key: 'share_profile_photo',
-    label: 'Profile photo',
-    description: 'Show your photo instead of your initial',
-  },
 ];
 
-const NOT_SHARING: SharingChoices = {
-  enabled: false,
+const VISIBILITY_SAVED: Record<ProfileVisibility, string> = {
+  private: 'Your profile is private. Nobody else can see it.',
+  followers: 'Your profile is shared with followers you approve.',
+  public: 'Your profile is public to every member who shares.',
+};
+
+const PRIVATE_DEFAULTS: SharingChoices = {
+  visibility: 'private',
   share_notes: false,
   share_cardio: false,
   share_body_weight: false,
   share_goals: false,
-  share_profile_photo: false,
+  share_machine_photos: false,
 };
+
+function choicesFrom(settings: SharingSettings): SharingChoices {
+  return {
+    visibility: settings.visibility,
+    share_notes: settings.share_notes,
+    share_cardio: settings.share_cardio,
+    share_body_weight: settings.share_body_weight,
+    share_goals: settings.share_goals,
+    share_machine_photos: settings.share_machine_photos,
+  };
+}
 
 function Spinner() {
   return <span className="auth-spinner" aria-hidden="true" />;
 }
 
-/** Profile's sharing section: what to share, and the agreement that unlocks other profiles. */
+/** Profile's sharing section: who can see the profile, and what it shares. */
 export function ProfileSharingPanel({
   onOpenSharedProfiles,
 }: {
   onOpenSharedProfiles: () => void;
 }) {
-  const [saved, setSaved] = useState<SharingChoices | null>(null);
-  const [draft, setDraft] = useState<SharingChoices>(NOT_SHARING);
+  const [saved, setSaved] = useState<SharingSettings | null>(null);
+  const [draft, setDraft] = useState<SharingChoices>(PRIVATE_DEFAULTS);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -64,10 +96,10 @@ export function ProfileSharingPanel({
     let cancelled = false;
     api.sharing
       .choices()
-      .then((choices) => {
+      .then((settings) => {
         if (cancelled) return;
-        setSaved(choices);
-        setDraft(choices);
+        setSaved(settings);
+        setDraft(choicesFrom(settings));
         setLoadError(null);
       })
       .catch((reason: unknown) => {
@@ -78,35 +110,38 @@ export function ProfileSharingPanel({
     };
   }, [attempt]);
 
+  const sharing = saved !== null && saved.visibility !== 'private';
+
   async function save(next: SharingChoices, message: string) {
     if (saving) return;
     setSaving(true);
+    setDraft(next);
     setStatus(null);
     setError(null);
     try {
       const stored = await api.sharing.updateChoices(next);
       setSaved(stored);
-      setDraft(stored);
+      setDraft(choicesFrom(stored));
       setStatus(message);
     } catch (reason) {
-      setDraft(saved ?? NOT_SHARING);
+      setDraft(saved ? choicesFrom(saved) : PRIVATE_DEFAULTS);
       setError(authErrorMessage(reason));
     } finally {
       setSaving(false);
     }
   }
 
-  function toggle(key: OptionalChoice) {
-    const next = { ...draft, [key]: !draft[key] };
-    // Before agreeing, choices are only a draft; once sharing, each change saves at once.
-    if (saved?.enabled) void save(next, 'Sharing choices saved.');
+  // While private, choices are a draft until the owner agrees to share; afterwards each
+  // change saves at once.
+  function change(next: SharingChoices, message: string) {
+    if (sharing) void save(next, message);
     else {
       setDraft(next);
       setStatus(null);
     }
   }
 
-  const sharing = saved?.enabled === true;
+  const requests = saved?.pending_requests ?? 0;
 
   return (
     <section
@@ -121,14 +156,13 @@ export function ProfileSharingPanel({
         </div>
         {saved && (
           <span className={`sharing-state ${sharing ? 'is-on' : ''}`}>
-            {sharing ? 'Sharing' : 'Private'}
+            {VISIBILITY_LABELS[saved.visibility]}
           </span>
         )}
       </header>
       <p>
-        {sharing
-          ? 'Members who share their own profile can see what you share below, and you can see theirs.'
-          : 'Share your training with other members of this Gym Logger. Only members who also share can see your profile, and sharing lets you see theirs.'}
+        Choose who can see your training. Only members who share their own profile can see or follow
+        others.
       </p>
       {loadError ? (
         <div className="sharing-load-error">
@@ -152,24 +186,50 @@ export function ProfileSharingPanel({
         </p>
       ) : (
         <>
-          <div className="sharing-options" role="group" aria-label="What to share">
-            <div className="notification-setting-row">
-              <div>
-                <strong>Workouts</strong>
-                <small>Exercises, sets, dates and durations. Required to see others.</small>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-label="Workouts"
-                aria-checked="true"
-                aria-disabled="true"
-                className="is-on is-locked"
+          <fieldset className="sharing-visibility" disabled={saving}>
+            <legend>Who can see your profile</legend>
+            {VISIBILITY_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={draft.visibility === option.value ? 'is-selected' : undefined}
               >
-                <span />
-                Required
-              </button>
-            </div>
+                <input
+                  type="radio"
+                  name="profile-visibility"
+                  value={option.value}
+                  checked={draft.visibility === option.value}
+                  onChange={() =>
+                    change({ ...draft, visibility: option.value }, VISIBILITY_SAVED[option.value])
+                  }
+                />
+                <span>
+                  <strong>{VISIBILITY_LABELS[option.value]}</strong>
+                  <small>{option.description}</small>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <div className="sharing-options" role="group" aria-label="What to share">
+            <p className="sharing-group-title">What you share</p>
+            {ALWAYS_SHARED.map((item) => (
+              <div className="notification-setting-row" key={item.label}>
+                <div>
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label={item.label}
+                  aria-checked="true"
+                  aria-disabled="true"
+                  className="is-on is-locked"
+                >
+                  <span />
+                  Always
+                </button>
+              </div>
+            ))}
             {SHARING_OPTIONS.map((option) => (
               <div className="notification-setting-row" key={option.key}>
                 <div>
@@ -183,7 +243,9 @@ export function ProfileSharingPanel({
                   aria-checked={draft[option.key]}
                   className={draft[option.key] ? 'is-on' : ''}
                   disabled={saving}
-                  onClick={() => toggle(option.key)}
+                  onClick={() =>
+                    change({ ...draft, [option.key]: !draft[option.key] }, 'Sharing choices saved.')
+                  }
                 >
                   <span />
                   {draft[option.key] ? 'On' : 'Off'}
@@ -192,7 +254,7 @@ export function ProfileSharingPanel({
             ))}
           </div>
           <small className="sharing-never">
-            Never shared: your username, machine photos, videos and sample data.
+            Never shared: your username, videos and sample data.
           </small>
           <div aria-live="polite" aria-atomic="true">
             {status && (
@@ -206,41 +268,36 @@ export function ProfileSharingPanel({
               </p>
             )}
           </div>
-          {sharing ? (
-            <div className="sharing-actions">
-              <button type="button" className="profile-primary" onClick={onOpenSharedProfiles}>
-                View shared profiles
-              </button>
-              <button
-                type="button"
-                className="profile-secondary"
-                disabled={saving}
-                onClick={() =>
-                  void save(
-                    { ...draft, enabled: false },
-                    'Sharing stopped. Your profile is private again.',
-                  )
-                }
-              >
-                {saving && <Spinner />}
-                <span>Stop sharing</span>
-              </button>
-            </div>
-          ) : (
+          {!sharing && draft.visibility !== 'private' && (
             <button
               type="button"
               className="profile-primary sharing-start"
               disabled={saving}
-              onClick={() =>
-                void save(
-                  { ...draft, enabled: true },
-                  'Your profile is shared. You can now see other shared profiles.',
-                )
-              }
+              onClick={() => void save(draft, VISIBILITY_SAVED[draft.visibility])}
             >
               {saving && <Spinner />}
-              <span>{saving ? 'Sharing…' : 'Share my profile'}</span>
+              <span>
+                {draft.visibility === 'public' ? 'Make my profile public' : 'Share with friends'}
+              </span>
             </button>
+          )}
+          {(sharing || requests > 0) && (
+            <div className="sharing-actions">
+              {requests > 0 && (
+                <button type="button" className="profile-primary" onClick={onOpenSharedProfiles}>
+                  Review {requests} follow {requests === 1 ? 'request' : 'requests'}
+                </button>
+              )}
+              {sharing && (
+                <button
+                  type="button"
+                  className={requests > 0 ? 'profile-secondary' : 'profile-primary'}
+                  onClick={onOpenSharedProfiles}
+                >
+                  View shared profiles
+                </button>
+              )}
+            </div>
           )}
         </>
       )}

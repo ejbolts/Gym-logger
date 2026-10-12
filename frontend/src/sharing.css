@@ -18,9 +18,81 @@
   color: var(--p-accent-text);
 }
 
+.sharing-visibility {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.9rem;
+  border: 0;
+  padding: 0;
+}
+
+.sharing-visibility legend,
+.sharing-group-title {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  color: var(--p-ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.sharing-visibility label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 14px;
+  padding: 0.7rem 0.8rem;
+  background: var(--p-surface-2);
+  cursor: pointer;
+}
+
+.sharing-visibility label.is-selected {
+  border-color: rgb(57 135 229 / 65%);
+  background: var(--p-accent-soft);
+}
+
+.sharing-visibility[disabled] label {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.sharing-visibility input {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  margin: 0.1rem 0 0;
+  accent-color: var(--p-accent);
+}
+
+.sharing-visibility label > span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.sharing-visibility strong {
+  color: var(--p-ink);
+  font-size: 0.875rem;
+}
+
+.sharing-visibility small {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 .sharing-options {
   border-top: 1px solid var(--p-line);
   padding-top: 0.75rem;
+}
+
+.sharing-options .notification-setting-row > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sharing-options .notification-setting-row > button span {
+  flex-shrink: 0;
 }
 
 .sharing-options .notification-setting-row > button.is-locked {
@@ -74,27 +146,75 @@
 }
 
 .shared-profile-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  display: grid;
+  gap: 0.7rem;
   border: 1px solid var(--p-line);
   border-radius: 18px;
   padding: 0.85rem 0.9rem;
   background: var(--p-surface);
-  color: var(--p-ink);
-  text-align: left;
-  touch-action: manipulation;
 }
 
 .shared-profile-card:hover {
   border-color: var(--p-line-strong);
 }
 
-.shared-profile-card > .pulse-icon {
+.shared-profile-open {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--p-ink);
+  font: inherit;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.shared-profile-open > .pulse-icon {
   width: 1.1rem;
   height: 1.1rem;
   color: var(--p-muted);
+}
+
+.shared-status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.shared-status-chips em {
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
+  padding: 0.08rem 0.45rem;
+  color: var(--p-ink-2) !important;
+  font-size: 0.6875rem !important;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.shared-status-chips em.visibility-public {
+  border-color: rgb(57 135 229 / 45%);
+  color: var(--p-accent-text) !important;
+}
+
+.shared-follow {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.shared-follow .inline-error {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.shared-follow.compact .profile-primary,
+.shared-follow.compact .profile-secondary {
+  min-height: 2.4rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8125rem;
 }
 
 .shared-profile-avatar {
@@ -308,4 +428,62 @@
 .history-exercise-name {
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+/* Follow requests and followers */
+
+.sharing-connections ul {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sharing-connections li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.shared-profile-avatar.small {
+  width: 2.4rem;
+  height: 2.4rem;
+  font-size: 0.95rem;
+}
+
+.shared-connection-copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.shared-connection-copy strong {
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}
+
+.shared-connection-copy small {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.shared-connection-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.shared-connection-actions .profile-primary,
+.shared-connection-actions .profile-secondary {
+  width: auto;
+  min-height: 2.3rem;
+  border-radius: 10px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8125rem;
+}
+
+.shared-profiles-screen > .inline-error {
+  margin: 0 0 0.75rem;
 }

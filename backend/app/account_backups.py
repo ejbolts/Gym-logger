@@ -70,6 +70,8 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "account_backups": None,
     # Feedback is sent to administrators, rather than part of a user's training archive.
     "app_feedback": None,
+    # Follows are relationships with other accounts, which a snapshot does not contain.
+    "profile_follows": None,
 }
 
 

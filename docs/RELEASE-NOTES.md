@@ -2,19 +2,24 @@
 
 ## 0.5.0
 
-- **Share your profile** from **Profile > Profile sharing**. Every account starts private. Sharing is reciprocal: only members who share their own profile can see shared profiles, and sharing lets you see theirs.
-- Your **workouts** are always shared while sharing is on, because they are required to see others: exercises, sets, dates and durations. Choose separately whether to add **Body weight** (weigh-ins, body fat and body weight logged with sets), **Goals** (your body-weight goal and weekly Zone 2 target), **Cardio sessions**, **Notes** (workout, exercise, set and cardio notes, including saved video links) and your **Profile photo**. Before you agree, your choices are a draft; afterwards each change saves straight away.
-- **View shared profiles** lists every sharing member, you first, with their workout activity and what they share. Open one to see their totals, any shared body-weight trend and goal line, goal progress and recent cardio, and their workouts in the familiar weekly History cards, read-only and loaded ten at a time. Your own card previews what others see.
-- **Stop sharing** makes your profile private again immediately and hides other profiles until you share again; your choices are kept for next time. Usernames, machine photos, videos and sample data are never shared. Disabled and deleted accounts disappear from the list, and administrators get no extra access.
-- Existing installations should run `alembic upgrade head` for migration `0033_profile_sharing` before serving the updated frontend. It adds the `profile_sharing` table only; sharing choices are included in account backups and deleted with the account. No workout records are changed.
+- Choose who can see your profile in **Profile > Profile sharing**: **Private** (only you, the default for every account), **Friends only** (followers you approve) or **Public** (every member who shares). Only members who share their own profile can see or follow others.
+- **Follow** a public profile straight away, or **Request to follow** a friends-only one. Requests wait under **Follow requests** in **Shared profiles**, where you **Approve** or **Decline** them; **Profile** shows how many are waiting. **Your followers** lists who follows you, with **Remove**. You can cancel a request or **Unfollow** from someone's profile at any time. Making your profile public approves waiting requests.
+- Your **workouts** and **profile photo** are always shared with anyone who can see your profile. A friends-only profile shows only its name and photo until you are approved. Choose separately whether to add **Machine photos** (photos pinned to exercises in your shared workouts), **Body weight** (weigh-ins, body fat and body weight logged with sets), **Goals** (your body-weight goal and weekly Zone 2 target), **Cardio sessions** and **Notes** (including saved video links). While private, choices are a draft until you choose **Share with friends** or **Make my profile public**; afterwards each change saves straight away.
+- **Shared profiles** lists you, the people you follow, other public profiles, then friends-only profiles to request, with chips for Public, Friends only, Following, Requested and Follows you. Open a profile to see its totals, shared body-weight trend and goal line, goal progress, recent cardio, and workouts in the weekly History cards: read-only, loaded ten at a time, with shared machine photos that open full size.
+- Choosing **Private** hides your profile immediately and hides other profiles until you share again. Followers and choices are kept for when you share again. Usernames, videos and sample data are never shared. Disabled and deleted accounts disappear, and administrators get no extra access.
+- Existing installations should run `alembic upgrade head` for migration `0033_profile_sharing` before serving the updated frontend. It adds the `profile_sharing` and `profile_follows` tables only. Sharing choices are included in account backups; follows are relationships with other accounts and are not. Both are deleted with the account. No workout records are changed.
 
-<img src="screenshots/releases/0.5.0-profile-sharing.png" alt="Profile sharing in Profile: Workouts marked Required, Body weight and Goals switched on, Cardio sessions, Notes and Profile photo off, with View shared profiles and Stop sharing buttons." width="390">
+<img src="screenshots/releases/0.5.0-profile-sharing.png" alt="Profile sharing in Profile: Private, Friends only and Public options with Friends only selected; Workouts and Profile photo always shared; Machine photos and Body weight switches off." width="390">
 
-Choose what to share in Profile. Workouts are required to see others; everything else is optional.
+Choose who can see your profile. Workouts and your profile photo are always shared; the rest is optional.
 
-<img src="screenshots/releases/0.5.0-shared-profile.png" alt="A shared profile for a sample member showing workout totals, a 90-day body-weight chart with the goal line, goal progress and weekly Zone 2 cardio progress." width="390">
+<img src="screenshots/releases/0.5.0-shared-profiles.png" alt="Shared profiles with a follow request waiting for approval, a public profile you follow, a friends-only profile you follow, and a friends-only member who follows you with a Request to follow button." width="390">
 
-Another member's shared profile with their body weight and goals. Both captures use fictional sample accounts in the isolated mobile verification environment.
+Approve follow requests and follow other members. Friends-only profiles stay locked until their owner approves you.
+
+<img src="screenshots/releases/0.5.0-shared-machine-photo.png" alt="A shared workout from a public member, expanded to show a pinned machine photo opened full size." width="390">
+
+A shared machine photo inside another member's workout. All captures use fictional sample accounts in the isolated mobile verification environment.
 
 ## 0.4.0
 

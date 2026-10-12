@@ -130,26 +130,54 @@ class AppFeedback(Base):
 
 
 class ProfileSharing(Base):
-    """What an account shares with other sharing members. Workouts are always part of it.
+    """Who can see an account's profile, and what it shares beyond workouts and its photo.
 
-    Only accounts that share can see others, so sharing is reciprocal. The optional choices are
-    kept while sharing is off, so turning it back on restores them.
+    ``visibility`` is ``private`` (nobody), ``followers`` (followers it approves) or ``public``
+    (every sharing member). Only accounts that share can see or follow others. The optional
+    choices are kept while the profile is private, so sharing again restores them.
     """
 
     __tablename__ = "profile_sharing"
+    __table_args__ = (
+        CheckConstraint(
+            "visibility IN ('private', 'followers', 'public')", name="profile_visibility_known"
+        ),
+    )
 
     user_id: Mapped[str] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    visibility: Mapped[str] = mapped_column(String(20), default="private", server_default="private")
     share_notes: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     share_cardio: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     share_body_weight: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     share_goals: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
-    share_profile_photo: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    share_machine_photos: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now(), onupdate=utc_now
     )
+
+
+class ProfileFollow(Base):
+    """One account following another: ``pending`` until the followed account approves it."""
+
+    __tablename__ = "profile_follows"
+    __table_args__ = (
+        CheckConstraint("follower_id != followee_id", name="profile_follow_not_self"),
+        CheckConstraint("status IN ('pending', 'accepted')", name="profile_follow_status_known"),
+    )
+
+    follower_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    followee_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    status: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ServerSetting(Base):

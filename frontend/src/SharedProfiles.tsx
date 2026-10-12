@@ -7,19 +7,24 @@ import { ProfileAvatar } from './ProfileAvatar';
 import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
 import {
+  followActionLabel,
   plural,
   SHARED_WORKOUT_PAGE_SIZE,
   sharedParts,
+  VISIBILITY_LABELS,
   workoutActivitySummary,
 } from './sharedProfileDisplay';
 import { addDays, dayMonth, formatKg, parseLocalDate } from './trainingSummary';
 import type {
+  FollowStatus,
   PersonalRecord,
   SharedBodyMeasurement,
   SharedCardioSession,
   SharedGoals,
   SharedProfile,
   SharedProfileSummary,
+  SharingConnection,
+  SharingConnections,
   TrackedWorkout,
 } from './types';
 import { formatMinutesDuration } from './utils';
@@ -42,11 +47,11 @@ function longDate(value: string): string {
   });
 }
 
-function avatarUser(profile: SharedProfileSummary) {
+function avatarUser(member: { display_name: string; profile_photo_url: string | null }) {
   return {
-    display_name: profile.display_name,
+    display_name: member.display_name,
     username: '',
-    profile_photo_url: profile.profile_photo_url,
+    profile_photo_url: member.profile_photo_url,
   };
 }
 
@@ -60,11 +65,11 @@ function SharingLocked({ onChooseSharing }: { onChooseSharing: () => void }) {
         </div>
       </header>
       <p>
-        Shared profiles are only visible to members who share their own. Choose what to share in
-        Profile; your workouts are the minimum.
+        Your profile is private. Share it with friends or everyone in Profile to see and follow
+        other members; your workouts and profile photo are always part of it.
       </p>
       <button type="button" className="profile-primary" onClick={onChooseSharing}>
-        Choose what to share
+        Choose who can see your profile
       </button>
     </section>
   );
@@ -83,6 +88,126 @@ function LoadProblem({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
+/** Follow, request to follow, withdraw a request, or unfollow. */
+function FollowButton({
+  profile,
+  compact = false,
+  onChange,
+}: {
+  profile: SharedProfileSummary;
+  compact?: boolean;
+  onChange: (status: FollowStatus) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (profile.is_you) return null;
+  const following = profile.follow_status !== 'none';
+  const label =
+    profile.follow_status === 'pending'
+      ? 'Cancel request'
+      : profile.follow_status === 'accepted'
+        ? 'Unfollow'
+        : followActionLabel(profile);
+
+  async function run() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (following) {
+        await api.sharing.unfollow(profile.id);
+        onChange('none');
+      } else {
+        onChange((await api.sharing.follow(profile.id)).status);
+      }
+    } catch (reason) {
+      setError(authErrorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className={compact ? 'shared-follow compact' : 'shared-follow'}>
+      <button
+        type="button"
+        className={following ? 'profile-secondary' : 'profile-primary'}
+        disabled={busy}
+        aria-label={compact ? `${label}: ${profile.display_name}` : undefined}
+        onClick={() => void run()}
+      >
+        {busy && <span className="auth-spinner" aria-hidden="true" />}
+        <span>{label}</span>
+      </button>
+      {error && (
+        <p className="inline-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StatusChips({ profile }: { profile: SharedProfileSummary }) {
+  return (
+    <span className="shared-status-chips">
+      {profile.is_you && <span className="profile-badge">You</span>}
+      <em className={`visibility-${profile.visibility}`}>
+        {VISIBILITY_LABELS[profile.visibility]}
+      </em>
+      {profile.follow_status === 'accepted' && <em>Following</em>}
+      {profile.follow_status === 'pending' && <em>Requested</em>}
+      {profile.follows_you && <em>Follows you</em>}
+    </span>
+  );
+}
+
+function ConnectionList({
+  title,
+  kicker,
+  people,
+  emptyText,
+  sinceLabel,
+  actions,
+}: {
+  title: string;
+  kicker: string;
+  people: SharingConnection[];
+  emptyText?: string;
+  sinceLabel: string;
+  actions: (person: SharingConnection) => ReactNode;
+}) {
+  if (people.length === 0 && !emptyText) return null;
+  return (
+    <section className="settings-panel panel sharing-connections">
+      <header>
+        <div>
+          <p className="section-kicker">{kicker}</p>
+          <h2>{title}</h2>
+        </div>
+      </header>
+      {people.length === 0 ? (
+        <p className="shared-card-empty">{emptyText}</p>
+      ) : (
+        <ul>
+          {people.map((person) => (
+            <li key={person.id}>
+              <ProfileAvatar className="shared-profile-avatar small" user={avatarUser(person)} />
+              <span className="shared-connection-copy">
+                <strong>{person.display_name}</strong>
+                <small>
+                  {sinceLabel} {longDate(person.since.slice(0, 10))}
+                </small>
+              </span>
+              <span className="shared-connection-actions">{actions(person)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function SharedProfilesScreen({
   active,
   onOpenProfile,
@@ -93,14 +218,23 @@ export function SharedProfilesScreen({
   onChooseSharing: () => void;
 }) {
   const [profiles, setProfiles] = useState<SharedProfileSummary[] | null>(null);
+  const [connections, setConnections] = useState<SharingConnections | null>(null);
   const [state, setState] = useState<LoadState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     // Refreshed whenever the screen is shown, so sharing changes appear straight away.
     if (!active) return;
     let cancelled = false;
+    api.sharing
+      .connections()
+      .then((next) => {
+        if (!cancelled) setConnections(next);
+      })
+      .catch(() => undefined);
     api.sharing
       .profiles()
       .then((next) => {
@@ -118,18 +252,80 @@ export function SharedProfilesScreen({
     };
   }, [active, attempt]);
 
-  if (state === 'locked') {
-    return (
-      <section className="settings-screen shared-profiles-screen content-page">
-        <SharingLocked onChooseSharing={onChooseSharing} />
-      </section>
+  function updateProfile(id: string, change: Partial<SharedProfileSummary>) {
+    setProfiles(
+      (current) => current?.map((item) => (item.id === id ? { ...item, ...change } : item)) ?? null,
     );
   }
+
+  async function respond(person: SharingConnection, action: 'approve' | 'remove') {
+    if (busyId) return;
+    setBusyId(person.id);
+    setActionError(null);
+    try {
+      if (action === 'approve') await api.sharing.approveFollower(person.id);
+      else await api.sharing.removeFollower(person.id);
+      setConnections((current) =>
+        current
+          ? {
+              requests: current.requests.filter((item) => item.id !== person.id),
+              followers:
+                action === 'approve'
+                  ? [person, ...current.followers]
+                  : current.followers.filter((item) => item.id !== person.id),
+            }
+          : current,
+      );
+      updateProfile(person.id, { follows_you: action === 'approve' });
+    } catch (reason) {
+      setActionError(authErrorMessage(reason));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const others = profiles?.filter((profile) => !profile.is_you) ?? [];
 
   return (
     <section className="settings-screen shared-profiles-screen content-page">
-      {state === 'error' && !profiles ? (
+      {actionError && (
+        <p className="inline-error" role="alert">
+          {actionError}
+        </p>
+      )}
+      {connections && (
+        <ConnectionList
+          kicker="FOLLOW REQUESTS"
+          title={`${connections.requests.length} waiting for you`}
+          people={connections.requests}
+          sinceLabel="Asked"
+          actions={(person) => (
+            <>
+              <button
+                type="button"
+                className="profile-primary"
+                disabled={busyId !== null}
+                aria-label={`Approve ${person.display_name}`}
+                onClick={() => void respond(person, 'approve')}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                className="profile-secondary"
+                disabled={busyId !== null}
+                aria-label={`Decline ${person.display_name}`}
+                onClick={() => void respond(person, 'remove')}
+              >
+                Decline
+              </button>
+            </>
+          )}
+        />
+      )}
+      {state === 'locked' ? (
+        <SharingLocked onChooseSharing={onChooseSharing} />
+      ) : state === 'error' && !profiles ? (
         <LoadProblem
           message={error ?? 'Could not load shared profiles.'}
           onRetry={() => setAttempt((count) => count + 1)}
@@ -141,30 +337,45 @@ export function SharedProfilesScreen({
       ) : (
         <>
           <ul className="shared-profile-list" aria-label="Shared profiles">
-            {profiles.map((profile) => (
-              <li key={profile.id}>
-                <button
-                  type="button"
-                  className="shared-profile-card"
-                  onClick={() => onOpenProfile(profile)}
-                >
-                  <ProfileAvatar className="shared-profile-avatar" user={avatarUser(profile)} />
-                  <span className="shared-profile-copy">
-                    <strong>
-                      {profile.display_name}
-                      {profile.is_you && <span className="profile-badge">You</span>}
-                    </strong>
-                    <small>{workoutActivitySummary(profile)}</small>
-                    <span className="shared-profile-chips" aria-label="Shares">
-                      {sharedParts(profile).map((part) => (
-                        <em key={part}>{part}</em>
-                      ))}
+            {profiles.map((profile) => {
+              const action = followActionLabel(profile);
+              return (
+                <li key={profile.id} className="shared-profile-card">
+                  <button
+                    type="button"
+                    className="shared-profile-open"
+                    onClick={() => onOpenProfile(profile)}
+                  >
+                    <ProfileAvatar className="shared-profile-avatar" user={avatarUser(profile)} />
+                    <span className="shared-profile-copy">
+                      <strong>{profile.display_name}</strong>
+                      <StatusChips profile={profile} />
+                      <small>{workoutActivitySummary(profile)}</small>
+                      {profile.can_view && (
+                        <span className="shared-profile-chips" aria-label="Shares">
+                          {sharedParts(profile).map((part) => (
+                            <em key={part}>{part}</em>
+                          ))}
+                        </span>
+                      )}
                     </span>
-                  </span>
-                  <Icon name="chevron-right" />
-                </button>
-              </li>
-            ))}
+                    {!action && <Icon name="chevron-right" />}
+                  </button>
+                  {action && (
+                    <FollowButton
+                      compact
+                      profile={profile}
+                      onChange={(status) =>
+                        updateProfile(profile.id, {
+                          follow_status: status,
+                          can_view: profile.can_view || status === 'accepted',
+                        })
+                      }
+                    />
+                  )}
+                </li>
+              );
+            })}
           </ul>
           {others.length === 0 && (
             <p className="shared-profiles-empty">
@@ -172,6 +383,26 @@ export function SharedProfilesScreen({
             </p>
           )}
         </>
+      )}
+      {connections && (
+        <ConnectionList
+          kicker="FOLLOWERS"
+          title="Your followers"
+          people={connections.followers}
+          sinceLabel="Following since"
+          emptyText="Nobody follows you yet."
+          actions={(person) => (
+            <button
+              type="button"
+              className="profile-secondary"
+              disabled={busyId !== null}
+              aria-label={`Remove ${person.display_name} from your followers`}
+              onClick={() => void respond(person, 'remove')}
+            >
+              Remove
+            </button>
+          )}
+        />
       )}
     </section>
   );
@@ -393,23 +624,24 @@ export function SharedProfileScreen({
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      api.sharing.profile(profileId),
-      api.sharing.workouts(profileId, 0, SHARED_WORKOUT_PAGE_SIZE),
-    ])
-      .then(([nextProfile, page]) => {
-        if (cancelled) return;
-        setProfile(nextProfile);
-        setWorkouts(page.workouts);
-        setRecords(page.personal_records);
-        setTotal(page.total);
-        setState('ready');
-      })
-      .catch((reason: unknown) => {
-        if (cancelled) return;
-        setState(loadStateFor(reason));
-        setError(authErrorMessage(reason));
-      });
+    async function load() {
+      const nextProfile = await api.sharing.profile(profileId);
+      // A friends-only profile you do not follow shares only its name and photo.
+      const page = nextProfile.can_view
+        ? await api.sharing.workouts(profileId, 0, SHARED_WORKOUT_PAGE_SIZE)
+        : { workouts: [], personal_records: [], total: 0 };
+      if (cancelled) return;
+      setProfile(nextProfile);
+      setWorkouts(page.workouts);
+      setRecords(page.personal_records);
+      setTotal(page.total);
+      setState('ready');
+    }
+    load().catch((reason: unknown) => {
+      if (cancelled) return;
+      setState(loadStateFor(reason));
+      setError(authErrorMessage(reason));
+    });
     return () => {
       cancelled = true;
     };
@@ -434,6 +666,14 @@ export function SharedProfileScreen({
     }
   }
 
+  function followChanged(status: FollowStatus) {
+    if (!profile) return;
+    // Gaining or losing access to a friends-only profile changes what it shows.
+    const access = profile.visibility === 'public' || status === 'accepted';
+    if (access !== profile.can_view) setAttempt((count) => count + 1);
+    else setProfile({ ...profile, follow_status: status });
+  }
+
   if (state === 'locked') {
     return (
       <section className="settings-screen shared-profile-screen content-page">
@@ -451,7 +691,7 @@ export function SharedProfileScreen({
               <h2>This profile is no longer shared</h2>
             </div>
           </header>
-          <p>Its owner has stopped sharing, so their training is private again.</p>
+          <p>Its owner has made it private, so their training is hidden again.</p>
         </section>
       </section>
     );
@@ -485,66 +725,92 @@ export function SharedProfileScreen({
         <div className="profile-summary-main">
           <ProfileAvatar className="profile-avatar" user={avatarUser(profile)} />
           <div className="profile-summary-copy">
-            <strong>
-              {profile.display_name}
-              {profile.is_you && <span className="profile-badge">You</span>}
-            </strong>
+            <strong>{profile.display_name}</strong>
+            <StatusChips profile={profile} />
             {memberSince && <small>Member since {memberSince}</small>}
           </div>
         </div>
-        <dl className="shared-stat-row">
-          <div>
-            <dt>Workouts</dt>
-            <dd className="num">{profile.workout_count.toLocaleString('en-GB')}</dd>
-          </div>
-          <div>
-            <dt>Last 30 days</dt>
-            <dd className="num">{profile.recent_workout_count}</dd>
-          </div>
-          <div>
-            <dt>Last workout</dt>
-            <dd className="num">
-              {profile.last_workout_date ? dayMonth(profile.last_workout_date) : '–'}
-            </dd>
-          </div>
-        </dl>
+        {profile.can_view && (
+          <dl className="shared-stat-row">
+            <div>
+              <dt>Workouts</dt>
+              <dd className="num">{(profile.workout_count ?? 0).toLocaleString('en-GB')}</dd>
+            </div>
+            <div>
+              <dt>Last 30 days</dt>
+              <dd className="num">{profile.recent_workout_count ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Last workout</dt>
+              <dd className="num">
+                {profile.last_workout_date ? dayMonth(profile.last_workout_date) : '–'}
+              </dd>
+            </div>
+          </dl>
+        )}
+        <FollowButton profile={profile} onChange={followChanged} />
         {profile.is_you && (
           <p className="shared-preview-note">
-            This is what other sharing members see. Change what you share in Profile.
+            This is what members who can see your profile see. Change it in Profile.
           </p>
         )}
       </section>
-      {profile.body_weight && (
-        <BodyWeightCard measurements={profile.body_weight} goals={profile.goals} />
-      )}
-      {profile.goals && <GoalsCard goals={profile.goals} latestWeight={latestWeight} />}
-      {profile.cardio_sessions && <CardioCard sessions={profile.cardio_sessions} />}
-      <section className="history-screen shared-workouts" aria-labelledby="shared-workouts-title">
-        <header className="history-week-header shared-workouts-header">
-          <h2 id="shared-workouts-title">Workouts</h2>
-          <span className="num">{plural(total, 'workout')}</span>
-        </header>
-        {workouts.length === 0 ? (
-          <p className="shared-card-empty">No workouts logged yet.</p>
-        ) : (
-          renderWorkouts({ workouts, personalRecords: records })
-        )}
-        {moreError && (
-          <p className="inline-error" role="alert">
-            {moreError}
+      {!profile.can_view ? (
+        <section className="settings-panel panel sharing-locked">
+          <header>
+            <div>
+              <p className="section-kicker">FRIENDS ONLY</p>
+              <h2>
+                {profile.follow_status === 'pending'
+                  ? 'Follow request sent'
+                  : `Follow ${profile.display_name} to see their training`}
+              </h2>
+            </div>
+          </header>
+          <p>
+            {profile.follow_status === 'pending'
+              ? `Their workouts appear here once ${profile.display_name} approves your request.`
+              : `${profile.display_name} shares with followers they approve. Send a request and their workouts appear here once they accept.`}
           </p>
-        )}
-        {workouts.length < total && (
-          <button
-            type="button"
-            className="show-more-button"
-            disabled={loadingMore}
-            onClick={() => void loadMore()}
+        </section>
+      ) : (
+        <>
+          {profile.body_weight && (
+            <BodyWeightCard measurements={profile.body_weight} goals={profile.goals} />
+          )}
+          {profile.goals && <GoalsCard goals={profile.goals} latestWeight={latestWeight} />}
+          {profile.cardio_sessions && <CardioCard sessions={profile.cardio_sessions} />}
+          <section
+            className="history-screen shared-workouts"
+            aria-labelledby="shared-workouts-title"
           >
-            {loadingMore ? 'Loading…' : `Show more · ${total - workouts.length} older`}
-          </button>
-        )}
-      </section>
+            <header className="history-week-header shared-workouts-header">
+              <h2 id="shared-workouts-title">Workouts</h2>
+              <span className="num">{plural(total, 'workout')}</span>
+            </header>
+            {workouts.length === 0 ? (
+              <p className="shared-card-empty">No workouts logged yet.</p>
+            ) : (
+              renderWorkouts({ workouts, personalRecords: records })
+            )}
+            {moreError && (
+              <p className="inline-error" role="alert">
+                {moreError}
+              </p>
+            )}
+            {workouts.length < total && (
+              <button
+                type="button"
+                className="show-more-button"
+                disabled={loadingMore}
+                onClick={() => void loadMore()}
+              >
+                {loadingMore ? 'Loading…' : `Show more · ${total - workouts.length} older`}
+              </button>
+            )}
+          </section>
+        </>
+      )}
     </section>
   );
 }

@@ -8072,6 +8072,7 @@ function SharedWorkoutHistory({
   weekStartDay,
 }: SharedWorkoutListProps & { categoryColors: WorkoutTypeColors; weekStartDay: number }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [expandedPhoto, setExpandedPhoto] = useState<MachinePhoto | null>(null);
   const targetExerciseRef = useRef<HTMLDivElement>(null);
   const today = localDate();
   const weekGroups = useMemo(
@@ -8105,8 +8106,8 @@ function SharedWorkoutHistory({
               records={recordCounts.get(workout.id) ?? 0}
               personalRecords={personalRecords}
               activeWorkout={false}
-              expandedPhoto={null}
-              onExpandPhoto={() => undefined}
+              expandedPhoto={expandedPhoto}
+              onExpandPhoto={setExpandedPhoto}
               onToggle={() => setOpenId((current) => (current === workout.id ? null : workout.id))}
             />
           ))}

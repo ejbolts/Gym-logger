@@ -574,27 +574,61 @@ export interface AppFeedback {
   created_at: string;
 }
 
-/** What an account shares with other sharing members. Workouts are shared whenever it is on. */
+/** Who can see a profile: nobody, followers its owner approves ("Friends only"), or everyone. */
+export type ProfileVisibility = 'private' | 'followers' | 'public';
+
+/** Who can see the profile and what it shares beyond its workouts and profile photo. */
 export interface SharingChoices {
-  enabled: boolean;
+  visibility: ProfileVisibility;
   share_notes: boolean;
   share_cardio: boolean;
   share_body_weight: boolean;
   share_goals: boolean;
-  share_profile_photo: boolean;
+  share_machine_photos: boolean;
 }
+
+export interface SharingSettings extends SharingChoices {
+  /** Follow requests waiting for this account's approval. */
+  pending_requests: number;
+}
+
+export type FollowStatus = 'none' | 'pending' | 'accepted';
 
 export interface SharedProfileSummary {
   id: string;
   display_name: string;
   profile_photo_url: string | null;
   member_since: string;
+  visibility: Exclude<ProfileVisibility, 'private'>;
   is_you: boolean;
-  workout_count: number;
+  /** Your follow of this member. */
+  follow_status: FollowStatus;
+  follows_you: boolean;
+  /** False for a friends-only profile you do not follow: only its name and photo are shown. */
+  can_view: boolean;
+  workout_count: number | null;
   /** Workouts in the last 30 days. */
-  recent_workout_count: number;
+  recent_workout_count: number | null;
   last_workout_date: string | null;
-  shares: { notes: boolean; cardio: boolean; body_weight: boolean; goals: boolean };
+  shares: {
+    notes: boolean;
+    cardio: boolean;
+    body_weight: boolean;
+    goals: boolean;
+    machine_photos: boolean;
+  } | null;
+}
+
+export interface SharingConnection {
+  id: string;
+  display_name: string;
+  profile_photo_url: string | null;
+  since: string;
+}
+
+export interface SharingConnections {
+  requests: SharingConnection[];
+  followers: SharingConnection[];
 }
 
 export interface SharedBodyMeasurement {

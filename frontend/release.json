@@ -1,16 +1,16 @@
 {
   "version": "0.5.0",
   "title": "Share your training",
-  "summary": "Share your workouts with other members, choose what else they see, and follow their training.",
+  "summary": "Choose who sees your training, follow other members, and approve who follows you.",
   "changes": [
-    "Turn on Profile sharing in Profile. Your workouts are shared, and sharing is what lets you see other members.",
-    "Choose separately whether to add body weight, goals, cardio sessions, notes and your profile photo.",
-    "Open Shared profiles to browse other sharing members' workouts and anything else they share.",
-    "Stop sharing at any time; your profile and other profiles become private again straight away."
+    "Make your profile Private, Friends only or Public in Profile > Profile sharing.",
+    "Follow public profiles, request to follow friends-only ones, and approve or decline requests.",
+    "Your workouts and profile photo are always shared; add machine photos, body weight, goals, cardio or notes if you like.",
+    "Open Shared profiles to see the people you follow and manage your followers."
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#050",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/ebd372013c6570381cc3d3d7aaa4237d126ec64b/docs/screenshots/releases/0.5.0-shared-profile.png",
-    "alt": "A shared profile for a sample member, showing workout totals, a body-weight chart with the goal line, goal progress and weekly Zone 2 cardio progress."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/e21e4a8979d443d35c32a449a9ece1b76fd295b4/docs/screenshots/releases/0.5.0-shared-profiles.png",
+    "alt": "Shared profiles with a follow request to approve, profiles you follow, and a friends-only member with a Request to follow button."
   }
 }
