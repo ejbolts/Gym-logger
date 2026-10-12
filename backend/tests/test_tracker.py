@@ -573,6 +573,28 @@ def test_body_measurement_csv_rejects_duplicate_dates_without_partial_import(cli
     assert client.get("/api/body-measurements").json() == []
 
 
+def test_progress_keeps_reps_and_rpe_paired_with_the_heaviest_set(client):
+    bench = next(
+        item
+        for item in client.get("/api/exercises").json()
+        if item["name"] == "Barbell Bench Press"
+    )
+    payload = workout_payload(bench["id"])
+    payload["movements"][0]["sets"] = [
+        {"weight_kg": 100, "reps": 10, "rpe": 8, "completed": True},
+        {"weight_kg": 105, "reps": 5, "rpe": 9, "completed": True},
+        {"weight_kg": 105, "reps": 6, "rpe": 9.5, "completed": True},
+    ]
+    assert client.post("/api/workouts", json=payload).status_code == 201
+
+    progress = client.get(f"/api/progress/{bench['id']}").json()
+    [point] = progress["points"]
+    assert (point["best_weight_kg"], point["best_reps"], point["best_rpe"]) == (105, 6, 9.5)
+    # Estimated 1RM remains independently calculated from the strongest estimate, 100 x 10.
+    assert point["estimated_1rm"] == 133.3
+    assert point["volume_kg"] == 2155
+
+
 def test_dashboard_and_progress_reflect_completed_workout(client):
     exercise = next(
         item

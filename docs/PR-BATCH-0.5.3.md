@@ -17,4 +17,6 @@ Use one consolidation PR containing merge commits from these exact heads. Merge 
 
 Required combined verification: repository formatting/lint checks, production frontend build, full frontend/backend suites, fresh schema and upgrade from a synthetic pre-sharing schema, and isolated phone-width UI checks of Home editing, custom labels, record popups and profile-sharing/follow transitions. Review final screenshots and short real interaction recordings for card motion and transient record popups. Keep all records, credentials, uploads and build output separate from stable installations.
 
+Combined verification reconciles the sharing fixture with strict PR semantics: its first set is a baseline and its second set earns a real Volume PR. Live verification also found an existing Progress summary mismatch, which combined the maximum weight and maximum reps from different sets. Keep weight, reps and RPE paired to the heaviest set, while retaining an independently calculated best estimated 1RM; cover the mixed-set and equal-weight cases with a regression test.
+
 Merging this batch does not deploy, rebuild or restart the stable application. Deployment later requires migration `0033_profile_sharing` in addition to the already pending `0031_app_feedback` and `0032_profile_photos` migrations.

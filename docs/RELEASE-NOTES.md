@@ -34,6 +34,7 @@ A shared machine photo inside another member's workout. All captures use fiction
 - A dismissible **five-second** popup names **Volume PR** or **Weight PR**, the exercise, reps and weight when you complete a record set. A blue bar along its bottom counts down to automatic dismissal and starts fresh for each new record. Existing records do not celebrate again when you reopen, toggle or save an unchanged workout. History, Today and Progress use the same two record types.
 - Warmups, incomplete sets, zero reps and failed sets below their configured rep target cannot earn records. Drop sets and failed sets that meet their target remain eligible. Kilogram/pound display preferences do not change comparisons. Backdated workouts, edits and deletions rebuild the derived records in date order.
 - Estimated 1RM remains available in Progress, but estimated 1RM, duration and distance increases no longer award PRs. Existing derived PRs are recalculated on backend startup; original workout records are preserved. No database migration is required.
+- Progress pairs the heaviest set's weight with that same set's reps and RPE, rather than showing a weight/reps combination from different sets. Estimated 1RM remains the best estimate across eligible sets.
 
 <img src="screenshots/releases/0.5.3-volume-weight-prs.png" alt="Workout logger showing a Volume PR popup for ten bench press reps at 100 kg, alongside a Custom exercise label." width="390">
 

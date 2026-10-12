@@ -1891,8 +1891,8 @@ def exercise_progress(exercise_id: str, db: DbSession, user: CurrentUser) -> Exe
             ProgressPoint(
                 workout_date=workout_date,
                 workout_id=workout_id,
-                best_weight_kg=max(item.weight_kg or 0 for item in sets),
-                best_reps=max(item.reps or 0 for item in sets),
+                best_weight_kg=best_set.weight_kg or 0,
+                best_reps=best_set.reps or 0,
                 estimated_1rm=round(best_e1rm, 1),
                 volume_kg=round(sum((item.weight_kg or 0) * (item.reps or 0) for item in sets), 1),
                 best_rpe=best_set.rpe,
