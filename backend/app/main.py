@@ -27,6 +27,7 @@ from .database import Base, SessionLocal, engine, get_db
 from .errors import api_error
 from .feedback import admin_feedback_router, feedback_router
 from .frontend import FrontendFiles
+from .home_layout import router as home_layout_router
 from .models import (
     Clip,
     ClipUploadStatus,
@@ -57,6 +58,7 @@ from .schemas import (
     SessionCreate,
     SessionRead,
 )
+from .sharing import sharing_router
 from .storage import (
     UploadValidationError,
     clean_abandoned_partials,
@@ -599,9 +601,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_router)
     app.include_router(feedback_router)
     app.include_router(admin_feedback_router)
+    app.include_router(sharing_router)
     app.include_router(protected)
     app.include_router(video)
     app.include_router(tracker_router)
+    app.include_router(home_layout_router)
 
     frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
     if frontend_dist.is_dir():

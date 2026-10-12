@@ -55,6 +55,8 @@ from .models import (
     ExerciseMuscleContribution,
     MachinePhoto,
     PersonalRecord,
+    ProfileFollow,
+    ProfileSharing,
     PushSubscription,
     SupersetGroup,
     Timestamp,
@@ -308,6 +310,10 @@ def delete_account(db: Session, settings: Settings, user: User, app_state=None) 
         delete(ActiveWorkoutReminder).where(ActiveWorkoutReminder.user_id == user_id),
         delete(PushSubscription).where(PushSubscription.user_id == user_id),
         delete(UserSetting).where(UserSetting.user_id == user_id),
+        delete(ProfileSharing).where(ProfileSharing.user_id == user_id),
+        delete(ProfileFollow).where(
+            (ProfileFollow.follower_id == user_id) | (ProfileFollow.followee_id == user_id)
+        ),
         delete(UserSession).where(UserSession.user_id == user_id),
         delete(AccountBackup).where(AccountBackup.user_id == user_id),
         delete(User).where(User.id == user_id),

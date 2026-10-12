@@ -1,0 +1,679 @@
+"""Profile sharing and following between members.
+
+Each account chooses who can see its profile: nobody (``private``, the default), followers it
+approves (``followers``, shown as "Friends only"), or every sharing member (``public``). Only
+accounts that share their own profile can see or follow others. A shared profile always includes
+its workouts and profile photo; notes, cardio, body weight, goals and machine photos are optional.
+
+Private, disabled and missing profiles all answer "not found". A friends-only profile shows only
+its name and photo until its owner approves a follow request. Usernames, videos and sample data
+are never shared.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import case, delete, exists, func, or_, select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, selectinload
+
+from .account_limits import limit_save_rate
+from .accounts import no_store
+from .auth import AppSettings, CurrentUser, as_utc, get_current_user
+from .database import get_db
+from .errors import api_error
+from .models import (
+    BodyMeasurement,
+    BodyWeightGoal,
+    CardioSession,
+    MachinePhoto,
+    PersonalRecord,
+    ProfileFollow,
+    ProfileSharing,
+    TrainingWorkout,
+    User,
+    WorkoutMovement,
+    movement_machine_photos,
+    utc_now,
+)
+from .photo_storage import profile_photo_path
+from .tracker import training_preferences, workout_options, zone2_week
+from .tracker_schemas import PersonalRecordRead, TrainingWorkoutRead, Zone2WeekRead
+from .training_metrics import start_of_week
+
+Db = Annotated[Session, Depends(get_db)]
+sharing_router = APIRouter(
+    prefix="/api/sharing",
+    tags=["sharing"],
+    dependencies=[Depends(no_store), Depends(get_current_user), Depends(limit_save_rate)],
+)
+PRIVATE, FOLLOWERS, PUBLIC = "private", "followers", "public"
+PENDING, ACCEPTED = "pending", "accepted"
+MAX_WORKOUT_PAGE = 50
+RECENT_CARDIO_SESSIONS = 20
+RECENT_DAYS = 30
+
+Visibility = Literal["private", "followers", "public"]
+FollowStatus = Literal["none", "pending", "accepted"]
+
+
+class SharingChoices(BaseModel):
+    """Who can see the profile, and what it shares beyond its workouts and profile photo."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    visibility: Visibility = PRIVATE
+    share_notes: bool = False
+    share_cardio: bool = False
+    share_body_weight: bool = False
+    share_goals: bool = False
+    share_machine_photos: bool = False
+
+
+class SharingRead(SharingChoices):
+    pending_requests: int = 0
+
+
+class SharedContent(BaseModel):
+    notes: bool
+    cardio: bool
+    body_weight: bool
+    goals: bool
+    machine_photos: bool
+
+
+class SharedProfileSummary(BaseModel):
+    id: str
+    display_name: str
+    profile_photo_url: str | None
+    member_since: datetime
+    visibility: Literal["followers", "public"]
+    is_you: bool
+    # Your follow of them, and whether they follow you.
+    follow_status: FollowStatus
+    follows_you: bool
+    # A friends-only profile you do not follow shows only its name and photo.
+    can_view: bool
+    workout_count: int | None = None
+    recent_workout_count: int | None = None
+    last_workout_date: date | None = None
+    shares: SharedContent | None = None
+
+
+class SharedBodyMeasurement(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    measurement_date: date
+    weight_kg: float
+    body_fat_pct: float | None
+
+
+class SharedBodyWeightGoal(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    start_date: date
+    target_date: date
+    start_weight_kg: float
+    target_weight_kg: float
+
+
+class SharedGoals(BaseModel):
+    body_weight: SharedBodyWeightGoal | None
+    zone2: Zone2WeekRead
+
+
+class SharedCardioSession(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    session_date: date
+    activity_type: str
+    duration_minutes: int
+    calories_kcal: int | None
+    average_heart_rate_bpm: int | None
+    distance_km: float | None
+    average_speed_kph: float | None
+    incline_percent: float | None
+    average_power_watts: int | None
+    average_mets: float | None
+    zone: str | None
+    qualifies_zone2: bool
+    notes: str | None
+
+
+class SharedProfileRead(SharedProfileSummary):
+    # None when the profile cannot be viewed or does not share that part.
+    body_weight: list[SharedBodyMeasurement] | None = None
+    goals: SharedGoals | None = None
+    cardio_sessions: list[SharedCardioSession] | None = None
+
+
+class SharedWorkoutPage(BaseModel):
+    total: int
+    workouts: list[TrainingWorkoutRead]
+    personal_records: list[PersonalRecordRead]
+
+
+class FollowRead(BaseModel):
+    status: FollowStatus
+
+
+class ConnectionRead(BaseModel):
+    id: str
+    display_name: str
+    profile_photo_url: str | None
+    since: datetime
+
+
+class ConnectionsRead(BaseModel):
+    requests: list[ConnectionRead]
+    followers: list[ConnectionRead]
+
+
+def sharing_choices(db: Session, user_id: str) -> ProfileSharing:
+    """The account's stored choices, or unsaved private defaults when it has none."""
+    return db.get(ProfileSharing, user_id) or ProfileSharing(
+        user_id=user_id,
+        visibility=PRIVATE,
+        share_notes=False,
+        share_cardio=False,
+        share_body_weight=False,
+        share_goals=False,
+        share_machine_photos=False,
+    )
+
+
+def require_sharing(db: Session, viewer: User) -> None:
+    if sharing_choices(db, viewer.id).visibility == PRIVATE:
+        raise api_error(
+            403,
+            "sharing_required",
+            "Share your profile with friends or everyone to see other members' profiles.",
+        )
+
+
+def find_follow(db: Session, follower_id: str, followee_id: str) -> ProfileFollow | None:
+    return db.get(ProfileFollow, (follower_id, followee_id))
+
+
+def visible_member(db: Session, viewer: User, user_id: str) -> tuple[User, ProfileSharing]:
+    """A sharing member the viewer can find: their name and photo, but maybe not their training."""
+    require_sharing(db, viewer)
+    member = db.get(User, user_id)
+    sharing = db.get(ProfileSharing, user_id)
+    if (
+        member is None
+        or member.disabled_at is not None
+        or sharing is None
+        or sharing.visibility == PRIVATE
+    ):
+        raise api_error(404, "profile_not_found", "That profile is not shared.")
+    return member, sharing
+
+
+def can_view(viewer: User, member: User, sharing: ProfileSharing, follow: ProfileFollow | None):
+    return (
+        member.id == viewer.id
+        or sharing.visibility == PUBLIC
+        or (follow is not None and follow.status == ACCEPTED)
+    )
+
+
+def viewable_member(db: Session, viewer: User, user_id: str) -> tuple[User, ProfileSharing]:
+    member, sharing = visible_member(db, viewer, user_id)
+    if not can_view(viewer, member, sharing, find_follow(db, viewer.id, member.id)):
+        raise api_error(
+            403,
+            "follow_required",
+            f"{member.display_name} shares with friends only. Ask to follow them first.",
+        )
+    return member, sharing
+
+
+def photo_url(user: User) -> str | None:
+    if not user.profile_photo_filename:
+        return None
+    version = user.profile_photo_filename.removesuffix(".webp")
+    return f"/api/sharing/profiles/{user.id}/photo?v={version}"
+
+
+def workout_stats(db: Session, user_ids: list[str]) -> dict[str, tuple[int, int, date | None]]:
+    """Per account: shared workouts, those in the last 30 days, and the latest workout date."""
+    if not user_ids:
+        return {}
+    cutoff = date.today() - timedelta(days=RECENT_DAYS)
+    rows = db.execute(
+        select(
+            TrainingWorkout.user_id,
+            func.count(TrainingWorkout.id),
+            func.sum(case((TrainingWorkout.workout_date >= cutoff, 1), else_=0)),
+            func.max(TrainingWorkout.workout_date),
+        )
+        .where(TrainingWorkout.user_id.in_(user_ids), TrainingWorkout.is_sample.is_(False))
+        .group_by(TrainingWorkout.user_id)
+    )
+    return {user_id: (count, recent or 0, latest) for user_id, count, recent, latest in rows}
+
+
+def profile_summary(
+    viewer: User,
+    member: User,
+    sharing: ProfileSharing,
+    follow: ProfileFollow | None,
+    follows_you: bool,
+    stats: tuple[int, int, date | None] | None,
+) -> SharedProfileSummary:
+    viewable = can_view(viewer, member, sharing, follow)
+    count, recent, latest = stats or (0, 0, None)
+    return SharedProfileSummary(
+        id=member.id,
+        display_name=member.display_name,
+        profile_photo_url=photo_url(member),
+        member_since=as_utc(member.created_at),
+        visibility=sharing.visibility,
+        is_you=member.id == viewer.id,
+        follow_status=follow.status if follow else "none",
+        follows_you=follows_you,
+        can_view=viewable,
+        workout_count=count if viewable else None,
+        recent_workout_count=recent if viewable else None,
+        last_workout_date=latest if viewable else None,
+        shares=(
+            SharedContent(
+                notes=sharing.share_notes,
+                cardio=sharing.share_cardio,
+                body_weight=sharing.share_body_weight,
+                goals=sharing.share_goals,
+                machine_photos=sharing.share_machine_photos,
+            )
+            if viewable
+            else None
+        ),
+    )
+
+
+def sample_workout_ids():
+    return select(TrainingWorkout.id).where(TrainingWorkout.is_sample.is_(True))
+
+
+def shared_workout(workout: TrainingWorkout, sharing: ProfileSharing) -> TrainingWorkoutRead:
+    """A workout with only what its owner shares: notes, body weight and photos on request."""
+    shared = TrainingWorkoutRead.model_validate(workout)
+    if not sharing.share_notes:
+        shared.notes = None
+    for movement in shared.movements:
+        movement.exercise.is_favorite = False
+        if sharing.share_machine_photos:
+            for photo in movement.machine_photos:
+                base = f"/api/sharing/profiles/{sharing.user_id}/machine-photos/{photo.id}"
+                photo.thumbnail_url = f"{base}?variant=thumbnail"
+                photo.full_url = f"{base}?variant=full"
+        else:
+            movement.machine_photos = []
+        if not sharing.share_notes:
+            movement.notes = None
+        for item in movement.sets:
+            if not sharing.share_notes:
+                item.notes = None
+            if not sharing.share_body_weight:
+                item.bodyweight_kg = None
+    return shared
+
+
+def shared_goals(db: Session, user_id: str) -> SharedGoals:
+    goal = db.scalar(
+        select(BodyWeightGoal)
+        .where(BodyWeightGoal.user_id == user_id, BodyWeightGoal.active.is_(True))
+        .order_by(BodyWeightGoal.created_at.desc())
+        .limit(1)
+    )
+    preferences = training_preferences(db, user_id)
+    week = start_of_week(date.today(), preferences.week_start)
+    sessions = list(
+        db.scalars(
+            select(CardioSession).where(
+                CardioSession.user_id == user_id,
+                CardioSession.session_date >= week,
+                CardioSession.session_date <= week + timedelta(days=6),
+            )
+        )
+    )
+    return SharedGoals(
+        body_weight=SharedBodyWeightGoal.model_validate(goal) if goal else None,
+        zone2=zone2_week(sessions, week, preferences.zone2_goal_minutes),
+    )
+
+
+def shared_cardio(db: Session, user_id: str, sharing: ProfileSharing) -> list[SharedCardioSession]:
+    sessions = db.scalars(
+        select(CardioSession)
+        .where(
+            CardioSession.user_id == user_id,
+            or_(
+                CardioSession.source_workout_id.is_(None),
+                CardioSession.source_workout_id.not_in(sample_workout_ids()),
+            ),
+        )
+        .order_by(CardioSession.session_date.desc(), CardioSession.created_at.desc())
+        .limit(RECENT_CARDIO_SESSIONS)
+    )
+    shared = [SharedCardioSession.model_validate(session) for session in sessions]
+    if not sharing.share_notes:
+        for session in shared:
+            session.notes = None
+    return shared
+
+
+def pending_request_count(db: Session, user_id: str) -> int:
+    return (
+        db.scalar(
+            select(func.count())
+            .select_from(ProfileFollow)
+            .join(User, User.id == ProfileFollow.follower_id)
+            .where(
+                ProfileFollow.followee_id == user_id,
+                ProfileFollow.status == PENDING,
+                User.disabled_at.is_(None),
+            )
+        )
+        or 0
+    )
+
+
+def sharing_read(db: Session, sharing: ProfileSharing) -> SharingRead:
+    return SharingRead(
+        **SharingChoices.model_validate(sharing).model_dump(),
+        pending_requests=pending_request_count(db, sharing.user_id),
+    )
+
+
+@sharing_router.get("", response_model=SharingRead)
+def get_sharing(user: CurrentUser, db: Db) -> SharingRead:
+    return sharing_read(db, sharing_choices(db, user.id))
+
+
+@sharing_router.put("", response_model=SharingRead)
+def update_sharing(payload: SharingChoices, user: CurrentUser, db: Db) -> SharingRead:
+    sharing = db.get(ProfileSharing, user.id)
+    if sharing is None:
+        sharing = ProfileSharing(user_id=user.id)
+        db.add(sharing)
+    for key, value in payload.model_dump().items():
+        setattr(sharing, key, value)
+    if payload.visibility == PUBLIC:
+        # Anyone may follow a public profile, so waiting requests are approved.
+        db.execute(
+            update(ProfileFollow)
+            .where(ProfileFollow.followee_id == user.id, ProfileFollow.status == PENDING)
+            .values(status=ACCEPTED, accepted_at=utc_now())
+        )
+    db.commit()
+    db.refresh(sharing)
+    return sharing_read(db, sharing)
+
+
+@sharing_router.get("/profiles", response_model=list[SharedProfileSummary])
+def list_shared_profiles(user: CurrentUser, db: Db) -> list[SharedProfileSummary]:
+    require_sharing(db, user)
+    rows = db.execute(
+        select(User, ProfileSharing)
+        .join(ProfileSharing, ProfileSharing.user_id == User.id)
+        .where(ProfileSharing.visibility != PRIVATE, User.disabled_at.is_(None))
+    ).all()
+    following = {
+        follow.followee_id: follow
+        for follow in db.scalars(select(ProfileFollow).where(ProfileFollow.follower_id == user.id))
+    }
+    followers = set(
+        db.scalars(
+            select(ProfileFollow.follower_id).where(
+                ProfileFollow.followee_id == user.id, ProfileFollow.status == ACCEPTED
+            )
+        )
+    )
+    viewable_ids = [
+        member.id
+        for member, sharing in rows
+        if can_view(user, member, sharing, following.get(member.id))
+    ]
+    stats = workout_stats(db, viewable_ids)
+    profiles = [
+        profile_summary(
+            user,
+            member,
+            sharing,
+            following.get(member.id),
+            member.id in followers,
+            stats.get(member.id),
+        )
+        for member, sharing in rows
+    ]
+
+    def group(item: SharedProfileSummary) -> int:
+        if item.is_you:
+            return 0
+        if item.follow_status == ACCEPTED:
+            return 1
+        return 2 if item.can_view else 3
+
+    # You, the people you follow, other public profiles, then friends-only profiles to request.
+    profiles.sort(key=lambda item: item.display_name.casefold())
+    profiles.sort(key=lambda item: item.last_workout_date or date.min, reverse=True)
+    profiles.sort(key=group)
+    return profiles
+
+
+@sharing_router.get("/profiles/{user_id}", response_model=SharedProfileRead)
+def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfileRead:
+    member, sharing = visible_member(db, user, user_id)
+    follow = find_follow(db, user.id, member.id)
+    follows_you = (theirs := find_follow(db, member.id, user.id)) is not None and (
+        theirs.status == ACCEPTED
+    )
+    summary = profile_summary(
+        user,
+        member,
+        sharing,
+        follow,
+        follows_you,
+        workout_stats(db, [member.id]).get(member.id),
+    )
+    if not summary.can_view:
+        return SharedProfileRead(**summary.model_dump())
+    body_weight = (
+        [
+            SharedBodyMeasurement.model_validate(measurement)
+            for measurement in db.scalars(
+                select(BodyMeasurement)
+                .where(BodyMeasurement.user_id == member.id, BodyMeasurement.is_sample.is_(False))
+                .order_by(BodyMeasurement.measurement_date.desc())
+            )
+        ]
+        if sharing.share_body_weight
+        else None
+    )
+    return SharedProfileRead(
+        **summary.model_dump(),
+        body_weight=body_weight,
+        goals=shared_goals(db, member.id) if sharing.share_goals else None,
+        cardio_sessions=shared_cardio(db, member.id, sharing) if sharing.share_cardio else None,
+    )
+
+
+@sharing_router.get("/profiles/{user_id}/workouts", response_model=SharedWorkoutPage)
+def list_shared_workouts(
+    user_id: str,
+    user: CurrentUser,
+    db: Db,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=MAX_WORKOUT_PAGE)] = 10,
+) -> SharedWorkoutPage:
+    member, sharing = viewable_member(db, user, user_id)
+    owned = (TrainingWorkout.user_id == member.id, TrainingWorkout.is_sample.is_(False))
+    total = db.scalar(select(func.count(TrainingWorkout.id)).where(*owned)) or 0
+    workouts = list(
+        db.scalars(
+            select(TrainingWorkout)
+            .where(*owned)
+            .options(*workout_options())
+            .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+    )
+    records = (
+        db.scalars(
+            select(PersonalRecord)
+            .where(PersonalRecord.workout_id.in_([workout.id for workout in workouts]))
+            .options(selectinload(PersonalRecord.exercise))
+        )
+        if workouts
+        else []
+    )
+    return SharedWorkoutPage(
+        total=total,
+        workouts=[shared_workout(workout, sharing) for workout in workouts],
+        personal_records=[PersonalRecordRead.model_validate(record) for record in records],
+    )
+
+
+@sharing_router.get("/profiles/{user_id}/photo")
+def get_shared_profile_photo(
+    user_id: str, user: CurrentUser, db: Db, settings: AppSettings
+) -> FileResponse:
+    # The profile photo is always shared, including on friends-only profiles you do not follow.
+    member, _sharing = visible_member(db, user, user_id)
+    filename = member.profile_photo_filename
+    path = profile_photo_path(settings, filename) if filename else None
+    if path is None or not path.is_file():
+        raise api_error(404, "profile_photo_not_found", "This profile has no photo.")
+    # Revalidated on every use, so it disappears as soon as the owner stops sharing.
+    return FileResponse(
+        path, media_type="image/webp", headers={"Cache-Control": "private, no-cache"}
+    )
+
+
+@sharing_router.get("/profiles/{user_id}/machine-photos/{photo_id}")
+def get_shared_machine_photo(
+    user_id: str,
+    photo_id: str,
+    user: CurrentUser,
+    db: Db,
+    settings: AppSettings,
+    variant: Annotated[str, Query(pattern="^(thumbnail|full)$")] = "full",
+) -> FileResponse:
+    member, sharing = viewable_member(db, user, user_id)
+    in_shared_workout = exists(
+        select(movement_machine_photos.c.movement_id)
+        .join(WorkoutMovement, WorkoutMovement.id == movement_machine_photos.c.movement_id)
+        .join(TrainingWorkout, TrainingWorkout.id == WorkoutMovement.workout_id)
+        .where(
+            movement_machine_photos.c.machine_photo_id == MachinePhoto.id,
+            TrainingWorkout.user_id == member.id,
+            TrainingWorkout.is_sample.is_(False),
+        )
+    )
+    photo = (
+        db.scalar(
+            select(MachinePhoto).where(
+                MachinePhoto.id == photo_id, MachinePhoto.user_id == member.id, in_shared_workout
+            )
+        )
+        if sharing.share_machine_photos
+        else None
+    )
+    if photo is None:
+        raise api_error(404, "machine_photo_not_found", "That machine photo is not shared.")
+    filename = photo.thumbnail_filename if variant == "thumbnail" else photo.full_filename
+    root = settings.machine_photos_dir.resolve()
+    path = (root / filename).resolve()
+    if root not in path.parents or not path.is_file():
+        raise api_error(404, "machine_photo_not_found", "That machine photo is not shared.")
+    return FileResponse(
+        path, media_type=photo.media_type, headers={"Cache-Control": "private, no-cache"}
+    )
+
+
+@sharing_router.post("/follows/{user_id}", response_model=FollowRead)
+def follow_member(user_id: str, user: CurrentUser, db: Db) -> FollowRead:
+    if user_id == user.id:
+        raise api_error(422, "cannot_follow_yourself", "You cannot follow yourself.")
+    member, sharing = visible_member(db, user, user_id)
+    follow = find_follow(db, user.id, member.id)
+    if follow is None:
+        public = sharing.visibility == PUBLIC
+        follow = ProfileFollow(
+            follower_id=user.id,
+            followee_id=member.id,
+            status=ACCEPTED if public else PENDING,
+            accepted_at=utc_now() if public else None,
+        )
+        db.add(follow)
+        try:
+            db.commit()
+        except IntegrityError:
+            # A repeated tap raced this one; its request stands.
+            db.rollback()
+            follow = find_follow(db, user.id, member.id)
+    return FollowRead(status=follow.status if follow else "none")
+
+
+@sharing_router.delete("/follows/{user_id}", status_code=204)
+def unfollow_member(user_id: str, user: CurrentUser, db: Db) -> None:
+    """Unfollow, or withdraw a follow request. Always allowed, even after sharing stops."""
+    db.execute(
+        delete(ProfileFollow).where(
+            ProfileFollow.follower_id == user.id, ProfileFollow.followee_id == user_id
+        )
+    )
+    db.commit()
+
+
+@sharing_router.get("/followers", response_model=ConnectionsRead)
+def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
+    rows = db.execute(
+        select(User, ProfileFollow)
+        .join(ProfileFollow, ProfileFollow.follower_id == User.id)
+        .where(ProfileFollow.followee_id == user.id, User.disabled_at.is_(None))
+        .order_by(ProfileFollow.created_at.desc())
+    ).all()
+
+    def connection(member: User, follow: ProfileFollow) -> ConnectionRead:
+        return ConnectionRead(
+            id=member.id,
+            display_name=member.display_name,
+            profile_photo_url=photo_url(member),
+            since=as_utc(follow.accepted_at or follow.created_at),
+        )
+
+    return ConnectionsRead(
+        requests=[connection(*row) for row in rows if row[1].status == PENDING],
+        followers=[connection(*row) for row in rows if row[1].status == ACCEPTED],
+    )
+
+
+@sharing_router.post("/followers/{user_id}", status_code=204)
+def approve_follower(user_id: str, user: CurrentUser, db: Db) -> None:
+    follow = find_follow(db, user_id, user.id)
+    if follow is None:
+        raise api_error(404, "follow_request_not_found", "That follow request was withdrawn.")
+    if follow.status == PENDING:
+        follow.status = ACCEPTED
+        follow.accepted_at = utc_now()
+        db.commit()
+
+
+@sharing_router.delete("/followers/{user_id}", status_code=204)
+def remove_follower(user_id: str, user: CurrentUser, db: Db) -> None:
+    """Decline a follow request or remove a follower."""
+    db.execute(
+        delete(ProfileFollow).where(
+            ProfileFollow.follower_id == user_id, ProfileFollow.followee_id == user.id
+        )
+    )
+    db.commit()

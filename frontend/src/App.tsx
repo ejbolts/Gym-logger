@@ -17,6 +17,7 @@ import {
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { api } from './api';
+import { PrToast, type PrToastEntry } from './PrToast';
 import type {
   BodyMeasurement,
   BodyWeightGoal,
@@ -30,6 +31,7 @@ import type {
   ExerciseProgress,
   MachinePhoto,
   PersonalRecord,
+  SharedProfileSummary,
   TrackedSet,
   TrackedWorkout,
   TrainingPreferences,
@@ -170,6 +172,11 @@ import {
 } from './utils';
 import { VideoUpload } from './VideoUpload';
 import { ProfileScreen } from './ProfileScreen';
+import {
+  SharedProfileScreen,
+  SharedProfilesScreen,
+  type SharedWorkoutListProps,
+} from './SharedProfiles';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -362,8 +369,8 @@ function prettyDate(value: string): string {
 
 function recordTypeLabel(type: PersonalRecord['record_type']): string {
   return {
-    weight: 'weight PR',
-    reps_at_weight: 'rep PR',
+    weight: 'Weight PR',
+    reps_at_weight: 'Volume PR',
     estimated_1rm: 'estimated 1RM PR',
     duration: 'duration PR',
     distance: 'distance PR',
@@ -372,11 +379,9 @@ function recordTypeLabel(type: PersonalRecord['record_type']): string {
 
 function WorkoutCompletionDialog({
   records,
-  personalRecords,
   onClose,
 }: {
   records: PersonalRecord[];
-  personalRecords: PersonalRecord[];
   onClose: () => void;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -436,8 +441,8 @@ function WorkoutCompletionDialog({
             <strong>{record.exercise_name}</strong>
             <span>
               {recordTypeLabel(record.record_type)} · {record.value} {record.unit}
-              {record.record_type === 'reps_at_weight' && record.normalized_weight !== null
-                ? ` @ ${record.normalized_weight} ${personalRecords.find((item) => item.exercise_id === record.exercise_id && (item.record_type === 'weight' || item.record_type === 'estimated_1rm'))?.unit ?? 'kg'}`
+              {record.record_type === 'reps_at_weight' && record.weight_kg != null
+                ? ` @ ${record.weight_kg} kg`
                 : ''}
             </span>
           </div>
@@ -461,9 +466,13 @@ export function App() {
   const videosAllowed = canUploadVideos(user);
   const isAdmin = user?.is_admin === true;
   const initialHistoryState = isAppHistoryState(window.history.state) ? window.history.state : null;
-  const [tab, setTabState] = useState<AppTab>(() =>
-    initialHistoryState ? initialHistoryState.tab : appTabFromHash(window.location.hash),
-  );
+  const [tab, setTabState] = useState<AppTab>(() => {
+    const initialTab = initialHistoryState
+      ? initialHistoryState.tab
+      : appTabFromHash(window.location.hash);
+    // Which shared profile was open is not kept across a reload, so start from the list.
+    return initialTab === 'shared-profile' ? 'shared' : initialTab;
+  });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
@@ -495,6 +504,12 @@ export function App() {
     return window.location.hash === '#log' ? Date.now() : null;
   });
   const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
+  // The opened shared profile; each opening refetches it, while Back reveals the cached screen.
+  const [sharedProfile, setSharedProfile] = useState<{
+    id: string;
+    name: string;
+    opened: number;
+  } | null>(null);
   const [historyExerciseId, setHistoryExerciseId] = useState<string | null>(null);
   const sectionFromTab = historySectionForTab(tab);
   const [lastHistorySection, setLastHistorySection] = useState<HistorySection>(
@@ -520,6 +535,12 @@ export function App() {
     navigationActionRef.current = 'replace';
     setTabState('dashboard');
   }, [tab, videosAllowed]);
+  useEffect(() => {
+    // A reloaded #shared-profile link has no profile to show, so it opens the list instead.
+    if (tab !== 'shared-profile' || sharedProfile) return;
+    navigationActionRef.current = 'replace';
+    setTabState('shared');
+  }, [tab, sharedProfile]);
   useEffect(() => {
     // Only administrators can open the admin console, even from an old #admin link.
     if (tab !== 'admin' || isAdmin) return;
@@ -755,10 +776,19 @@ export function App() {
     setTab(wasEditing || resumedId ? 'history' : 'dashboard', { replace: true });
     setEditingWorkout(null);
 
-    void api
-      .listPersonalRecords({ workoutId: saved.id })
-      .then(setCompletionRecords)
-      .catch(() => undefined);
+    if (!wasEditing) {
+      const signature = (record: PersonalRecord) =>
+        `${record.exercise_id}:${record.record_type}:${record.weight_kg ?? record.normalized_weight}:${record.record_type === 'weight' ? (record.weight_kg ?? record.value) : record.value}`;
+      const existing = new Set(
+        personalRecords.filter((record) => record.workout_id === resumedId).map(signature),
+      );
+      void api
+        .listPersonalRecords({ workoutId: saved.id })
+        .then((records) =>
+          setCompletionRecords(records.filter((record) => !existing.has(signature(record)))),
+        )
+        .catch(() => undefined);
+    }
     void refreshData({ silent: true, activityLabel: 'Updating workout data…' });
   }
 
@@ -925,9 +955,13 @@ export function App() {
         ? { title: 'Videos', subtitle: 'Workout clips • uploads' }
         : tab === 'profile'
           ? { title: 'Profile', subtitle: user ? user.display_name : 'Account • security' }
-          : tab === 'admin' && isAdmin
-            ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
-            : null;
+          : tab === 'shared'
+            ? { title: 'Shared profiles', subtitle: 'Members sharing their training' }
+            : tab === 'shared-profile' && sharedProfile
+              ? { title: sharedProfile.name, subtitle: 'Shared profile' }
+              : tab === 'admin' && isAdmin
+                ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
+                : null;
   const activeMainTab = mainTabFor(tab);
   const showTabBar = tab !== 'log';
   // The home screen guide follows the release announcement, behind the same interruptions.
@@ -936,6 +970,15 @@ export function App() {
     tab,
     hasOtherDialog: message !== null || completionRecords.length > 0,
   });
+
+  function openSharedProfile(profile: SharedProfileSummary) {
+    setSharedProfile((current) => ({
+      id: profile.id,
+      name: profile.is_you ? 'Your shared profile' : profile.display_name,
+      opened: (current?.opened ?? 0) + 1,
+    }));
+    setTab('shared-profile');
+  }
 
   function openHistorySection(section: HistorySection, exerciseId: string | null = null) {
     setHistoryOpenId(null);
@@ -977,7 +1020,6 @@ export function App() {
       {completionRecords.length > 0 && (
         <WorkoutCompletionDialog
           records={completionRecords}
-          personalRecords={personalRecords}
           onClose={() => setCompletionRecords([])}
         />
       )}
@@ -1001,6 +1043,8 @@ export function App() {
           tab !== 'dashboard' &&
           tab !== 'videos' &&
           tab !== 'profile' &&
+          tab !== 'shared' &&
+          tab !== 'shared-profile' &&
           tab !== 'admin' && <TodaySkeleton />}
         {(tab === 'dashboard' || visitedTabs.has('dashboard')) && (
           <CachedTabPanel active={tab === 'dashboard'}>
@@ -1070,7 +1114,6 @@ export function App() {
                 initialWorkout={editingWorkout}
                 resumingWorkout={resumingWorkout}
                 currentBodyweight={measurements[0]?.weight_kg ?? null}
-                personalRecords={personalRecords}
                 historicalWorkouts={workouts}
                 restTimerEnabled={restTimerEnabled}
                 categoryColors={workoutTypeColors}
@@ -1176,9 +1219,36 @@ export function App() {
         )}
         {user && (tab === 'profile' || visitedTabs.has('profile')) && (
           <CachedTabPanel active={tab === 'profile'}>
-            <ProfileScreen />
+            <ProfileScreen onOpenSharedProfiles={() => setTab('shared')} />
           </CachedTabPanel>
         )}
+        {user && (tab === 'shared' || visitedTabs.has('shared')) && (
+          <CachedTabPanel active={tab === 'shared'}>
+            <SharedProfilesScreen
+              active={tab === 'shared'}
+              onOpenProfile={openSharedProfile}
+              onChooseSharing={() => setTab('profile')}
+            />
+          </CachedTabPanel>
+        )}
+        {user &&
+          sharedProfile &&
+          (tab === 'shared-profile' || visitedTabs.has('shared-profile')) && (
+            <CachedTabPanel active={tab === 'shared-profile'}>
+              <SharedProfileScreen
+                key={`${sharedProfile.id}-${sharedProfile.opened}`}
+                profileId={sharedProfile.id}
+                onChooseSharing={() => setTab('profile')}
+                renderWorkouts={(props) => (
+                  <SharedWorkoutHistory
+                    {...props}
+                    categoryColors={workoutTypeColors}
+                    weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
+                  />
+                )}
+              />
+            </CachedTabPanel>
+          )}
         {isAdmin && (tab === 'admin' || visitedTabs.has('admin')) && (
           <CachedTabPanel active={tab === 'admin'}>
             <AdminScreen active={tab === 'admin'} />
@@ -1800,7 +1870,6 @@ function WorkoutLogger({
   initialWorkout,
   resumingWorkout,
   currentBodyweight,
-  personalRecords,
   historicalWorkouts,
   restTimerEnabled,
   onExerciseHistory,
@@ -1820,7 +1889,6 @@ function WorkoutLogger({
   initialWorkout: TrackedWorkout | null;
   resumingWorkout: TrackedWorkout | null;
   currentBodyweight: number | null;
-  personalRecords: PersonalRecord[];
   historicalWorkouts: TrackedWorkout[];
   restTimerEnabled: boolean;
   onExerciseHistory: (exerciseId: string) => void;
@@ -2118,8 +2186,13 @@ function WorkoutLogger({
 
   const prBadges = useMemo(
     () =>
-      calculateDraftPrs(movements, personalRecords, historicalWorkouts, initialWorkout?.id ?? null),
-    [movements, personalRecords, historicalWorkouts, initialWorkout?.id],
+      calculateDraftPrs(
+        movements,
+        historicalWorkouts,
+        initialWorkout?.id ?? resumedWorkoutId,
+        workoutDate,
+      ),
+    [movements, historicalWorkouts, initialWorkout?.id, resumedWorkoutId, workoutDate],
   );
   const completedSetKeysRef = useRef(
     new Set(
@@ -2129,10 +2202,27 @@ function WorkoutLogger({
     ),
   );
   const [prConfettiBurst, setPrConfettiBurst] = useState(0);
+  const [prToastEntries, setPrToastEntries] = useState<PrToastEntry[]>([]);
+  const [prToastId, setPrToastId] = useState(0);
+  const celebratedPrsRef = useRef(
+    new Set(
+      movements.flatMap((movement) =>
+        movement.sets.flatMap((item) => {
+          const labels = prBadges.get(movement.key)?.get(item.key);
+          return item.completed && labels
+            ? [
+                `${movement.exercise.id}:${item.key}:${labels.join(',')}:${item.weight_kg}:${item.reps}`,
+              ]
+            : [];
+        }),
+      ),
+    ),
+  );
+  const closePrToast = useCallback(() => setPrToastEntries([]), []);
 
   useEffect(() => {
     const completedSetKeys = new Set<string>();
-    let achievedNewPr = false;
+    const entries: PrToastEntry[] = [];
     movements.forEach((movement) => {
       movement.sets.forEach((item) => {
         if (!item.completed) return;
@@ -2141,12 +2231,26 @@ function WorkoutLogger({
           !completedSetKeysRef.current.has(item.key) &&
           prBadges.get(movement.key)?.has(item.key)
         ) {
-          achievedNewPr = true;
+          const labels = prBadges.get(movement.key)!.get(item.key)!;
+          const signature = `${movement.exercise.id}:${item.key}:${labels.join(',')}:${item.weight_kg}:${item.reps}`;
+          if (!celebratedPrsRef.current.has(signature)) {
+            celebratedPrsRef.current.add(signature);
+            entries.push({
+              exercise: movement.exercise.name,
+              labels,
+              reps: item.reps!,
+              weightKg: item.weight_kg!,
+            });
+          }
         }
       });
     });
     completedSetKeysRef.current = completedSetKeys;
-    if (achievedNewPr) setPrConfettiBurst((current) => current + 1);
+    if (entries.length) {
+      setPrConfettiBurst((current) => current + 1);
+      setPrToastId((current) => current + 1);
+      setPrToastEntries(entries);
+    }
   }, [movements, prBadges]);
   const recentExerciseIds = useMemo(() => {
     const seen = new Set<string>();
@@ -2561,6 +2665,9 @@ function WorkoutLogger({
 
   return (
     <section className="logger-screen content-page">
+      {prToastEntries.length > 0 && (
+        <PrToast key={`pr-toast-${prToastId}`} entries={prToastEntries} onClose={closePrToast} />
+      )}
       {prConfettiBurst > 0 &&
         (motionReduced() ? null : (
           <ConfettiBurst key={prConfettiBurst} onComplete={() => setPrConfettiBurst(0)} />
@@ -4005,6 +4112,7 @@ function MovementCard({
               </svg>
             </button>
           </h2>
+          {movement.exercise.is_custom && <small className="custom-exercise-label">Custom</small>}
           <p>
             {[movement.exercise.muscle_group, movement.exercise.equipment]
               .filter(Boolean)
@@ -4869,6 +4977,7 @@ function ExercisePicker({
             <strong>
               <FuzzyHighlightedText value={exercise.name} query={query} />
             </strong>
+            {exercise.is_custom && <small className="custom-exercise-label">Custom</small>}
             <small className="exercise-option-tags">
               <em>{exercise.muscle_group}</em>
               {exercise.equipment && <em>{exercise.equipment}</em>}
@@ -5229,6 +5338,7 @@ const RANGE_LABELS: Record<BodyTrendRange, string> = {
 function ProgressScreen({
   exercises,
   measurements,
+  personalRecords,
   onOpenWorkout,
   embedded = false,
   initialExerciseId = null,
@@ -5237,6 +5347,7 @@ function ProgressScreen({
 }: {
   exercises: Exercise[];
   measurements: BodyMeasurement[];
+  personalRecords: PersonalRecord[];
   onOpenWorkout: (workoutId: string, exerciseId: string) => void;
   embedded?: boolean;
   initialExerciseId?: string | null;
@@ -5304,17 +5415,19 @@ function ProgressScreen({
     : null;
   const volumePoint = progress ? personalBestProgressPoint(progress.points, 'volume_kg') : null;
   const bodyweight = measurements[0]?.weight_kg ?? null;
-  const recordIds = useMemo(() => {
-    const ids = new Set<string>();
-    let best = 0;
-    for (const point of progressPointsForChart(progress?.points ?? [], 'estimated_1rm', 'all')) {
-      if (point.estimated_1rm > best) {
-        best = point.estimated_1rm;
-        ids.add(point.workout_id);
-      }
-    }
-    return ids;
-  }, [progress]);
+  const recordIds = useMemo(
+    () =>
+      new Set(
+        personalRecords
+          .filter(
+            (record) =>
+              record.exercise_id === exerciseId &&
+              (record.record_type === 'weight' || record.record_type === 'reps_at_weight'),
+          )
+          .map((record) => record.workout_id),
+      ),
+    [personalRecords, exerciseId],
+  );
   const sessionsNewestFirst = (progress?.points ?? []).slice().reverse();
   const formatMetric = (value: number) =>
     metric === 'volume_kg'
@@ -7896,6 +8009,7 @@ function HistoryScreen({
         <CachedTabPanel active={section === 'progress'}>
           <ProgressScreen
             exercises={exercises}
+            personalRecords={personalRecords}
             measurements={measurements}
             onOpenWorkout={(workoutId, exerciseId) => onOpenWorkout(workoutId, exerciseId)}
             embedded
@@ -7922,7 +8036,6 @@ function HistoryScreen({
           >
             <header className="pulse-card-header">
               <h2>Calendar</h2>
-              <span>Sets per week · swipe for earlier months</span>
             </header>
             <InteractiveWorkoutCalendar
               entries={heatmap}
@@ -8000,6 +8113,59 @@ function HistoryScreen({
   );
 }
 
+/** Another member's shared workouts, grouped by week like History but read-only. */
+function SharedWorkoutHistory({
+  workouts,
+  personalRecords,
+  categoryColors,
+  weekStartDay,
+}: SharedWorkoutListProps & { categoryColors: WorkoutTypeColors; weekStartDay: number }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [expandedPhoto, setExpandedPhoto] = useState<MachinePhoto | null>(null);
+  const targetExerciseRef = useRef<HTMLDivElement>(null);
+  const today = localDate();
+  const weekGroups = useMemo(
+    () => groupWorkoutsByWeek(workouts, weekStartDay),
+    [weekStartDay, workouts],
+  );
+  const recordCounts = useMemo(() => recordCountsByWorkout(personalRecords), [personalRecords]);
+
+  return weekGroups.map((group) => {
+    const label = weekGroupLabel(group.weekStart, today, weekStartDay);
+    return (
+      <section className="history-week" key={group.weekStart} aria-label={label}>
+        <header className="history-week-header">
+          <h2>{label}</h2>
+          <span className="num">
+            {group.workouts.length} {group.workouts.length === 1 ? 'workout' : 'workouts'} ·{' '}
+            {group.sets} sets
+            {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg)}` : ''}
+          </span>
+        </header>
+        <div className="history-week-list">
+          {group.workouts.map((workout) => (
+            <HistoryWorkoutCard
+              key={workout.id}
+              workout={workout}
+              open={openId === workout.id}
+              summaryRef={null}
+              targetExerciseId={null}
+              targetExerciseRef={targetExerciseRef}
+              categoryColor={categoryColors[workout.category]}
+              records={recordCounts.get(workout.id) ?? 0}
+              personalRecords={personalRecords}
+              activeWorkout={false}
+              expandedPhoto={expandedPhoto}
+              onExpandPhoto={setExpandedPhoto}
+              onToggle={() => setOpenId((current) => (current === workout.id ? null : workout.id))}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  });
+}
+
 function HistoryWorkoutCard({
   workout,
   open,
@@ -8030,10 +8196,11 @@ function HistoryWorkoutCard({
   expandedPhoto: MachinePhoto | null;
   onExpandPhoto: (photo: MachinePhoto | null) => void;
   onToggle: () => void;
-  onOpenExercise: (exerciseId: string) => void;
-  onResume: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  /** Omitted for another member's shared workout, which is read-only. */
+  onOpenExercise?: (exerciseId: string) => void;
+  onResume?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const completedWorkoutSets = workout.movements
     .flatMap((movement) => movement.sets)
@@ -8122,14 +8289,18 @@ function HistoryWorkoutCard({
                 tabIndex={targeted ? -1 : undefined}
               >
                 <div className="history-movement-header">
-                  <button
-                    type="button"
-                    className="history-exercise-link"
-                    onClick={() => onOpenExercise(movement.exercise.id)}
-                  >
-                    {movement.exercise.name}
-                    <Icon name="chevron-right" />
-                  </button>
+                  {onOpenExercise ? (
+                    <button
+                      type="button"
+                      className="history-exercise-link"
+                      onClick={() => onOpenExercise(movement.exercise.id)}
+                    >
+                      {movement.exercise.name}
+                      <Icon name="chevron-right" />
+                    </button>
+                  ) : (
+                    <strong className="history-exercise-name">{movement.exercise.name}</strong>
+                  )}
                   {best && <span className="num">Top {setLabel(best)}</span>}
                 </div>
                 {movement.machine_photos.length > 0 && (
@@ -8184,22 +8355,24 @@ function HistoryWorkoutCard({
             );
           })}
           {workout.notes && <p className="history-workout-notes">{workout.notes}</p>}
-          <div className="workout-actions">
-            {!activeWorkout && (
-              <button className="resume-workout-button" type="button" onClick={onResume}>
-                Resume from now
+          {onResume && onEdit && onDelete && (
+            <div className="workout-actions">
+              {!activeWorkout && (
+                <button className="resume-workout-button" type="button" onClick={onResume}>
+                  Resume from now
+                </button>
+              )}
+              <button type="button" onClick={onEdit}>
+                Edit
               </button>
-            )}
-            <button type="button" onClick={onEdit}>
-              Edit
-            </button>
-            <InlineConfirmButton
-              className="delete-workout"
-              label="Delete"
-              confirmLabel="Confirm delete"
-              onConfirm={onDelete}
-            />
-          </div>
+              <InlineConfirmButton
+                className="delete-workout"
+                label="Delete"
+                confirmLabel="Confirm delete"
+                onConfirm={onDelete}
+              />
+            </div>
+          )}
         </div>
       )}
     </article>

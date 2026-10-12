@@ -170,6 +170,7 @@ export function ProgressExerciseSearch({
               onClick={() => choose(exercise)}
             >
               <strong>{exercise.name}</strong>
+              {exercise.is_custom && <small className="custom-exercise-label">Custom</small>}
               <small>
                 {exercise.muscle_group}
                 {exercise.equipment ? ` · ${exercise.equipment}` : ''}

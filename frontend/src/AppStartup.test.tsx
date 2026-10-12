@@ -220,6 +220,22 @@ describe('App startup', () => {
     expect(markup).toContain('Delete account');
   });
 
+  it('offers profile sharing on the Profile screen', () => {
+    const markup = renderSignedIn('#profile', account);
+
+    expect(markup).toContain('Profile sharing');
+    expect(markup).toContain('Loading your sharing choices');
+  });
+
+  it('opens the shared profile list, and the list for a reloaded profile link', () => {
+    for (const hash of ['#shared', '#shared-profile']) {
+      const markup = renderSignedIn(hash, account);
+
+      expect(markup).toContain('<strong>Shared profiles</strong>');
+      expect(markup).toContain('Loading shared profiles');
+    }
+  });
+
   it('offers the Profile entry point on Today', () => {
     const today = renderToday({ onOpenProfile: vi.fn(), profileLabel: 'Lifter' });
     expect(today).toContain('aria-label="Profile: Lifter"');

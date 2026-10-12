@@ -81,3 +81,20 @@ def test_create_cardio_exercise_without_equipment(client):
 )
 def test_create_exercise_validates_required_fields(client, changes):
     assert client.post("/api/exercises", json=exercise_payload(**changes)).status_code == 422
+
+
+def test_custom_exercise_is_private_to_its_creator(client, other_client):
+    created = client.post("/api/exercises", json=exercise_payload()).json()
+
+    assert created["is_custom"] is True
+    assert created in client.get("/api/exercises", params={"search": "lat exercise"}).json()
+    assert other_client.get("/api/exercises", params={"search": "lat exercise"}).json() == []
+    other_names = [item["name"] for item in other_client.get("/api/exercises").json()]
+    assert "Custom lat exercise" not in other_names
+    assert other_client.get(f"/api/progress/{created['id']}").status_code == 404
+    favorite = other_client.patch(
+        f"/api/exercises/{created['id']}/favorite", json={"is_favorite": True}
+    )
+    assert favorite.status_code == 404
+    # The same name stays available to the other account as its own custom exercise.
+    assert other_client.post("/api/exercises", json=exercise_payload()).status_code == 201

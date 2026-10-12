@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
+import { HomeLayoutSections } from './HomeLayoutSections';
+import { useHomeLayout } from './useHomeLayout';
+import type { HomeSectionId } from './homeLayout';
 import { Meter, SparkBars, Sparkline } from './PulseCharts';
 import {
   averageOf,
@@ -63,8 +66,8 @@ export function SettingsButton({ onClick }: { onClick: () => void }) {
 }
 
 const RECORD_LABELS: Partial<Record<PersonalRecord['record_type'], string>> = {
-  estimated_1rm: 'Estimated 1RM',
-  weight: 'Heaviest weight',
+  reps_at_weight: 'Volume PR',
+  weight: 'Weight PR',
 };
 
 export interface TodayScreenProps {
@@ -181,57 +184,10 @@ export function TodayScreen({
       : CATEGORY_LABELS[recommendation.category]
     : null;
 
-  return (
-    <section className="today-screen content-page">
-      <PageHeader
-        eyebrow={parseLocalDate(today).toLocaleDateString('en-GB', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        })}
-        title="Today"
-        onOpenSettings={onOpenSettings}
-        actions={
-          <>
-            {onOpenProfile && (
-              <button
-                className="icon-button-pulse profile-button"
-                type="button"
-                onClick={onOpenProfile}
-                aria-label={profileLabel ? `Profile: ${profileLabel}` : 'Profile'}
-              >
-                {profileLabel ? (
-                  <ProfileAvatar
-                    className="profile-button-initial"
-                    user={{
-                      display_name: profileLabel,
-                      username: '',
-                      profile_photo_url: profilePhotoUrl,
-                    }}
-                  />
-                ) : (
-                  <Icon name="user" />
-                )}
-              </button>
-            )}
-            {onOpenVideos && (
-              <button
-                className="icon-button-pulse"
-                type="button"
-                onClick={onOpenVideos}
-                aria-label="Video logger"
-                data-guide-target="videos"
-              >
-                <Icon name="video" />
-              </button>
-            )}
-          </>
-        }
-      />
-
-      {workoutStartedAt !== null ? (
-        <LiveWorkoutCard startedAt={workoutStartedAt} onResume={onResumeWorkout} />
-      ) : (
+  const home = useHomeLayout();
+  const sections: Record<HomeSectionId, ReactNode> = {
+    'next-workout':
+      workoutStartedAt === null ? (
         <section className="pulse-card next-session" aria-labelledby="next-session-title">
           <p className="next-session-tag">
             {recommendation && (
@@ -306,56 +262,54 @@ export function TodayScreen({
             )}
           </div>
         </section>
-      )}
-
-      <section className="pulse-kpis" aria-label="This week">
-        <button type="button" className="pulse-kpi" onClick={onOpenHistory}>
-          <span>Workouts</span>
-          <strong>{workoutsThisWeek ?? '–'}</strong>
-          <em>
-            {averageWorkouts === null ? 'This week' : `12-wk avg ${averageWorkouts.toFixed(1)}`}
-          </em>
-          <SparkBars
-            values={weeks.map((week) => week.workouts)}
-            label="Workouts per week, last 12 weeks"
-          />
-        </button>
-        <button
-          type="button"
-          className="pulse-kpi"
-          onClick={onOpenCardio}
-          data-guide-target="cardio"
-        >
-          <span>Cardio sessions</span>
-          <strong>{cardioSessionsThisWeek ?? '–'}</strong>
-          <em>
-            {averageCardioSessions === null
-              ? 'This week'
-              : `12-wk avg ${averageCardioSessions.toFixed(1)}`}
-          </em>
-          <SparkBars
-            values={weeks.map((week) => week.cardioSessions)}
-            label="Cardio sessions per week, last 12 weeks"
-          />
-        </button>
-        <button type="button" className="pulse-kpi" onClick={onOpenBody}>
-          <span>Body weight</span>
-          <strong>{latest ? `${latest.weight_kg.toFixed(1)} kg` : '–'}</strong>
-          <em>
-            {monthChange !== null
-              ? `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${Math.abs(monthChange).toFixed(1)} kg / 4 wk`
-              : measurements.length
-                ? `${measurements.length} ${measurements.length === 1 ? 'check-in' : 'check-ins'}`
-                : 'No check-ins'}
-          </em>
-          <Sparkline
-            values={weeklyWeights}
-            label="Average body weight per week, last 12 weeks"
-            height={26}
-          />
-        </button>
-      </section>
-
+      ) : null,
+    workouts: (
+      <button type="button" className="pulse-kpi" onClick={onOpenHistory}>
+        <span>Workouts</span>
+        <strong>{workoutsThisWeek ?? '–'}</strong>
+        <em>
+          {averageWorkouts === null ? 'This week' : `12-wk avg ${averageWorkouts.toFixed(1)}`}
+        </em>
+        <SparkBars
+          values={weeks.map((week) => week.workouts)}
+          label="Workouts per week, last 12 weeks"
+        />
+      </button>
+    ),
+    'cardio-sessions': (
+      <button type="button" className="pulse-kpi" onClick={onOpenCardio} data-guide-target="cardio">
+        <span>Cardio sessions</span>
+        <strong>{cardioSessionsThisWeek ?? '–'}</strong>
+        <em>
+          {averageCardioSessions === null
+            ? 'This week'
+            : `12-wk avg ${averageCardioSessions.toFixed(1)}`}
+        </em>
+        <SparkBars
+          values={weeks.map((week) => week.cardioSessions)}
+          label="Cardio sessions per week, last 12 weeks"
+        />
+      </button>
+    ),
+    'weekly-bodyweight': (
+      <button type="button" className="pulse-kpi" onClick={onOpenBody}>
+        <span>Body weight</span>
+        <strong>{latest ? `${latest.weight_kg.toFixed(1)} kg` : '–'}</strong>
+        <em>
+          {monthChange !== null
+            ? `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${Math.abs(monthChange).toFixed(1)} kg / 4 wk`
+            : measurements.length
+              ? `${measurements.length} ${measurements.length === 1 ? 'check-in' : 'check-ins'}`
+              : 'No check-ins'}
+        </em>
+        <Sparkline
+          values={weeklyWeights}
+          label="Average body weight per week, last 12 weeks"
+          height={26}
+        />
+      </button>
+    ),
+    consistency: (
       <section className="calendar-panel pulse-card" aria-labelledby="consistency-title">
         <header className="pulse-card-header">
           <h2 id="consistency-title">Consistency</h2>
@@ -379,7 +333,8 @@ export function TodayScreen({
         </div>
         {calendar}
       </section>
-
+    ),
+    'muscle-sets': (
       <section className="pulse-card" aria-labelledby="muscle-sets-title">
         <header className="pulse-card-header">
           <h2 id="muscle-sets-title">Sets per muscle</h2>
@@ -414,58 +369,61 @@ export function TodayScreen({
           </p>
         )}
       </section>
-
-      <div className="pulse-pair">
-        <button type="button" className="pulse-card pulse-mini" onClick={onOpenCardio}>
-          <span>Zone 2 cardio</span>
-          <strong>
-            {cardioMinutes ?? '–'}
-            {zone2 && <small> / {zone2.goal_minutes} min</small>}
-          </strong>
-          {zone2 && (
-            <Meter
-              value={zone2.completed_minutes}
-              max={zone2.goal_minutes}
-              label="Zone 2 minutes this week"
-            />
-          )}
-          <p>
-            {zone2
-              ? zone2.complete
-                ? 'Weekly goal reached'
-                : `${zone2.remaining_minutes} min to go${zone2DaysLeft !== null ? ` · ${zone2DaysLeft} ${zone2DaysLeft === 1 ? 'day' : 'days'} left` : ''}`
-              : 'Minutes this week'}
-          </p>
-        </button>
-        <button type="button" className="pulse-card pulse-mini" onClick={onOpenBody}>
-          <span>Bodyweight</span>
-          <strong>
-            {latest ? latest.weight_kg.toFixed(1) : '–'}
-            <small> kg</small>
-          </strong>
-          <Sparkline values={recentWeights} label="Bodyweight, last 30 check-ins" />
-          <p className={monthChange !== null && monthChange < 0 ? 'trend-down' : ''}>
-            {monthChange === null
-              ? `${measurements.length} check-ins`
-              : `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${Math.abs(monthChange).toFixed(1)} kg in 30 days`}
-          </p>
-        </button>
-      </div>
-
+    ),
+    zone2: (
+      <button type="button" className="pulse-card pulse-mini" onClick={onOpenCardio}>
+        <span>Zone 2 cardio</span>
+        <strong>
+          {cardioMinutes ?? '–'}
+          {zone2 && <small> / {zone2.goal_minutes} min</small>}
+        </strong>
+        {zone2 && (
+          <Meter
+            value={zone2.completed_minutes}
+            max={zone2.goal_minutes}
+            label="Zone 2 minutes this week"
+          />
+        )}
+        <p>
+          {zone2
+            ? zone2.complete
+              ? 'Weekly goal reached'
+              : `${zone2.remaining_minutes} min to go${zone2DaysLeft !== null ? ` · ${zone2DaysLeft} ${zone2DaysLeft === 1 ? 'day' : 'days'} left` : ''}`
+            : 'Minutes this week'}
+        </p>
+      </button>
+    ),
+    'bodyweight-trend': (
+      <button type="button" className="pulse-card pulse-mini" onClick={onOpenBody}>
+        <span>Bodyweight</span>
+        <strong>
+          {latest ? latest.weight_kg.toFixed(1) : '–'}
+          <small> kg</small>
+        </strong>
+        <Sparkline values={recentWeights} label="Bodyweight, last 30 check-ins" />
+        <p className={monthChange !== null && monthChange < 0 ? 'trend-down' : ''}>
+          {monthChange === null
+            ? `${measurements.length} check-ins`
+            : `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${Math.abs(monthChange).toFixed(1)} kg in 30 days`}
+        </p>
+      </button>
+    ),
+    'daily-check-in': (
       <DashboardQuickBodyweight
         latestBodyweight={latest?.weight_kg ?? null}
         todayBodyweight={todayBodyweight}
         onSave={onSaveBodyweight}
       />
-
-      {records.length > 0 && (
-        <section className="pulse-card" aria-labelledby="records-title">
-          <header className="pulse-card-header">
-            <h2 id="records-title">Recent records</h2>
-            <button type="button" className="text-link" onClick={() => onOpenProgress()}>
-              Progress
-            </button>
-          </header>
+    ),
+    records: (
+      <section className="pulse-card" aria-labelledby="records-title">
+        <header className="pulse-card-header">
+          <h2 id="records-title">Recent records</h2>
+          <button type="button" className="text-link" onClick={() => onOpenProgress()}>
+            Progress
+          </button>
+        </header>
+        {records.length ? (
           <ul className="record-list">
             {records.map((record) => (
               <li key={record.id}>
@@ -476,7 +434,11 @@ export function TodayScreen({
                   <span className="record-copy">
                     <b>{record.exercise_name ?? 'Exercise'}</b>
                     <small>
-                      {RECORD_LABELS[record.record_type]} · {shortDate(record.achieved_date)}
+                      {RECORD_LABELS[record.record_type]}
+                      {record.record_type === 'reps_at_weight' && record.weight_kg != null
+                        ? ` @ ${record.weight_kg} kg`
+                        : ''}{' '}
+                      · {shortDate(record.achieved_date)}
                     </small>
                   </span>
                   <strong className="num">
@@ -486,8 +448,101 @@ export function TodayScreen({
               </li>
             ))}
           </ul>
-        </section>
+        ) : (
+          <p className="pulse-empty-line">Your next strength milestone will appear here.</p>
+        )}
+      </section>
+    ),
+  };
+
+  return (
+    <section className="today-screen content-page">
+      <PageHeader
+        eyebrow={parseLocalDate(today).toLocaleDateString('en-GB', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })}
+        title="Today"
+        onOpenSettings={onOpenSettings}
+        actions={
+          <>
+            <button
+              ref={home.editButton}
+              className="icon-button-pulse"
+              type="button"
+              aria-label="Edit Home layout"
+              aria-pressed={home.editing}
+              disabled={!home.loaded || home.editing}
+              onClick={home.edit}
+            >
+              <Icon name="edit" />
+            </button>
+            {onOpenProfile && (
+              <button
+                className="icon-button-pulse profile-button"
+                type="button"
+                onClick={onOpenProfile}
+                aria-label={profileLabel ? `Profile: ${profileLabel}` : 'Profile'}
+              >
+                {profileLabel ? (
+                  <ProfileAvatar
+                    className="profile-button-initial"
+                    user={{
+                      display_name: profileLabel,
+                      username: '',
+                      profile_photo_url: profilePhotoUrl,
+                    }}
+                  />
+                ) : (
+                  <Icon name="user" />
+                )}
+              </button>
+            )}
+            {onOpenVideos && (
+              <button
+                className="icon-button-pulse"
+                type="button"
+                onClick={onOpenVideos}
+                aria-label="Video logger"
+                data-guide-target="videos"
+              >
+                <Icon name="video" />
+              </button>
+            )}
+          </>
+        }
+      />
+
+      {home.loadError && (
+        <p className="inline-error" role="alert">
+          Could not load your saved layout.{' '}
+          <button type="button" className="text-link" onClick={home.retry}>
+            Retry
+          </button>
+        </p>
       )}
+      <p className="sr-only" role="status">
+        {home.message}
+      </p>
+      {workoutStartedAt !== null && (
+        <LiveWorkoutCard startedAt={workoutStartedAt} onResume={onResumeWorkout} />
+      )}
+      <HomeLayoutSections
+        layout={home.editing ? home.draft : home.layout}
+        sections={sections}
+        edit={
+          home.editing
+            ? {
+                onChange: home.change,
+                onSave: () => void home.save(),
+                onCancel: home.cancel,
+                saving: home.saving,
+                error: home.error,
+              }
+            : undefined
+        }
+      />
     </section>
   );
 }

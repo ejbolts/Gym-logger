@@ -237,7 +237,7 @@ describe('training summary helpers', () => {
     ]);
   });
 
-  it('surfaces the newest weight and estimated 1RM records first', () => {
+  it('surfaces weight and volume records and ignores legacy estimated 1RM records', () => {
     const record = (
       id: string,
       date: string,
@@ -261,6 +261,6 @@ describe('training summary helpers', () => {
       record('c', '2026-10-05', 'weight'),
       record('d', '2026-10-05', 'estimated_1rm'),
     ];
-    expect(recentStrengthRecords(records, 2).map((item) => item.id)).toEqual(['d', 'c']);
+    expect(recentStrengthRecords(records, 2).map((item) => item.id)).toEqual(['c', 'b']);
   });
 });

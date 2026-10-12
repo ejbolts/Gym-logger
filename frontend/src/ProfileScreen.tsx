@@ -10,6 +10,7 @@ import {
 import { optimisePhoto } from './photoOptimise';
 import { ProfileAvatar } from './ProfileAvatar';
 import { formatMemberSince } from './profileDisplay';
+import { ProfileSharingPanel } from './ProfileSharing';
 import type { User } from './types';
 import { useUserSession } from './userContext';
 
@@ -470,7 +471,7 @@ function DangerZone() {
   );
 }
 
-export function ProfileScreen() {
+export function ProfileScreen({ onOpenSharedProfiles }: { onOpenSharedProfiles: () => void }) {
   const { user, updateUser } = useUserSession();
   if (!user) return null;
   const memberSince = formatMemberSince(user.created_at);
@@ -491,6 +492,7 @@ export function ProfileScreen() {
         </div>
         <PhotoControls user={user} onSaved={updateUser} />
       </section>
+      <ProfileSharingPanel onOpenSharedProfiles={onOpenSharedProfiles} />
       <DetailsForm user={user} onSaved={updateUser} />
       <PasswordForm />
       <SessionPanel />
