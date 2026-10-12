@@ -3,8 +3,9 @@
   "title": "Make Gym Logger your own",
   "summary": "Arrange your Home Screen, personalise your profile, and explore the app guide.",
   "changes": [
-    "Use the pencil on Today to drag sections, hide or add cards, and save your Home layout to your account across devices.",
-    "Use move arrows for accessible reordering, Cancel to discard edits, or Reset layout to restore the defaults. Active workouts always stay visible.",
+    "Tap the pencil on Today to rearrange the actual cards, with a gentle iOS-style wiggle and a drag handle at each card's top right.",
+    "Use the minus buttons to hide cards or Add sections to restore them. Save your layout across devices, Cancel edits, or Reset to the defaults. Keyboard arrow keys work on the drag handles; reduced motion turns off the wiggle.",
+    "Keep active workouts visible while arranging Home, and see a cleaner History calendar without the swipe hint.",
     "Follow the feature tour with highlighted controls, Next, Back and Skip.",
     "Send private feedback or feature requests from Settings or the tour, with clear delivery details.",
     "See Home Screen installation steps before the tour ends, using gym-logger.duckdns.org.",

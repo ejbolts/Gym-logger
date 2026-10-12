@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import {
   defaultHomeLayout,
@@ -11,245 +11,289 @@ import {
 } from './homeLayout';
 import './homeLayout.css';
 
-export function HomeLayoutSections({
-  layout,
-  sections,
-}: {
-  layout: HomeLayout;
-  sections: Record<HomeSectionId, ReactNode>;
-}) {
-  const visible = layout.order.filter((id) => !layout.hidden.includes(id) && sections[id] != null);
-  const spans = homeSectionSpans(visible);
-  return (
-    <div className="home-sections">
-      {visible.map((id, index) => (
-        <div
-          key={id}
-          data-home-section={id}
-          style={{ gridColumn: `span ${spans[index]}` }}
-          className={`home-section home-section-${HOME_SECTIONS.find((section) => section.id === id)!.size}`}
-        >
-          {sections[id]}
-        </div>
-      ))}
-      {layout.hidden.length === HOME_SECTIONS.length && (
-        <p className="pulse-empty-line home-empty">
-          Your Home Screen is clear. Use the edit button to add sections.
-        </p>
-      )}
-    </div>
-  );
-}
-
-export function HomeLayoutEditor({
-  draft,
-  onChange,
-  onSave,
-  onCancel,
-  saving,
-  error,
-}: {
-  draft: HomeLayout;
+interface HomeEditActions {
   onChange: (layout: HomeLayout) => void;
   onSave: () => void;
   onCancel: () => void;
   saving: boolean;
   error: string | null;
+}
+interface CardDrag {
+  id: HomeSectionId;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startScrollY: number;
+  clientX: number;
+  clientY: number;
+  card: HTMLElement;
+  handle: HTMLButtonElement;
+  target: HomeSectionId | null;
+}
+
+export function HomeLayoutSections({
+  layout,
+  sections,
+  edit,
+}: {
+  layout: HomeLayout;
+  sections: Record<HomeSectionId, ReactNode>;
+  edit?: HomeEditActions;
 }) {
+  const visible = layout.order.filter(
+    (id) => !layout.hidden.includes(id) && (edit || sections[id] != null),
+  );
+  const hidden = layout.order.filter((id) => layout.hidden.includes(id));
+  const spans = homeSectionSpans(visible);
   const [dragging, setDragging] = useState<HomeSectionId | null>(null);
   const [over, setOver] = useState<HomeSectionId | null>(null);
   const [announcement, setAnnouncement] = useState('');
-  const dropTarget = useRef<HomeSectionId | null>(null);
-  const visible = draft.order.filter((id) => !draft.hidden.includes(id));
-  const hidden = draft.order.filter((id) => draft.hidden.includes(id));
+  const dragRef = useRef<CardDrag | null>(null);
   const titleFor = (id: HomeSectionId) => HOME_SECTIONS.find((section) => section.id === id)!.title;
 
   function move(source: HomeSectionId, target: HomeSectionId) {
-    const next = moveHomeSection(draft, source, target);
-    onChange(next);
+    if (!edit || edit.saving) return;
+    const next = moveHomeSection(layout, source, target);
+    edit.onChange(next);
     setAnnouncement(
       `${titleFor(source)} moved to position ${next.order.filter((id) => !next.hidden.includes(id)).indexOf(source) + 1}.`,
     );
   }
-
   function stopDrag() {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag) {
+      drag.card.style.removeProperty('--home-drag-x');
+      drag.card.style.removeProperty('--home-drag-y');
+      if (drag.handle.hasPointerCapture(drag.pointerId))
+        drag.handle.releasePointerCapture(drag.pointerId);
+    }
     setDragging(null);
     setOver(null);
-    dropTarget.current = null;
   }
+  function updateTarget(drag: CardDrag) {
+    const card = document
+      .elementFromPoint(drag.clientX, drag.clientY)
+      ?.closest<HTMLElement>('[data-home-section]');
+    const target = card?.dataset.homeSection as HomeSectionId | undefined;
+    drag.target = target && target !== drag.id ? target : null;
+    setOver(drag.target);
+  }
+  useEffect(() => {
+    if (!dragging) return;
+    let frame = 0;
+    const scroll = () => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      // Keep scrolling while a finger is held at an edge, even without more moves.
+      const delta = drag.clientY < 160 ? -12 : drag.clientY > window.innerHeight - 90 ? 12 : 0;
+      if (delta) {
+        window.scrollBy(0, delta);
+        drag.card.style.setProperty(
+          '--home-drag-y',
+          `${drag.clientY - drag.startY + window.scrollY - drag.startScrollY}px`,
+        );
+        updateTarget(drag);
+      }
+      frame = requestAnimationFrame(scroll);
+    };
+    frame = requestAnimationFrame(scroll);
+    return () => cancelAnimationFrame(frame);
+  }, [dragging]);
 
+  const busy = Boolean(edit?.saving || dragging);
   return (
-    <section className="home-layout-editor" aria-labelledby="home-layout-title">
-      <div className="home-layout-toolbar pulse-card">
-        <h2 id="home-layout-title">Make Home your own</h2>
-        <p>
-          Drag the handles or use the arrows. Hide sections you don’t need and add them back
-          anytime.
-        </p>
-        <div className="home-layout-actions">
-          <button className="pulse-button primary" type="button" disabled={saving} onClick={onSave}>
-            <Icon name="check" />
-            {saving ? 'Saving…' : 'Save layout'}
-          </button>
-          <button
-            className="pulse-button secondary"
-            type="button"
-            disabled={saving}
-            onClick={onCancel}
+    <>
+      {edit && (
+        <section className="home-layout-toolbar" aria-label="Edit Home layout">
+          <div className="home-layout-actions">
+            <b>Edit Home</b>
+            <button
+              className="pulse-button secondary"
+              type="button"
+              disabled={busy}
+              onClick={edit.onCancel}
+            >
+              Cancel
+            </button>
+            <button
+              className="pulse-button primary"
+              type="button"
+              disabled={busy}
+              onClick={edit.onSave}
+            >
+              <Icon name="check" />
+              {edit.saving ? 'Saving…' : 'Save layout'}
+            </button>
+          </div>
+          <p>
+            Drag a handle to move a card. Tap <b>−</b> to hide.
+          </p>
+          <div className="home-layout-options">
+            {hidden.length > 0 && (
+              <details className="home-layout-add">
+                <summary>
+                  <Icon name="plus" />
+                  Add sections <span>{hidden.length}</span>
+                </summary>
+                <div className="home-hidden-options">
+                  {hidden.map((id) => (
+                    <button
+                      className="pulse-button secondary"
+                      type="button"
+                      key={id}
+                      disabled={busy}
+                      aria-label={`Add ${titleFor(id)}`}
+                      onClick={() => {
+                        edit.onChange(toggleHomeSection(layout, id));
+                        setAnnouncement(`${titleFor(id)} added.`);
+                      }}
+                    >
+                      <Icon name="plus" />
+                      {titleFor(id)}
+                    </button>
+                  ))}
+                </div>
+              </details>
+            )}
+            <button
+              className="text-link"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                edit.onChange(defaultHomeLayout());
+                setAnnouncement('Default layout restored. Save to keep it.');
+              }}
+            >
+              Reset layout
+            </button>
+          </div>
+          {edit.error && (
+            <p className="inline-error" role="alert">
+              {edit.error}
+            </p>
+          )}
+        </section>
+      )}
+      <div className={`home-sections${edit ? ' is-editing' : ''}`}>
+        {visible.map((id, index) => (
+          <div
+            key={id}
+            data-home-section={id}
+            style={{ gridColumn: `span ${spans[index]}` }}
+            className={`home-section home-section-${HOME_SECTIONS.find((section) => section.id === id)!.size}${dragging === id ? ' is-dragging' : ''}${over === id ? ' is-drop-target' : ''}`}
           >
-            Cancel
-          </button>
-          <button
-            className="text-link"
-            type="button"
-            disabled={saving}
-            onClick={() => {
-              onChange(defaultHomeLayout());
-              setAnnouncement('Default layout restored. Save to keep it.');
-            }}
-          >
-            Reset layout
-          </button>
-        </div>
-        {error && (
-          <p className="inline-error" role="alert">
-            {error}
+            <div className="home-edit-card">
+              <div className="home-section-content" inert={Boolean(edit)}>
+                {sections[id] ?? (
+                  <section className="pulse-card home-unavailable">
+                    <h2>{titleFor(id)}</h2>
+                    <p>Your active workout stays above the cards.</p>
+                  </section>
+                )}
+              </div>
+              {edit && (
+                <>
+                  <button
+                    className="home-card-hide"
+                    type="button"
+                    disabled={busy}
+                    aria-label={`Hide ${titleFor(id)}`}
+                    title={`Hide ${titleFor(id)}`}
+                    onClick={() => {
+                      edit.onChange(toggleHomeSection(layout, id));
+                      setAnnouncement(`${titleFor(id)} hidden. Restore it from Add sections.`);
+                    }}
+                  >
+                    <span aria-hidden="true">−</span>
+                  </button>
+                  <button
+                    className="home-drag-handle"
+                    type="button"
+                    disabled={edit.saving}
+                    aria-label={`Drag ${titleFor(id)} to reorder`}
+                    aria-describedby="home-drag-help"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        stopDrag();
+                        return;
+                      }
+                      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key))
+                        return;
+                      event.preventDefault();
+                      const direction =
+                        event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1;
+                      const target = visible[index + direction];
+                      if (target) move(id, target);
+                    }}
+                    onPointerDown={(event) => {
+                      if (event.button !== 0 || !event.isPrimary || dragRef.current) return;
+                      event.preventDefault();
+                      event.currentTarget.focus({ preventScroll: true });
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      const card = event.currentTarget.closest<HTMLElement>('[data-home-section]')!;
+                      dragRef.current = {
+                        id,
+                        pointerId: event.pointerId,
+                        startX: event.clientX,
+                        startY: event.clientY,
+                        startScrollY: window.scrollY,
+                        clientX: event.clientX,
+                        clientY: event.clientY,
+                        card,
+                        handle: event.currentTarget,
+                        target: null,
+                      };
+                      setDragging(id);
+                    }}
+                    onPointerMove={(event) => {
+                      const drag = dragRef.current;
+                      if (!drag || event.pointerId !== drag.pointerId) return;
+                      drag.clientX = event.clientX;
+                      drag.clientY = event.clientY;
+                      drag.card.style.setProperty(
+                        '--home-drag-x',
+                        `${event.clientX - drag.startX}px`,
+                      );
+                      drag.card.style.setProperty(
+                        '--home-drag-y',
+                        `${event.clientY - drag.startY + window.scrollY - drag.startScrollY}px`,
+                      );
+                      updateTarget(drag);
+                    }}
+                    onPointerUp={() => {
+                      const drag = dragRef.current;
+                      if (drag?.target) move(drag.id, drag.target);
+                      stopDrag();
+                    }}
+                    onPointerCancel={stopDrag}
+                    onLostPointerCapture={stopDrag}
+                  >
+                    <Icon name="grip" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+        {visible.length === 0 && (
+          <p className="pulse-empty-line home-empty">
+            {edit
+              ? 'Add a section above, or reset the layout.'
+              : 'Your Home Screen is clear. Use the edit button to add sections.'}
           </p>
         )}
       </div>
-      <p className="home-layout-label">
-        On your Home Screen <span>{visible.length} sections</span>
-      </p>
-      <ol className="home-layout-list" aria-label="Visible Home sections">
-        {visible.map((id, index) => {
-          const section = HOME_SECTIONS.find((item) => item.id === id)!;
-          return (
-            <li
-              key={id}
-              data-layout-section={id}
-              className={`home-layout-row${dragging === id ? ' is-dragging' : ''}${over === id && dragging !== id ? ' is-drop-target' : ''}`}
-            >
-              <button
-                className="home-drag-handle"
-                type="button"
-                disabled={saving}
-                aria-label={`Drag ${section.title} to reorder`}
-                aria-describedby="home-drag-help"
-                onKeyDown={(event) => {
-                  const target = visible[index + (event.key === 'ArrowUp' ? -1 : 1)];
-                  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                    event.preventDefault();
-                    if (target) move(id, target);
-                  }
-                }}
-                onPointerDown={(event) => {
-                  if (event.button !== 0 || !event.isPrimary) return;
-                  event.preventDefault();
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                  dropTarget.current = id;
-                  setDragging(id);
-                }}
-                onPointerMove={(event) => {
-                  if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-                  const row = document
-                    .elementFromPoint(event.clientX, event.clientY)
-                    ?.closest<HTMLElement>('[data-layout-section]');
-                  if (row) {
-                    dropTarget.current = row.dataset.layoutSection as HomeSectionId;
-                    setOver(dropTarget.current);
-                  } else {
-                    dropTarget.current = null;
-                    setOver(null);
-                  }
-                  if (event.clientY < 100) window.scrollBy(0, -12);
-                  else if (event.clientY > window.innerHeight - 80) window.scrollBy(0, 12);
-                }}
-                onPointerUp={() => {
-                  if (dropTarget.current && dragging) move(dragging, dropTarget.current);
-                  stopDrag();
-                }}
-                onPointerCancel={stopDrag}
-              >
-                <Icon name="grip" />
-              </button>
-              <span className="home-layout-section-icon" aria-hidden="true">
-                <Icon name={section.icon} />
-              </span>
-              <div className="home-layout-copy">
-                <b>{section.title}</b>
-                <small>{section.description}</small>
-              </div>
-              <div className="home-layout-row-actions">
-                <button
-                  type="button"
-                  disabled={saving || index === 0}
-                  aria-label={`Move ${section.title} up`}
-                  onClick={() => move(id, visible[index - 1])}
-                >
-                  <Icon name="up" />
-                </button>
-                <button
-                  type="button"
-                  disabled={saving || index === visible.length - 1}
-                  aria-label={`Move ${section.title} down`}
-                  onClick={() => move(id, visible[index + 1])}
-                >
-                  <Icon name="down" />
-                </button>
-                <button
-                  type="button"
-                  disabled={saving}
-                  aria-label={`Hide ${section.title}`}
-                  onClick={() => {
-                    onChange(toggleHomeSection(draft, id));
-                    setAnnouncement(`${section.title} hidden. Add it back below.`);
-                  }}
-                >
-                  <Icon name="hide" />
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-      {!visible.length && (
-        <p className="pulse-empty-line">
-          All sections are hidden. Add some below, or save a clear Home Screen.
-        </p>
+      {edit && (
+        <>
+          <span id="home-drag-help" className="sr-only">
+            Drag to another card, or use the arrow keys to move it. Escape cancels a drag.
+          </span>
+          <span className="sr-only" role="status" aria-live="polite">
+            {announcement}
+          </span>
+        </>
       )}
-      <section className="home-layout-hidden pulse-card" aria-labelledby="home-hidden-title">
-        <h3 id="home-hidden-title">Add sections</h3>
-        {hidden.length ? (
-          <div className="home-hidden-options">
-            {hidden.map((id) => (
-              <button
-                className="pulse-button secondary"
-                type="button"
-                key={id}
-                disabled={saving}
-                onClick={() => {
-                  onChange(toggleHomeSection(draft, id));
-                  setAnnouncement(`${titleFor(id)} added.`);
-                }}
-              >
-                <Icon name="plus" />
-                {titleFor(id)}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p>All sections are on your Home Screen. Hidden sections will appear here.</p>
-        )}
-      </section>
-      <p className="home-layout-note">
-        Your layout is saved to your account. An active workout always stays visible.
-      </p>
-      <span id="home-drag-help" className="sr-only">
-        Drag to another section, or use the up and down arrow keys.
-      </span>
-      <span className="sr-only" role="status" aria-live="polite">
-        {announcement}
-      </span>
-    </section>
+    </>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
-import { HomeLayoutEditor, HomeLayoutSections } from './HomeLayoutSections';
+import { HomeLayoutSections } from './HomeLayoutSections';
 import { useHomeLayout } from './useHomeLayout';
 import type { HomeSectionId } from './homeLayout';
 import { Meter, SparkBars, Sparkline } from './PulseCharts';
@@ -524,18 +524,21 @@ export function TodayScreen({
       {workoutStartedAt !== null && (
         <LiveWorkoutCard startedAt={workoutStartedAt} onResume={onResumeWorkout} />
       )}
-      {home.editing ? (
-        <HomeLayoutEditor
-          draft={home.draft}
-          onChange={home.change}
-          onSave={() => void home.save()}
-          onCancel={home.cancel}
-          saving={home.saving}
-          error={home.error}
-        />
-      ) : (
-        <HomeLayoutSections layout={home.layout} sections={sections} />
-      )}
+      <HomeLayoutSections
+        layout={home.editing ? home.draft : home.layout}
+        sections={sections}
+        edit={
+          home.editing
+            ? {
+                onChange: home.change,
+                onSave: () => void home.save(),
+                onCancel: home.cancel,
+                saving: home.saving,
+                error: home.error,
+              }
+            : undefined
+        }
+      />
     </section>
   );
 }
