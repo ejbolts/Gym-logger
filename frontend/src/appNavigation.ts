@@ -8,6 +8,8 @@ export const APP_TABS = [
   'videos',
   'settings',
   'profile',
+  'shared',
+  'shared-profile',
   'admin',
 ] as const;
 

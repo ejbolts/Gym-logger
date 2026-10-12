@@ -46,6 +46,7 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "alembic_version": "1 = 1",
     "users": "id = :user_id",
     "user_settings": _OWNED,
+    "profile_sharing": _OWNED,
     "sessions": _OWNED,
     "clips": f"session_id IN ({_SESSIONS})",
     "timestamps": f"session_id IN ({_SESSIONS})",
@@ -69,6 +70,8 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "account_backups": None,
     # Feedback is sent to administrators, rather than part of a user's training archive.
     "app_feedback": None,
+    # Follows are relationships with other accounts, which a snapshot does not contain.
+    "profile_follows": None,
 }
 
 

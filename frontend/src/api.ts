@@ -30,6 +30,13 @@ import type {
   ServerSettings,
   ServerSettingsUpdate,
   ServerStatus,
+  SharedProfile,
+  SharedProfileSummary,
+  SharedWorkoutPage,
+  SharingChoices,
+  SharingConnections,
+  SharingSettings,
+  FollowStatus,
   TrackedWorkout,
   User,
   WorkoutInput,
@@ -159,6 +166,36 @@ export const api = {
       headers: jsonHeaders,
       body: JSON.stringify({ message, submission_id: submissionId }),
     }),
+  sharing: {
+    choices: () => request<SharingSettings>('/api/sharing'),
+    updateChoices: (choices: SharingChoices) =>
+      request<SharingSettings>('/api/sharing', {
+        method: 'PUT',
+        headers: jsonHeaders,
+        body: JSON.stringify(choices),
+      }),
+    profiles: () => request<SharedProfileSummary[]>('/api/sharing/profiles'),
+    profile: (userId: string) =>
+      request<SharedProfile>(`/api/sharing/profiles/${encodeURIComponent(userId)}`),
+    workouts: (userId: string, offset: number, limit: number) =>
+      request<SharedWorkoutPage>(
+        `/api/sharing/profiles/${encodeURIComponent(userId)}/workouts?${new URLSearchParams({
+          offset: String(offset),
+          limit: String(limit),
+        })}`,
+      ),
+    follow: (userId: string) =>
+      request<{ status: FollowStatus }>(`/api/sharing/follows/${encodeURIComponent(userId)}`, {
+        method: 'POST',
+      }),
+    unfollow: (userId: string) =>
+      request<void>(`/api/sharing/follows/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
+    connections: () => request<SharingConnections>('/api/sharing/followers'),
+    approveFollower: (userId: string) =>
+      request<void>(`/api/sharing/followers/${encodeURIComponent(userId)}`, { method: 'POST' }),
+    removeFollower: (userId: string) =>
+      request<void>(`/api/sharing/followers/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
+  },
   updateProfile: (payload: ProfileUpdateInput) =>
     request<User>('/api/profile', {
       method: 'PATCH',

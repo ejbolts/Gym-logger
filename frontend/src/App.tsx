@@ -31,6 +31,7 @@ import type {
   ExerciseProgress,
   MachinePhoto,
   PersonalRecord,
+  SharedProfileSummary,
   TrackedSet,
   TrackedWorkout,
   TrainingPreferences,
@@ -171,6 +172,11 @@ import {
 } from './utils';
 import { VideoUpload } from './VideoUpload';
 import { ProfileScreen } from './ProfileScreen';
+import {
+  SharedProfileScreen,
+  SharedProfilesScreen,
+  type SharedWorkoutListProps,
+} from './SharedProfiles';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -460,9 +466,13 @@ export function App() {
   const videosAllowed = canUploadVideos(user);
   const isAdmin = user?.is_admin === true;
   const initialHistoryState = isAppHistoryState(window.history.state) ? window.history.state : null;
-  const [tab, setTabState] = useState<AppTab>(() =>
-    initialHistoryState ? initialHistoryState.tab : appTabFromHash(window.location.hash),
-  );
+  const [tab, setTabState] = useState<AppTab>(() => {
+    const initialTab = initialHistoryState
+      ? initialHistoryState.tab
+      : appTabFromHash(window.location.hash);
+    // Which shared profile was open is not kept across a reload, so start from the list.
+    return initialTab === 'shared-profile' ? 'shared' : initialTab;
+  });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
@@ -494,6 +504,12 @@ export function App() {
     return window.location.hash === '#log' ? Date.now() : null;
   });
   const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
+  // The opened shared profile; each opening refetches it, while Back reveals the cached screen.
+  const [sharedProfile, setSharedProfile] = useState<{
+    id: string;
+    name: string;
+    opened: number;
+  } | null>(null);
   const [historyExerciseId, setHistoryExerciseId] = useState<string | null>(null);
   const sectionFromTab = historySectionForTab(tab);
   const [lastHistorySection, setLastHistorySection] = useState<HistorySection>(
@@ -519,6 +535,12 @@ export function App() {
     navigationActionRef.current = 'replace';
     setTabState('dashboard');
   }, [tab, videosAllowed]);
+  useEffect(() => {
+    // A reloaded #shared-profile link has no profile to show, so it opens the list instead.
+    if (tab !== 'shared-profile' || sharedProfile) return;
+    navigationActionRef.current = 'replace';
+    setTabState('shared');
+  }, [tab, sharedProfile]);
   useEffect(() => {
     // Only administrators can open the admin console, even from an old #admin link.
     if (tab !== 'admin' || isAdmin) return;
@@ -933,9 +955,13 @@ export function App() {
         ? { title: 'Videos', subtitle: 'Workout clips • uploads' }
         : tab === 'profile'
           ? { title: 'Profile', subtitle: user ? user.display_name : 'Account • security' }
-          : tab === 'admin' && isAdmin
-            ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
-            : null;
+          : tab === 'shared'
+            ? { title: 'Shared profiles', subtitle: 'Members sharing their training' }
+            : tab === 'shared-profile' && sharedProfile
+              ? { title: sharedProfile.name, subtitle: 'Shared profile' }
+              : tab === 'admin' && isAdmin
+                ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
+                : null;
   const activeMainTab = mainTabFor(tab);
   const showTabBar = tab !== 'log';
   // The home screen guide follows the release announcement, behind the same interruptions.
@@ -944,6 +970,15 @@ export function App() {
     tab,
     hasOtherDialog: message !== null || completionRecords.length > 0,
   });
+
+  function openSharedProfile(profile: SharedProfileSummary) {
+    setSharedProfile((current) => ({
+      id: profile.id,
+      name: profile.is_you ? 'Your shared profile' : profile.display_name,
+      opened: (current?.opened ?? 0) + 1,
+    }));
+    setTab('shared-profile');
+  }
 
   function openHistorySection(section: HistorySection, exerciseId: string | null = null) {
     setHistoryOpenId(null);
@@ -1008,6 +1043,8 @@ export function App() {
           tab !== 'dashboard' &&
           tab !== 'videos' &&
           tab !== 'profile' &&
+          tab !== 'shared' &&
+          tab !== 'shared-profile' &&
           tab !== 'admin' && <TodaySkeleton />}
         {(tab === 'dashboard' || visitedTabs.has('dashboard')) && (
           <CachedTabPanel active={tab === 'dashboard'}>
@@ -1182,9 +1219,36 @@ export function App() {
         )}
         {user && (tab === 'profile' || visitedTabs.has('profile')) && (
           <CachedTabPanel active={tab === 'profile'}>
-            <ProfileScreen />
+            <ProfileScreen onOpenSharedProfiles={() => setTab('shared')} />
           </CachedTabPanel>
         )}
+        {user && (tab === 'shared' || visitedTabs.has('shared')) && (
+          <CachedTabPanel active={tab === 'shared'}>
+            <SharedProfilesScreen
+              active={tab === 'shared'}
+              onOpenProfile={openSharedProfile}
+              onChooseSharing={() => setTab('profile')}
+            />
+          </CachedTabPanel>
+        )}
+        {user &&
+          sharedProfile &&
+          (tab === 'shared-profile' || visitedTabs.has('shared-profile')) && (
+            <CachedTabPanel active={tab === 'shared-profile'}>
+              <SharedProfileScreen
+                key={`${sharedProfile.id}-${sharedProfile.opened}`}
+                profileId={sharedProfile.id}
+                onChooseSharing={() => setTab('profile')}
+                renderWorkouts={(props) => (
+                  <SharedWorkoutHistory
+                    {...props}
+                    categoryColors={workoutTypeColors}
+                    weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
+                  />
+                )}
+              />
+            </CachedTabPanel>
+          )}
         {isAdmin && (tab === 'admin' || visitedTabs.has('admin')) && (
           <CachedTabPanel active={tab === 'admin'}>
             <AdminScreen active={tab === 'admin'} />
@@ -8050,6 +8114,59 @@ function HistoryScreen({
   );
 }
 
+/** Another member's shared workouts, grouped by week like History but read-only. */
+function SharedWorkoutHistory({
+  workouts,
+  personalRecords,
+  categoryColors,
+  weekStartDay,
+}: SharedWorkoutListProps & { categoryColors: WorkoutTypeColors; weekStartDay: number }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [expandedPhoto, setExpandedPhoto] = useState<MachinePhoto | null>(null);
+  const targetExerciseRef = useRef<HTMLDivElement>(null);
+  const today = localDate();
+  const weekGroups = useMemo(
+    () => groupWorkoutsByWeek(workouts, weekStartDay),
+    [weekStartDay, workouts],
+  );
+  const recordCounts = useMemo(() => recordCountsByWorkout(personalRecords), [personalRecords]);
+
+  return weekGroups.map((group) => {
+    const label = weekGroupLabel(group.weekStart, today, weekStartDay);
+    return (
+      <section className="history-week" key={group.weekStart} aria-label={label}>
+        <header className="history-week-header">
+          <h2>{label}</h2>
+          <span className="num">
+            {group.workouts.length} {group.workouts.length === 1 ? 'workout' : 'workouts'} ·{' '}
+            {group.sets} sets
+            {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg)}` : ''}
+          </span>
+        </header>
+        <div className="history-week-list">
+          {group.workouts.map((workout) => (
+            <HistoryWorkoutCard
+              key={workout.id}
+              workout={workout}
+              open={openId === workout.id}
+              summaryRef={null}
+              targetExerciseId={null}
+              targetExerciseRef={targetExerciseRef}
+              categoryColor={categoryColors[workout.category]}
+              records={recordCounts.get(workout.id) ?? 0}
+              personalRecords={personalRecords}
+              activeWorkout={false}
+              expandedPhoto={expandedPhoto}
+              onExpandPhoto={setExpandedPhoto}
+              onToggle={() => setOpenId((current) => (current === workout.id ? null : workout.id))}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  });
+}
+
 function HistoryWorkoutCard({
   workout,
   open,
@@ -8080,10 +8197,11 @@ function HistoryWorkoutCard({
   expandedPhoto: MachinePhoto | null;
   onExpandPhoto: (photo: MachinePhoto | null) => void;
   onToggle: () => void;
-  onOpenExercise: (exerciseId: string) => void;
-  onResume: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  /** Omitted for another member's shared workout, which is read-only. */
+  onOpenExercise?: (exerciseId: string) => void;
+  onResume?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const completedWorkoutSets = workout.movements
     .flatMap((movement) => movement.sets)
@@ -8172,14 +8290,18 @@ function HistoryWorkoutCard({
                 tabIndex={targeted ? -1 : undefined}
               >
                 <div className="history-movement-header">
-                  <button
-                    type="button"
-                    className="history-exercise-link"
-                    onClick={() => onOpenExercise(movement.exercise.id)}
-                  >
-                    {movement.exercise.name}
-                    <Icon name="chevron-right" />
-                  </button>
+                  {onOpenExercise ? (
+                    <button
+                      type="button"
+                      className="history-exercise-link"
+                      onClick={() => onOpenExercise(movement.exercise.id)}
+                    >
+                      {movement.exercise.name}
+                      <Icon name="chevron-right" />
+                    </button>
+                  ) : (
+                    <strong className="history-exercise-name">{movement.exercise.name}</strong>
+                  )}
                   {best && <span className="num">Top {setLabel(best)}</span>}
                 </div>
                 {movement.machine_photos.length > 0 && (
@@ -8234,22 +8356,24 @@ function HistoryWorkoutCard({
             );
           })}
           {workout.notes && <p className="history-workout-notes">{workout.notes}</p>}
-          <div className="workout-actions">
-            {!activeWorkout && (
-              <button className="resume-workout-button" type="button" onClick={onResume}>
-                Resume from now
+          {onResume && onEdit && onDelete && (
+            <div className="workout-actions">
+              {!activeWorkout && (
+                <button className="resume-workout-button" type="button" onClick={onResume}>
+                  Resume from now
+                </button>
+              )}
+              <button type="button" onClick={onEdit}>
+                Edit
               </button>
-            )}
-            <button type="button" onClick={onEdit}>
-              Edit
-            </button>
-            <InlineConfirmButton
-              className="delete-workout"
-              label="Delete"
-              confirmLabel="Confirm delete"
-              onConfirm={onDelete}
-            />
-          </div>
+              <InlineConfirmButton
+                className="delete-workout"
+                label="Delete"
+                confirmLabel="Confirm delete"
+                onConfirm={onDelete}
+              />
+            </div>
+          )}
         </div>
       )}
     </article>

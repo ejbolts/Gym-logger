@@ -574,3 +574,102 @@ export interface AppFeedback {
   message: string;
   created_at: string;
 }
+
+/** Who can see a profile: nobody, followers its owner approves ("Friends only"), or everyone. */
+export type ProfileVisibility = 'private' | 'followers' | 'public';
+
+/** Who can see the profile and what it shares beyond its workouts and profile photo. */
+export interface SharingChoices {
+  visibility: ProfileVisibility;
+  share_notes: boolean;
+  share_cardio: boolean;
+  share_body_weight: boolean;
+  share_goals: boolean;
+  share_machine_photos: boolean;
+}
+
+export interface SharingSettings extends SharingChoices {
+  /** Follow requests waiting for this account's approval. */
+  pending_requests: number;
+}
+
+export type FollowStatus = 'none' | 'pending' | 'accepted';
+
+export interface SharedProfileSummary {
+  id: string;
+  display_name: string;
+  profile_photo_url: string | null;
+  member_since: string;
+  visibility: Exclude<ProfileVisibility, 'private'>;
+  is_you: boolean;
+  /** Your follow of this member. */
+  follow_status: FollowStatus;
+  follows_you: boolean;
+  /** False for a friends-only profile you do not follow: only its name and photo are shown. */
+  can_view: boolean;
+  workout_count: number | null;
+  /** Workouts in the last 30 days. */
+  recent_workout_count: number | null;
+  last_workout_date: string | null;
+  shares: {
+    notes: boolean;
+    cardio: boolean;
+    body_weight: boolean;
+    goals: boolean;
+    machine_photos: boolean;
+  } | null;
+}
+
+export interface SharingConnection {
+  id: string;
+  display_name: string;
+  profile_photo_url: string | null;
+  since: string;
+}
+
+export interface SharingConnections {
+  requests: SharingConnection[];
+  followers: SharingConnection[];
+}
+
+export interface SharedBodyMeasurement {
+  measurement_date: string;
+  weight_kg: number;
+  body_fat_pct: number | null;
+}
+
+export interface SharedGoals {
+  body_weight: Omit<BodyWeightGoalInput, 'active'> | null;
+  zone2: Zone2Week;
+}
+
+export type SharedCardioSession = Pick<
+  CardioSession,
+  | 'id'
+  | 'session_date'
+  | 'activity_type'
+  | 'duration_minutes'
+  | 'calories_kcal'
+  | 'average_heart_rate_bpm'
+  | 'distance_km'
+  | 'average_speed_kph'
+  | 'incline_percent'
+  | 'average_power_watts'
+  | 'average_mets'
+  | 'zone'
+  | 'qualifies_zone2'
+  | 'notes'
+>;
+
+/** A shared profile; each optional part is null when its owner does not share it. */
+export interface SharedProfile extends SharedProfileSummary {
+  body_weight: SharedBodyMeasurement[] | null;
+  goals: SharedGoals | null;
+  cardio_sessions: SharedCardioSession[] | null;
+}
+
+export interface SharedWorkoutPage {
+  total: number;
+  workouts: TrackedWorkout[];
+  personal_records: PersonalRecord[];
+}
