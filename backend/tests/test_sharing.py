@@ -61,7 +61,7 @@ def detailed_workout(exercise_id: str, photo_id: str, name: str = "Push day") ->
                         "weight_kg": 100,
                         "bodyweight_kg": 82.5,
                         "completed": True,
-                    }
+                    },
                 ],
             }
         ],
