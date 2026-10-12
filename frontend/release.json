@@ -1,19 +1,14 @@
 {
-  "version": "0.4.0",
-  "title": "Meet your Gym Logger",
-  "summary": "Take a guided tour, install the phone app, and tell us what you think.",
+  "version": "0.4.1",
+  "title": "Spot your custom exercises",
+  "summary": "Exercises you create are labelled Custom and stay private to your account.",
   "changes": [
-    "Follow the feature tour with highlighted controls, Next, Back and Skip.",
-    "Send private feedback or feature requests from Settings or the tour, with clear delivery details.",
-    "See Home Screen installation steps before the tour ends, using gym-logger.duckdns.org.",
-    "Open Settings from every main tab to replay the guide or find installation help.",
-    "Expand the next-workout arrow to read its explanation and last-session details.",
-    "Add, change or remove a private profile photo in Profile; it replaces your initial on Today.",
-    "See illustrated release announcements and open their screenshots full size."
+    "See a small Custom label under exercises you created in Select Exercise, workout cards and Progress search.",
+    "Your custom exercises stay private: other accounts cannot find or open them."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#041",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/13105ce957b4525972f0a45fe878e79d4e05601a/docs/screenshots/releases/0.4.0-settings-feedback.png",
-    "alt": "Settings has a dedicated Feedback and feature requests form explaining that messages go privately to the app administrators."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/0601926c8e0538d66de08983dd18072e8660f064/docs/screenshots/releases/0.4.1-custom-exercise-label.png",
+    "alt": "Select Exercise search results where Landmine Press shows a small blue Custom label under its name."
   }
 }
