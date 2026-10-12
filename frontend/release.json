@@ -16,7 +16,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#040",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/6cb32a2f478fe0ebcadd20af5125a5bf3766dfae/docs/screenshots/releases/0.4.0-home-layout.png",
-    "alt": "Home Screen editor with Consistency moved first, drag handles, move and hide controls, Save layout and Cancel, and hidden cards under Add sections."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/c567cd34d5d3c2664a6274e5e0d4e3c314ccc0d7/docs/screenshots/releases/0.4.0-home-layout.png",
+    "alt": "Today edit mode showing the actual workout and stat cards, minus buttons at the top left, drag handles at the top right, Save layout, Cancel and Add sections."
   }
 }
