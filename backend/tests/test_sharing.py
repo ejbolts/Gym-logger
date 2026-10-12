@@ -54,6 +54,13 @@ def detailed_workout(exercise_id: str, photo_id: str, name: str = "Push day") ->
                         "bodyweight_kg": 82.5,
                         "notes": "Paused",
                         "completed": True,
+                    },
+                    {
+                        # A first set establishes the baseline; improving it earns a Volume PR.
+                        "reps": 6,
+                        "weight_kg": 100,
+                        "bodyweight_kg": 82.5,
+                        "completed": True,
                     }
                 ],
             }
@@ -252,6 +259,9 @@ def test_shared_profile_includes_only_the_chosen_parts(client, other_client):
     assert movement["sets"][0]["bodyweight_kg"] is None
     assert movement["sets"][0]["weight_kg"] == 100
     assert {record["workout_id"] for record in page["personal_records"]} == {shared["id"]}
+    [record] = page["personal_records"]
+    assert record["record_type"] == "reps_at_weight"
+    assert record["value"] == 6 and record["weight_kg"] == 100
 
     share(client, "public", **EVERYTHING)
     view = profile(other_client, client).json()
