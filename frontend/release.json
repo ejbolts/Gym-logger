@@ -1,14 +1,14 @@
 {
-  "version": "0.4.1",
-  "title": "Spot your custom exercises",
-  "summary": "Exercises you create are labelled Custom and stay private to your account.",
+  "version": "0.5.3",
+  "title": "Your layout, records and shared training",
+  "summary": "Arrange Home your way, celebrate weight and volume records, and choose who can see your training.",
   "changes": [
-    "See a small Custom label under exercises you created in Select Exercise, workout cards and Progress search.",
-    "Your custom exercises stay private: other accounts cannot find or open them."
+    "Drag, hide and restore the actual Home cards in edit mode, then save your layout across devices.",
+    "Earn Weight PRs for heavier working sets and Volume PRs for more reps at the same weight, with a five-second countdown popup.",
+    "Choose Private, Friends only or Public profile sharing, follow members and approve follow requests.",
+    "Keep body weight, goals, cardio, notes and machine photos optional when sharing your training.",
+    "Recognise exercises you created by their Custom label in the picker, workout cards and Progress.",
+    "Explore the feature tour, Home Screen help, private feedback forms and profile photos."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#041",
-  "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/0601926c8e0538d66de08983dd18072e8660f064/docs/screenshots/releases/0.4.1-custom-exercise-label.png",
-    "alt": "Select Exercise search results where Landmine Press shows a small blue Custom label under its name."
-  }
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#053"
 }

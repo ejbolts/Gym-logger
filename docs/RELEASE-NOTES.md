@@ -1,6 +1,8 @@
 # Gym Logger release notes
 
-## 0.4.1
+## 0.5.3
+
+This coordinated release includes custom exercise labels (#23), weight and volume records (#24), profile sharing and follow requests (#25), and Home card editing (#26), together with the previously pending guide, feedback and profile-photo improvements. The release is **0.5.3** for the whole batch, as requested; the earlier 0.4.0, 0.4.1 and 0.5.0 proposals were unpublished and are consolidated here.
 
 - Exercises you create show a small **Custom** label under their name in **Select Exercise**, on the exercise card in a workout, and in the **Progress** exercise search. Built-in exercises are unchanged.
 - Custom exercises stay private to the account that created them. Other accounts cannot find them in search, open their progress or favorite them, and can still create their own exercise with the same name.
@@ -8,8 +10,6 @@
 <img src="screenshots/releases/0.4.1-custom-exercise-label.png" alt="Select Exercise search results for press, where Landmine Press shows a small blue Custom label between its name and its Shoulders and Barbell tags." width="390">
 
 A sample account's custom Landmine Press in the exercise picker, captured at phone width in the isolated verification environment.
-## 0.5.0
-
 - Choose who can see your profile in **Profile > Profile sharing**: **Private** (only you, the default for every account), **Friends only** (followers you approve) or **Public** (every member who shares). Only members who share their own profile can see or follow others.
 - **Follow** a public profile straight away, or **Request to follow** a friends-only one. Requests wait under **Follow requests** in **Shared profiles**, where you **Approve** or **Decline** them; **Profile** shows how many are waiting. **Your followers** lists who follows you, with **Remove**. You can cancel a request or **Unfollow** from someone's profile at any time. Making your profile public approves waiting requests.
 - Your **workouts** and **profile photo** are always shared with anyone who can see your profile. A friends-only profile shows only its name and photo until you are approved. Choose separately whether to add **Machine photos** (photos pinned to exercises in your shared workouts), **Body weight** (weigh-ins, body fat and body weight logged with sets), **Goals** (your body-weight goal and weekly Zone 2 target), **Cardio sessions** and **Notes** (including saved video links). While private, choices are a draft until you choose **Share with friends** or **Make my profile public**; afterwards each change saves straight away.
@@ -28,9 +28,6 @@ Approve follow requests and follow other members. Friends-only profiles stay loc
 <img src="screenshots/releases/0.5.0-shared-machine-photo.png" alt="A shared workout from a public member, expanded to show a pinned machine photo opened full size." width="390">
 
 A shared machine photo inside another member's workout. All captures use fictional sample accounts in the isolated mobile verification environment.
-
-## 0.4.0
-
 - **Weight PR** means a new heavier completed working set for that exercise. **Volume PR** means more reps in one set at the same previously logged weight for that exercise, including zero added weight. Each exercise and weight has its own baseline; first attempts, ties, lower results and extra total sets do not earn a PR.
 - A dismissible **five-second** popup names **Volume PR** or **Weight PR**, the exercise, reps and weight when you complete a record set. A blue bar along its bottom counts down to automatic dismissal and starts fresh for each new record. Existing records do not celebrate again when you reopen, toggle or save an unchanged workout. History, Today and Progress use the same two record types.
 - Warmups, incomplete sets, zero reps and failed sets below their configured rep target cannot earn records. Drop sets and failed sets that meet their target remain eligible. Kilogram/pound display preferences do not change comparisons. Backdated workouts, edits and deletions rebuild the derived records in date order.
@@ -56,7 +53,7 @@ Arrange the cards directly while they gently wiggle, and restore hidden cards fr
 - The suggested next workout starts with its explanation and last-session details collapsed. Select the arrow beside the workout title to show or hide them; exercises and Start remain visible.
 - The closing screen and Settings link to the GitHub repository and contribution instructions. Contributions use focused branches, sample data, project checks, accessible controls and reviewed UI evidence.
 - The tour waits behind release announcements, loading, active workout/upload screens and other dialogs. Older queued installation guides still work; new accounts use the feature tour and can open installation steps from Settings.
-- Add a **profile photo** in **Profile**. Choose any JPEG, PNG, WebP, HEIF or HEIC image; Gym Logger rotates it upright and crops it to a square. The photo replaces your initial on the **Today** profile button and in Profile. **Change photo** replaces it and **Remove** goes back to your initial. Photos stay private to your account, follow the existing photo upload size limit, are included in account backups and are deleted with the account.
+- Add a **profile photo** in **Profile**. Choose any JPEG, PNG, WebP, HEIF or HEIC image; Gym Logger rotates it upright and crops it to a square. The photo replaces your initial on the **Today** profile button and in Profile. **Change photo** replaces it and **Remove** goes back to your initial. Photos are private by default and can be shared through Profile sharing. They follow the existing photo upload size limit, are included in account backups and are deleted with the account.
 - Release announcements support screenshots that open full size and remain usable when images cannot load.
 - Existing installations should run `alembic upgrade head` for migrations `0031_app_feedback` and `0032_profile_photos` before serving the updated frontend. Feedback is removed when its account is deleted. Profile photo files are stored under `data/profile-photos/`. No account/workout records are changed by these migrations.
 
