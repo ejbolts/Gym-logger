@@ -691,6 +691,8 @@ def populate_account(test_client: TestClient) -> dict:
     photo = upload_photo(test_client, bench["id"]).json()
     payload = workout_payload(bench["id"])
     payload["movements"][0].update(machine_photo_ids=[photo["id"]], superset_key="a")
+    # Populate a genuine PR after the first set establishes the exercise's baseline.
+    payload["movements"][0]["sets"].append({"reps": 6, "weight_kg": 100, "completed": True})
     payload["movements"].append({**workout_payload(fly["id"])["movements"][0], "superset_key": "a"})
     workout = test_client.post("/api/workouts", json=payload)
     assert workout.status_code == 201, workout.text

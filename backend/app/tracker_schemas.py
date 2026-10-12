@@ -365,6 +365,7 @@ class PersonalRecordRead(BaseModel):
     value: float
     unit: str
     normalized_weight: float | None
+    weight_kg: float | None
     formula: str | None
     exercise_name: str | None = None
 

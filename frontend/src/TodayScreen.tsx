@@ -63,8 +63,8 @@ export function SettingsButton({ onClick }: { onClick: () => void }) {
 }
 
 const RECORD_LABELS: Partial<Record<PersonalRecord['record_type'], string>> = {
-  estimated_1rm: 'Estimated 1RM',
-  weight: 'Heaviest weight',
+  reps_at_weight: 'Volume PR',
+  weight: 'Weight PR',
 };
 
 export interface TodayScreenProps {
@@ -476,7 +476,11 @@ export function TodayScreen({
                   <span className="record-copy">
                     <b>{record.exercise_name ?? 'Exercise'}</b>
                     <small>
-                      {RECORD_LABELS[record.record_type]} · {shortDate(record.achieved_date)}
+                      {RECORD_LABELS[record.record_type]}
+                      {record.record_type === 'reps_at_weight' && record.weight_kg != null
+                        ? ` @ ${record.weight_kg} kg`
+                        : ''}{' '}
+                      · {shortDate(record.achieved_date)}
                     </small>
                   </span>
                   <strong className="num">

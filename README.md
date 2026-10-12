@@ -6,6 +6,8 @@ The app also includes a structured, dark, mobile-first workout tracker: an exerc
 
 Weekly muscle-set tracking excludes warmups and cardio, reports raw and RPE-aware effective sets for each active muscle group, and shows unrated or lower-effort sets separately. It records actual training without assigning suggested set targets.
 
+Personal records have two types: **Weight PR** for a heavier completed working set for an exercise, and **Volume PR** for more reps in one set at a previously logged weight for that exercise. First attempts establish a baseline. Ties, total session volume, warmups, incomplete/zero-rep sets, and failed sets below their target do not trigger records. A short popup names the record when a set is completed. Estimated 1RM remains a Progress metric.
+
 Workout history can be imported and exported from the History screen using CSV. The round-trip format uses these exact columns: `Date Lifted`, `Exercise`, `Weight (kg)`, `Weight (lb)`, `Reps`, `Bodyweight (kg)`, `Bodyweight (lb)`, `Percentile (%)`, and `Warmup`. Imports accept both comma-separated CSV and tab-separated text copied from a spreadsheet. Missing exercises are added to the local exercise library automatically.
 
 On a fresh workout database, the app seeds five sample sessions across one week so the dashboard, heatmap, history, and progression graphs can be evaluated immediately. Set `GYM_SEED_SAMPLE_DATA=false` before first startup to disable this. Seeded workouts are labelled **Sample**; **Remove samples** in History deletes all of them without affecting real workouts or video sessions, and they will not reappear after a restart.

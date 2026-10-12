@@ -1382,7 +1382,7 @@ def list_personal_records(
     query = (
         select(PersonalRecord)
         .where(PersonalRecord.user_id == user.id)
-        .options(selectinload(PersonalRecord.exercise))
+        .options(selectinload(PersonalRecord.exercise), selectinload(PersonalRecord.workout_set))
     )
     if exercise_id:
         query = query.where(PersonalRecord.exercise_id == exercise_id)

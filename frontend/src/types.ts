@@ -328,6 +328,7 @@ export interface PersonalRecord {
   value: number;
   unit: string;
   normalized_weight: number | null;
+  weight_kg?: number | null;
   formula: string | null;
   exercise_name: string | null;
 }
