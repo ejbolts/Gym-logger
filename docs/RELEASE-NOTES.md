@@ -2,6 +2,13 @@
 
 ## 0.4.0
 
+- Choose the **pencil icon** on **Today** to arrange your Home Screen. Drag section handles with a mouse or touch, or use the move arrows / keyboard arrow keys. **Hide** removes a card from Home; **Add sections** restores it in its saved position. This includes the individual weekly stat boxes, next workout, consistency calendar, muscle sets, cardio goal, bodyweight trend, daily check-in and recent records.
+- **Save layout** keeps the arrangement in your account across devices and sign-ins. **Cancel** discards edits, and **Reset layout** restores the original order with every section visible before saving. Save failures keep your edits for retry. An active workout's **Resume** card always stays visible even when the next-workout section is hidden. Hiding cards does not delete data or remove the other navigation tabs. Layout preferences use existing account settings and backups; no database migration is required.
+
+<img src="screenshots/releases/0.4.0-home-layout.png" alt="Home Screen editor with Consistency moved first, drag handles, move and hide buttons, Save layout and Cancel, plus Cardio sessions and Recent records under Add sections." width="390">
+
+Arrange the sections you use and restore hidden cards anytime. Captured with an isolated sample account at phone width.
+
 - New accounts get a feature tour after closing **What's new**. Annotations highlight the real Today, Start, History, Progress, Body and Cardio controls, plus Videos when the account has access. Move with **Next** and **Back**, or **Skip guide** at any time. The tour does not start workouts or uploads.
 - Choose **Show steps** after **Make Gym Logger your own** to see the illustrated Home Screen installation page, then **Next** for the thank-you message and optional feedback box. **Back** returns to the feature tour; **Skip guide** remains available. **Send feedback** stores your message privately with your username for administrators to read in **Settings > Admin console > App feedback**. Failed submissions keep your text for retry; retrying the same submission does not create duplicates.
 - **Settings > Feedback & feature requests** provides a dedicated form at any time, with **Send another message** after a successful submission. Both this form and the tour explain where messages go: the app's database and private administrator inbox, with your username. Messages are not emailed or posted as GitHub issues.
