@@ -1,3 +1,5 @@
+import { useWeightUnit } from './trainingPreferencesContext';
+import { formatWeight, weightFromKg, type WeightUnit } from './weightUnits';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, ApiError } from './api';
 import { authErrorMessage } from './authForm';
@@ -14,7 +16,7 @@ import {
   VISIBILITY_LABELS,
   workoutActivitySummary,
 } from './sharedProfileDisplay';
-import { addDays, dayMonth, formatKg, parseLocalDate } from './trainingSummary';
+import { addDays, dayMonth, parseLocalDate } from './trainingSummary';
 import type {
   FollowStatus,
   PersonalRecord,
@@ -429,16 +431,17 @@ function bodyWeightGoalPath(
   goals: SharedGoals | null,
   startDate: string,
   endDate: string,
+  weightUnit: WeightUnit,
 ): GoalPath | null {
   const goal = goals?.body_weight;
   const clipped = goal ? clipBodyWeightGoalPath(goal, startDate, endDate) : null;
   if (!goal || !clipped) return null;
   return {
     startDate: clipped.start_date,
-    startValue: clipped.start_weight_kg,
+    startValue: weightFromKg(clipped.start_weight_kg, weightUnit),
     endDate: clipped.target_date,
-    endValue: clipped.target_weight_kg,
-    label: `Goal ${goal.target_weight_kg} kg`,
+    endValue: weightFromKg(clipped.target_weight_kg, weightUnit),
+    label: `Goal ${formatWeight(goal.target_weight_kg, weightUnit)}`,
   };
 }
 
@@ -449,6 +452,7 @@ function BodyWeightCard({
   measurements: SharedBodyMeasurement[];
   goals: SharedGoals | null;
 }) {
+  const weightUnit = useWeightUnit();
   const latest = measurements[0];
   const recent = useMemo(() => {
     if (!latest) return [];
@@ -474,14 +478,14 @@ function BodyWeightCard({
           <dl className="shared-stat-row">
             <div>
               <dt>Latest</dt>
-              <dd className="num">{formatKg(latest.weight_kg)}</dd>
+              <dd className="num">{formatWeight(latest.weight_kg, weightUnit, 1)}</dd>
             </div>
             {change !== null && (
               <div>
                 <dt>{BODY_WEIGHT_CHART_DAYS} days</dt>
                 <dd className="num">
                   {change > 0 ? '+' : change < 0 ? '−' : ''}
-                  {formatKg(Math.abs(change))}
+                  {formatWeight(Math.abs(change), weightUnit, 1)}
                 </dd>
               </div>
             )}
@@ -494,12 +498,20 @@ function BodyWeightCard({
           </dl>
           {recent.length > 1 && (
             <TrendChart
-              points={recent}
+              points={recent.map((point) => ({
+                ...point,
+                value: weightFromKg(point.value, weightUnit),
+              }))}
               label={`Body weight over the last ${BODY_WEIGHT_CHART_DAYS} days`}
               seriesLabel="Body weight"
-              unit="kg"
+              unit={weightUnit}
               area={false}
-              goalPath={bodyWeightGoalPath(goals, recent[0].date, recent[recent.length - 1].date)}
+              goalPath={bodyWeightGoalPath(
+                goals,
+                recent[0].date,
+                recent[recent.length - 1].date,
+                weightUnit,
+              )}
               height={170}
             />
           )}
@@ -510,6 +522,7 @@ function BodyWeightCard({
 }
 
 function GoalsCard({ goals, latestWeight }: { goals: SharedGoals; latestWeight: number | null }) {
+  const weightUnit = useWeightUnit();
   const goal = goals.body_weight;
   const span = goal ? goal.start_weight_kg - goal.target_weight_kg : 0;
   const progress =
@@ -527,8 +540,8 @@ function GoalsCard({ goals, latestWeight }: { goals: SharedGoals; latestWeight: 
         {goal ? (
           <>
             <span>
-              {formatKg(goal.start_weight_kg)} → {formatKg(goal.target_weight_kg)} by{' '}
-              {longDate(goal.target_date)}
+              {formatWeight(goal.start_weight_kg, weightUnit, 1)} →{' '}
+              {formatWeight(goal.target_weight_kg, weightUnit, 1)} by {longDate(goal.target_date)}
             </span>
             {progress !== null && (
               <>

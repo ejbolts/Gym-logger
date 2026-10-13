@@ -1,3 +1,4 @@
+import { formatWeightNumber, weightFromKg, type WeightUnit } from './weightUnits';
 import type {
   Exercise,
   PersonalRecord,
@@ -201,7 +202,8 @@ export function workoutDisplayName(workout: Pick<TrackedWorkout, 'name' | 'categ
   return name;
 }
 
-export function formatVolume(kg: number): string {
+export function formatVolume(kg: number, unit: WeightUnit = 'kg'): string {
+  if (unit === 'lb') return `${Math.round(weightFromKg(kg, unit)).toLocaleString('en-GB')} lb`;
   if (kg >= 10_000) return `${(kg / 1000).toFixed(1)} t`;
   return `${Math.round(kg).toLocaleString('en-GB')} kg`;
 }
@@ -249,8 +251,11 @@ export function topWorkingSet(sets: TrackedSet[]): TrackedSet | null {
   }, null);
 }
 
-export function setLabel(item: Pick<TrackedSet, 'weight_kg' | 'reps'>): string {
-  return `${Number((item.weight_kg ?? 0).toFixed(2))} × ${item.reps ?? '–'}`;
+export function setLabel(
+  item: Pick<TrackedSet, 'weight_kg' | 'reps'>,
+  unit: WeightUnit = 'kg',
+): string {
+  return `${formatWeightNumber(item.weight_kg ?? 0, unit)} × ${item.reps ?? '–'}`;
 }
 
 export interface SessionTemplateExercise {
@@ -440,14 +445,14 @@ export function weeklyBestPoints<T extends { workout_date: string }>(
 }
 
 /** “157.5×5 ×2, 157.5×4”: consecutive identical working sets collapsed. */
-export function compactSetSummary(sets: TrackedSet[]): string {
+export function compactSetSummary(sets: TrackedSet[], unit: WeightUnit = 'kg'): string {
   const parts: Array<{ label: string; count: number }> = [];
   for (const item of sets.filter(isCompletedWorkingSet)) {
     if (item.weight_kg === null && item.reps === null) continue;
     const label =
       item.weight_kg === null
         ? `${item.reps} reps`
-        : `${Number(item.weight_kg.toFixed(2))}×${item.reps ?? '–'}`;
+        : `${formatWeightNumber(item.weight_kg, unit)}×${item.reps ?? '–'}`;
     const last = parts.at(-1);
     if (last && last.label === label) last.count += 1;
     else parts.push({ label, count: 1 });

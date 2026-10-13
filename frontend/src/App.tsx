@@ -17,6 +17,18 @@ import {
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { api } from './api';
+import { TrainingPreferencesProvider } from './TrainingPreferencesProvider';
+import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
+import { WeightInput } from './WeightInput';
+import {
+  formatWeight,
+  formatWeightNumber,
+  recordDisplayValue,
+  weightFromKg,
+  weightInputValue,
+  weightUnitName,
+} from './weightUnits';
+import type { WeightUnit } from './weightUnits';
 import { PrToast, type PrToastEntry } from './PrToast';
 import type {
   BodyMeasurement,
@@ -44,7 +56,6 @@ import type {
 } from './types';
 import {
   BODY_TREND_DURATION_OPTIONS,
-  bodyweightEntryPlaceholder,
   clipBodyWeightGoalPath,
   filterMeasurementsByRange,
   summarizeBodyWeightTrend,
@@ -139,7 +150,6 @@ import { FeedbackForm } from './FeedbackForm';
 import {
   compactSetSummary,
   dayMonth,
-  formatKg,
   formatVolume,
   groupWorkoutsByWeek,
   mostTrainedExerciseId,
@@ -159,7 +169,6 @@ import { recentExerciseHistory, type ExerciseHistoryEntry } from './exerciseHist
 import { exerciseIconFor } from './exerciseIcons';
 import { fuzzyHighlightIndices, rankExerciseSearchMatches } from './exerciseSearch';
 import {
-  decimalNumberOrNull,
   formatMinutesDuration,
   formatSeconds,
   formatWorkoutTimeRange,
@@ -286,7 +295,11 @@ function numberOrNull(value: string): number | null {
   return value === '' ? null : Number(value);
 }
 
-function completedSetPerformance(item: DraftSet, cardio: boolean): string {
+function completedSetPerformance(
+  item: DraftSet,
+  cardio: boolean,
+  weightUnit: WeightUnit = 'kg',
+): string {
   if (cardio) {
     const values = [
       item.duration_seconds !== null ? formatDuration(item.duration_seconds) : null,
@@ -298,7 +311,7 @@ function completedSetPerformance(item: DraftSet, cardio: boolean): string {
   }
 
   const values = [
-    item.weight_kg !== null ? `${item.weight_kg} kg` : null,
+    item.weight_kg !== null ? formatWeight(item.weight_kg, weightUnit) : null,
     item.reps !== null ? `${item.reps} reps` : null,
   ].filter((value): value is string => value !== null);
   return values.join(' × ') || 'No result entered';
@@ -389,6 +402,7 @@ function WorkoutCompletionDialog({
   records: PersonalRecord[];
   onClose: () => void;
 }) {
+  const weightUnit = useWeightUnit();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const backdropDismiss = useBackdropDismiss(onClose);
@@ -445,9 +459,9 @@ function WorkoutCompletionDialog({
           <div key={record.id}>
             <strong>{record.exercise_name}</strong>
             <span>
-              {recordTypeLabel(record.record_type)} · {record.value} {record.unit}
+              {recordTypeLabel(record.record_type)} · {recordDisplayValue(record, weightUnit)}
               {record.record_type === 'reps_at_weight' && record.weight_kg != null
-                ? ` @ ${record.weight_kg} kg`
+                ? ` @ ${formatWeight(record.weight_kg, weightUnit)}`
                 : ''}
             </span>
           </div>
@@ -462,6 +476,14 @@ function WorkoutCompletionDialog({
 }
 
 export function App() {
+  return (
+    <TrainingPreferencesProvider>
+      <AppContent />
+    </TrainingPreferencesProvider>
+  );
+}
+
+function AppContent() {
   const { user } = useUserSession();
   const announcement = useReleaseAnnouncement(user?.id ?? null);
   const homeScreenGuide = useHomeScreenGuide(user?.id ?? null, announcement.checked);
@@ -1813,6 +1835,7 @@ function CalendarDayDetail({
   onStartWorkout: (workoutDate: string) => void;
   onEditWorkout: (workoutId: string) => void;
 }) {
+  const weightUnit = useWeightUnit();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const backdropDismiss = useBackdropDismiss(onClose);
@@ -1888,7 +1911,8 @@ function CalendarDayDetail({
                 <p key={exercise.exercise_name}>
                   <span>
                     {exercise.exercise_name}
-                    {exercise.bodyweight_kg !== null && ` @ ${exercise.bodyweight_kg} kg`}
+                    {exercise.bodyweight_kg !== null &&
+                      ` @ ${formatWeight(exercise.bodyweight_kg, weightUnit)}`}
                   </span>
                   <b>{exercise.set_count} sets</b>
                 </p>
@@ -1961,6 +1985,7 @@ function WorkoutLogger({
   onClose: () => void;
   onDelete: () => void;
 }) {
+  const weightUnit = useWeightUnit();
   const restoredDraft = useState(() => (initialWorkout ? null : readActiveWorkoutDraft()))[0];
   const [name, setName] = useState(
     initialWorkout?.name ?? restoredDraft?.name ?? resumingWorkout?.name ?? '',
@@ -2919,8 +2944,8 @@ function WorkoutLogger({
           </span>
           {currentBodyweight !== null && (
             <span>
-              <small>BW kg</small>
-              <strong>{currentBodyweight}</strong>
+              <small>BW {weightUnit}</small>
+              <strong>{formatWeightNumber(currentBodyweight, weightUnit)}</strong>
             </span>
           )}
           <span>
@@ -2932,8 +2957,8 @@ function WorkoutLogger({
             <strong>{completedReps}</strong>
           </span>
           <span>
-            <small>Vol kg</small>
-            <strong>{completedVolume.toLocaleString()}</strong>
+            <small>Vol {weightUnit}</small>
+            <strong>{formatWeightNumber(completedVolume, weightUnit, 0)}</strong>
           </span>
         </div>
       </section>
@@ -3493,8 +3518,10 @@ function MovementCard({
   const cardio = movement.exercise.kind === 'cardio';
   const treadmill =
     cardio && (movement.exercise.equipment?.toLowerCase().includes('treadmill') ?? false);
+  const weightUnit = useWeightUnit();
   const completedWorkingSetCount = movement.sets.filter(isCompletedWorkingSet).length;
-  const lastSessionSummary = !cardio && history[0] ? compactSetSummary(history[0].sets) : '';
+  const lastSessionSummary =
+    !cardio && history[0] ? compactSetSummary(history[0].sets, weightUnit) : '';
   const [expanded, setExpanded] = useState(!movement.isComplete);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [openSetActionsKey, setOpenSetActionsKey] = useState<string | null>(null);
@@ -3502,7 +3529,6 @@ function MovementCard({
   const [typeMenuSetKey, setTypeMenuSetKey] = useState<string | null>(null);
   const [draggingSetKey, setDraggingSetKey] = useState<string | null>(null);
   const [dragTargetSetKey, setDragTargetSetKey] = useState<string | null>(null);
-  const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({});
   const [pendingSetCompletion, setPendingSetCompletion] = useState<{
     item: DraftSet;
     warning: SetEntryWarning;
@@ -3615,11 +3641,10 @@ function MovementCard({
       sameTypeReference?.weight_kg ??
       otherSets.find((candidate) => candidate.weight_kg !== null)?.weight_kg ??
       null;
-    const warning = unusualSetEntryWarning({
-      reps: item.reps,
-      weightKg: item.weight_kg,
-      referenceWeightKg,
-    });
+    const warning = unusualSetEntryWarning(
+      { reps: item.reps, weightKg: item.weight_kg, referenceWeightKg },
+      weightUnit,
+    );
     if (warning) {
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       setPendingSetCompletion({ item, warning });
@@ -3884,7 +3909,7 @@ function MovementCard({
                 'Edit weight',
                 'completed-set-weight',
                 <>
-                  {item.weight_kg === null ? '–' : `${item.weight_kg} kg`}
+                  {item.weight_kg === null ? '–' : formatWeight(item.weight_kg, weightUnit)}
                   {prBadges.has(item.key) && (
                     <b className="pr-badge" title={prBadges.get(item.key)?.join(', ')}>
                       PR
@@ -3951,23 +3976,12 @@ function MovementCard({
           </>
         ) : (
           <>
-            <input
+            <WeightInput
               data-set-field="weight"
-              inputMode="decimal"
-              type="text"
-              value={weightDrafts[item.key] ?? item.weight_kg ?? ''}
-              onFocus={(event) => {
-                // Read the value now: the updater can run after React has released the event.
-                const { value } = event.currentTarget;
-                setWeightDrafts((current) => ({ ...current, [item.key]: value }));
-                if (item.weight_kg !== null) event.currentTarget.select();
-              }}
-              onClick={(event) => {
-                if (item.weight_kg !== null) event.currentTarget.select();
-              }}
-              onChange={(event) => updateWeightDraft(item, event.target.value)}
-              onBlur={() => commitWeightDraft(item)}
-              aria-label={`Weight kilograms${suggested}`}
+              weightKg={item.weight_kg}
+              onWeightChange={(weight_kg) => onUpdateSet(item.key, { weight_kg })}
+              selectOnFocus
+              aria-label={`Weight ${weightUnitName(weightUnit)}${suggested}`}
             />
             <input
               data-set-field="reps"
@@ -4090,30 +4104,6 @@ function MovementCard({
         )}
       </div>
     );
-  }
-
-  function updateWeightDraft(item: DraftSet, rawValue: string) {
-    const draft = rawValue.replace(',', '.');
-    if (!/^\d*(?:\.\d*)?$/.test(draft)) return;
-    setWeightDrafts((current) => ({ ...current, [item.key]: draft }));
-    if (draft === '') {
-      onUpdateSet(item.key, { weight_kg: null });
-      return;
-    }
-    if (!draft.endsWith('.')) {
-      onUpdateSet(item.key, { weight_kg: decimalNumberOrNull(draft) });
-    }
-  }
-
-  function commitWeightDraft(item: DraftSet) {
-    const draft = weightDrafts[item.key];
-    if (draft === undefined) return;
-    onUpdateSet(item.key, { weight_kg: decimalNumberOrNull(draft) });
-    setWeightDrafts((current) => {
-      const next = { ...current };
-      delete next[item.key];
-      return next;
-    });
   }
 
   useFlipAnimation(setGridRef, movement.sets.map((item) => item.key).join('|'));
@@ -4335,7 +4325,7 @@ function MovementCard({
           ) : (
             <>
               <span>Set</span>
-              <span>Weight</span>
+              <span>Weight ({weightUnit})</span>
               <span>Reps</span>
               <span>RPE</span>
               <span aria-hidden="true" />
@@ -5434,6 +5424,7 @@ function ProgressScreen({
   defaultExerciseId?: string | null;
   onOpenSettings?: () => void;
 }) {
+  const weightUnit = useWeightUnit();
   const strengthExercises = exercises.filter((exercise) => exercise.kind === 'strength');
   const [exerciseId, setExerciseId] = useState(() => {
     const preferred = [initialExerciseId, defaultExerciseId].find(
@@ -5512,11 +5503,12 @@ function ProgressScreen({
     metric === 'volume_kg'
       ? Math.round(value).toLocaleString('en-GB')
       : Number(value.toFixed(1)).toLocaleString('en-GB');
+  const formatMetricKg = (value: number) => formatMetric(weightFromKg(value, weightUnit));
   const chartPoints: TrendPoint[] = charted.map((point) => ({
     date: point.workout_date,
-    value: point[metric],
+    value: weightFromKg(point[metric], weightUnit),
     id: point.workout_id,
-    detail: `${Number(point.best_weight_kg.toFixed(2))} kg × ${point.best_reps}${point.best_rpe === null ? '' : ` @ RPE ${point.best_rpe}`}`,
+    detail: `${formatWeight(point.best_weight_kg, weightUnit)} × ${point.best_reps}${point.best_rpe === null ? '' : ` @ RPE ${point.best_rpe}`}`,
   }));
 
   return (
@@ -5588,8 +5580,8 @@ function ProgressScreen({
             <>
               <div className="progress-hero">
                 <strong className="progress-hero-value">
-                  {latestPoint ? formatMetric(latestPoint[metric]) : '–'}
-                  <small>kg</small>
+                  {latestPoint ? formatMetricKg(latestPoint[metric]) : '–'}
+                  <small>{weightUnit}</small>
                 </strong>
                 <p className="progress-hero-caption">
                   {latestPoint
@@ -5600,7 +5592,7 @@ function ProgressScreen({
                   <p className={`progress-delta ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`}>
                     <Icon name={change >= 0 ? 'up' : 'down'} />
                     {change >= 0 ? '+' : '−'}
-                    {formatMetric(Math.abs(change))} kg
+                    {formatMetricKg(Math.abs(change))} {weightUnit}
                     {changePercent !== null &&
                       ` (${change >= 0 ? '+' : '−'}${Math.abs(changePercent).toFixed(1)}%)`}{' '}
                     since {dayMonth(firstPoint.workout_date)}
@@ -5640,7 +5632,7 @@ function ProgressScreen({
                         ? `Best ${metric === 'estimated_1rm' ? 'est. 1RM' : 'top weight'} that week`
                         : metricInfo.series
                     }
-                    unit="kg"
+                    unit={weightUnit}
                     height={200}
                     fillHeight={expanded}
                     markRecords={metric !== 'volume_kg'}
@@ -5658,7 +5650,7 @@ function ProgressScreen({
                   <span>Heaviest set</span>
                   <b className="num">
                     {heaviestSetPoint
-                      ? `${Number(heaviestSetPoint.best_weight_kg.toFixed(2))} × ${heaviestSetPoint.best_reps}`
+                      ? `${formatWeight(heaviestSetPoint.best_weight_kg, weightUnit)} × ${heaviestSetPoint.best_reps}`
                       : '–'}
                   </b>
                   <small>
@@ -5667,7 +5659,9 @@ function ProgressScreen({
                 </div>
                 <div>
                   <span>Best est. 1RM</span>
-                  <b className="num">{formatKg(progress.personal_best_estimated_1rm)}</b>
+                  <b className="num">
+                    {formatWeight(progress.personal_best_estimated_1rm, weightUnit, 1)}
+                  </b>
                   <small>
                     {estimatedOneRepMaxPoint
                       ? shortDate(estimatedOneRepMaxPoint.workout_date)
@@ -5677,9 +5671,7 @@ function ProgressScreen({
                 <div>
                   <span>Best session volume</span>
                   <b className="num">
-                    {volumePoint
-                      ? `${Math.round(volumePoint.volume_kg).toLocaleString('en-GB')} kg`
-                      : '–'}
+                    {volumePoint ? formatWeight(volumePoint.volume_kg, weightUnit, 0) : '–'}
                   </b>
                   <small>
                     {volumePoint ? shortDate(volumePoint.workout_date) : 'Working sets'}
@@ -5693,7 +5685,9 @@ function ProgressScreen({
                       : '–'}
                   </b>
                   <small>
-                    {bodyweight ? `Best e1RM at ${bodyweight} kg` : 'Log bodyweight to compare'}
+                    {bodyweight
+                      ? `Best e1RM at ${formatWeight(bodyweight, weightUnit)}`
+                      : 'Log bodyweight to compare'}
                   </small>
                 </div>
               </section>
@@ -5718,10 +5712,10 @@ function ProgressScreen({
                           {recordIds.has(point.workout_id) && <em className="pr-chip">PR</em>}
                         </span>
                         <span className="session-set num">
-                          {Number(point.best_weight_kg.toFixed(2))} × {point.best_reps}
+                          {formatWeight(point.best_weight_kg, weightUnit)} × {point.best_reps}
                           {point.best_rpe !== null && <small> @{point.best_rpe}</small>}
                         </span>
-                        <b className="num">{formatMetric(point[metric])}</b>
+                        <b className="num">{formatMetricKg(point[metric])}</b>
                         <Icon name="chevron-right" />
                       </button>
                     </li>
@@ -5853,7 +5847,10 @@ function SettingsScreen({
   );
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [notificationError, setNotificationError] = useState<string | null>(null);
-  const [trainingPreferences, setTrainingPreferences] = useState<TrainingPreferences | null>(null);
+  const sharedPreferences = useTrainingPreferences();
+  const [trainingPreferences, setTrainingPreferences] = useState<TrainingPreferences | null>(
+    sharedPreferences.preferences,
+  );
   const [trainingPreferencesStatus, setTrainingPreferencesStatus] = useState<string | null>(null);
   const [trainingPreferencesError, setTrainingPreferencesError] = useState<string | null>(null);
   const [savingTrainingPreferences, setSavingTrainingPreferences] = useState(false);
@@ -5868,15 +5865,9 @@ function SettingsScreen({
   }, [colorsDirty, workoutTypeColors]);
 
   useEffect(() => {
-    void api
-      .getTrainingPreferences()
-      .then(setTrainingPreferences)
-      .catch((reason) =>
-        setTrainingPreferencesError(
-          reason instanceof Error ? reason.message : 'Could not load training preferences.',
-        ),
-      );
-  }, []);
+    setTrainingPreferences(sharedPreferences.preferences);
+    setTrainingPreferencesError(sharedPreferences.error);
+  }, [sharedPreferences.preferences, sharedPreferences.error]);
 
   useEffect(() => {
     if (!pushNotificationsSupported()) return;
@@ -5938,6 +5929,7 @@ function SettingsScreen({
     try {
       const saved = await api.updateTrainingPreferences(trainingPreferences);
       setTrainingPreferences(saved);
+      sharedPreferences.applySaved(saved);
       await onDataChange();
       window.dispatchEvent(new Event('training-preferences-updated'));
       setTrainingPreferencesStatus('Training preferences saved.');
@@ -6556,20 +6548,21 @@ export function BodyCompositionScreen({
   trendPreference?: BodyTrendPreference;
   onOpenSettings?: () => void;
 }) {
+  const weightUnit = useWeightUnit();
   const [measurementDate, setMeasurementDate] = useState(localDate());
   const [entryOpen, setEntryOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
-  const [weight, setWeight] = useState('');
+  const [weight, setWeight] = useState<number | null>(null);
   const [bodyFat, setBodyFat] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [goals, setGoals] = useState<BodyWeightGoal[]>([]);
-  const [goalTarget, setGoalTarget] = useState('');
+  const [goalTarget, setGoalTarget] = useState<number | null>(null);
   const [goalDate, setGoalDate] = useState('');
   const [savingGoal, setSavingGoal] = useState(false);
   const [editingMeasurement, setEditingMeasurement] = useState<BodyMeasurement | null>(null);
-  const [editWeight, setEditWeight] = useState('');
+  const [editWeight, setEditWeight] = useState<number | null>(null);
   const [editBodyFat, setEditBodyFat] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -6594,9 +6587,12 @@ export function BodyCompositionScreen({
   );
   const latest = measurements[0];
   const activeGoal = goals.find((goal) => goal.active) ?? null;
-  const targetWeight = Number(goalTarget);
+  const targetWeight = goalTarget;
   const hasValidTarget =
-    goalTarget.trim() !== '' && Number.isFinite(targetWeight) && targetWeight > 0;
+    targetWeight !== null &&
+    Number.isFinite(targetWeight) &&
+    targetWeight > 0 &&
+    targetWeight <= 500;
   const trendSummary = summarizeBodyWeightTrend(measurements, trendDuration);
   const trendValue = trendSummary[trendStatistic];
 
@@ -6635,12 +6631,12 @@ export function BodyCompositionScreen({
         start_date: localDate(),
         target_date: goalDate,
         start_weight_kg: latest.weight_kg,
-        target_weight_kg: targetWeight,
+        target_weight_kg: targetWeight!,
         active: true,
       });
       setGoals((current) => [goal, ...current.map((item) => ({ ...item, active: false }))]);
       await onDataChange();
-      setGoalTarget('');
+      setGoalTarget(null);
       setGoalDate('');
       setGoalOpen(false);
     } catch (saveError) {
@@ -6651,9 +6647,14 @@ export function BodyCompositionScreen({
   }
 
   async function submitMeasurement() {
-    const weightValue = Number(weight);
-    if (!weightValue || weightValue <= 0) {
-      setError('Enter your body weight in kilograms.');
+    const weightValue = weight;
+    if (
+      weightValue === null ||
+      !Number.isFinite(weightValue) ||
+      weightValue <= 0 ||
+      weightValue > 500
+    ) {
+      setError(`Enter a body weight above 0 and up to ${formatWeight(500, weightUnit)}.`);
       return;
     }
     setSaving(true);
@@ -6665,7 +6666,7 @@ export function BodyCompositionScreen({
         body_fat_pct: bodyFat ? Number(bodyFat) : null,
         notes: notes.trim() || null,
       });
-      setWeight('');
+      setWeight(null);
       setBodyFat('');
       setNotes('');
       setEntryOpen(false);
@@ -6678,17 +6679,22 @@ export function BodyCompositionScreen({
 
   function beginMeasurementEdit(measurement: BodyMeasurement) {
     setEditingMeasurement(measurement);
-    setEditWeight(String(measurement.weight_kg));
+    setEditWeight(measurement.weight_kg);
     setEditBodyFat(measurement.body_fat_pct === null ? '' : String(measurement.body_fat_pct));
     setEditError(null);
   }
 
   async function submitMeasurementEdit() {
     if (!editingMeasurement) return;
-    const weightValue = Number(editWeight);
+    const weightValue = editWeight;
     const bodyFatValue = editBodyFat.trim() ? Number(editBodyFat) : null;
-    if (!Number.isFinite(weightValue) || weightValue <= 0 || weightValue > 500) {
-      setEditError('Enter a body weight between 1 and 500 kg.');
+    if (
+      weightValue === null ||
+      !Number.isFinite(weightValue) ||
+      weightValue <= 0 ||
+      weightValue > 500
+    ) {
+      setEditError(`Enter a body weight above 0 and up to ${formatWeight(500, weightUnit)}.`);
       return;
     }
     if (
@@ -6742,7 +6748,7 @@ export function BodyCompositionScreen({
       <div className="body-reference-stats" aria-label="Bodyweight summary">
         <div>
           <span>Bodyweight</span>
-          <strong>{latest ? `${latest.weight_kg} kg` : '–'}</strong>
+          <strong>{latest ? formatWeight(latest.weight_kg, weightUnit) : '–'}</strong>
         </div>
         <div>
           <span>
@@ -6750,7 +6756,9 @@ export function BodyCompositionScreen({
               ? `${new Intl.DateTimeFormat(undefined, { month: 'long' }).format(new Date(`${activeGoal.target_date}T12:00:00`))} Goal`
               : 'Weight Goal'}
           </span>
-          <strong>{activeGoal ? `${activeGoal.target_weight_kg} kg` : '–'}</strong>
+          <strong>
+            {activeGoal ? formatWeight(activeGoal.target_weight_kg, weightUnit) : '–'}
+          </strong>
         </div>
         <div>
           <span>Body Fat</span>
@@ -6786,7 +6794,11 @@ export function BodyCompositionScreen({
               </select>
             </label>
           </div>
-          <strong>{trendValue === null ? '–' : `${trendValue.toFixed(1)} kg`}</strong>
+          <strong>
+            {trendValue === null
+              ? '–'
+              : `${weightFromKg(trendValue, weightUnit).toFixed(1)} ${weightUnit}`}
+          </strong>
           <small>
             {trendSummary.count} {trendSummary.count === 1 ? 'check-in' : 'check-ins'}
           </small>
@@ -6845,9 +6857,10 @@ export function BodyCompositionScreen({
             {activeGoal && latest && (
               <div className="body-goal-progress">
                 <div>
-                  <strong>{latest.weight_kg} kg</strong>
+                  <strong>{formatWeight(latest.weight_kg, weightUnit)}</strong>
                   <span>
-                    → {activeGoal.target_weight_kg} kg by {prettyDate(activeGoal.target_date)}
+                    → {formatWeight(activeGoal.target_weight_kg, weightUnit)} by{' '}
+                    {prettyDate(activeGoal.target_date)}
                   </span>
                 </div>
                 <div className="zone2-track">
@@ -6861,15 +6874,8 @@ export function BodyCompositionScreen({
             )}
             <div className="goal-entry-fields">
               <label>
-                Target kg
-                <input
-                  type="number"
-                  min="1"
-                  max="500"
-                  step="0.1"
-                  value={goalTarget}
-                  onChange={(event) => setGoalTarget(event.target.value)}
-                />
+                Target ({weightUnit})
+                <WeightInput weightKg={goalTarget} onWeightChange={setGoalTarget} />
               </label>
               <label>
                 Target date
@@ -6917,17 +6923,12 @@ export function BodyCompositionScreen({
                 />
               </label>
               <label>
-                Weight (kg)
-                <input
+                Weight ({weightUnit})
+                <WeightInput
                   autoFocus
-                  inputMode="decimal"
-                  type="number"
-                  min="1"
-                  max="500"
-                  step="0.1"
-                  value={weight}
-                  onChange={(event) => setWeight(event.target.value)}
-                  placeholder={bodyweightEntryPlaceholder(measurements)}
+                  weightKg={weight}
+                  onWeightChange={setWeight}
+                  placeholder={weightInputValue(measurements[0]?.weight_kg ?? 88, weightUnit)}
                 />
               </label>
               <label>
@@ -7027,7 +7028,7 @@ export function BodyCompositionScreen({
                   <small>{measurement.measurement_date.slice(0, 4)}</small>
                 </div>
                 <div className="body-history-weight">
-                  <strong>{measurement.weight_kg} kg</strong>
+                  <strong>{formatWeight(measurement.weight_kg, weightUnit)}</strong>
                   <small>{measurement.is_sample && 'Sample'}</small>
                   {measurement.notes && <p>{measurement.notes}</p>}
                 </div>
@@ -7071,16 +7072,8 @@ export function BodyCompositionScreen({
                   <div className="body-edit-content">
                     <div className="body-edit-fields">
                       <label>
-                        Weight (kg)
-                        <input
-                          inputMode="decimal"
-                          type="number"
-                          min="1"
-                          max="500"
-                          step="0.1"
-                          value={editWeight}
-                          onChange={(event) => setEditWeight(event.target.value)}
-                        />
+                        Weight ({weightUnit})
+                        <WeightInput weightKg={editWeight} onWeightChange={setEditWeight} />
                       </label>
                       <label>
                         Body fat %
@@ -7133,7 +7126,9 @@ export function BodyCompositionScreen({
                 </small>
               </div>
               <div className="body-history-weight">
-                <strong>{summary.weight_kg.toFixed(1)} kg</strong>
+                <strong>
+                  {weightFromKg(summary.weight_kg, weightUnit).toFixed(1)} {weightUnit}
+                </strong>
                 <small>
                   {summary.count} {summary.count === 1 ? 'check-in' : 'check-ins'}
                 </small>
@@ -7163,6 +7158,7 @@ function BodyTrendChart({
   measurements: BodyMeasurement[];
   goals: BodyWeightGoal[];
 }) {
+  const weightUnit = useWeightUnit();
   const [displayRange, setDisplayRange] = useState<BodyTrendRange>('3m');
   // Weight and body fat use different units, so they are separate views rather than two y-axes.
   const [series, setSeries] = useState<'weight' | 'fat'>('weight');
@@ -7189,18 +7185,22 @@ function BodyTrendChart({
           window.reduce((total, candidate) => total + candidate.weight_kg, 0) / window.length;
         return {
           date: item.measurement_date,
-          value: Number(average.toFixed(2)),
-          detail: `weighed ${item.weight_kg} kg`,
+          value: weightFromKg(average, weightUnit),
+          detail: `weighed ${formatWeight(item.weight_kg, weightUnit)}`,
         };
       }),
     // ordered is derived from measurements and the range.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [measurements, displayRange],
+    [measurements, displayRange, weightUnit],
   );
   const dailyPoints = useMemo<TrendPoint[]>(
-    () => ordered.map((item) => ({ date: item.measurement_date, value: item.weight_kg })),
+    () =>
+      ordered.map((item) => ({
+        date: item.measurement_date,
+        value: weightFromKg(item.weight_kg, weightUnit),
+      })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [measurements, displayRange],
+    [measurements, displayRange, weightUnit],
   );
   const fatPoints = useMemo<TrendPoint[]>(
     () =>
@@ -7208,17 +7208,17 @@ function BodyTrendChart({
         .filter((item) => item.body_fat_pct !== null)
         .map((item) => ({ date: item.measurement_date, value: item.body_fat_pct! })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [measurements, displayRange],
+    [measurements, displayRange, weightUnit],
   );
   const goalPath = useMemo<GoalPath | null>(
     () =>
       clippedGoal && series === 'weight'
         ? {
             startDate: clippedGoal.start_date,
-            startValue: clippedGoal.start_weight_kg,
+            startValue: weightFromKg(clippedGoal.start_weight_kg, weightUnit),
             endDate: clippedGoal.target_date,
-            endValue: clippedGoal.target_weight_kg,
-            label: `Goal ${activeGoal!.target_weight_kg} kg`,
+            endValue: weightFromKg(clippedGoal.target_weight_kg, weightUnit),
+            label: `Goal ${formatWeight(activeGoal!.target_weight_kg, weightUnit)}`,
           }
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -7228,6 +7228,7 @@ function BodyTrendChart({
       clippedGoal?.start_weight_kg,
       clippedGoal?.target_weight_kg,
       series,
+      weightUnit,
     ],
   );
   const showFat = series === 'fat' && hasBodyFat;
@@ -7302,7 +7303,7 @@ function BodyTrendChart({
               backgroundPoints={dailyPoints}
               label="Bodyweight, 7-day average over daily weigh-ins"
               seriesLabel="7-day average"
-              unit="kg"
+              unit={weightUnit}
               area={false}
               goalPath={goalPath}
               height={200}
@@ -7356,6 +7357,7 @@ function CardioScreen({
     ) ??
     cardioExercises[0] ??
     null;
+  const weightUnit = useWeightUnit();
   const empty: CardioSessionInput = {
     session_date: localDate(),
     exercise_id: defaultExercise?.id ?? null,
@@ -7863,7 +7865,7 @@ function CardioScreen({
                 <small className="cardio-session-energy">
                   {session.calories_kcal == null
                     ? 'Calories not logged'
-                    : `${session.calories_kcal.toLocaleString()} kcal · ≈ ${fatEnergyEquivalent(session.calories_kcal)} fat burnt`}
+                    : `${session.calories_kcal.toLocaleString()} kcal · ≈ ${fatEnergyEquivalent(session.calories_kcal, weightUnit)} fat burnt`}
                 </small>
                 <small className="cardio-session-performance">
                   {[
@@ -8003,6 +8005,7 @@ function HistoryScreen({
   onReplaceActiveWorkout: (workoutDate: string) => void;
   onOpenSettings: () => void;
 }) {
+  const weightUnit = useWeightUnit();
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
   const [visibleCount, setVisibleCount] = useState(() => {
     const index = initialOpenId ? workouts.findIndex((item) => item.id === initialOpenId) : -1;
@@ -8161,7 +8164,7 @@ function HistoryScreen({
                   <span className="num">
                     {group.workouts.length} {group.workouts.length === 1 ? 'workout' : 'workouts'} ·{' '}
                     {group.sets} sets
-                    {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg)}` : ''}
+                    {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg, weightUnit)}` : ''}
                   </span>
                 </header>
                 <div className="history-week-list">
@@ -8215,6 +8218,7 @@ function SharedWorkoutHistory({
   categoryColors,
   weekStartDay,
 }: SharedWorkoutListProps & { categoryColors: WorkoutTypeColors; weekStartDay: number }) {
+  const weightUnit = useWeightUnit();
   const [openId, setOpenId] = useState<string | null>(null);
   const [expandedPhoto, setExpandedPhoto] = useState<MachinePhoto | null>(null);
   const targetExerciseRef = useRef<HTMLDivElement>(null);
@@ -8234,7 +8238,7 @@ function SharedWorkoutHistory({
           <span className="num">
             {group.workouts.length} {group.workouts.length === 1 ? 'workout' : 'workouts'} ·{' '}
             {group.sets} sets
-            {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg)}` : ''}
+            {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg, weightUnit)}` : ''}
           </span>
         </header>
         <div className="history-week-list">
@@ -8297,6 +8301,7 @@ function HistoryWorkoutCard({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const weightUnit = useWeightUnit();
   const completedWorkoutSets = workout.movements
     .flatMap((movement) => movement.sets)
     .filter((item) => item.completed);
@@ -8331,7 +8336,7 @@ function HistoryWorkoutCard({
         </span>
         <span className="history-card-metric num">
           {totalVolume > 0
-            ? formatVolume(totalVolume)
+            ? formatVolume(totalVolume, weightUnit)
             : totalDistance > 0
               ? `${Number(totalDistance.toFixed(1))} km`
               : formatMinutesDuration(workout.duration_minutes)}
@@ -8368,9 +8373,7 @@ function HistoryWorkoutCard({
             </span>
             <span>
               <small>Volume</small>
-              <strong>
-                {totalVolume ? `${Math.round(totalVolume).toLocaleString()} kg` : '–'}
-              </strong>
+              <strong>{totalVolume ? formatWeight(totalVolume, weightUnit, 0) : '–'}</strong>
             </span>
           </div>
           {workout.movements.map((movement) => {
@@ -8396,7 +8399,7 @@ function HistoryWorkoutCard({
                   ) : (
                     <strong className="history-exercise-name">{movement.exercise.name}</strong>
                   )}
-                  {best && <span className="num">Top {setLabel(best)}</span>}
+                  {best && <span className="num">Top {setLabel(best, weightUnit)}</span>}
                 </div>
                 {movement.machine_photos.length > 0 && (
                   <>
@@ -8481,13 +8484,14 @@ function HistorySetFlow({
   sets: TrackedSet[];
   personalRecords: PersonalRecord[];
 }) {
+  const weightUnit = useWeightUnit();
   return (
     <div className="history-set-flow">
       {sets.map((item, index) => (
         <Fragment key={item.id}>
           <div className={`history-set-pill ${item.failed ? 'failed-set' : ''}`}>
             <b>Set {item.order_index + 1}</b>
-            <span>{setResult(item)}</span>
+            <span>{setResult(item, weightUnit)}</span>
             {item.rpe !== null && <small>RPE {item.rpe}</small>}
             <em>
               {item.set_type === 'warmup'
@@ -8519,8 +8523,9 @@ function HistorySetFlow({
   );
 }
 
-function setResult(item: TrackedSet): string {
-  if (item.weight_kg !== null) return `${item.weight_kg} kg × ${item.reps ?? '–'}`;
+function setResult(item: TrackedSet, weightUnit: WeightUnit): string {
+  if (item.weight_kg !== null)
+    return `${formatWeight(item.weight_kg, weightUnit)} × ${item.reps ?? '–'}`;
   const cardioValues = [
     item.duration_seconds ? formatDuration(item.duration_seconds) : null,
     item.distance_km !== null ? `${item.distance_km} km` : null,

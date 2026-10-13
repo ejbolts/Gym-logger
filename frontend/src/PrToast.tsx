@@ -1,3 +1,5 @@
+import { useWeightUnit } from './trainingPreferencesContext';
+import { formatWeight } from './weightUnits';
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import './prToast.css';
@@ -12,6 +14,7 @@ export interface PrToastEntry {
 export const PR_TOAST_MS = 5000;
 
 export function PrToast({ entries, onClose }: { entries: PrToastEntry[]; onClose: () => void }) {
+  const weightUnit = useWeightUnit();
   useEffect(() => {
     const timer = window.setTimeout(onClose, PR_TOAST_MS);
     return () => window.clearTimeout(timer);
@@ -34,7 +37,7 @@ export function PrToast({ entries, onClose }: { entries: PrToastEntry[]; onClose
             <strong>{entry.labels.join(' + ')}</strong>
             <span>{entry.exercise}</span>
             <small>
-              {entry.reps} reps at {entry.weightKg} kg
+              {entry.reps} reps at {formatWeight(entry.weightKg, weightUnit)}
             </small>
           </div>
         ))}
