@@ -90,9 +90,9 @@ Workout details start collapsed; the arrow expands them. Settings is available a
 
 A sample account's profile photo in the isolated mobile verification environment.
 
-<img src="screenshots/releases/0.4.0-fullscreen-graph.png" alt="Expanded bench press progress graph filling a landscape screen, with the selected session tooltip, Open workout and Exit buttons." width="844">
+<img src="screenshots/releases/0.5.3-fullscreen-graph.png" alt="Expanded bench press progress graph filling a landscape screen, with the selected session tooltip, Open workout and Exit buttons." width="844">
 
-The full-screen graph with isolated sample workouts. The portrait fallback presents the same graph rotated for landscape viewing.
+The full-screen graph in the combined 0.5.3 build, captured on MainPC's isolated 8447 verification route with synthetic workouts. The portrait fallback presents the same graph rotated for landscape viewing.
 
 ## 0.3.1
 
