@@ -2054,6 +2054,9 @@ function WorkoutLogger({
             target_reps: item.target_reps,
             notes: item.notes,
             completed: item.completed,
+            // Saved rows have no suggestion provenance. Keep unfinished performance planned
+            // when resuming; logging or editing its values will mark it as entered.
+            fromPrevious: !item.completed,
           })),
         }))
       : restoredDraft

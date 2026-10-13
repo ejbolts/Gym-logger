@@ -29,6 +29,7 @@ vi.mock('./api', async (importOriginal) => {
       listMachinePhotos: vi.fn().mockResolvedValue([]),
       lastUsedMachinePhotos: vi.fn().mockResolvedValue([]),
       createWorkout: vi.fn(),
+      updateWorkout: vi.fn(),
     },
   };
 });
@@ -290,5 +291,81 @@ describe('inactive workout suggestions', () => {
     await act(async () => window.dispatchEvent(new Event('focus')));
     const payload = vi.mocked(api.createWorkout).mock.calls[0][0] as WorkoutInput;
     expect(payload.movements[0].sets.map((set) => set.completed)).toEqual([true, false]);
+  });
+
+  it('keeps saved incomplete suggestions unchecked after History resume and timeout', async () => {
+    window.history.replaceState(null, '', '#history');
+    const saved: TrackedWorkout = {
+      id: 'saved-workout',
+      name: 'Workout with planned sets',
+      workout_date: '2026-10-13',
+      category: 'push',
+      notes: 'Workout notes survive',
+      duration_minutes: 45,
+      start_time: null,
+      end_time: null,
+      is_sample: false,
+      created_at: '2026-10-13T01:00:00Z',
+      updated_at: '2026-10-13T01:00:00Z',
+      movements: [
+        {
+          id: 'saved-movement',
+          order_index: 0,
+          exercise: bench,
+          notes: 'Movement notes survive',
+          machine_photos: [],
+          superset_group_id: null,
+          superset_name: null,
+          sets: [0, 1, 2].map((index) => ({
+            id: `saved-set-${index}`,
+            order_index: index,
+            reps: 8,
+            weight_kg: index === 0 ? 80 : 160,
+            rpe: 8,
+            rest_seconds: 180,
+            duration_seconds: null,
+            distance_km: null,
+            incline_percent: null,
+            speed_kph: null,
+            bodyweight_kg: null,
+            percentile: null,
+            warmup: false,
+            set_type: 'normal',
+            failed: false,
+            target_reps: null,
+            notes: `Saved set ${index}`,
+            completed: index === 0,
+          })),
+        },
+      ],
+    };
+    vi.mocked(api.listWorkouts).mockResolvedValue([saved]);
+    vi.mocked(api.updateWorkout).mockReturnValueOnce(new Promise<TrackedWorkout>(() => {}));
+    await mount();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('.history-card-summary')!.click(),
+    );
+    const resume = container.querySelector<HTMLButtonElement>('.resume-workout-button')!;
+    expect(resume.textContent).toBe('Resume from now');
+    await act(async () => resume.click());
+    const resumed = readActiveWorkoutDraft()!;
+    expect(resumed.resumingWorkoutId).toBe(saved.id);
+    expect(resumed.movements[0].sets.map((set) => set.completed)).toEqual([true, false, false]);
+    expect(resumed.movements[0].sets.map((set) => set.fromPrevious)).toEqual([false, true, true]);
+    vi.spyOn(Date, 'now').mockReturnValue(resumed.inactiveFinishAt! + 1000);
+    await act(async () => window.dispatchEvent(new Event('focus')));
+    expect(api.updateWorkout).toHaveBeenCalledOnce();
+    expect(api.createWorkout).not.toHaveBeenCalled();
+    const [id, payload] = vi.mocked(api.updateWorkout).mock.calls[0];
+    expect(id).toBe(saved.id);
+    const sets = payload.movements[0].sets;
+    expect(sets.map((set) => set.completed)).toEqual([true, false, false]);
+    expect(sets.filter(isStrengthPrEligible)).toHaveLength(1);
+    expect(
+      sets
+        .filter((set) => set.completed)
+        .reduce((volume, set) => volume + set.reps! * set.weight_kg!, 0),
+    ).toBe(640);
+    expect(sets.map((set) => set.notes)).toEqual(saved.movements[0].sets.map((set) => set.notes));
   });
 });
