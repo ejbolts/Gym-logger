@@ -160,6 +160,11 @@ export interface TrackedWorkout {
   start_time: string | null;
   end_time: string | null;
   is_sample: boolean;
+  /**
+   * Advances with every saved change. Editors send the revision they loaded so a stale device
+   * cannot overwrite newer edits. Absent only from data cached before revisions existed.
+   */
+  revision?: number;
   created_at: string;
   updated_at: string;
   movements: TrackedMovement[];
@@ -209,6 +214,10 @@ export interface WorkoutInput {
     superset_key?: string | null;
     sets: WorkoutSetInput[];
   }>;
+  /** New workouts: idempotency key shared by every attempt to save one draft. */
+  client_request_id?: string;
+  /** Edits: the revision the editor loaded. Omitted, the save is unconditional. */
+  base_revision?: number;
 }
 
 export interface HeatmapDay {

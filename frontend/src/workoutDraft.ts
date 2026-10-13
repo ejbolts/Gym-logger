@@ -26,7 +26,15 @@ export interface StoredDraftMovement {
 export interface ActiveWorkoutDraft {
   version: 1;
   startedAt: number;
+  /**
+   * Idempotency key sent with every attempt to save this draft as a new workout, including
+   * retries after a reload and the inactivity autosave, so a lost reply cannot cause a duplicate.
+   * Drafts stored before keys existed get one when they are restored.
+   */
+  clientRequestId?: string;
   resumingWorkoutId?: string;
+  /** Revision of the saved workout when it was resumed; absent from older drafts. */
+  resumingWorkoutRevision?: number;
   previousDurationMinutes?: number;
   updatedAt: number;
   lastActiveAt?: number;
@@ -48,6 +56,21 @@ const workoutCategories = new Set<WorkoutCategory>([
   'cardio',
   'other',
 ]);
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A random version 4 UUID, also where `crypto.randomUUID` is unavailable (insecure origins). */
+export function createClientRequestId(): string {
+  const cryptoApi = typeof crypto === 'undefined' ? undefined : crypto;
+  if (typeof cryptoApi?.randomUUID === 'function') return cryptoApi.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (typeof cryptoApi?.getRandomValues === 'function') cryptoApi.getRandomValues(bytes);
+  else for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.random() * 256;
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 function browserStorage(): DraftStorage | null {
   if (typeof window === 'undefined') return null;
@@ -133,7 +156,17 @@ export function readActiveWorkoutDraft(storage?: DraftStorage | null): ActiveWor
     const serialized = target.getItem(ACTIVE_WORKOUT_DRAFT_KEY);
     if (!serialized) return null;
     const parsed: unknown = JSON.parse(serialized);
-    return isActiveWorkoutDraft(parsed) ? parsed : null;
+    if (!isActiveWorkoutDraft(parsed)) return null;
+    // An unusable save key or revision must never cost the workout itself; drop just that field.
+    const { clientRequestId, resumingWorkoutRevision, ...draft } = parsed;
+    return {
+      ...draft,
+      ...(typeof clientRequestId === 'string' &&
+        UUID_PATTERN.test(clientRequestId) && { clientRequestId }),
+      ...(typeof resumingWorkoutRevision === 'number' &&
+        Number.isInteger(resumingWorkoutRevision) &&
+        resumingWorkoutRevision >= 1 && { resumingWorkoutRevision }),
+    };
   } catch {
     return null;
   }

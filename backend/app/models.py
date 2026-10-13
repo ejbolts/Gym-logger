@@ -13,6 +13,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Table,
@@ -534,6 +535,12 @@ class TrainingWorkout(Base):
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     is_sample: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Advanced by every change to the workout's content, so a save from an editor that loaded an
+    # older revision is refused rather than overwriting newer edits (see tracker.update_workout).
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    # Idempotency key of the app save that created this workout, unique per account, so a retried
+    # create returns this workout instead of adding another. NULL for imports and samples.
+    client_request_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )
@@ -563,6 +570,7 @@ class TrainingWorkout(Base):
             "(start_time IS NOT NULL AND end_time IS NOT NULL)",
             name="training_workout_times_together",
         ),
+        Index("uq_training_workout_client_request", "user_id", "client_request_id", unique=True),
     )
 
 

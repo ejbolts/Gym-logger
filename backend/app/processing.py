@@ -202,6 +202,8 @@ def link_session_videos_to_workout(db: Session, session: WorkoutSession) -> int:
         )
         if note_line in (movement.notes or ""):
             continue
+        # This does not advance the workout's revision: every workout save re-runs this backfill,
+        # so an editor that saves without the line gets it back rather than a needless conflict.
         movement.notes = "\n".join(item for item in (movement.notes, note_line) if item)
         linked += 1
     db.flush()

@@ -101,5 +101,9 @@ export function cachedWorkoutsForRevision(
   cached: CachedWorkoutSnapshot | null,
   revision: string,
 ): TrackedWorkout[] | null {
-  return cached?.revision === revision ? cached.workouts : null;
+  if (cached?.revision !== revision) return null;
+  // Snapshots cached before workouts carried a revision cannot protect edits; reload them once.
+  return cached.workouts.every((workout) => typeof workout.revision === 'number')
+    ? cached.workouts
+    : null;
 }

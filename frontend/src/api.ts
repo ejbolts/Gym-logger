@@ -67,11 +67,24 @@ interface RequestOptions {
   signalExpiredSession?: boolean;
 }
 
-async function request<T>(
+/** The server refused a workout save because the workout changed after the editor loaded it. */
+export class WorkoutConflictError extends ApiError {
+  constructor(
+    message: string,
+    public readonly workoutId: string,
+  ) {
+    super(message, 'workout_conflict', 409);
+  }
+}
+
+/** The server gives every newly created workout this revision. */
+const CREATED_WORKOUT_REVISION = 1;
+
+async function send(
   path: string,
   init?: RequestInit,
   { signalExpiredSession = true }: RequestOptions = {},
-): Promise<T> {
+): Promise<Response> {
   const response = await fetch(path, { ...init, credentials: 'same-origin' });
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as {
@@ -90,6 +103,11 @@ async function request<T>(
       response.status,
     );
   }
+  return response;
+}
+
+async function request<T>(path: string, init?: RequestInit, options?: RequestOptions): Promise<T> {
+  const response = await send(path, init, options);
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 
@@ -116,6 +134,56 @@ async function listCachedWorkouts(): Promise<TrackedWorkout[]> {
 }
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
+
+/** The fields of a workout save that describe the workout itself, without save metadata. */
+function workoutContent(payload: WorkoutInput): WorkoutInput {
+  const content = { ...payload };
+  delete content.client_request_id;
+  delete content.base_revision;
+  return content;
+}
+
+/**
+ * Replaces a saved workout. With `base_revision` the server refuses (409) if the workout changed
+ * after the editor loaded that revision; without it the save is unconditional.
+ */
+async function updateWorkout(id: string, payload: WorkoutInput): Promise<TrackedWorkout> {
+  try {
+    return await request<TrackedWorkout>(`/api/workouts/${id}`, {
+      method: 'PUT',
+      headers: jsonHeaders,
+      body: JSON.stringify({ ...workoutContent(payload), base_revision: payload.base_revision }),
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409 && error.code === 'workout_conflict') {
+      throw new WorkoutConflictError(error.message, id);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Creates a workout. Every attempt for one logical save sends the same `client_request_id`, so a
+ * retry after a lost reply returns the workout already saved (200) instead of adding another.
+ */
+async function createWorkout(payload: WorkoutInput): Promise<TrackedWorkout> {
+  const response = await send('/api/workouts', {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      ...workoutContent(payload),
+      client_request_id: payload.client_request_id,
+    }),
+  });
+  const workout = (await response.json()) as TrackedWorkout;
+  if (response.status !== 200 || !payload.client_request_id) return workout;
+  // An earlier attempt was saved but its reply was lost. This attempt may include sets logged
+  // since then, so apply it too, unless the workout has been changed elsewhere since it was saved.
+  return updateWorkout(workout.id, {
+    ...workoutContent(payload),
+    base_revision: CREATED_WORKOUT_REVISION,
+  });
+}
 
 export const api = {
   auth: {
@@ -427,18 +495,9 @@ export const api = {
       body: form,
     });
   },
-  createWorkout: (payload: WorkoutInput) =>
-    request<TrackedWorkout>('/api/workouts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }),
-  updateWorkout: (id: string, payload: WorkoutInput) =>
-    request<TrackedWorkout>(`/api/workouts/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }),
+  createWorkout,
+  updateWorkout,
+  getWorkout: (id: string) => request<TrackedWorkout>(`/api/workouts/${id}`),
   deleteWorkout: (id: string) => request<void>(`/api/workouts/${id}`, { method: 'DELETE' }),
   deleteSampleData: () => request<void>('/api/sample-data', { method: 'DELETE' }),
   exerciseProgress: (id: string) => request<ExerciseProgress>(`/api/progress/${id}`),

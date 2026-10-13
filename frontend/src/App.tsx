@@ -204,10 +204,14 @@ import { CompactLoggingToolbar, CompactMoreToggle, CompactMovementSummary } from
 import { useCompactCardFocus, useCompactLogging, type CompactCardState } from './useCompactLogging';
 import {
   clearActiveWorkoutDraft,
+  createClientRequestId,
   readActiveWorkoutDraft,
   savedWorkoutMatchesOldDraft,
   writeActiveWorkoutDraft,
 } from './workoutDraft';
+import { saveWorkoutResolvingConflicts } from './workoutSave';
+import { useWorkoutConflictPrompt } from './useWorkoutConflictPrompt';
+import { useForegroundRefresh } from './useForegroundRefresh';
 import {
   createSuggestedWorkoutSet,
   createWorkoutSet,
@@ -588,7 +592,13 @@ function AppContent() {
   const [message, setMessage] = useState<string | null>(null);
   const showToast = useShowToast();
   const [backgroundActivities, setBackgroundActivities] = useState<BackgroundActivity[]>([]);
+  const workoutConflict = useWorkoutConflictPrompt();
   useActiveWorkoutReminder(activeWorkoutStartedAt);
+  // Show changes saved on other devices on return, unless an unsaved edit holds its own version.
+  useForegroundRefresh(
+    !loading && activeWorkoutStartedAt === null && editingWorkout === null,
+    () => void refreshData({ silent: true, activityLabel: null }),
+  );
   useEffect(() => {
     // Accounts without upload access never reach the video screen, even from an old #videos link.
     if (tab !== 'videos' || videosAllowed) return;
@@ -833,18 +843,22 @@ function AppContent() {
     return () => window.removeEventListener('popstate', restoreNavigation);
   }, []);
 
-  async function saveWorkout(payload: WorkoutInput) {
+  /** Returns false when a conflict was resolved by loading the latest version instead. */
+  async function saveWorkout(payload: WorkoutInput): Promise<boolean> {
     const wasEditing = editingWorkout !== null;
     const resumedId = resumingWorkoutId;
-    const saved = await withBackgroundActivity(
-      wasEditing || resumedId ? 'Saving workout changes…' : 'Saving workout…',
-      () =>
-        editingWorkout
-          ? api.updateWorkout(editingWorkout.id, payload)
-          : resumedId
-            ? api.updateWorkout(resumedId, payload)
-            : api.createWorkout(payload),
+    const label = wasEditing || resumedId ? 'Saving workout changes…' : 'Saving workout…';
+    const outcome = await saveWorkoutResolvingConflicts(
+      payload,
+      editingWorkout?.id ?? resumedId,
+      workoutConflict.chooseVersion,
+      (operation) => withBackgroundActivity(label, operation),
     );
+    if (outcome.status === 'discarded') {
+      loadLatestWorkout(outcome.workout);
+      return false;
+    }
+    const saved = outcome.workout;
 
     setWorkouts((current) => upsertWorkoutByRecency(current, saved));
     if (!wasEditing) {
@@ -869,6 +883,22 @@ function AppContent() {
         .catch(() => undefined);
     }
     void refreshData({ silent: true, activityLabel: 'Updating workout data…' });
+    return true;
+  }
+
+  /** Discards local edits and reopens the workout at the version another device saved. */
+  function loadLatestWorkout(latest: TrackedWorkout) {
+    setWorkouts((current) => upsertWorkoutByRecency(current, latest));
+    if (editingWorkout) {
+      setEditingWorkout(latest);
+    } else {
+      // Resume the latest version from now, as History's Resume does.
+      clearActiveWorkoutDraft();
+      setResumingWorkoutId(latest.id);
+      setActiveWorkoutStartedAt(Date.now());
+      setWorkoutStartDate(latest.workout_date);
+    }
+    void refreshData({ silent: true, activityLabel: null });
   }
 
   async function deleteWorkout(workout: TrackedWorkout) {
@@ -1129,6 +1159,7 @@ function AppContent() {
         canShowPrompts && <HomeScreenGuide onClose={homeScreenGuide.dismiss} />}
       <EdgeSwipeBack onBack={navigateBack} enabled={canNavigateBack} />
       <BackgroundActivityBar label={backgroundActivityLabel} />
+      {workoutConflict.dialog}
       {message && (
         <NotificationDialog key={message} message={message} onClose={() => setMessage(null)} />
       )}
@@ -1229,7 +1260,7 @@ function AppContent() {
                 <WorkoutLogger
                   key={
                     editingWorkout
-                      ? `edit-${editingWorkout.id}`
+                      ? `edit-${editingWorkout.id}-${editingWorkout.revision ?? 0}`
                       : `active-${activeWorkoutStartedAt ?? workoutStartDate}`
                   }
                   exercises={exercises}
@@ -2056,7 +2087,7 @@ function WorkoutLogger({
   onExerciseHistory: (exerciseId: string) => void;
   onExerciseFavorite: (exerciseId: string, isFavorite: boolean) => Promise<void>;
   onCreateExercise: (input: ExerciseCreateInput) => Promise<Exercise>;
-  onSave: (payload: WorkoutInput) => Promise<void>;
+  onSave: (payload: WorkoutInput) => Promise<boolean>;
   onAutoSaved: () => void;
   activeStartedAt: number | null;
   onClose: () => void;
@@ -2160,6 +2191,15 @@ function WorkoutLogger({
   const supersetButtonRef = useRef<HTMLButtonElement>(null);
   const startedAt = useState(() => restoredDraft?.startedAt ?? activeStartedAt ?? Date.now())[0];
   const resumedWorkoutId = restoredDraft?.resumingWorkoutId ?? resumingWorkout?.id ?? null;
+  // Kept in the draft, so retries after a reload or an inactivity autosave reuse the same key
+  // and base revision. Older drafts get a new key; without a stored revision, saves are
+  // unconditional as before.
+  const clientRequestId = useState(
+    () => restoredDraft?.clientRequestId ?? createClientRequestId(),
+  )[0];
+  const resumedWorkoutRevision = useState(() =>
+    restoredDraft ? restoredDraft.resumingWorkoutRevision : resumingWorkout?.revision,
+  )[0];
   const previousDurationMinutes = useState(
     () => restoredDraft?.previousDurationMinutes ?? resumingWorkout?.duration_minutes ?? 0,
   )[0];
@@ -2214,8 +2254,10 @@ function WorkoutLogger({
       writeActiveWorkoutDraft({
         version: 1,
         startedAt,
+        clientRequestId,
         ...(resumedWorkoutId && {
           resumingWorkoutId: resumedWorkoutId,
+          resumingWorkoutRevision: resumedWorkoutRevision,
           previousDurationMinutes,
         }),
         updatedAt: Date.now(),
@@ -2270,12 +2312,14 @@ function WorkoutLogger({
     };
   }, [
     category,
+    clientRequestId,
     initialWorkout,
     movements,
     name,
     notes,
     previousDurationMinutes,
     resumedWorkoutId,
+    resumedWorkoutRevision,
     startedAt,
     workoutDate,
     durationOverrideMinutes,
@@ -2697,7 +2741,7 @@ function WorkoutLogger({
     );
     try {
       cancelRestTimer();
-      await onSave({
+      const saved = await onSave({
         name: completedIdentity.name,
         workout_date: workoutDate,
         category: completedIdentity.category,
@@ -2731,7 +2775,16 @@ function WorkoutLogger({
           })),
           superset_key: movement.supersetKey,
         })),
+        // A new workout's retries share one key; an edit sends the revision it started from.
+        client_request_id: initialWorkout || resumedWorkoutId ? undefined : clientRequestId,
+        base_revision: initialWorkout ? initialWorkout.revision : resumedWorkoutRevision,
       });
+      if (!saved) {
+        // The latest version was loaded instead, which reopens this screen.
+        savingRef.current = false;
+        setSaving(false);
+        return;
+      }
       if (automaticEndAt !== undefined) {
         onAutoSaved();
         void showWorkoutAutoSavedNotification().catch(() => undefined);

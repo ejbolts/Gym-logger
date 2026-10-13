@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -137,6 +138,9 @@ class TrainingWorkoutCreate(BaseModel):
     start_time: time | None = None
     end_time: time | None = None
     movements: list[WorkoutMovementCreate] = Field(min_length=1, max_length=100)
+    # Idempotency key for one logical new workout, sent with every attempt to save it. A repeat
+    # returns the workout that was already saved instead of creating another. Ignored by updates.
+    client_request_id: UUID | None = None
 
     @field_validator("name", "notes", mode="before")
     @classmethod
@@ -164,6 +168,12 @@ class TrainingWorkoutCreate(BaseModel):
         if len(exercise_ids) != len(set(exercise_ids)):
             raise ValueError("An exercise can only be added once per workout.")
         return self
+
+
+class TrainingWorkoutUpdate(TrainingWorkoutCreate):
+    # The revision the editor loaded. A save based on an older revision is refused with 409.
+    # Older app versions omit it and still replace the workout unconditionally, as before.
+    base_revision: int | None = Field(default=None, ge=1, le=2_147_483_647)
 
 
 class WorkoutSetRead(BaseModel):
@@ -216,6 +226,7 @@ class TrainingWorkoutRead(BaseModel):
     start_time: time | None
     end_time: time | None
     is_sample: bool
+    revision: int
     created_at: datetime
     updated_at: datetime
     movements: list[WorkoutMovementRead] = []

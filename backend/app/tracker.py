@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -88,6 +88,7 @@ from .tracker_schemas import (
     TrainingPreferencesUpdate,
     TrainingWorkoutCreate,
     TrainingWorkoutRead,
+    TrainingWorkoutUpdate,
     WeeklyDayBreakdown,
     WeeklyExerciseBreakdown,
     WeeklyMuscleSetsRead,
@@ -451,6 +452,46 @@ def load_workout(db: Session, user_id: str, workout_id: str) -> TrainingWorkout:
     if not workout:
         raise HTTPException(status_code=404, detail="Workout was not found.")
     return workout
+
+
+WORKOUT_CHANGED_ELSEWHERE = (
+    "This workout was changed on another device. Load the latest version or keep yours."
+)
+
+
+def advance_workout_revision(
+    db: Session, workout: TrainingWorkout, base_revision: int | None = None
+) -> None:
+    """Record a change to the workout's content by advancing its revision.
+
+    With ``base_revision`` the change is refused (409, nothing saved) unless the workout is still
+    at the revision the editor loaded. Checking and advancing is one statement, so two saves based
+    on the same revision cannot both pass.
+    """
+    statement = (
+        update(TrainingWorkout)
+        .where(TrainingWorkout.id == workout.id)
+        .values(revision=TrainingWorkout.revision + 1)
+        .execution_options(synchronize_session=False)
+    )
+    if base_revision is not None:
+        statement = statement.where(TrainingWorkout.revision == base_revision)
+    if db.execute(statement).rowcount != 1:
+        raise api_error(409, "workout_conflict", WORKOUT_CHANGED_ELSEWHERE)
+    db.expire(workout, ["revision"])
+
+
+def workout_for_client_request(
+    db: Session, user_id: str, client_request_id: str
+) -> TrainingWorkout | None:
+    return db.scalar(
+        select(TrainingWorkout)
+        .where(
+            TrainingWorkout.user_id == user_id,
+            TrainingWorkout.client_request_id == client_request_id,
+        )
+        .options(*workout_options())
+    )
 
 
 def replace_workout_contents(
@@ -1282,6 +1323,8 @@ def sync_cardio_session_metrics_to_workout_sets(
     if "incline_percent" in fields:
         for workout_set in completed_sets:
             workout_set.incline_percent = session.incline_percent
+    # The workout's sets changed, so an editor holding the workout must not overwrite them.
+    advance_workout_revision(db, workout)
     return True
 
 
@@ -1449,8 +1492,19 @@ def get_workout_snapshot(db: DbSession, user: CurrentUser) -> WorkoutSnapshotRea
 
 @router.post("/workouts", response_model=TrainingWorkoutRead, status_code=201)
 def create_workout(
-    payload: TrainingWorkoutCreate, db: DbSession, user: CurrentUser, settings: SettingsDependency
+    payload: TrainingWorkoutCreate,
+    db: DbSession,
+    user: CurrentUser,
+    settings: SettingsDependency,
+    response: Response,
 ) -> TrainingWorkout:
+    request_id = str(payload.client_request_id) if payload.client_request_id else None
+    # A retry of a save that already succeeded (its reply was lost) returns that workout, before
+    # any limit check that the saved workout itself could now trip.
+    saved = workout_for_client_request(db, user.id, request_id) if request_id else None
+    if saved:
+        response.status_code = 200
+        return saved
     limits = load_account_limits(db, settings)
     check_workout_size(payload, limits, user)
     check_account_total(
@@ -1463,6 +1517,7 @@ def create_workout(
     )
     workout = TrainingWorkout(
         user_id=user.id,
+        client_request_id=request_id,
         name=payload.name,
         workout_date=payload.workout_date,
         category=payload.category,
@@ -1471,13 +1526,22 @@ def create_workout(
         start_time=payload.start_time,
         end_time=payload.end_time,
     )
-    db.add(workout)
-    replace_workout_contents(db, user.id, workout, payload)
-    db.flush()
-    sync_workout_cardio_sessions(db, workout)
-    rebuild_personal_records(db, user.id)
-    bump_workout_cache_revision(db, user.id)
-    db.commit()
+    try:
+        db.add(workout)
+        replace_workout_contents(db, user.id, workout, payload)
+        db.flush()
+        sync_workout_cardio_sessions(db, workout)
+        rebuild_personal_records(db, user.id)
+        bump_workout_cache_revision(db, user.id)
+        db.commit()
+    except IntegrityError:
+        # Two attempts with the same key raced; the other one saved the workout first.
+        db.rollback()
+        saved = workout_for_client_request(db, user.id, request_id) if request_id else None
+        if not saved:
+            raise
+        response.status_code = 200
+        return saved
     backfill_completed_video_links(db, workout.workout_date, user_id=user.id)
     return load_workout(db, user.id, workout.id)
 
@@ -1623,12 +1687,15 @@ def get_workout(workout_id: str, db: DbSession, user: CurrentUser) -> TrainingWo
 @router.put("/workouts/{workout_id}", response_model=TrainingWorkoutRead)
 def update_workout(
     workout_id: str,
-    payload: TrainingWorkoutCreate,
+    payload: TrainingWorkoutUpdate,
     db: DbSession,
     user: CurrentUser,
     settings: SettingsDependency,
 ) -> TrainingWorkout:
     workout = load_workout(db, user.id, workout_id)
+    # Refuse a stale editor before changing anything. Without a base revision (an older app
+    # version) the workout is replaced unconditionally, as it was before revisions existed.
+    advance_workout_revision(db, workout, payload.base_revision)
     check_workout_size(payload, load_account_limits(db, settings), user, existing=workout)
     replace_workout_contents(db, user.id, workout, payload)
     db.flush()
