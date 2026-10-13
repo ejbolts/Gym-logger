@@ -268,6 +268,7 @@ function emptySet(
   return {
     key: crypto.randomUUID(),
     ...createWorkoutSet(kind, previous, isFirstSet),
+    ...(previous && { fromPrevious: true }),
   };
 }
 
@@ -1200,15 +1201,21 @@ function AppContent() {
               ) : (
                 <section className="logger-screen content-page" aria-live="polite">
                   <OverlayScreenHeader
-                    title="Workout recovery"
-                    subtitle="Your workout is saved on this device"
+                    title={activeDraft ? 'Workout recovery' : 'Workout unavailable'}
+                    subtitle={
+                      activeDraft
+                        ? 'Your workout is saved on this device'
+                        : 'Load your exercise library to start'
+                    }
                     onBack={navigateBack}
                   />
                   <p>
                     {exerciseCatalogue.error
                       ? 'Your exercises could not be loaded.'
                       : 'Some exercises in your saved workout are not available yet.'}{' '}
-                    Your saved workout is safe on this device. Reload the exercises to resume it.
+                    {activeDraft
+                      ? 'Your saved workout is safe on this device. Reload the exercises to resume it.'
+                      : 'Reload the exercises to start your workout.'}
                   </p>
                   {exerciseCatalogue.error && <p>{exerciseCatalogue.error}</p>}
                   <button
@@ -6415,8 +6422,9 @@ function SettingsScreen({
           </div>
         </header>
         <p>
-          Import or export workout set data for your chosen time frame. All time includes all saved
-          sets. CSV does not include RPE, rest, duration, notes, photos, supersets or goals.
+          Import or export completed workout set data for your chosen time frame. All time includes
+          all completed sets. CSV does not include RPE, rest, duration, notes, photos, supersets or
+          goals.
         </p>
         <p>
           For account snapshots, see the{' '}

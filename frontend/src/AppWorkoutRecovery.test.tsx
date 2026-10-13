@@ -274,4 +274,21 @@ describe('inactive workout suggestions', () => {
     expect(sets[1].weight_kg).toBe(160);
     expect(sets[2].weight_kg).toBe(160);
   });
+
+  it('does not auto-complete an untouched extra set copied with Add set', async () => {
+    const draft = storedDraft();
+    draft.movements = [draft.movements[0]];
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    const addSet = [...container.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Add set'),
+    )!;
+    await act(async () => addSet.click());
+    expect(readActiveWorkoutDraft()!.movements[0].sets[1].fromPrevious).toBe(true);
+    vi.mocked(api.createWorkout).mockReturnValueOnce(new Promise<TrackedWorkout>(() => {}));
+    vi.spyOn(Date, 'now').mockReturnValue(draft.inactiveFinishAt! + 1000);
+    await act(async () => window.dispatchEvent(new Event('focus')));
+    const payload = vi.mocked(api.createWorkout).mock.calls[0][0] as WorkoutInput;
+    expect(payload.movements[0].sets.map((set) => set.completed)).toEqual([true, false]);
+  });
 });
