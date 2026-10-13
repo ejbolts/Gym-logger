@@ -6378,7 +6378,19 @@ function SettingsScreen({
           </div>
         </header>
         <p>
-          Import a workout CSV or export your chosen time frame. All time creates a full backup.
+          Import or export workout set data for your chosen time frame. All time includes all saved
+          sets. CSV does not include RPE, rest, duration, notes, photos, supersets or goals.
+        </p>
+        <p>
+          For account snapshots, see the{' '}
+          <a
+            href={`${PROJECT_URL}/blob/master/README.md#per-account-backups`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            account backup instructions
+          </a>
+          . Snapshots are created by the server administrator; video files are excluded.
         </p>
         <ExportTimeFrame
           label="Workout export time frame"

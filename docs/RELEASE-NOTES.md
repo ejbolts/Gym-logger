@@ -2,6 +2,33 @@
 
 ## 0.5.3
 
+### User-review corrections before deployment
+
+The [13 October user review](reviews/2026-10-13/USER-REVIEW.md) is preserved for other
+agents with [a GitHub tracking index](https://github.com/ejbolts/Gym-video-logger/issues/29).
+These corrections remain part of the same pending **0.5.3** release: the public app
+still reports **0.3.0**, and this single follow-up PR does not create another release.
+
+- Active workout exercises, completed sets and notes survive reloads. If the exercise
+  catalogue is unavailable or incomplete, the original draft is kept and can be retried.
+- Inactivity saving leaves untouched previous-session suggestions incomplete. Completed
+  sets and values entered by the user retain their existing recovery behavior.
+- The selected kilograms/pounds preference applies to weight entry and display across
+  workout logging, history, progress, body weight/goals and shared profiles. Storage and
+  API values remain in kilograms; CSV labels identify each exported unit.
+- Choosing a workout CSV opens a preview. Review sessions, sets, new exercises, warnings
+  and duplicates, then save or cancel. Import rechecks the file and current records,
+  skips matching sessions and preserves separate same-day sessions in new exports.
+  Legacy nine-column files remain accepted and group rows by date.
+- Settings explains that workout CSV exports contain set data and omit RPE, rest,
+  duration, notes, photos, supersets and goals. It links administrator account-snapshot
+  instructions and makes clear that snapshots exclude video files.
+
+The review records historical observations rather than changing their evidence. P2/P3
+findings and larger roadmap features remain in the tracking index for future work.
+
+### Combined release features
+
 This coordinated release includes custom exercise labels (#23), weight and volume records (#24), profile sharing and follow requests (#25), and Home card editing (#26), together with the previously pending guide, feedback and profile-photo improvements. The release is **0.5.3** for the whole batch, as requested; the earlier 0.4.0, 0.4.1 and 0.5.0 proposals were unpublished and are consolidated here.
 
 - Exercises you create show a small **Custom** label under their name in **Select Exercise**, on the exercise card in a workout, and in the **Progress** exercise search. Built-in exercises are unchanged.

@@ -1,7 +1,7 @@
 {
   "version": "0.5.3",
-  "title": "Your layout, records and shared training",
-  "summary": "Arrange Home your way, celebrate weight and volume records, and choose who can see your training.",
+  "title": "Safer workout records, imports and shared training",
+  "summary": "Keep workouts through reloads, use your preferred units, review imports, and choose who sees your training.",
   "changes": [
     "Drag, hide and restore the actual Home cards in edit mode, then save your layout across devices.",
     "Earn Weight PRs for heavier working sets and Volume PRs for more reps at the same weight, with a five-second countdown popup.",
@@ -9,7 +9,11 @@
     "Keep body weight, goals, cardio, notes and machine photos optional when sharing your training.",
     "Recognise exercises you created by their Custom label in the picker, workout cards and Progress.",
     "Explore the feature tour, Home Screen help, private feedback forms and profile photos.",
-    "Explore Progress and Body graphs full screen with accurate point selection, resizing and reliable Exit controls."
+    "Explore Progress and Body graphs full screen with accurate point selection, resizing and reliable Exit controls.",
+    "Preserve active exercises, sets and notes through reloads and retry when exercise data is unavailable.",
+    "Leave untouched previous-session suggestions unperformed when an inactive workout is saved.",
+    "Use kilograms or pounds consistently when logging and reading workout and body-weight data.",
+    "Review CSV imports before saving, skip existing sessions and retain separate same-day workouts. CSV is a set-data export, with its coverage explained."
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#053",
   "image": {

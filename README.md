@@ -160,6 +160,14 @@ Limits stop one account from bloating the server. They sit far above real use (a
 
 CSV imports follow the same limits and save nothing if any is exceeded. A workout saved before a limit was lowered can still be edited, but not grown.
 
+## User review and follow-up work
+
+The [13 October 2026 user review](docs/reviews/2026-10-13/USER-REVIEW.md) records the
+reviewed revision, sample-data evidence, prioritized findings and feature roadmap.
+Use [GitHub issue #29](https://github.com/ejbolts/Gym-video-logger/issues/29) as its
+tracking index; each P1 finding has a separate issue. Recheck historical findings
+against the current code before starting new work.
+
 ## Checks
 
 Run these from the repository root after activating the virtual environment:
