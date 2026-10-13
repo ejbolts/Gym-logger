@@ -81,7 +81,7 @@ export function useFlipAnimation(containerRef: RefObject<HTMLElement | null>, or
     const measuredBefore = positions.current.size > 0;
     if (orderChanged && measuredBefore && !motionReduced()) {
       elements.forEach((element) => {
-        if (typeof element.animate !== 'function') return;
+        if (element.dataset.flipSkip || typeof element.animate !== 'function') return;
         const key = element.dataset.flipKey!;
         const before = positions.current.get(key);
         if (before === undefined) {

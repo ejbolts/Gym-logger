@@ -2,6 +2,16 @@
 
 ## 0.5.3
 
+### Workout set reordering
+
+- Drag a set's grip to lift the row and follow the mouse or finger vertically. Its horizontal
+  position stays fixed, and the list scrolls when the pointer is held near the screen edge.
+- The highlighted row marks the drop position within that exercise. Set values, completion,
+  notes and rest settings stay attached to the same set. Arrow-key reordering remains available;
+  Escape or a cancelled touch returns the row without changing the order.
+
+This follow-up remains in the same pending 0.5.3 release as the P1 and P2 review fixes.
+
 ### User-review corrections before deployment
 
 The [13 October user review](reviews/2026-10-13/USER-REVIEW.md) is preserved for other

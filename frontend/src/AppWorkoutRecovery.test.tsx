@@ -153,6 +153,133 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+describe('vertical set dragging in a workout', () => {
+  async function dragFixture() {
+    const draft = storedDraft();
+    draft.movements = [
+      {
+        ...draft.movements[0],
+        sets: [0, 1, 2].map((index) => ({
+          ...draft.movements[0].sets[0],
+          key: `drag-${index}`,
+          weight_kg: 80 + index * 10,
+          notes: `Notes ${index}`,
+          rest_seconds: 120 + index * 30,
+          completed: index === 0,
+          fromPrevious: index !== 0,
+        })),
+      },
+    ];
+    writeActiveWorkoutDraft(draft);
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1);
+    await mount();
+    const rows = [...container.querySelectorAll<HTMLElement>('.set-swipe-shell')];
+    rows.forEach((row, index) => {
+      vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => ({
+        top: 200 + index * 100 - window.scrollY,
+        bottom: 260 + index * 100 - window.scrollY,
+        left: 10,
+        right: 370,
+        width: 360,
+        height: 60,
+        x: 10,
+        y: 200 + index * 100 - window.scrollY,
+        toJSON: () => ({}),
+      }));
+    });
+    const handle = rows[0].querySelector<HTMLButtonElement>('.set-drag-handle')!;
+    handle.setPointerCapture = vi.fn();
+    handle.hasPointerCapture = vi.fn().mockReturnValue(true);
+    handle.releasePointerCapture = vi.fn();
+    return { rows, handle, sets: draft.movements[0].sets };
+  }
+
+  async function pointer(
+    handle: HTMLElement,
+    type: string,
+    y: number,
+    pointerType = 'mouse',
+    x = 340,
+    pointerId = 1,
+  ) {
+    const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y });
+    Object.defineProperties(event, {
+      pointerId: { value: pointerId },
+      pointerType: { value: pointerType },
+      isPrimary: { value: true },
+    });
+    await act(async () => handle.dispatchEvent(event));
+  }
+
+  it.each(['mouse', 'touch'])(
+    'follows %s vertically and preserves whole sets on drop',
+    async (kind) => {
+      const { rows, handle, sets } = await dragFixture();
+      await pointer(handle, 'pointerdown', 230, kind);
+      await pointer(handle, 'pointermove', 430, kind, 700);
+      expect(rows[0].style.getPropertyValue('--set-drag-y')).toBe('200px');
+      expect(rows[0].dataset.setReordering).toBe('true');
+      expect(rows[2].querySelector('.set-drop-target')).not.toBeNull();
+      // The order changes only on drop, and sideways drift doesn't change the target.
+      expect(readActiveWorkoutDraft()!.movements[0].sets).toEqual(sets);
+      await pointer(handle, 'pointerup', 430, kind, 700);
+      expect(readActiveWorkoutDraft()!.movements[0].sets).toEqual([sets[1], sets[2], sets[0]]);
+      expect(rows[0].dataset.setReordering).toBeUndefined();
+      expect(rows[0].style.getPropertyValue('--set-drag-y')).toBe('');
+      expect(handle.releasePointerCapture).toHaveBeenCalledWith(1);
+    },
+  );
+
+  it.each(['pointercancel', 'lostpointercapture', 'Escape'])(
+    'cancels on %s without changing sets',
+    async (type) => {
+      const { rows, handle, sets } = await dragFixture();
+      await pointer(handle, 'pointerdown', 230, 'touch');
+      await pointer(handle, 'pointermove', 430, 'touch');
+      if (type === 'Escape') {
+        await act(async () =>
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })),
+        );
+      } else await pointer(handle, type, 430, 'touch');
+      expect(readActiveWorkoutDraft()!.movements[0].sets).toEqual(sets);
+      expect(rows[0].dataset.setReordering).toBeUndefined();
+      expect(rows[0].style.getPropertyValue('--set-drag-y')).toBe('');
+      expect(container.querySelector('.set-drop-target')).toBeNull();
+    },
+  );
+
+  it('ignores other fingers and keeps the held row aligned while the edge scrolls', async () => {
+    const originalScrollY = Object.getOwnPropertyDescriptor(window, 'scrollY')!;
+    try {
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+      const { rows, handle } = await dragFixture();
+      let nextFrame!: FrameRequestCallback;
+      vi.mocked(window.requestAnimationFrame).mockImplementation((frame) => {
+        nextFrame = frame;
+        return 1;
+      });
+      vi.spyOn(window, 'scrollBy').mockImplementation((_x, y) => {
+        Object.defineProperty(window, 'scrollY', {
+          configurable: true,
+          value: window.scrollY + Number(y),
+        });
+      });
+      await pointer(handle, 'pointerdown', 230, 'touch');
+      await pointer(handle, 'pointermove', 430, 'touch', 340, 2);
+      expect(rows[0].style.getPropertyValue('--set-drag-y')).toBe('0px');
+      const heldY = window.innerHeight - 40;
+      await pointer(handle, 'pointermove', heldY, 'touch');
+      await act(async () => nextFrame(16));
+      await act(async () => nextFrame(32));
+      expect(window.scrollY).toBe(24);
+      expect(rows[0].style.getPropertyValue('--set-drag-y')).toBe(`${heldY - 230 + 24}px`);
+      await pointer(handle, 'pointercancel', heldY, 'touch');
+    } finally {
+      Object.defineProperty(window, 'scrollY', originalScrollY);
+    }
+  });
+});
+
 describe('active workout recovery at startup', () => {
   it('restores every movement, set and note before the first draft write on a normal reload', async () => {
     const draft = storedDraft();

@@ -10059,8 +10059,34 @@ body.chart-fullscreen-open {
 }
 
 .set-details.set-dragging {
-  opacity: 0.48;
-  transform: scale(0.992);
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px #5598e7;
+}
+
+.set-swipe-shell[data-set-reordering] {
+  z-index: 30;
+  overflow: visible;
+}
+
+.set-swipe-shell[data-set-reordering]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 1px dashed #5598e7;
+  background: rgb(85 152 231 / 8%);
+  pointer-events: none;
+}
+
+.set-swipe-shell[data-set-reordering] > .set-swipe-content {
+  transform: translate3d(0, var(--set-drag-y, 0px), 0);
+  transition: none;
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 30%));
+  pointer-events: none;
+}
+
+.set-swipe-shell[data-set-reordering] .set-drag-handle {
+  cursor: grabbing;
 }
 
 .set-details.set-drop-target {

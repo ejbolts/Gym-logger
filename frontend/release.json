@@ -3,6 +3,7 @@
   "title": "Safer workout records, imports and shared training",
   "summary": "Keep workouts safe through reloads and across devices, use your preferred units, log long sessions compactly, review imports, and choose who sees your training.",
   "changes": [
+    "Drag workout sets with a lifted row that follows your mouse or finger vertically, including when scrolling.",
     "Drag, hide and restore the actual Home cards in edit mode, then save your layout across devices.",
     "Earn Weight PRs for heavier working sets and Volume PRs for more reps at the same weight, with a five-second countdown popup.",
     "Choose Private, Friends only or Public profile sharing, follow members and approve follow requests.",

@@ -16,6 +16,7 @@ import {
 } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react';
 import { createPortal, flushSync } from 'react-dom';
+import { useSetReorderDrag } from './useSetReorderDrag';
 import { api } from './api';
 import { TrainingPreferencesProvider } from './TrainingPreferencesProvider';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
@@ -346,6 +347,7 @@ function SetDragHandle({
   onPointerMove,
   onPointerUp,
   onPointerCancel,
+  onLostPointerCapture,
   onMoveEarlier,
   onMoveLater,
 }: {
@@ -355,6 +357,7 @@ function SetDragHandle({
   onPointerMove: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onLostPointerCapture: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onMoveEarlier: () => void;
   onMoveLater: () => void;
 }) {
@@ -369,6 +372,7 @@ function SetDragHandle({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onLostPointerCapture}
       onKeyDown={(event) => {
         if (event.key === 'ArrowUp') {
           event.preventDefault();
@@ -3677,19 +3681,20 @@ function MovementCard({
   const [openSetActionsKey, setOpenSetActionsKey] = useState<string | null>(null);
   const [openOverrides, setOpenOverrides] = useState<Readonly<Record<string, boolean>>>({});
   const [typeMenuSetKey, setTypeMenuSetKey] = useState<string | null>(null);
-  const [draggingSetKey, setDraggingSetKey] = useState<string | null>(null);
-  const [dragTargetSetKey, setDragTargetSetKey] = useState<string | null>(null);
   const [pendingSetCompletion, setPendingSetCompletion] = useState<{
     item: DraftSet;
     warning: SetEntryWarning;
   } | null>(null);
-  const draggingSetKeyRef = useRef<string | null>(null);
-  const dragTargetSetKeyRef = useRef<string | null>(null);
   const movementMenuRef = useRef<HTMLDetailsElement>(null);
   const movementNoteRef = useRef<HTMLInputElement>(null);
   const setGridRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLElement>(null);
   const setNumbers = setNumberLabels(movement.sets);
+  const setDrag = useSetReorderDrag(
+    setGridRef,
+    movement.sets.map((item) => item.key),
+    onMoveSet,
+  );
 
   useEffect(() => {
     if (!movement.isComplete) setExpanded(true);
@@ -3725,13 +3730,6 @@ function MovementCard({
 
   function closeMovementMenu() {
     if (movementMenuRef.current) movementMenuRef.current.open = false;
-  }
-
-  function clearSetDrag() {
-    draggingSetKeyRef.current = null;
-    dragTargetSetKeyRef.current = null;
-    setDraggingSetKey(null);
-    setDragTargetSetKey(null);
   }
 
   /** New and unticked sets are edited in place; logged and suggested sets open on tap. */
@@ -3807,67 +3805,20 @@ function MovementCard({
     completeSet(item);
   }
 
-  function beginSetDrag(event: ReactPointerEvent<HTMLButtonElement>, setKey: string) {
-    if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    draggingSetKeyRef.current = setKey;
-    dragTargetSetKeyRef.current = setKey;
-    setDraggingSetKey(setKey);
-    setDragTargetSetKey(setKey);
-    setOpenSetActionsKey(null);
-  }
-
-  function moveSetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    if (!draggingSetKeyRef.current) return;
-    event.preventDefault();
-    event.stopPropagation();
-
-    const target = document
-      .elementFromPoint(event.clientX, event.clientY)
-      ?.closest<HTMLElement>('.set-details[data-set-key]');
-    const targetKey = target?.dataset.setKey;
-    if (targetKey && movement.sets.some((item) => item.key === targetKey)) {
-      dragTargetSetKeyRef.current = targetKey;
-      setDragTargetSetKey(targetKey);
-    }
-
-    const scrollEdge = 64;
-    if (event.clientY < scrollEdge) window.scrollBy({ top: -12, behavior: 'auto' });
-    if (event.clientY > window.innerHeight - scrollEdge) {
-      window.scrollBy({ top: 12, behavior: 'auto' });
-    }
-  }
-
-  function finishSetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    if (!draggingSetKeyRef.current) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    const fromIndex = movement.sets.findIndex((item) => item.key === draggingSetKeyRef.current);
-    const toIndex = movement.sets.findIndex((item) => item.key === dragTargetSetKeyRef.current);
-    if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex) onMoveSet(fromIndex, toIndex);
-    clearSetDrag();
-  }
-
-  function cancelSetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-    clearSetDrag();
-  }
-
   function renderSetDragHandle(item: DraftSet, index: number) {
     return (
       <SetDragHandle
         setNumber={index + 1}
         disabled={movement.sets.length < 2}
-        onPointerDown={(event) => beginSetDrag(event, item.key)}
-        onPointerMove={moveSetDrag}
-        onPointerUp={finishSetDrag}
-        onPointerCancel={cancelSetDrag}
+        onPointerDown={(event) => {
+          if (!setDrag.beginDrag(event, item.key)) return;
+          setOpenSetActionsKey(null);
+          setTypeMenuSetKey(null);
+        }}
+        onPointerMove={setDrag.moveDrag}
+        onPointerUp={setDrag.finishDrag}
+        onPointerCancel={setDrag.cancelDrag}
+        onLostPointerCapture={setDrag.cancelDrag}
         onMoveEarlier={() => {
           if (index > 0) onMoveSet(index, index - 1);
         }}
@@ -4504,12 +4455,12 @@ function MovementCard({
               <SwipeToDeleteSetRow
                 flipKey={item.key}
                 label={`set ${index + 1}`}
-                disabled={movement.sets.length < 2}
+                disabled={movement.sets.length < 2 || Boolean(setDrag.draggingKey)}
                 overlayOpen={openSetActionsKey === item.key || typeMenuSetKey === item.key}
                 onDelete={() => onDeleteSet(index)}
               >
                 <div
-                  className={`set-details ${item.completed ? 'completed' : ''} ${item.fromPrevious ? 'previous-set-details' : ''} ${open ? 'is-open' : ''} ${draggingSetKey === item.key ? 'set-dragging' : ''} ${dragTargetSetKey === item.key && draggingSetKey !== item.key ? 'set-drop-target' : ''}${compact?.nextSetKey === item.key ? ' is-next-set' : ''}`}
+                  className={`set-details ${item.completed ? 'completed' : ''} ${item.fromPrevious ? 'previous-set-details' : ''} ${open ? 'is-open' : ''} ${setDrag.draggingKey === item.key ? 'set-dragging' : ''} ${setDrag.targetKey === item.key && setDrag.draggingKey !== item.key ? 'set-drop-target' : ''}${compact?.nextSetKey === item.key ? ' is-next-set' : ''}`}
                   data-set-key={item.key}
                   data-expand-key={item.key}
                   data-expanded={open}
