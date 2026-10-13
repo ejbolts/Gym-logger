@@ -1,6 +1,18 @@
 export const DEFAULT_CHART_WIDTH = 340;
 export const DEFAULT_CHART_HEIGHT = 190;
 
+/** Convert a screen position to the SVG's x axis, including rotation and scaling. */
+export function chartPointerX(
+  clientX: number,
+  clientY: number,
+  transform: Pick<DOMMatrix, 'a' | 'b' | 'c' | 'd' | 'e' | 'f'>,
+): number | null {
+  const { a, b, c, d, e, f } = transform;
+  const determinant = a * d - b * c;
+  if (!determinant) return null;
+  return (d * (clientX - e) - c * (clientY - f)) / determinant;
+}
+
 export function paddedChartRange(
   values: Array<number | null>,
 ): { min: number; max: number } | null {

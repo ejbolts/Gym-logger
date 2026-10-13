@@ -63,6 +63,7 @@ Arrange the cards directly while they gently wiggle, and restore hidden cards fr
 - The tour waits behind release announcements, loading, active workout/upload screens and other dialogs. Older queued installation guides still work; new accounts use the feature tour and can open installation steps from Settings.
 - Add a **profile photo** in **Profile**. Choose any JPEG, PNG, WebP, HEIF or HEIC image; Gym Logger rotates it upright and crops it to a square. The photo replaces your initial on the **Today** profile button and in Profile. **Change photo** replaces it and **Remove** goes back to your initial. Photos are private by default and can be shared through Profile sharing. They follow the existing photo upload size limit, are included in account backups and are deleted with the account.
 - Release announcements support screenshots that open full size and remain usable when images cannot load.
+- **Landscape** on Progress and Body graphs now fills the screen in both native full-screen browsers and the mobile fallback. The Progress expand button remains clickable beside the range controls. Tapping or dragging the rotated graph reads the correct date; the plot resizes when the phone rotates. **Exit** or Escape restores the normal view, and **Open workout** closes the viewer before navigating to the selected session.
 - Existing installations should run `alembic upgrade head` for migrations `0031_app_feedback` and `0032_profile_photos` before serving the updated frontend. Feedback is removed when its account is deleted. Profile photo files are stored under `data/profile-photos/`. No account/workout records are changed by these migrations.
 
 <img src="screenshots/releases/0.4.0-app-guide.png" alt="App guide highlighting the Start button with a feature description, Next, Back and Skip guide." width="390">
@@ -88,6 +89,10 @@ Workout details start collapsed; the arrow expands them. Settings is available a
 <img src="screenshots/releases/0.4.0-profile-photo.png" alt="Profile screen showing a round profile photo next to the account name, with Change photo and Remove buttons." width="390">
 
 A sample account's profile photo in the isolated mobile verification environment.
+
+<img src="screenshots/releases/0.4.0-fullscreen-graph.png" alt="Expanded bench press progress graph filling a landscape screen, with the selected session tooltip, Open workout and Exit buttons." width="844">
+
+The full-screen graph with isolated sample workouts. The portrait fallback presents the same graph rotated for landscape viewing.
 
 ## 0.3.1
 

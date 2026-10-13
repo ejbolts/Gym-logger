@@ -5212,78 +5212,94 @@ type LockableScreenOrientation = ScreenOrientation & {
   unlock?: () => void;
 };
 
-/** Plot height for the full-screen viewer, which is rotated by CSS while the phone is upright. */
-function expandedChartHeight(): number {
-  const rotated = window.matchMedia('(orientation: portrait)').matches;
-  return Math.max(200, (rotated ? window.innerWidth : window.innerHeight) - 96);
-}
-
 function LandscapeChartFrame({
   title,
   controls,
   children,
-  onExpandedChange,
 }: {
   title: string;
   controls: ReactNode;
-  children: ReactNode;
-  onExpandedChange?: (expanded: boolean) => void;
+  children: (expanded: boolean, close: () => void) => ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const frameRef = useRef<HTMLDivElement>(null);
+  const expandedRef = useRef(false);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback(() => {
+    expandedRef.current = false;
+    setExpanded(false);
+  }, []);
+
+  const focusToggle = useCallback(() => {
+    // The portal remounts the toggle; use its current node when restoring the compact view.
+    toggleRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  function unlockOrientation() {
+    try {
+      (screen.orientation as LockableScreenOrientation).unlock?.();
+    } catch {
+      // Orientation locking is optional, so the visual fallback can still close.
+    }
+  }
 
   async function enterLandscape() {
-    setExpanded(true);
+    // Mount the portal synchronously while the click still grants fullscreen permission.
+    expandedRef.current = true;
+    flushSync(() => setExpanded(true));
+    const viewer = viewerRef.current;
     try {
-      if (frameRef.current?.requestFullscreen && !document.fullscreenElement) {
-        await frameRef.current.requestFullscreen();
+      if (viewer?.requestFullscreen && !document.fullscreenElement) {
+        // Fullscreen browsers override the target's transform. Rotate its child instead.
+        await viewer.requestFullscreen();
       }
     } catch {
       // The fixed landscape layout below is the fallback on browsers without fullscreen support.
+    }
+    if (!expandedRef.current || viewerRef.current !== viewer) {
+      if (document.fullscreenElement === viewer) {
+        void document.exitFullscreen().catch(() => undefined);
+      }
+      return;
     }
     try {
       await (screen.orientation as LockableScreenOrientation).lock?.('landscape');
     } catch {
       // Orientation locking is not supported on every mobile browser.
     }
+    if (!expandedRef.current || viewerRef.current !== viewer) unlockOrientation();
   }
-
-  async function exitLandscape() {
-    try {
-      (screen.orientation as LockableScreenOrientation).unlock?.();
-    } catch {
-      // The CSS layout can still close when orientation APIs are unavailable.
-    }
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-    } catch {
-      // Continue closing the fixed fallback if the browser has already left fullscreen.
-    }
-    setExpanded(false);
-  }
-
-  useEffect(() => {
-    onExpandedChange?.(expanded);
-  }, [expanded, onExpandedChange]);
 
   useEffect(() => {
     if (!expanded) return;
+    const viewer = viewerRef.current;
     document.body.classList.add('chart-fullscreen-open');
-    const closeFallback = () => {
-      try {
-        (screen.orientation as LockableScreenOrientation).unlock?.();
-      } catch {
-        // Orientation locking is optional, so the visual fallback can still close.
-      }
-      setExpanded(false);
-    };
+    focusToggle();
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-      closeFallback();
+      if (event.key === 'Escape') {
+        close();
+      } else if (event.key === 'Tab' && viewer) {
+        const focusable = viewer.querySelectorAll<HTMLElement>('button, [tabindex="0"]');
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (
+          event.shiftKey &&
+          (document.activeElement === first || !viewer.contains(document.activeElement))
+        ) {
+          event.preventDefault();
+          last?.focus();
+        } else if (
+          !event.shiftKey &&
+          (document.activeElement === last || !viewer.contains(document.activeElement))
+        ) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
     };
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) closeFallback();
+      if (!document.fullscreenElement) close();
     };
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -5291,24 +5307,28 @@ function LandscapeChartFrame({
       document.body.classList.remove('chart-fullscreen-open');
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      expandedRef.current = false;
+      unlockOrientation();
+      if (document.fullscreenElement === viewer) {
+        void document.exitFullscreen().catch(() => undefined);
+      }
+      focusToggle();
     };
-  }, [expanded]);
+  }, [expanded, close, focusToggle]);
 
-  return (
-    <div
-      className={`landscape-chart-frame ${expanded ? 'landscape-chart-expanded' : ''}`}
-      ref={frameRef}
-    >
+  const frame = (
+    <div className={`landscape-chart-frame ${expanded ? 'landscape-chart-expanded' : ''}`}>
       <div className="landscape-chart-toolbar">
         <strong className="landscape-chart-title">{title}</strong>
         <div className="landscape-chart-options">{controls}</div>
         <button
           type="button"
+          ref={toggleRef}
           className="landscape-chart-toggle"
           aria-label={
             expanded ? `Exit full-screen ${title}` : `View ${title} full screen in landscape`
           }
-          onClick={() => void (expanded ? exitLandscape() : enterLandscape())}
+          onClick={() => (expanded ? close() : void enterLandscape())}
         >
           <span aria-hidden="true">
             <Icon name={expanded ? 'close' : 'expand'} />
@@ -5316,9 +5336,24 @@ function LandscapeChartFrame({
           {expanded ? 'Exit' : 'Landscape'}
         </button>
       </div>
-      <div className="landscape-chart-content">{children}</div>
+      <div className="landscape-chart-content">{children(expanded, close)}</div>
     </div>
   );
+
+  return expanded
+    ? createPortal(
+        <div
+          ref={viewerRef}
+          className="landscape-chart-viewer"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${title} full screen`}
+        >
+          {frame}
+        </div>,
+        document.body,
+      )
+    : frame;
 }
 
 const PROGRESS_METRICS: Array<{ value: ProgressMetric; label: string; series: string }> = [
@@ -5367,7 +5402,6 @@ function ProgressScreen({
   const [loading, setLoading] = useState(false);
   const [visibleSessions, setVisibleSessions] = useState(HISTORY_PAGE_SIZE);
   const [pickerRequest, setPickerRequest] = useState(0);
-  const [chartExpanded, setChartExpanded] = useState(false);
   const metricIndicatorRef = useSlidingIndicator<HTMLDivElement>(metric);
   const rangeIndicatorRef = useSlidingIndicator<HTMLDivElement>(displayRange);
   const selectedExercise = strengthExercises.find((exercise) => exercise.id === exerciseId) ?? null;
@@ -5551,22 +5585,28 @@ function ProgressScreen({
               <LandscapeChartFrame
                 title={`${progress.exercise.name} · ${metricInfo.series}${weekly ? ' (best per week)' : ''}`}
                 controls={null}
-                onExpandedChange={setChartExpanded}
               >
-                <TrendChart
-                  points={chartPoints}
-                  label={`${progress.exercise.name} ${metricInfo.series}${weekly ? ', best per week' : ''}`}
-                  seriesLabel={
-                    weekly
-                      ? `Best ${metric === 'estimated_1rm' ? 'est. 1RM' : 'top weight'} that week`
-                      : metricInfo.series
-                  }
-                  unit="kg"
-                  height={chartExpanded ? expandedChartHeight() : 200}
-                  markRecords={metric !== 'volume_kg'}
-                  formatValue={formatMetric}
-                  onSelect={(point) => point.id && onOpenWorkout(point.id, progress.exercise.id)}
-                />
+                {(expanded, close) => (
+                  <TrendChart
+                    points={chartPoints}
+                    label={`${progress.exercise.name} ${metricInfo.series}${weekly ? ', best per week' : ''}`}
+                    seriesLabel={
+                      weekly
+                        ? `Best ${metric === 'estimated_1rm' ? 'est. 1RM' : 'top weight'} that week`
+                        : metricInfo.series
+                    }
+                    unit="kg"
+                    height={200}
+                    fillHeight={expanded}
+                    markRecords={metric !== 'volume_kg'}
+                    formatValue={formatMetric}
+                    onSelect={(point) => {
+                      if (!point.id) return;
+                      close();
+                      onOpenWorkout(point.id, progress.exercise.id);
+                    }}
+                  />
+                )}
               </LandscapeChartFrame>
               <section className="stat-grid" aria-label="Personal bests">
                 <div>
@@ -7069,7 +7109,6 @@ function BodyTrendChart({
   const [displayRange, setDisplayRange] = useState<BodyTrendRange>('3m');
   // Weight and body fat use different units, so they are separate views rather than two y-axes.
   const [series, setSeries] = useState<'weight' | 'fat'>('weight');
-  const [chartExpanded, setChartExpanded] = useState(false);
   const ordered = filterMeasurementsByRange(measurements, displayRange).slice().reverse();
   const hasBodyFat = measurements.some((item) => item.body_fat_pct !== null);
   const selectedDateRange = dateRangeForDates(
@@ -7137,7 +7176,6 @@ function BodyTrendChart({
   const showFat = series === 'fat' && hasBodyFat;
   const bodyRangeIndicatorRef = useSlidingIndicator<HTMLDivElement>(displayRange);
   const bodySeriesIndicatorRef = useSlidingIndicator<HTMLDivElement>(showFat);
-  const chartHeight = chartExpanded ? expandedChartHeight() : 200;
 
   return (
     <div className="body-trend-chart">
@@ -7190,31 +7228,31 @@ function BodyTrendChart({
           </div>
         )}
       </div>
-      <LandscapeChartFrame
-        title={showFat ? 'Body fat trend' : 'Bodyweight trend'}
-        controls={null}
-        onExpandedChange={setChartExpanded}
-      >
-        {showFat ? (
-          <TrendChart
-            points={fatPoints}
-            label="Body fat percentage"
-            seriesLabel="Body fat"
-            unit="%"
-            height={chartHeight}
-          />
-        ) : (
-          <TrendChart
-            points={averagePoints}
-            backgroundPoints={dailyPoints}
-            label="Bodyweight, 7-day average over daily weigh-ins"
-            seriesLabel="7-day average"
-            unit="kg"
-            area={false}
-            goalPath={goalPath}
-            height={chartHeight}
-          />
-        )}
+      <LandscapeChartFrame title={showFat ? 'Body fat trend' : 'Bodyweight trend'} controls={null}>
+        {(expanded) =>
+          showFat ? (
+            <TrendChart
+              points={fatPoints}
+              label="Body fat percentage"
+              seriesLabel="Body fat"
+              unit="%"
+              height={200}
+              fillHeight={expanded}
+            />
+          ) : (
+            <TrendChart
+              points={averagePoints}
+              backgroundPoints={dailyPoints}
+              label="Bodyweight, 7-day average over daily weigh-ins"
+              seriesLabel="7-day average"
+              unit="kg"
+              area={false}
+              goalPath={goalPath}
+              height={200}
+              fillHeight={expanded}
+            />
+          )
+        }
       </LandscapeChartFrame>
       <ul className="chart-legend" aria-label="Chart legend">
         {showFat ? (

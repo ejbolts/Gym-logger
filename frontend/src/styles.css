@@ -9161,9 +9161,19 @@ body.chart-fullscreen-open {
   overflow: hidden;
 }
 
-.landscape-chart-expanded {
+.landscape-chart-viewer {
   position: fixed;
   z-index: 300;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--page);
+}
+
+.landscape-chart-expanded {
+  position: fixed;
+  z-index: 1;
   inset: 0;
   width: 100dvw;
   height: 100dvh;
