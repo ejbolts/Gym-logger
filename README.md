@@ -14,7 +14,7 @@ Choosing a file opens a read-only review of sessions, sets, new exercises, dupli
 
 Choose kilograms or pounds in **Settings > Training preferences** for weight entry and display across Home, the workout logger, History, Body, Progress and shared profiles. Changing this preference preserves saved weights and active entries. Workout CSVs keep both kg and lb columns; bodyweight CSVs continue to use the explicit `Weight (kg)` column regardless of the display preference.
 
-On a fresh workout database, the app seeds five sample sessions across one week so the dashboard, heatmap, history, and progression graphs can be evaluated immediately. Set `GYM_SEED_SAMPLE_DATA=false` before first startup to disable this. Seeded workouts are labelled **Sample**; **Remove samples** in History deletes all of them without affecting real workouts or video sessions, and they will not reappear after a restart.
+On a fresh workout database, the app seeds five sample sessions across one week so the dashboard, heatmap, history, and progression graphs can be evaluated immediately. Set `GYM_SEED_SAMPLE_DATA=false` before first startup to disable this. Seeded workouts are labelled **Sample**, and Home shows a **Sample data** banner while any remain. **Remove sample data** on that banner or in Settings deletes the sample workouts and body check-ins without affecting real workouts or video sessions, and they will not reappear after a restart. A new account's first sign-in opens a short welcome instead of the release notes; it offers the full tour, which stays available under **Settings > Replay guide**.
 
 The first working path is YouTube mock mode. It accepts a batch, processes it with local ffmpeg, and returns a deterministic mock YouTube URL without any Google credentials.
 

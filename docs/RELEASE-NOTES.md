@@ -39,6 +39,65 @@ Review both same-day sessions before saving. Reimporting this file instead shows
 sessions as duplicates and disables Save import. Legacy files warn that their rows are
 grouped by date; identical sessions imported separately may be skipped as duplicates.
 
+### User-review usability and reliability follow-ups
+
+The P2 findings from the same [13 October review](reviews/2026-10-13/USER-REVIEW.md)
+(F06–F13 and F15–F17 in [the tracking index](https://github.com/ejbolts/Gym-video-logger/issues/29))
+also join the pending **0.5.3** release rather than creating another version.
+
+- **First sign-in:** a new account opens a short welcome with three essentials, **Start my
+  first workout**, **Take the full tour** and **Not now**, instead of the release notes. The
+  tour stays in **Settings > Replay guide**; returning members still see each new release once.
+- **Sample data:** while sample workouts or check-ins remain, Home shows a **Sample data**
+  banner explaining that its totals, records and streaks include them. **Remove sample data**
+  on Home or in Settings, or **Start with my own data** in the welcome, asks for confirmation,
+  then deletes the sample workouts and body check-ins.
+- **Non-blocking confirmations:** routine results such as a CSV export, an import summary,
+  sample removal or a deleted check-in appear as a brief notice above the tab bar instead of a
+  dialog you must close. The inactivity auto-save notice stays until dismissed. Errors still
+  open a dialog.
+- **Small phones:** at 320 px wide, Home's header actions move above the title so the date and
+  **Today** fit, the workout buttons stack full width, and **Empty** is now **Start empty
+  workout**. Every screen reserves room for the tab bar, so the Videos **Upload session** button
+  and other last actions are no longer hidden behind it.
+- **Cardio wording:** the calorie conversion is labelled a **fat-energy equivalent** (7,700 kcal
+  per kg), not measured fat loss.
+- **Exercise filters:** the picker's **Workout type** and **Show** (all, favorites, recently
+  used) filters are independent and combine, search stays within them, and **Clear filters**
+  resets an empty result.
+- **Compact logging:** the **Compact** switch in a live workout folds finished exercises to a
+  one-line summary and upcoming ones to their planned sets, keeps the current exercise open with
+  its next set marked, and tucks photos, rest times and notes behind **More**. It is off by
+  default and remembered on the device.
+- **Safe saves across devices:** retrying a workout save whose reply was lost returns the
+  workout already saved instead of creating a duplicate. If another device saved a workout
+  after you opened it, nothing is overwritten: choose **Keep my version** or **Load latest
+  version**. Run `alembic upgrade head` for migration `0034_workout_save_safety` before
+  restarting the backend; older app versions continue to save as before.
+- **Recoverable errors:** if follow requests or followers fail to load, Shared profiles shows
+  the error with **Try again** instead of an empty list. Saves refused by an account limit
+  explain what was kept and suggest trying again later or contacting the administrator,
+  without revealing the limit.
+
+<img src="screenshots/releases/0.5.3-first-run-welcome.png" alt="The first-run welcome for a new sample account lists three essentials, offers to keep or remove the sample week, and shows Start my first workout, Take the full tour and Not now." width="390">
+
+A brand-new sample account's first sign-in, at phone width.
+
+<img src="screenshots/releases/0.5.3-sample-data-small-phone.png" alt="Home at 320 pixels wide with the header buttons above an unclipped date and Today heading, followed by the Sample data banner and its Remove sample data button." width="320">
+
+Home on a 320 px phone, with the sample-data banner.
+
+<img src="screenshots/releases/0.5.3-compact-logging.png" alt="A live workout in compact mode: a finished Leg Extension and Lying Leg Curl superset folded to summary rows, Back Squat open with its next set marked, and Romanian Deadlift and Leg Press folded to three planned sets." width="390">
+
+Compact logging during a five-exercise sample workout.
+
+<img src="screenshots/releases/0.5.3-workout-conflict.png" alt="A dialog titled This workout was changed on another device, explaining that local changes are kept, with Keep my version and Load latest version buttons." width="390">
+
+Saving an edit after another device changed the same workout.
+
+All four were captured from the verified revision with a separate sample database and
+fictional accounts, at 390 × 844 or 320 × 740.
+
 ### Combined release features
 
 This coordinated release includes custom exercise labels (#23), weight and volume records (#24), profile sharing and follow requests (#25), and Home card editing (#26), together with the previously pending guide, feedback and profile-photo improvements. The release is **0.5.3** for the whole batch, as requested; the earlier 0.4.0, 0.4.1 and 0.5.0 proposals were unpublished and are consolidated here.

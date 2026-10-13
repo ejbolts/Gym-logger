@@ -6603,7 +6603,7 @@ function SettingsScreen({
           {workouts.some((workout) => workout.is_sample) && (
             <InlineConfirmButton
               className="sample-clear"
-              label="Remove sample workouts"
+              label="Remove sample data"
               confirmLabel="Confirm removal"
               onConfirm={onDeleteSamples}
             />

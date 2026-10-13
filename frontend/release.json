@@ -1,7 +1,7 @@
 {
   "version": "0.5.3",
   "title": "Safer workout records, imports and shared training",
-  "summary": "Keep workouts through reloads, use your preferred units, review imports, and choose who sees your training.",
+  "summary": "Keep workouts safe through reloads and across devices, use your preferred units, log long sessions compactly, review imports, and choose who sees your training.",
   "changes": [
     "Drag, hide and restore the actual Home cards in edit mode, then save your layout across devices.",
     "Earn Weight PRs for heavier working sets and Volume PRs for more reps at the same weight, with a five-second countdown popup.",
@@ -13,7 +13,13 @@
     "Preserve active exercises, sets and notes through reloads and retry when exercise data is unavailable.",
     "Leave untouched previous-session suggestions unperformed when an inactive workout is saved.",
     "Use kilograms or pounds consistently when logging and reading workout and body-weight data.",
-    "Review CSV imports before saving, skip existing sessions and retain separate same-day workouts. CSV is a set-data export, with its coverage explained."
+    "Review CSV imports before saving, skip existing sessions and retain separate same-day workouts. CSV is a set-data export, with its coverage explained.",
+    "Start a new account with a short welcome, and see sample data clearly labelled on Home until you remove it.",
+    "See routine confirmations as brief notices that don't block the app.",
+    "Fold finished and upcoming exercises with Compact logging during long workouts.",
+    "Combine workout-type and favorites or recent filters with search when choosing exercises.",
+    "Retry interrupted saves without duplicates, and choose what happens when another device changed a workout.",
+    "Use Home and every screen's last button on small phones, read fat as an energy equivalent, and retry failed sharing lists."
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#053",
   "image": {
