@@ -111,6 +111,34 @@ def test_different_same_day_session_and_extra_identical_set_are_not_duplicates(c
     assert len(client.get("/api/workouts").json()) == 3
 
 
+def test_named_identical_same_day_sessions_can_be_imported_in_separate_files(client):
+    morning = csv_file([*row(), "morning", "Morning workout"], sessions=True)
+    evening = csv_file([*row(), "evening", "Evening workout"], sessions=True)
+    assert upload(client, morning).json()["workouts_created"] == 1
+    assert upload(client, evening, preview=True).json()["workouts_to_create"] == 1
+    assert upload(client, evening).json()["workouts_created"] == 1
+    assert upload(client, morning).json()["workouts_skipped"] == 1
+    assert upload(client, evening).json()["workouts_skipped"] == 1
+    assert {item["name"] for item in client.get("/api/workouts").json()} == {
+        "Morning workout",
+        "Evening workout",
+    }
+
+
+def test_owned_export_id_still_skips_session_after_its_name_changes(client):
+    assert upload(client, csv_file(row())).status_code == 201
+    exported = client.get("/api/workouts/export.csv").content
+    workout = client.get("/api/workouts").json()[0]
+    from app.database import SessionLocal
+    from app.models import TrainingWorkout
+
+    with SessionLocal() as db:
+        db.get(TrainingWorkout, workout["id"]).name = "Renamed workout"
+        db.commit()
+    assert upload(client, exported).json()["workouts_skipped"] == 1
+    assert len(client.get("/api/workouts").json()) == 1
+
+
 def test_foreign_export_ids_do_not_match_or_modify_other_account(client, other_client):
     assert upload(client, csv_file(row(exercise="Owner Custom Press"))).status_code == 201
     exported = client.get("/api/workouts/export.csv").content

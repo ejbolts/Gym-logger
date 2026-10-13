@@ -3945,7 +3945,7 @@ function MovementCard({
   }
 
   function renderSetEditor(item: DraftSet, index: number) {
-    const suggested = item.fromPrevious ? ', suggested from the last workout' : '';
+    const suggested = item.fromPrevious ? ', suggested value' : '';
     return (
       <div className={`set-editor ${item.completed ? 'completed' : ''}`}>
         {renderSetTypeButton(item, index)}

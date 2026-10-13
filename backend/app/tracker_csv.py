@@ -332,6 +332,15 @@ def same_number(left: float | None, right: float | None, *, from_lb: bool = Fals
 
 
 def matching_session(rows: list[ParsedRow], workout: TrainingWorkout) -> bool:
+    session_name = next((row.session_name for row in rows if row.session_name), "")
+    # Named morning/evening sessions remain distinct even when their set data is identical.
+    # A matching owned export ID still identifies that session if its name was later changed.
+    if (
+        session_name
+        and rows[0].session_id != workout.id
+        and session_name.casefold() != workout.name.casefold()
+    ):
+        return False
     existing: dict[str, list[WorkoutSet]] = defaultdict(list)
     incoming: dict[str, list[ParsedRow]] = defaultdict(list)
     for movement in workout.movements:
