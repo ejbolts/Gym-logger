@@ -546,8 +546,26 @@ class ExerciseProgressRead(BaseModel):
 
 class CsvImportRead(BaseModel):
     workouts_created: int
+    workouts_skipped: int
     exercises_created: int
     sets_imported: int
     body_measurements_created: int
     body_measurements_updated: int
+    warnings: list[str]
+
+
+class CsvImportSessionRead(BaseModel):
+    workout_date: date
+    name: str
+    exercises: list[str]
+    sets: int
+    duplicate: bool
+
+
+class CsvImportPreviewRead(BaseModel):
+    sessions: list[CsvImportSessionRead]
+    workouts_to_create: int
+    workouts_to_skip: int
+    sets_to_import: int
+    new_exercises: list[str]
     warnings: list[str]

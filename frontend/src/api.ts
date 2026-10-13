@@ -14,6 +14,7 @@ import type {
   CardioMetricsInput,
   Clip,
   CsvImportResult,
+  CsvImportPreview,
   DashboardData,
   Exercise,
   ExerciseCreateInput,
@@ -417,6 +418,14 @@ export const api = {
     const form = new FormData();
     form.append('file', file, file.name);
     return request<CsvImportResult>('/api/workouts/import', { method: 'POST', body: form });
+  },
+  previewWorkoutImport: (file: File) => {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return request<CsvImportPreview>('/api/workouts/import/preview', {
+      method: 'POST',
+      body: form,
+    });
   },
   createWorkout: (payload: WorkoutInput) =>
     request<TrackedWorkout>('/api/workouts', {

@@ -468,10 +468,26 @@ export interface ExerciseProgress {
 
 export interface CsvImportResult {
   workouts_created: number;
+  workouts_skipped: number;
   exercises_created: number;
   sets_imported: number;
   body_measurements_created: number;
   body_measurements_updated: number;
+  warnings: string[];
+}
+
+export interface CsvImportPreview {
+  sessions: {
+    workout_date: string;
+    name: string;
+    exercises: string[];
+    sets: number;
+    duplicate: boolean;
+  }[];
+  workouts_to_create: number;
+  workouts_to_skip: number;
+  sets_to_import: number;
+  new_exercises: string[];
   warnings: string[];
 }
 

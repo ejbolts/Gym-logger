@@ -147,6 +147,7 @@ import { Icon } from './Icon';
 import { TrendChart, type GoalPath, type TrendPoint } from './PulseCharts';
 import { PageHeader, SettingsButton, TodayScreen, TodaySkeleton } from './TodayScreen';
 import { FeedbackForm } from './FeedbackForm';
+import { WorkoutCsvImport } from './WorkoutCsvImport';
 import {
   compactSetSummary,
   dayMonth,
@@ -866,21 +867,19 @@ function AppContent() {
   }
 
   async function importWorkoutCsv(file: File) {
-    try {
-      const result = await withBackgroundActivity('Importing workouts…', async () => {
-        const imported = await api.importWorkouts(file);
-        await refreshData({ activityLabel: null });
-        return imported;
-      });
-      const bodyweightCount = result.body_measurements_created + result.body_measurements_updated;
-      setMessage(
-        `Imported ${result.sets_imported} sets across ${result.workouts_created} workouts${
-          result.exercises_created ? ` and added ${result.exercises_created} exercises` : ''
-        }${bodyweightCount ? `; synced ${bodyweightCount} body-weight check-ins` : ''}.`,
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not import that CSV file.');
-    }
+    const result = await withBackgroundActivity('Importing workouts…', async () => {
+      const imported = await api.importWorkouts(file);
+      await refreshData({ activityLabel: null });
+      return imported;
+    });
+    const bodyweightCount = result.body_measurements_created + result.body_measurements_updated;
+    setMessage(
+      `Imported ${result.sets_imported} sets across ${result.workouts_created} workouts${
+        result.exercises_created ? ` and added ${result.exercises_created} exercises` : ''
+      }${bodyweightCount ? `; added ${bodyweightCount} body-weight check-ins` : ''}${
+        result.workouts_skipped ? `; skipped ${result.workouts_skipped} identical sessions` : ''
+      }.`,
+    );
   }
 
   async function exportWorkoutCsv(range: DateRange) {
@@ -5839,9 +5838,7 @@ function SettingsScreen({
   onDeleteSamples: () => Promise<void>;
   onDataChange: () => Promise<void>;
 }) {
-  const workoutCsvInput = useRef<HTMLInputElement>(null);
   const bodyCsvInput = useRef<HTMLInputElement>(null);
-  const [importingWorkouts, setImportingWorkouts] = useState(false);
   const [exportingWorkouts, setExportingWorkouts] = useState(false);
   const [workoutExportRange, setWorkoutExportRange] = useState<TimeRange>('all');
   const [bodyExportRange, setBodyExportRange] = useState<TimeRange>('all');
@@ -6444,29 +6441,8 @@ function SettingsScreen({
           disabled={exportingWorkouts}
           onChange={setWorkoutExportRange}
         />
-        <input
-          ref={workoutCsvInput}
-          className="sr-only"
-          type="file"
-          accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            setImportingWorkouts(true);
-            void onImportWorkouts(file).finally(() => {
-              setImportingWorkouts(false);
-              event.target.value = '';
-            });
-          }}
-        />
         <div className="settings-actions">
-          <button
-            type="button"
-            disabled={importingWorkouts}
-            onClick={() => workoutCsvInput.current?.click()}
-          >
-            {importingWorkouts ? 'Importing…' : '↑ Import workout CSV'}
-          </button>
+          <WorkoutCsvImport onImport={onImportWorkouts} />
           <button type="button" disabled={exportingWorkouts} onClick={() => void exportWorkouts()}>
             {exportingWorkouts ? 'Exporting…' : '↓ Export workout CSV'}
           </button>

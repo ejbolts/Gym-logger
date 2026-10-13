@@ -54,7 +54,7 @@ from .photo_storage import (
     store_machine_photo,
 )
 from .processing import backfill_completed_video_links
-from .tracker_csv import CsvImportError, export_workouts, import_workouts
+from .tracker_csv import CsvImportError, ImportPlan, export_workouts, import_workouts, plan_import
 from .tracker_schemas import (
     BodyMeasurementCreate,
     BodyMeasurementCsvImportRead,
@@ -69,7 +69,9 @@ from .tracker_schemas import (
     CardioScreenshotRead,
     CardioSessionCreate,
     CardioSessionRead,
+    CsvImportPreviewRead,
     CsvImportRead,
+    CsvImportSessionRead,
     DashboardRead,
     ExerciseCreate,
     ExerciseFavoriteUpdate,
@@ -1509,50 +1511,7 @@ def export_workout_csv(
     )
 
 
-def check_imported_workouts(
-    db: Session, user: User, limits: AccountLimits, existing_ids: set[str]
-) -> None:
-    """Hold an import to the same limits as saving workouts one by one."""
-    if not user.is_admin:
-        workouts = db.scalar(
-            select(func.count(TrainingWorkout.id)).where(TrainingWorkout.user_id == user.id)
-        )
-        if workouts > limits.workouts_per_account:
-            raise refuse(user, "workouts_per_account", IMPORT_NOT_SAVED)
-        custom = db.scalar(
-            select(func.count(Exercise.id)).where(
-                Exercise.user_id == user.id, Exercise.is_custom.is_(True)
-            )
-        )
-        if custom > limits.custom_exercises_per_account:
-            raise refuse(user, "custom_exercises_per_account", IMPORT_NOT_SAVED)
-    sizes = db.execute(
-        select(
-            TrainingWorkout.id,
-            func.count(func.distinct(WorkoutMovement.id)),
-            func.count(WorkoutSet.id),
-        )
-        .join(WorkoutMovement, WorkoutMovement.workout_id == TrainingWorkout.id)
-        .join(WorkoutSet, WorkoutSet.movement_id == WorkoutMovement.id)
-        .where(TrainingWorkout.user_id == user.id)
-        .group_by(TrainingWorkout.id)
-    )
-    for workout_id, exercises, sets in sizes:
-        if workout_id in existing_ids:
-            continue
-        if exercises > limits.exercises_per_workout:
-            raise refuse(user, "exercises_per_workout", IMPORT_NOT_SAVED)
-        if sets > limits.sets_per_workout:
-            raise refuse(user, "sets_per_workout", IMPORT_NOT_SAVED)
-
-
-@router.post("/workouts/import", response_model=CsvImportRead, status_code=201)
-async def import_workout_csv(
-    db: DbSession,
-    user: CurrentUser,
-    settings: SettingsDependency,
-    file: Annotated[UploadFile, File(...)],
-) -> CsvImportRead:
+async def read_workout_csv(file: UploadFile) -> bytes:
     if file.content_type not in {
         None,
         "text/csv",
@@ -1566,22 +1525,93 @@ async def import_workout_csv(
     await file.close()
     if len(raw) > 20 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="CSV imports are limited to 20 MB.")
-    existing_ids = set(
-        db.scalars(select(TrainingWorkout.id).where(TrainingWorkout.user_id == user.id))
-    )
+    return raw
+
+
+def check_import_plan(db: Session, user: User, limits: AccountLimits, plan: ImportPlan) -> None:
+    additions = [session for session in plan.sessions if not session.duplicate]
+    if additions and not user.is_admin:
+        count = db.scalar(
+            select(func.count(TrainingWorkout.id)).where(TrainingWorkout.user_id == user.id)
+        )
+        if count + len(additions) > limits.workouts_per_account:
+            raise refuse(user, "workouts_per_account", IMPORT_NOT_SAVED)
+    if plan.new_exercises and not user.is_admin:
+        count = db.scalar(
+            select(func.count(Exercise.id)).where(
+                Exercise.user_id == user.id, Exercise.is_custom.is_(True)
+            )
+        )
+        if count + len(plan.new_exercises) > limits.custom_exercises_per_account:
+            raise refuse(user, "custom_exercises_per_account", IMPORT_NOT_SAVED)
+    for session in additions:
+        exercises = {canonical_exercise_name(row.exercise_name).casefold() for row in session.rows}
+        if len(exercises) > limits.exercises_per_workout:
+            raise refuse(user, "exercises_per_workout", IMPORT_NOT_SAVED)
+        if len(session.rows) > limits.sets_per_workout:
+            raise refuse(user, "sets_per_workout", IMPORT_NOT_SAVED)
+
+
+@router.post("/workouts/import/preview", response_model=CsvImportPreviewRead)
+async def preview_workout_csv(
+    db: DbSession,
+    user: CurrentUser,
+    settings: SettingsDependency,
+    file: Annotated[UploadFile, File(...)],
+) -> CsvImportPreviewRead:
+    raw = await read_workout_csv(file)
     try:
-        summary = import_workouts(db, user.id, raw)
+        plan = plan_import(db, user.id, raw)
+    except CsvImportError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    check_import_plan(db, user, load_account_limits(db, settings), plan)
+    return CsvImportPreviewRead(
+        sessions=[
+            CsvImportSessionRead(
+                workout_date=session.workout_date,
+                name=session.name,
+                exercises=list(
+                    dict.fromkeys(
+                        canonical_exercise_name(row.exercise_name) for row in session.rows
+                    )
+                ),
+                sets=len(session.rows),
+                duplicate=session.duplicate,
+            )
+            for session in plan.sessions
+        ],
+        workouts_to_create=sum(not session.duplicate for session in plan.sessions),
+        workouts_to_skip=sum(session.duplicate for session in plan.sessions),
+        sets_to_import=sum(len(session.rows) for session in plan.sessions if not session.duplicate),
+        new_exercises=plan.new_exercises,
+        warnings=plan.warnings,
+    )
+
+
+@router.post("/workouts/import", response_model=CsvImportRead, status_code=201)
+async def import_workout_csv(
+    db: DbSession,
+    user: CurrentUser,
+    settings: SettingsDependency,
+    file: Annotated[UploadFile, File(...)],
+) -> CsvImportRead:
+    raw = await read_workout_csv(file)
+    try:
+        # Serialize comparison and writes, including two imports that finish together.
+        db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+        plan = plan_import(db, user.id, raw)
+        check_import_plan(db, user, load_account_limits(db, settings), plan)
+        summary = import_workouts(db, user.id, raw, plan=plan)
+        if summary.workouts_created:
+            rebuild_personal_records(db, user.id)
+            bump_workout_cache_revision(db, user.id)
+        db.commit()
     except CsvImportError as error:
         db.rollback()
         raise HTTPException(status_code=422, detail=str(error)) from error
-    try:
-        check_imported_workouts(db, user, load_account_limits(db, settings), existing_ids)
-    except HTTPException:
+    except Exception:
         db.rollback()
         raise
-    rebuild_personal_records(db, user.id)
-    bump_workout_cache_revision(db, user.id)
-    db.commit()
     return CsvImportRead(**summary.__dict__)
 
 
