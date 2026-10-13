@@ -12,6 +12,12 @@
 
 This follow-up remains in the same pending 0.5.3 release as the P1 and P2 review fixes.
 
+<img src="screenshots/releases/0.5.3-set-reordering.png" alt="A sample Back Squat workout after dragging its 70-kilogram set below the 90- and 100-kilogram sets, with repetitions, RPE and rest settings preserved." width="390">
+
+The reordered sample sets in the verified build. The accompanying PR recording shows
+the row lifting under the cursor and moving only vertically, even when the cursor drifts
+sideways. Captured at phone width on MainPC's loopback 8003 with a fresh sample database.
+
 ### User-review corrections before deployment
 
 The [13 October user review](reviews/2026-10-13/USER-REVIEW.md) is preserved for other
