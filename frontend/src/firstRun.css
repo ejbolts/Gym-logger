@@ -1,0 +1,235 @@
+/* ───────── Sample data banner (Home) ───────── */
+
+.sample-data-banner.pulse-card {
+  border-color: rgb(233 180 74 / 35%);
+  background: linear-gradient(var(--p-gold-soft), var(--p-gold-soft)), var(--p-surface);
+}
+
+.sample-data-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sample-data-banner .sample-tag {
+  flex: 0 0 auto;
+  background: rgb(233 180 74 / 18%);
+  color: var(--p-gold);
+}
+
+.sample-data-banner h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sample-data-banner-toggle {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  margin: -0.5rem -0.5rem -0.5rem 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--p-ink-2);
+}
+
+.sample-data-banner-toggle .pulse-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  transition: transform 160ms ease;
+}
+
+.sample-data-banner-toggle[aria-expanded='true'] .pulse-icon {
+  transform: rotate(180deg);
+}
+
+.sample-data-banner p {
+  margin: 0.625rem 0 0.875rem;
+  color: var(--p-ink-2);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.sample-data-banner .sample-data-remove {
+  width: 100%;
+}
+
+.popup-dialog.sample-remove-dialog {
+  width: min(28rem, calc(100% - 2rem));
+}
+
+.sample-remove-body {
+  padding: 1.25rem;
+}
+
+.sample-remove-body p {
+  margin: 0;
+  color: var(--p-ink-2);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.sample-remove-body .inline-error {
+  margin-top: 0.75rem;
+}
+
+.sample-remove-dialog .popup-dialog-actions {
+  padding: 1rem 1.25rem;
+}
+
+.popup-dialog-actions .sample-remove-confirm.popup-primary-action {
+  background: var(--p-danger);
+}
+
+/* ───────── First-run welcome ───────── */
+
+.popup-dialog.first-run-welcome {
+  width: min(30rem, calc(100% - 2rem));
+}
+
+.first-run-body {
+  padding: 1.25rem;
+}
+
+.first-run-intro {
+  margin: 0 0 0.875rem;
+  color: var(--p-ink-2);
+  font-size: 0.9375rem;
+}
+
+.first-run-essentials {
+  display: grid;
+  gap: 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.first-run-essentials li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.first-run-essentials b {
+  display: block;
+  color: var(--p-ink);
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+
+.first-run-essentials small {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--p-ink-2);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.first-run-glyph {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  border: 1px solid rgb(109 167 236 / 30%);
+  border-radius: 0.7rem;
+  background: var(--p-accent-soft);
+  color: #89baff;
+}
+
+.first-run-glyph .pulse-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.first-run-samples {
+  margin-top: 1.25rem;
+  border: 1px solid rgb(233 180 74 / 35%);
+  border-radius: 16px;
+  padding: 0.875rem;
+  background: var(--p-gold-soft);
+}
+
+.first-run-samples h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+
+.first-run-samples .sample-tag {
+  background: rgb(233 180 74 / 18%);
+  color: var(--p-gold);
+}
+
+.first-run-samples p {
+  margin: 0.5rem 0 0;
+  color: var(--p-ink-2);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.first-run-sample-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.first-run-sample-choices button {
+  min-height: 2.75rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink);
+  font-weight: 600;
+}
+
+.first-run-sample-choices .sample-remove-confirm {
+  border-color: rgb(230 103 103 / 45%);
+  background: rgb(230 103 103 / 14%);
+  color: var(--p-danger);
+}
+
+.first-run-samples .inline-error {
+  margin-top: 0.5rem;
+}
+
+.first-run-note {
+  margin: 1rem 0 0;
+  color: var(--p-muted);
+  font-size: 0.8125rem;
+}
+
+.first-run-welcome .popup-dialog-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: var(--p-surface);
+}
+
+.first-run-welcome .popup-dialog-actions .first-run-later {
+  margin-right: auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--p-ink-2);
+  font-weight: 500;
+}
+
+.first-run-welcome button:disabled,
+.sample-remove-dialog button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

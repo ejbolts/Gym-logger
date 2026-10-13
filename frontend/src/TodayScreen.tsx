@@ -104,6 +104,8 @@ export interface TodayScreenProps {
   /** Shown on the profile button so the signed-in account is visible at a glance. */
   profileLabel?: string;
   profilePhotoUrl?: string | null;
+  /** Shown above the Home cards, such as the label for an account's sample data. */
+  notice?: ReactNode;
   calendar?: ReactNode;
   today?: string;
 }
@@ -129,6 +131,7 @@ export function TodayScreen({
   onOpenProfile,
   profileLabel,
   profilePhotoUrl,
+  notice,
   calendar,
   today = localDate(),
 }: TodayScreenProps) {
@@ -539,6 +542,7 @@ export function TodayScreen({
       <p className="sr-only" role="status">
         {home.message}
       </p>
+      {notice}
       {workoutStartedAt !== null && (
         <LiveWorkoutCard startedAt={workoutStartedAt} onResume={onResumeWorkout} />
       )}

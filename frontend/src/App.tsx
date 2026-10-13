@@ -83,6 +83,8 @@ import { useHomeScreenGuide } from './useHomeScreenGuide';
 import { runningAsInstalledApp } from './homeScreenGuideState';
 import { AppGuide } from './AppGuide';
 import { appGuideWaiting, finishAppGuide } from './appGuideState';
+import { FirstRunWelcome } from './FirstRunWelcome';
+import { SampleDataBanner } from './SampleDataBanner';
 import { CONTRIBUTING_URL, PROJECT_URL } from './appGuideSteps';
 import { CreateExerciseDialog } from './CreateExerciseDialog';
 import { BackgroundActivityBar } from './BackgroundActivityBar';
@@ -497,9 +499,15 @@ export function App() {
 
 function AppContent() {
   const { user } = useUserSession();
-  const announcement = useReleaseAnnouncement(user?.id ?? null);
-  const homeScreenGuide = useHomeScreenGuide(user?.id ?? null, announcement.checked);
-  const [guideWaiting, setGuideWaiting] = useState(() => user !== null && appGuideWaiting(user.id));
+  // A new account's first session leads with a short welcome. Release notes are recorded as
+  // seen, and the tour and Home Screen help wait until asked for (or a later session).
+  const [firstRunSession] = useState(() => user !== null && appGuideWaiting(user.id));
+  const [welcomeOpen, setWelcomeOpen] = useState(firstRunSession);
+  const announcement = useReleaseAnnouncement(user?.id ?? null, { firstRun: firstRunSession });
+  const homeScreenGuide = useHomeScreenGuide(
+    user?.id ?? null,
+    announcement.checked && !firstRunSession,
+  );
   const [guideRequested, setGuideRequested] = useState(false);
   const guideReturnTab = useRef<AppTab | null>(null);
   const videosAllowed = canUploadVideos(user);
@@ -1015,6 +1023,29 @@ function AppContent() {
     setBodyTrendPreference(preference);
   }
 
+  const sampleWorkoutCount = workouts.filter((workout) => workout.is_sample).length;
+  const sampleMeasurementCount = measurements.filter((measurement) => measurement.is_sample).length;
+
+  /** Deletes every sample workout and body check-in, then rebuilds Home from the server. */
+  async function removeSampleData() {
+    await withBackgroundActivity('Removing sample data…', async () => {
+      await api.deleteSampleData();
+      setWorkouts((current) => current.filter((workout) => !workout.is_sample));
+      setMeasurements((current) => current.filter((measurement) => !measurement.is_sample));
+      await refreshData({ silent: true, activityLabel: null });
+    });
+  }
+
+  async function removeSampleDataFromHome() {
+    await removeSampleData();
+    setMessage('Sample data removed. Home now shows only your own training.');
+  }
+
+  function closeWelcome() {
+    if (user) finishAppGuide(user.id);
+    setWelcomeOpen(false);
+  }
+
   const nestedHeader =
     tab === 'settings'
       ? { title: 'Settings', subtitle: 'Timers • notifications • data' }
@@ -1058,25 +1089,40 @@ function AppContent() {
       {announcement.open && canShowPrompts && (
         <ReleaseAnnouncement release={announcement.release} onClose={announcement.dismiss} />
       )}
-      {(guideRequested || (guideWaiting && announcement.checked)) &&
-        !announcement.open &&
-        canShowPrompts && (
-          <AppGuide
-            videosAllowed={videosAllowed}
-            onNavigate={setTab}
-            onClose={() => {
-              if (user) finishAppGuide(user.id);
-              setGuideWaiting(false);
-              setGuideRequested(false);
-              homeScreenGuide.dismiss();
-              setTab(guideReturnTab.current ?? 'dashboard');
-              guideReturnTab.current = null;
-            }}
-          />
-        )}
+      {welcomeOpen && !guideRequested && !announcement.open && canShowPrompts && (
+        <FirstRunWelcome
+          name={user?.display_name}
+          sampleWorkouts={sampleWorkoutCount}
+          sampleMeasurements={sampleMeasurementCount}
+          onRemoveSamples={removeSampleData}
+          onStartWorkout={() => {
+            closeWelcome();
+            startWorkout();
+          }}
+          onTakeTour={() => {
+            closeWelcome();
+            guideReturnTab.current = tab;
+            setGuideRequested(true);
+          }}
+          onClose={closeWelcome}
+        />
+      )}
+      {guideRequested && !announcement.open && canShowPrompts && (
+        <AppGuide
+          videosAllowed={videosAllowed}
+          onNavigate={setTab}
+          onClose={() => {
+            if (user) finishAppGuide(user.id);
+            setGuideRequested(false);
+            homeScreenGuide.dismiss();
+            setTab(guideReturnTab.current ?? 'dashboard');
+            guideReturnTab.current = null;
+          }}
+        />
+      )}
       {homeScreenGuide.open &&
         !guideRequested &&
-        !guideWaiting &&
+        !welcomeOpen &&
         !announcement.open &&
         canShowPrompts && <HomeScreenGuide onClose={homeScreenGuide.dismiss} />}
       <EdgeSwipeBack onBack={navigateBack} enabled={canNavigateBack} />
@@ -1146,6 +1192,15 @@ function AppContent() {
                 onOpenProfile={user ? () => setTab('profile') : undefined}
                 profileLabel={user?.display_name}
                 profilePhotoUrl={user?.profile_photo_url}
+                notice={
+                  sampleWorkoutCount + sampleMeasurementCount > 0 ? (
+                    <SampleDataBanner
+                      workoutCount={sampleWorkoutCount}
+                      measurementCount={sampleMeasurementCount}
+                      onRemove={removeSampleDataFromHome}
+                    />
+                  ) : undefined
+                }
                 calendar={
                   <InteractiveWorkoutCalendar
                     entries={dashboard?.heatmap ?? []}

@@ -10,15 +10,22 @@ import { parseRelease } from './releaseMetadata';
 
 const bundledRelease = parseRelease(releaseMetadata)!;
 
-export function useReleaseAnnouncement(userId: string | null) {
+/**
+ * Opens unseen release notes once per account and version. A brand-new account's first
+ * session (`firstRun`) has nothing to catch up on, so every release it meets is recorded
+ * as seen instead of interrupting the welcome.
+ */
+export function useReleaseAnnouncement(userId: string | null, { firstRun = false } = {}) {
   const [state, setState] = useState({ release: bundledRelease, open: false, checked: false });
 
   useEffect(() => {
     if (!userId) return;
+    if (firstRun) rememberRelease(userId, bundledRelease.version);
     // A failed first check still counts, so popups queued behind this one are not held forever.
     const checkedWithoutRelease = () => setState((current) => ({ ...current, checked: true }));
     return watchReleases(
       (release) => {
+        if (firstRun) rememberRelease(userId, release.version);
         setState((current) => ({
           release,
           checked: true,
@@ -39,7 +46,7 @@ export function useReleaseAnnouncement(userId: string | null) {
           },
         ),
     );
-  }, [userId]);
+  }, [userId, firstRun]);
 
   return {
     release: state.release,
