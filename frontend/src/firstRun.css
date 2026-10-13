@@ -1,6 +1,7 @@
 /* ───────── Sample data banner (Home) ───────── */
 
 .sample-data-banner.pulse-card {
+  margin-bottom: 0.75rem;
   border-color: rgb(233 180 74 / 35%);
   background: linear-gradient(var(--p-gold-soft), var(--p-gold-soft)), var(--p-surface);
 }
