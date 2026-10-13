@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PopupDialog } from './PopupDialog';
 import type { TrackedWorkout } from './types';
 import type { WorkoutConflictChoice } from './workoutSave';
+import './workoutConflict.css';
 
 /** Shown when a save is refused because the workout was saved on another device meanwhile. */
 export function WorkoutConflictDialog({
@@ -21,11 +22,13 @@ export function WorkoutConflictDialog({
     >
       {confirmingDiscard ? (
         <>
-          <p>
-            Discard the changes you made on this device and load the latest saved version of “
-            {latest.name}”?
-          </p>
-          <div className="popup-dialog-actions">
+          <div className="workout-conflict-body">
+            <p>
+              Discard the changes you made on this device and load the latest saved version of “
+              {latest.name}”?
+            </p>
+          </div>
+          <footer className="popup-dialog-actions">
             <button type="button" autoFocus onClick={() => setConfirmingDiscard(false)}>
               Back
             </button>
@@ -36,15 +39,17 @@ export function WorkoutConflictDialog({
             >
               Discard my changes
             </button>
-          </div>
+          </footer>
         </>
       ) : (
         <>
-          <p>
-            “{latest.name}” was saved on another device after you opened it here. Your changes are
-            still on this device. Keeping your version replaces the other device’s changes.
-          </p>
-          <div className="popup-dialog-actions">
+          <div className="workout-conflict-body">
+            <p>
+              “{latest.name}” was saved on another device after you opened it here. Your changes are
+              still on this device. Keeping your version replaces the other device’s changes.
+            </p>
+          </div>
+          <footer className="popup-dialog-actions">
             <button type="button" onClick={() => setConfirmingDiscard(true)}>
               Load latest version
             </button>
@@ -56,7 +61,7 @@ export function WorkoutConflictDialog({
             >
               Keep my version
             </button>
-          </div>
+          </footer>
         </>
       )}
     </PopupDialog>

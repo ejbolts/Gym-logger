@@ -1,0 +1,18 @@
+.popup-dialog.workout-conflict-dialog {
+  width: min(28rem, calc(100% - 2rem));
+}
+
+.workout-conflict-body {
+  padding: 1.25rem;
+}
+
+.workout-conflict-body p {
+  margin: 0;
+  color: var(--p-ink-2);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.workout-conflict-dialog .popup-dialog-actions {
+  padding: 1rem 1.25rem;
+}
