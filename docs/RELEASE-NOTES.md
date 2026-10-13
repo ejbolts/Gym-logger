@@ -27,6 +27,18 @@ still reports **0.3.0**, and this single follow-up PR does not create another re
 The review records historical observations rather than changing their evidence. P2/P3
 findings and larger roadmap features remain in the tracking index for future work.
 
+<img src="screenshots/releases/0.5.3-workout-recovery-pounds.png" alt="A reloaded sample workout retains a completed Back Squat set at 225 pounds, one incomplete copied suggestion, and pound-based body weight and volume totals." width="390">
+
+The recovered workout keeps performed and suggested sets distinct and uses the selected
+pounds preference. Captured from the verified correction at `5bdac16` on MainPC's private
+8447 route with a separate sample database and fictional account.
+
+<img src="screenshots/releases/0.5.3-workout-import-review.png" alt="Workout import review shows two separate sample sessions on the same date, three sets, and explicit Save import and Cancel controls before anything is saved." width="390">
+
+Review both same-day sessions before saving. Reimporting this file instead shows both
+sessions as duplicates and disables Save import. Legacy files warn that their rows are
+grouped by date; identical sessions imported separately may be skipped as duplicates.
+
 ### Combined release features
 
 This coordinated release includes custom exercise labels (#23), weight and volume records (#24), profile sharing and follow requests (#25), and Home card editing (#26), together with the previously pending guide, feedback and profile-photo improvements. The release is **0.5.3** for the whole batch, as requested; the earlier 0.4.0, 0.4.1 and 0.5.0 proposals were unpublished and are consolidated here.
