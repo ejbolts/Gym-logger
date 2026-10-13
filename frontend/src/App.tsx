@@ -200,6 +200,8 @@ import {
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { WorkoutHeaderMeta } from './WorkoutRestTimer';
+import { CompactLoggingToolbar, CompactMoreToggle, CompactMovementSummary } from './CompactLogging';
+import { useCompactCardFocus, useCompactLogging, type CompactCardState } from './useCompactLogging';
 import {
   clearActiveWorkoutDraft,
   readActiveWorkoutDraft,
@@ -2144,6 +2146,8 @@ function WorkoutLogger({
   const [pickerOpen, setPickerOpen] = useState(false);
   const movementStackRef = useRef<HTMLDivElement>(null);
   useFlipAnimation(movementStackRef, movements.map((movement) => movement.key).join('|'));
+  // Compact logging is for live workouts; editing a saved workout keeps the full cards.
+  const compactLogging = useCompactLogging(movements, !initialWorkout);
   const [switchingMovementKey, setSwitchingMovementKey] = useState<string | null>(null);
   const [supersetPickerKey, setSupersetPickerKey] = useState<string | null>(null);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
@@ -2588,6 +2592,7 @@ function WorkoutLogger({
   }, [restTimerEnabled]);
 
   function updateSet(movementKey: string, setKey: string, update: Partial<DraftSet>) {
+    compactLogging.noteSetInteraction(movementKey);
     const movement = movements.find((item) => item.key === movementKey);
     const currentSet = movement?.sets.find((item) => item.key === setKey);
     const restSeconds =
@@ -2627,6 +2632,7 @@ function WorkoutLogger({
   }
 
   function addSet(movement: DraftMovement) {
+    compactLogging.noteSetInteraction(movement.key);
     setMovements((current) =>
       current.map((item) =>
         item.key === movement.key
@@ -3043,12 +3049,20 @@ function WorkoutLogger({
 
       {error && <p className="inline-error">{error}</p>}
 
+      {compactLogging.available && movements.length > 0 && (
+        <CompactLoggingToolbar
+          enabled={compactLogging.enabled}
+          progress={compactLogging.progress}
+          onChange={compactLogging.setEnabled}
+        />
+      )}
       <div className="movement-stack" ref={movementStackRef}>
         {movements.map((movement, movementIndex) => (
           <MovementCard
             key={movement.key}
             movement={movement}
             number={movementIndex + 1}
+            compact={compactLogging.cardState(movement.key)}
             prBadges={prBadges.get(movement.key) ?? new Map()}
             supersetLabel={
               movement.supersetKey
@@ -3570,9 +3584,12 @@ function MovementCard({
   onMoveSet,
   onDeleteSet,
   onSuperset,
+  compact,
 }: {
   movement: DraftMovement;
   number: number;
+  /** Set in compact logging mode, which folds the card and hides optional parts. */
+  compact?: CompactCardState;
   history: ExerciseHistoryEntry[];
   onExerciseHistory: () => void;
   onExerciseComplete: (isComplete: boolean) => void;
@@ -3601,6 +3618,8 @@ function MovementCard({
   const lastSessionSummary =
     !cardio && history[0] ? compactSetSummary(history[0].sets, weightUnit) : '';
   const [expanded, setExpanded] = useState(!movement.isComplete);
+  const cardExpanded = compact ? compact.expanded : expanded;
+  const [compactMoreOpen, setCompactMoreOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [openSetActionsKey, setOpenSetActionsKey] = useState<string | null>(null);
   const [openOverrides, setOpenOverrides] = useState<Readonly<Record<string, boolean>>>({});
@@ -3680,7 +3699,11 @@ function MovementCard({
 
   function openSet(setKey: string, focusField?: SetField) {
     // Render synchronously so the field can take focus inside the tap (iOS keyboard rule).
-    flushSync(() => setOpenOverride(setKey, true));
+    flushSync(() => {
+      setOpenOverride(setKey, true);
+      // Compact cards keep set notes behind "More"; reveal them to edit one.
+      if (focusField === 'notes') setCompactMoreOpen(true);
+    });
     if (!focusField) return;
     setGridRef.current
       ?.querySelector<HTMLElement>(`[data-set-key="${setKey}"] [data-set-field="${focusField}"]`)
@@ -4186,16 +4209,25 @@ function MovementCard({
 
   useFlipAnimation(setGridRef, movement.sets.map((item) => item.key).join('|'));
   useExpandAnimation(setGridRef);
-  useCollapseAnimation(cardRef, expanded);
+  useCollapseAnimation(cardRef, cardExpanded);
+  useCompactCardFocus(cardRef, compact ? !compact.expanded : null);
+  const toggleExpanded = () => (compact ? compact.onToggle() : setExpanded((current) => !current));
+  const compactClasses = compact
+    ? ` compact-movement${compact.current ? ' is-current-movement' : ''}${compactMoreOpen ? '' : ' compact-extras-hidden'}`
+    : '';
 
   return (
     <article
       ref={cardRef}
-      className={`movement-card panel ${expanded ? '' : 'is-collapsed'} ${supersetLabel ? 'superset-card' : ''}`}
+      className={`movement-card panel ${cardExpanded ? '' : 'is-collapsed'} ${supersetLabel ? 'superset-card' : ''}${compactClasses}`}
       data-flip-key={movement.key}
+      aria-current={compact?.current ? 'step' : undefined}
     >
       {supersetLabel && <div className="superset-ribbon">{supersetLabel}</div>}
-      <header onClick={() => setExpanded((current) => !current)}>
+      {compact && !compact.expanded && (
+        <CompactMovementSummary movement={movement} number={number} onExpand={compact.onToggle} />
+      )}
+      <header onClick={toggleExpanded}>
         <ExerciseIcon exercise={movement.exercise} number={number} />
         <div>
           <h2>
@@ -4213,11 +4245,11 @@ function MovementCard({
             <button
               type="button"
               className="movement-expand-toggle"
-              aria-label={`${expanded ? 'Collapse' : 'Expand'} ${movement.exercise.name}`}
-              aria-expanded={expanded}
+              aria-label={`${cardExpanded ? 'Collapse' : 'Expand'} ${movement.exercise.name}`}
+              aria-expanded={cardExpanded}
               onClick={(event) => {
                 event.stopPropagation();
-                setExpanded((current) => !current);
+                toggleExpanded();
               }}
             >
               <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -4279,6 +4311,7 @@ function MovementCard({
                 type="button"
                 onClick={() => {
                   closeMovementMenu();
+                  setCompactMoreOpen(true);
                   window.requestAnimationFrame(() => movementNoteRef.current?.focus());
                 }}
               >
@@ -4423,7 +4456,7 @@ function MovementCard({
                 onDelete={() => onDeleteSet(index)}
               >
                 <div
-                  className={`set-details ${item.completed ? 'completed' : ''} ${item.fromPrevious ? 'previous-set-details' : ''} ${open ? 'is-open' : ''} ${draggingSetKey === item.key ? 'set-dragging' : ''} ${dragTargetSetKey === item.key && draggingSetKey !== item.key ? 'set-drop-target' : ''}`}
+                  className={`set-details ${item.completed ? 'completed' : ''} ${item.fromPrevious ? 'previous-set-details' : ''} ${open ? 'is-open' : ''} ${draggingSetKey === item.key ? 'set-dragging' : ''} ${dragTargetSetKey === item.key && draggingSetKey !== item.key ? 'set-drop-target' : ''}${compact?.nextSetKey === item.key ? ' is-next-set' : ''}`}
                   data-set-key={item.key}
                   data-expand-key={item.key}
                   data-expanded={open}
@@ -4471,6 +4504,13 @@ function MovementCard({
       <button type="button" className="add-set-button" onClick={onAddSet}>
         ＋ Add set
       </button>
+      {compact && (
+        <CompactMoreToggle
+          movement={movement}
+          open={compactMoreOpen}
+          onToggle={() => setCompactMoreOpen((current) => !current)}
+        />
+      )}
       <input
         ref={movementNoteRef}
         className="movement-note"
