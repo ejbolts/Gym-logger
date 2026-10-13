@@ -1,0 +1,121 @@
+/* Non-blocking status toast for successful actions. It floats above the bottom tab bar (and
+   above the logger's undo toast slot), so neither is covered; the PR popup stays at the top. */
+.status-toast {
+  position: fixed;
+  z-index: 95;
+  bottom: calc(var(--p-tab-bar-height, calc(4.25rem + env(safe-area-inset-bottom))) + 0.75rem);
+  left: 50%;
+  width: min(calc(100% - 2rem), 26rem);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.status-toast.open {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 16px;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+  background: rgb(30 34 38 / 94%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 14px 36px rgb(0 0 0 / 45%);
+  color: var(--p-ink);
+  pointer-events: auto;
+  animation: status-toast-in 220ms var(--ease-out) backwards;
+}
+
+.status-toast-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.status-toast-text:empty {
+  padding: 0;
+}
+
+.status-toast-close {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  padding: 0;
+  background: transparent;
+  color: var(--p-muted);
+  touch-action: manipulation;
+}
+
+.status-toast-close:hover,
+.status-toast-close:focus-visible {
+  background: rgb(255 255 255 / 8%);
+  color: var(--p-ink);
+}
+
+.status-toast-close:focus-visible {
+  outline: 2px solid var(--p-accent-text);
+  outline-offset: -2px;
+}
+
+.status-toast-close .pulse-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Shrinks over the toast's lifetime to show when it will close. */
+.status-toast-countdown {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--p-accent);
+  transform-origin: left;
+  animation: status-toast-timer var(--status-toast-duration, 4500ms) linear forwards;
+}
+
+.status-toast.paused .status-toast-countdown {
+  animation-play-state: paused;
+}
+
+@keyframes status-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.75rem);
+  }
+}
+
+@keyframes status-toast-timer {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Reduced motion: the toast appears without sliding and the shrinking timer bar is hidden. */
+@media (prefers-reduced-motion: reduce) {
+  .status-toast.open {
+    animation: none;
+  }
+
+  .status-toast-countdown {
+    display: none;
+  }
+}
+
+html[data-reduce-motion] .status-toast.open {
+  animation: none;
+}
+
+html[data-reduce-motion] .status-toast-countdown {
+  display: none;
+}

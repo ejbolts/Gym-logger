@@ -12,8 +12,9 @@ vi.mock('react-dom', async (importOriginal) => ({
 beforeEach(() => vi.stubGlobal('document', { body: {} }));
 afterEach(() => vi.unstubAllGlobals());
 
+// Successful actions use the status toast; this dialog is reserved for errors to acknowledge.
 describe('app notification popup', () => {
-  it.each(['Workout CSV exported.', 'Could not export workout data.'])(
+  it.each(['Could not export workout data.', 'Could not delete that measurement.'])(
     'renders a popup for the message: %s',
     (message) => {
       const markup = renderToStaticMarkup(
@@ -27,7 +28,7 @@ describe('app notification popup', () => {
 
   it('provides an accessible title, description, and both dismissal controls', () => {
     const markup = renderToStaticMarkup(
-      <NotificationDialog message="Body measurement saved." onClose={() => undefined} />,
+      <NotificationDialog message="Could not remove sample data." onClose={() => undefined} />,
     );
     expect(markup).toContain('aria-modal="true"');
     const titleId = markup.match(/aria-labelledby="([^"]+)"/)?.[1];
@@ -35,7 +36,7 @@ describe('app notification popup', () => {
     expect(titleId).toBeTruthy();
     expect(messageId).toBeTruthy();
     expect(markup).toContain(`<h2 id="${titleId}">Notification</h2>`);
-    expect(markup).toContain(`<p id="${messageId}">Body measurement saved.</p>`);
+    expect(markup).toContain(`<p id="${messageId}">Could not remove sample data.</p>`);
     expect(markup).toContain('aria-label="Close notification"');
     expect(markup).toContain('>OK</button>');
   });

@@ -72,6 +72,8 @@ import {
 import { monthCountFromOldestWorkout } from './calendarRange';
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { NotificationDialog } from './NotificationDialog';
+import { StatusToastProvider } from './StatusToast';
+import { useShowToast } from './statusToastContext';
 import { PopupDialog } from './PopupDialog';
 import { ReleaseAnnouncement } from './ReleaseAnnouncement';
 import { useReleaseAnnouncement } from './useReleaseAnnouncement';
@@ -486,7 +488,9 @@ function WorkoutCompletionDialog({
 export function App() {
   return (
     <TrainingPreferencesProvider>
-      <AppContent />
+      <StatusToastProvider>
+        <AppContent />
+      </StatusToastProvider>
     </TrainingPreferencesProvider>
   );
 }
@@ -572,6 +576,7 @@ function AppContent() {
   const [workoutTemplate, setWorkoutTemplate] = useState<SessionTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const showToast = useShowToast();
   const [backgroundActivities, setBackgroundActivities] = useState<BackgroundActivity[]>([]);
   useActiveWorkoutReminder(activeWorkoutStartedAt);
   useEffect(() => {
@@ -879,7 +884,7 @@ function AppContent() {
       return imported;
     });
     const bodyweightCount = result.body_measurements_created + result.body_measurements_updated;
-    setMessage(
+    showToast(
       `Imported ${result.sets_imported} sets across ${result.workouts_created} workouts${
         result.exercises_created ? ` and added ${result.exercises_created} exercises` : ''
       }${bodyweightCount ? `; added ${bodyweightCount} body-weight check-ins` : ''}${
@@ -901,7 +906,7 @@ function AppContent() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setMessage('Workout CSV exported.');
+      showToast('Workout CSV exported.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not export workout data.');
     }
@@ -913,7 +918,7 @@ function AppContent() {
         await api.deleteSampleData();
         await refreshData({ activityLabel: null });
       });
-      setMessage('Sample workouts removed. They will not be seeded again.');
+      showToast('Sample workouts removed. They will not be seeded again.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not remove sample data.');
     }
@@ -971,7 +976,7 @@ function AppContent() {
         await api.deleteBodyMeasurement(id);
         await refreshData({ activityLabel: null });
       });
-      setMessage('Body measurement deleted.');
+      showToast('Body measurement deleted.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not delete that measurement.');
     }
@@ -1186,7 +1191,10 @@ function AppContent() {
                   onCreateExercise={createExercise}
                   onSave={saveWorkout}
                   onAutoSaved={() =>
-                    setMessage('Your inactive workout passed its time limit and was auto-saved.')
+                    // Persists: the user was away when it was saved and may not be looking yet.
+                    showToast('Your inactive workout passed its time limit and was auto-saved.', {
+                      persist: true,
+                    })
                   }
                   activeStartedAt={activeWorkoutStartedAt}
                   onClose={navigateBack}
