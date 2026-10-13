@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { EDGE_SWIPE_START_PX } from './edgeSwipe';
+import { chartPointerX } from './chartLayout';
 import type {
   CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
@@ -9,16 +10,21 @@ import { niceTicks, parseLocalDate, shortDate } from './trainingSummary';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function useElementWidth<T extends HTMLElement>(fallback: number) {
+function useElementSize<T extends HTMLElement>(fallback: number, fallbackHeight = 0) {
   const ref = useRef<T>(null);
-  const [width, setWidth] = useState(fallback);
+  const [size, setSize] = useState({ width: fallback, height: fallbackHeight });
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
     const update = () => {
       // Layout width, not the visual box: the landscape viewer rotates the chart with a transform.
-      const next = Math.round(element.clientWidth);
-      if (next > 0) setWidth((current) => (current === next ? current : next));
+      const width = Math.round(element.clientWidth);
+      const height = Math.round(element.clientHeight);
+      if (width > 0 && height > 0) {
+        setSize((current) =>
+          current.width === width && current.height === height ? current : { width, height },
+        );
+      }
     };
     update();
     if (typeof ResizeObserver === 'undefined') {
@@ -29,7 +35,7 @@ function useElementWidth<T extends HTMLElement>(fallback: number) {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  return { ref, width };
+  return { ref, ...size };
 }
 
 export interface TrendPoint {
@@ -46,6 +52,8 @@ export interface TrendChartProps {
   seriesLabel: string;
   unit: string;
   height?: number;
+  /** Fit the available height in the expanded viewer and follow viewport changes. */
+  fillHeight?: boolean;
   /** Mark each new running maximum as a record. */
   markRecords?: boolean;
   /** Lower-is-better series mark running minimums instead. */
@@ -76,7 +84,8 @@ export function TrendChart({
   label,
   seriesLabel,
   unit,
-  height = 190,
+  height: compactHeight = 190,
+  fillHeight = false,
   markRecords = false,
   recordDirection = 'up',
   goal = null,
@@ -87,7 +96,8 @@ export function TrendChart({
   formatValue = defaultFormat,
   onSelect,
 }: TrendChartProps) {
-  const { ref, width } = useElementWidth<HTMLDivElement>(340);
+  const { ref, width, height: measuredHeight } = useElementSize<HTMLDivElement>(340, compactHeight);
+  const height = fillHeight ? measuredHeight : compactHeight;
   const [active, setActive] = useState<number | null>(null);
   const pad = { left: 40, right: 12, top: 12, bottom: 26 };
 
@@ -219,8 +229,10 @@ export function TrendChart({
   const activeCoord = active === null ? null : coords[active];
 
   function selectAt(event: ReactPointerEvent<SVGSVGElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const chartX = event.clientX - bounds.left;
+    const transform = event.currentTarget.getScreenCTM();
+    if (!transform) return;
+    const chartX = chartPointerX(event.clientX, event.clientY, transform);
+    if (chartX === null) return;
     let nearest = 0;
     coords.forEach((point, index) => {
       if (Math.abs(point.x - chartX) < Math.abs(coords[nearest].x - chartX)) nearest = index;
@@ -262,7 +274,10 @@ export function TrendChart({
         onPointerDown={(event) => {
           // Leave touches in the left edge zone to the swipe-back gesture (touch input is
           // implicitly captured by the element it lands on, so release that too).
-          if (event.clientX <= EDGE_SWIPE_START_PX) {
+          if (
+            event.clientX <= EDGE_SWIPE_START_PX &&
+            !event.currentTarget.closest('.landscape-chart-expanded')
+          ) {
             if (event.currentTarget.hasPointerCapture(event.pointerId)) {
               event.currentTarget.releasePointerCapture(event.pointerId);
             }
@@ -411,7 +426,7 @@ export function Sparkline({
   label: string;
   height?: number;
 }) {
-  const { ref, width } = useElementWidth<HTMLDivElement>(140);
+  const { ref, width } = useElementSize<HTMLDivElement>(140, height);
   if (values.length < 2) return <div className="pulse-sparkline" ref={ref} />;
   const min = Math.min(...values);
   const max = Math.max(...values);
