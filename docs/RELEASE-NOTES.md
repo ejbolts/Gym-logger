@@ -13,6 +13,11 @@
 
 This correction remains in the same pending 0.5.3 release as the review and set-drag fixes.
 
+<img src="screenshots/releases/0.5.3-exercise-set-ticks.png" alt="A sample Back Squat exercise ticked complete, with all three set ticks green and the distinct weights and repetitions preserved." width="390">
+
+Ticking the sample exercise completes all three sets and updates the workout totals.
+Captured at phone width on MainPC's loopback 8003 with a fresh sample database.
+
 ### Workout set reordering
 
 - Drag a set's grip to lift the row and follow the mouse or finger vertically. Its horizontal
