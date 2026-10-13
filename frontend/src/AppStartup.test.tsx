@@ -199,6 +199,10 @@ describe('App startup', () => {
       const markup = renderToday({ workouts: [workout] }, unit);
       expect(markup).toContain('Up next');
       expect(markup).toContain(`<b class="num">${expectedSummary}</b>`);
+      expect(markup).toMatch(
+        /<div class="next-session-actions"><button class="pulse-button primary"[^>]*>.*?Start .*?pull.*? workout<\/button><button class="pulse-button secondary" type="button">Start empty workout<\/button><\/div>/,
+      );
+      expect(markup).not.toContain('>Empty<');
       expect(workout).toEqual(before);
       expect(workout.movements[0].sets[0].weight_kg).toBe(100);
     },
@@ -234,6 +238,16 @@ describe('App startup', () => {
     expect(markup).toContain('aria-label="Video logger"');
     expect(markup).toContain('aria-label="Settings"');
     expect(markup).not.toContain('live-workout-card');
+  });
+
+  it('offers one clearly labelled empty start when there is no workout to repeat', () => {
+    const markup = renderToday();
+
+    expect(markup).toContain('No previous session of this type yet.');
+    expect(markup).toMatch(
+      /<div class="next-session-actions"><button class="pulse-button primary" type="button"><svg[^>]*>.*?<\/svg>Start empty workout<\/button><\/div>/,
+    );
+    expect(markup).not.toContain('pulse-button secondary');
   });
 
   it('replaces the recommendation with a resumable live workout', () => {

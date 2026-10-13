@@ -265,13 +265,13 @@ export function TodayScreen({
                   Start {recommendationLabel?.toLowerCase()} workout
                 </button>
                 <button className="pulse-button secondary" type="button" onClick={onStartEmpty}>
-                  Empty
+                  Start empty workout
                 </button>
               </>
             ) : (
               <button className="pulse-button primary" type="button" onClick={onStartEmpty}>
                 <Icon name="plus" />
-                Start workout
+                Start empty workout
               </button>
             )}
           </div>
