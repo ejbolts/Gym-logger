@@ -17,6 +17,23 @@ export type WorkoutDraftMovement = {
   sets: WorkoutDraftSet[];
 };
 
+/** The exercise tick explicitly completes or clears all of its sets without changing values. */
+export function setMovementCompletion(
+  movement: WorkoutDraftMovement,
+  isComplete: boolean,
+): WorkoutDraftMovement {
+  return {
+    ...movement,
+    isComplete,
+    // An explicit untick makes these planned sets again, including for inactivity saving.
+    sets: movement.sets.map((set) => ({
+      ...set,
+      completed: isComplete,
+      fromPrevious: !isComplete,
+    })),
+  };
+}
+
 /** Restore a draft only when every exercise is available; never return a partial workout. */
 export function restoreWorkoutDraftMovements(
   stored: StoredDraftMovement[],

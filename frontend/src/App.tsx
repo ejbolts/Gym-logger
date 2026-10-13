@@ -225,6 +225,7 @@ import {
 import { finalizeWorkoutIdentity } from './workoutCategory';
 import {
   replaceMovementExercise,
+  setMovementCompletion,
   restoreWorkoutDraftMovements,
   type WorkoutDraftMovement as DraftMovement,
   type WorkoutDraftSet as DraftSet,
@@ -2661,6 +2662,7 @@ function WorkoutLogger({
         );
         return {
           ...movement,
+          isComplete: update.completed === false ? false : movement.isComplete,
           sets:
             loggingSet || correctingLoggedSet
               ? suggestNextSetFromLoggedSet(
@@ -2684,7 +2686,11 @@ function WorkoutLogger({
     setMovements((current) =>
       current.map((item) =>
         item.key === movement.key
-          ? { ...item, sets: [...item.sets, emptySet(item.exercise.kind, item.sets.at(-1))] }
+          ? {
+              ...item,
+              isComplete: false,
+              sets: [...item.sets, emptySet(item.exercise.kind, item.sets.at(-1))],
+            }
           : item,
       ),
     );
@@ -3135,11 +3141,14 @@ function WorkoutLogger({
               initialWorkout?.id,
             )}
             onExerciseHistory={() => onExerciseHistory(movement.exercise.id)}
-            onExerciseComplete={(isComplete) =>
+            onExerciseComplete={(isComplete) => {
+              compactLogging.noteSetInteraction(movement.key);
               setMovements((current) =>
-                current.map((item) => (item.key === movement.key ? { ...item, isComplete } : item)),
-              )
-            }
+                current.map((item) =>
+                  item.key === movement.key ? setMovementCompletion(item, isComplete) : item,
+                ),
+              );
+            }}
             onUpdateSet={(setKey, update) => updateSet(movement.key, setKey, update)}
             onToggleSet={(item) => toggleSet(movement, item)}
             onAddSet={() => addSet(movement)}
@@ -3682,7 +3691,7 @@ function MovementCard({
   const [openOverrides, setOpenOverrides] = useState<Readonly<Record<string, boolean>>>({});
   const [typeMenuSetKey, setTypeMenuSetKey] = useState<string | null>(null);
   const [pendingSetCompletion, setPendingSetCompletion] = useState<{
-    item: DraftSet;
+    item: DraftSet | null;
     warning: SetEntryWarning;
   } | null>(null);
   const movementMenuRef = useRef<HTMLDetailsElement>(null);
@@ -3779,6 +3788,16 @@ function MovementCard({
       return;
     }
 
+    const warning = setCompletionWarning(item, index);
+    if (warning) {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      setPendingSetCompletion({ item, warning });
+      return;
+    }
+    completeSet(item);
+  }
+
+  function setCompletionWarning(item: DraftSet, index: number) {
     const otherSets = [
       ...movement.sets.slice(0, index).reverse(),
       ...movement.sets.slice(index + 1),
@@ -3793,16 +3812,30 @@ function MovementCard({
       sameTypeReference?.weight_kg ??
       otherSets.find((candidate) => candidate.weight_kg !== null)?.weight_kg ??
       null;
-    const warning = unusualSetEntryWarning(
+    return unusualSetEntryWarning(
       { reps: item.reps, weightKg: item.weight_kg, referenceWeightKg },
       weightUnit,
     );
-    if (warning) {
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-      setPendingSetCompletion({ item, warning });
-      return;
+  }
+
+  function completeExercise(isComplete: boolean) {
+    onExerciseComplete(isComplete);
+    setExpanded(!isComplete);
+    closeMovementMenu();
+  }
+
+  function requestExerciseCompletion(isComplete: boolean) {
+    if (isComplete) {
+      const warning = movement.sets
+        .map((item, index) => (item.completed ? null : setCompletionWarning(item, index)))
+        .find((warning) => warning !== null);
+      if (warning) {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        setPendingSetCompletion({ item: null, warning });
+        return;
+      }
     }
-    completeSet(item);
+    completeExercise(isComplete);
   }
 
   function renderSetDragHandle(item: DraftSet, index: number) {
@@ -4289,12 +4322,7 @@ function MovementCard({
                 : `Finish ${movement.exercise.name}`
             }
             aria-pressed={movement.isComplete}
-            onClick={() => {
-              const next = !movement.isComplete;
-              onExerciseComplete(next);
-              setExpanded(!next);
-              closeMovementMenu();
-            }}
+            onClick={() => requestExerciseCompletion(!movement.isComplete)}
           >
             ✓
           </button>
@@ -4497,10 +4525,11 @@ function MovementCard({
       {pendingSetCompletion && (
         <SetEntryConfirmationDialog
           warning={pendingSetCompletion.warning}
-          confirmLabel="Add set"
+          confirmLabel={pendingSetCompletion.item ? 'Add set' : 'Complete exercise'}
           onCancel={() => setPendingSetCompletion(null)}
           onConfirm={() => {
-            completeSet(pendingSetCompletion.item);
+            if (pendingSetCompletion.item) completeSet(pendingSetCompletion.item);
+            else completeExercise(true);
             setPendingSetCompletion(null);
           }}
         />

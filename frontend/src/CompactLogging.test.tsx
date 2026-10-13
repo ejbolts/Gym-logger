@@ -11,7 +11,7 @@ import {
   type ActiveWorkoutDraft,
 } from './workoutDraft';
 import { createWorkoutSet } from './workoutSets';
-import type { DashboardData, Exercise } from './types';
+import type { DashboardData, Exercise, TrackedWorkout } from './types';
 
 vi.mock('./api', async (importOriginal) => {
   const original = await importOriginal<typeof import('./api')>();
@@ -261,5 +261,167 @@ describe('compact workout logging', () => {
     );
     expect(container.querySelector('.workout-rest-timer')).not.toBeNull();
     expect(readActiveWorkoutDraft()!.movements[1].sets.every((item) => item.completed)).toBe(true);
+  });
+});
+
+describe('exercise tick applies to every set', () => {
+  const rowDraft = () =>
+    readActiveWorkoutDraft()!.movements.find((item) => item.exerciseId === 'row')!;
+  const exerciseTick = () =>
+    card('row').querySelector<HTMLButtonElement>('.exercise-complete-button')!;
+
+  it.each([false, true])(
+    'completes and clears all sets without changing values (compact=%s)',
+    async (compact) => {
+      if (compact) window.localStorage.setItem(COMPACT_KEY, 'enabled');
+      const draft = storedDraft();
+      const row = draft.movements[1];
+      row.notes = 'Keep these exercise notes';
+      row.sets = row.sets.map((set, index) => ({
+        ...set,
+        weight_kg: 45 + index * 15,
+        reps: 12 - index * 2,
+        rpe: 6 + index,
+        rest_seconds: 120 + index * 30,
+        notes: `Set note ${index}`,
+        warmup: index === 0,
+        set_type: index === 0 ? 'warmup' : 'normal',
+        fromPrevious: !set.completed,
+      }));
+      writeActiveWorkoutDraft(draft);
+      await mount();
+      await click(exerciseTick());
+      expect(rowDraft()).toMatchObject({
+        isComplete: true,
+        notes: row.notes,
+        sets: row.sets.map((set) => ({ ...set, completed: true, fromPrevious: false })),
+      });
+      expect(
+        readActiveWorkoutDraft()!.movements.filter((item) => item.exerciseId !== 'row'),
+      ).toEqual(draft.movements.filter((item) => item.exerciseId !== 'row'));
+      if (compact) {
+        expect(
+          card('row').querySelector('.compact-movement-summary-button')?.getAttribute('aria-label'),
+        ).toContain('3 of 3 sets done');
+        await click(
+          card('row').querySelector<HTMLButtonElement>('.compact-movement-summary-button')!,
+        );
+      } else await click(card('row').querySelector<HTMLButtonElement>('.movement-expand-toggle')!);
+      expect(
+        card('row').querySelectorAll('.row-complete-button[aria-pressed="true"]'),
+      ).toHaveLength(3);
+      await click(exerciseTick());
+      expect(rowDraft()).toMatchObject({
+        isComplete: false,
+        sets: row.sets.map((set) => ({ ...set, completed: false, fromPrevious: true })),
+      });
+      expect(
+        card('row').querySelectorAll('.row-complete-button[aria-pressed="true"]'),
+      ).toHaveLength(0);
+      // Reload recovery preserves the user's explicit untick as planned sets.
+      await act(async () => root.unmount());
+      root = createRoot(container);
+      await mount();
+      expect(rowDraft().isComplete).toBe(false);
+      expect(rowDraft().sets.every((set) => !set.completed && set.fromPrevious)).toBe(true);
+    },
+  );
+
+  it('keeps explicitly unticked exercise sets incomplete during inactivity saving', async () => {
+    const draft = storedDraft();
+    draft.movements[1].isComplete = true;
+    draft.movements[1].sets.forEach((set) => {
+      set.completed = true;
+    });
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    await click(exerciseTick());
+    vi.mocked(api.createWorkout).mockReturnValueOnce(new Promise<TrackedWorkout>(() => {}));
+    vi.spyOn(Date, 'now').mockReturnValue(readActiveWorkoutDraft()!.inactiveFinishAt! + 1000);
+    await act(async () => window.dispatchEvent(new Event('focus')));
+    expect(api.createWorkout).toHaveBeenCalledOnce();
+    const savedRow = vi
+      .mocked(api.createWorkout)
+      .mock.calls[0][0].movements.find((item) => item.exercise_id === 'row')!;
+    expect(savedRow.sets.map((set) => set.completed)).toEqual([false, false, false]);
+    expect(savedRow.sets.map((set) => set.weight_kg)).toEqual([60, 60, 60]);
+  });
+
+  it('retains unusual-entry confirmation before completing the exercise', async () => {
+    const draft = storedDraft();
+    draft.movements[1].sets[2].weight_kg = 400;
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    await click(exerciseTick());
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
+      'Is 400 kg intended?',
+    );
+    expect(rowDraft().sets.map((set) => set.completed)).toEqual([true, false, false]);
+    const dialogButton = (text: string) =>
+      [...document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button')].find(
+        (button) => button.textContent === text,
+      )!;
+    await click(dialogButton('Go back'));
+    expect(rowDraft().isComplete).toBe(false);
+    await click(exerciseTick());
+    await click(dialogButton('Complete exercise'));
+    expect(rowDraft().isComplete).toBe(true);
+    expect(rowDraft().sets.map((set) => set.completed)).toEqual([true, true, true]);
+    expect(rowDraft().sets.map((set) => set.weight_kg)).toEqual([60, 60, 400]);
+  });
+
+  it.each(['untick a set', 'add a set'])(
+    'clears the finished exercise flag when you %s',
+    async (action) => {
+      writeActiveWorkoutDraft(storedDraft());
+      await mount();
+      await click(exerciseTick());
+      await click(card('row').querySelector<HTMLButtonElement>('.movement-expand-toggle')!);
+      if (action === 'untick a set') {
+        await click(
+          card('row').querySelector<HTMLButtonElement>('[aria-label="Mark set 1 incomplete"]')!,
+        );
+        expect(rowDraft().sets.filter((set) => set.completed)).toHaveLength(2);
+      } else {
+        await click(card('row').querySelector<HTMLButtonElement>('.add-set-button')!);
+        expect(rowDraft().sets).toHaveLength(4);
+        expect(rowDraft().sets[3].completed).toBe(false);
+      }
+      expect(rowDraft().isComplete).toBe(false);
+      expect(exerciseTick().getAttribute('aria-pressed')).toBe('false');
+    },
+  );
+
+  it('also completes and clears cardio sets while retaining their metrics', async () => {
+    vi.mocked(api.listExercises).mockResolvedValue(
+      exercises.map((item) =>
+        item.id === 'row'
+          ? { ...item, name: 'Treadmill', kind: 'cardio', equipment: 'Treadmill' }
+          : item,
+      ),
+    );
+    const draft = storedDraft();
+    draft.movements[1].sets = [0, 1, 2].map((index) => ({
+      ...createWorkoutSet('cardio'),
+      key: `cardio-${index}`,
+      duration_seconds: 600 + index * 120,
+      distance_km: 1 + index,
+      calories_kcal: 100 + index * 20,
+      average_heart_rate_bpm: 130 + index * 5,
+      speed_kph: 6,
+      incline_percent: 3,
+      notes: `Cardio note ${index}`,
+      fromPrevious: true,
+    }));
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    await click(exerciseTick());
+    expect(rowDraft().sets).toEqual(
+      draft.movements[1].sets.map((set) => ({ ...set, completed: true, fromPrevious: false })),
+    );
+    await click(exerciseTick());
+    expect(rowDraft().sets).toEqual(
+      draft.movements[1].sets.map((set) => ({ ...set, completed: false, fromPrevious: true })),
+    );
   });
 });

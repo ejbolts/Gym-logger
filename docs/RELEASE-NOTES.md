@@ -2,6 +2,17 @@
 
 ## 0.5.3
 
+### Exercise and set ticks
+
+- Ticking an exercise completes all its sets, including warm-ups and suggested sets.
+  Unticking it clears every set tick. Weights, reps, RPE, rest settings and notes are kept.
+- Compact progress reflects the completed sets, and unticked exercises stay unperformed
+  during inactivity saving. Unticking an individual set or adding a new set clears the
+  exercise's finished flag. Unusually high entries still ask for confirmation before
+  completing the whole exercise.
+
+This correction remains in the same pending 0.5.3 release as the review and set-drag fixes.
+
 ### Workout set reordering
 
 - Drag a set's grip to lift the row and follow the mouse or finger vertically. Its horizontal
