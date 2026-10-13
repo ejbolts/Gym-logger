@@ -144,8 +144,11 @@ export function TodayScreen({
   );
   const recommendation = data?.recommendation ?? null;
   const template = useMemo(
-    () => (recommendation ? sessionTemplateFor(workouts, recommendation.category, today) : null),
-    [recommendation, today, workouts],
+    () =>
+      recommendation
+        ? sessionTemplateFor(workouts, recommendation.category, today, weightUnit)
+        : null,
+    [recommendation, today, workouts, weightUnit],
   );
   const currentWeek = weeks.at(-1);
   const history = weeks.slice(0, -1);

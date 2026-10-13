@@ -4164,7 +4164,7 @@ function MovementCard({
           </p>
           {lastSessionSummary && (
             <p className="movement-last-session">
-              Last {shortDate(history[0].workoutDate)} · {lastSessionSummary}
+              Last {shortDate(history[0].workoutDate)} · {lastSessionSummary} ({weightUnit})
             </p>
           )}
           {!expanded && (

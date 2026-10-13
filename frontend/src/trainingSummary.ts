@@ -1,4 +1,4 @@
-import { formatWeightNumber, weightFromKg, type WeightUnit } from './weightUnits';
+import { formatWeight, formatWeightNumber, weightFromKg, type WeightUnit } from './weightUnits';
 import type {
   Exercise,
   PersonalRecord,
@@ -255,13 +255,13 @@ export function setLabel(
   item: Pick<TrackedSet, 'weight_kg' | 'reps'>,
   unit: WeightUnit = 'kg',
 ): string {
-  return `${formatWeightNumber(item.weight_kg ?? 0, unit)} × ${item.reps ?? '–'}`;
+  return `${formatWeight(item.weight_kg ?? 0, unit)} × ${item.reps ?? '–'}`;
 }
 
 export interface SessionTemplateExercise {
   exercise: Exercise;
   topSet: TrackedSet | null;
-  /** “157.5 × 5” for strength, “30 min · 4.8 km” for cardio. */
+  /** “157.5 kg × 5” for strength, “30 min · 4.8 km” for cardio. */
   summary: string;
 }
 
@@ -290,6 +290,7 @@ export function sessionTemplateFor(
   workouts: TrackedWorkout[],
   category: WorkoutCategory,
   today: string,
+  unit: WeightUnit = 'kg',
 ): SessionTemplate | null {
   const source = workouts
     .filter(
@@ -319,7 +320,7 @@ export function sessionTemplateFor(
             movement.exercise.kind === 'cardio'
               ? cardioSummary(movement.sets)
               : topSet
-                ? setLabel(topSet)
+                ? setLabel(topSet, unit)
                 : '–',
         };
       }),

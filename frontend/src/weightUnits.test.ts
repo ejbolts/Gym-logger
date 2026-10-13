@@ -59,7 +59,7 @@ describe('preferred weight units and canonical storage', () => {
   it('labels sets, volume and derived weight in pounds without changing the source values', () => {
     const set = { weight_kg: 100, reps: 5 };
     expect(formatWeight(set.weight_kg, 'lb')).toBe('220.46 lb');
-    expect(setLabel(set, 'lb')).toBe('220.46 × 5');
+    expect(setLabel(set, 'lb')).toBe('220.46 lb × 5');
     expect(formatVolume(12_000, 'lb')).toBe('26,455 lb');
     expect(formatVolume(12_000, 'kg')).toBe('12.0 t');
     expect(fatEnergyEquivalent(7700, 'lb')).toBe('2.2 lb');

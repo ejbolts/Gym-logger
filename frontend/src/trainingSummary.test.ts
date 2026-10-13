@@ -203,6 +203,41 @@ describe('training summary helpers', () => {
     expect(sessionTemplateFor(workouts, 'push', '2026-10-06')).toBeNull();
   });
 
+  it('converts template summaries when the unit changes and preserves the canonical source sets', () => {
+    const before = structuredClone(workouts);
+    const kg = sessionTemplateFor(workouts, 'pull', '2026-10-06', 'kg');
+    const pounds = sessionTemplateFor(workouts, 'pull', '2026-10-06', 'lb');
+    const kgAgain = sessionTemplateFor(workouts, 'pull', '2026-10-06', 'kg');
+
+    expect(kg?.exercises[0].summary).toBe('157.5 kg × 5');
+    expect(pounds?.exercises[0].summary).toBe('347.23 lb × 5');
+    expect(pounds?.exercises[0].topSet?.weight_kg).toBe(157.5);
+    expect(pounds?.sourceWorkout).toBe(kg?.sourceWorkout);
+    expect(kgAgain?.exercises.map((item) => item.summary)).toEqual(
+      kg?.exercises.map((item) => item.summary),
+    );
+    expect(workouts).toEqual(before);
+  });
+
+  it('keeps cardio duration and distance in their own units in a pound template', () => {
+    const cardio = workout('cardio-template', '2026-10-05', 'cardio', [
+      {
+        exercise: exercise('bike', 'Bike', 'cardio'),
+        sets: [
+          trackedSet(0, 0, {
+            weight_kg: null,
+            reps: null,
+            duration_seconds: 1800,
+            distance_km: 4.8,
+          }),
+        ],
+      },
+    ]);
+    expect(sessionTemplateFor([cardio], 'cardio', '2026-10-06', 'lb')?.exercises[0].summary).toBe(
+      '30 min · 4.8 km',
+    );
+  });
+
   it('collapses repeated sets for the last-session summary', () => {
     expect(compactSetSummary(workouts[1].movements[0].sets)).toBe('157.5×5 ×2, 157.5×4');
     expect(compactSetSummary(workouts[0].movements[0].sets)).toBe('125×7');
