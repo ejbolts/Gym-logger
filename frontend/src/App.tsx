@@ -168,7 +168,13 @@ import {
 } from './trainingSummary';
 import { recentExerciseHistory, type ExerciseHistoryEntry } from './exerciseHistory';
 import { exerciseIconFor } from './exerciseIcons';
-import { fuzzyHighlightIndices, rankExerciseSearchMatches } from './exerciseSearch';
+import { fuzzyHighlightIndices } from './exerciseSearch';
+import {
+  exercisePickerEmptyState,
+  filterExercisePickerSections,
+  type ExerciseCategoryFilter,
+  type ExerciseListFilter,
+} from './exercisePickerFilter';
 import {
   formatMinutesDuration,
   formatSeconds,
@@ -4883,8 +4889,6 @@ function MachinePhotoDetail({
   );
 }
 
-type ExercisePickerFilter = WorkoutCategory | 'all' | 'favorites' | 'recent';
-
 function FuzzyHighlightedText({ value, query }: { value: string; query: string }) {
   const highlighted = new Set(fuzzyHighlightIndices(value, query));
   if (!highlighted.size) return value;
@@ -4926,7 +4930,8 @@ function ExercisePicker({
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<ExercisePickerFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<ExerciseCategoryFilter>('all');
+  const [listFilter, setListFilter] = useState<ExerciseListFilter>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [favoriteSavingIds, setFavoriteSavingIds] = useState<string[]>([]);
   const [createExerciseOpen, setCreateExerciseOpen] = useState(false);
@@ -4946,43 +4951,25 @@ function ExercisePicker({
   const initialViewportHeightRef = useRef(window.visualViewport?.height ?? window.innerHeight);
   const query = search.trim();
   const available = exercises.filter((exercise) => !excludedIds.includes(exercise.id));
-  const recent = recentExerciseIds
-    .slice(0, 10)
-    .map((id) => available.find((exercise) => exercise.id === id))
-    .filter((exercise): exercise is Exercise => Boolean(exercise));
-  const sections: Array<{ title: string; exercises: Exercise[] }> = [];
-
-  if (query) {
-    sections.push({
-      title: 'Search results',
-      exercises: rankExerciseSearchMatches(available, query, recentExerciseIds),
-    });
-  } else if (filter === 'favorites') {
-    sections.push({ title: 'Favorites', exercises: available.filter((item) => item.is_favorite) });
-  } else if (filter === 'recent') {
-    sections.push({ title: 'Recently used', exercises: recent });
-  } else {
-    const scoped = available.filter((exercise) => filter === 'all' || exercise.category === filter);
-    const favorites = scoped.filter((exercise) => exercise.is_favorite);
-    const favoriteIds = new Set(favorites.map((exercise) => exercise.id));
-    const recentlyUsed = recent.filter(
-      (exercise) => scoped.some((item) => item.id === exercise.id) && !favoriteIds.has(exercise.id),
-    );
-    const featuredIds = new Set([
-      ...favorites.map((exercise) => exercise.id),
-      ...recentlyUsed.map((exercise) => exercise.id),
-    ]);
-    if (favorites.length) sections.push({ title: 'Favorites', exercises: favorites });
-    if (recentlyUsed.length) sections.push({ title: 'Recently used', exercises: recentlyUsed });
-    sections.push({
-      title: filter === 'all' ? 'All exercises' : `${categoryNames[filter]} exercises`,
-      exercises: scoped.filter((exercise) => !featuredIds.has(exercise.id)),
-    });
-  }
+  const sections = filterExercisePickerSections({
+    exercises: available,
+    recentExerciseIds,
+    categoryLabels: categoryNames,
+    categoryFilter,
+    listFilter,
+    query,
+  });
   const visibleExerciseCount = sections.reduce(
     (count, section) => count + section.exercises.length,
     0,
   );
+  const emptyState = exercisePickerEmptyState({ categoryFilter, listFilter, query });
+
+  function clearFilters() {
+    setCategoryFilter('all');
+    setListFilter('all');
+    setSearch('');
+  }
 
   async function toggleFavorite(exercise: Exercise) {
     if (favoriteSavingIds.includes(exercise.id)) return;
@@ -5047,7 +5034,7 @@ function ExercisePicker({
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: 0 });
-  }, [search, filter]);
+  }, [search, categoryFilter, listFilter]);
 
   useEffect(() => {
     const visualViewport = window.visualViewport;
@@ -5141,11 +5128,11 @@ function ExercisePicker({
         </label>
         <div className="exercise-filter-selects">
           <select
-            aria-label="Body part"
-            value={filter === 'favorites' || filter === 'recent' ? 'all' : filter}
-            onChange={(event) => setFilter(event.target.value as WorkoutCategory | 'all')}
+            aria-label="Workout type"
+            value={categoryFilter}
+            onChange={(event) => setCategoryFilter(event.target.value as ExerciseCategoryFilter)}
           >
-            <option value="all">Any Body Part</option>
+            <option value="all">Any workout type</option>
             {(
               [
                 'push',
@@ -5163,13 +5150,13 @@ function ExercisePicker({
             ))}
           </select>
           <select
-            aria-label="Exercise category"
-            value={filter === 'favorites' || filter === 'recent' ? filter : 'all'}
-            onChange={(event) => setFilter(event.target.value as 'all' | 'favorites' | 'recent')}
+            aria-label="Show"
+            value={listFilter}
+            onChange={(event) => setListFilter(event.target.value as ExerciseListFilter)}
           >
-            <option value="all">Any Category</option>
+            <option value="all">All exercises</option>
             <option value="favorites">Favorites</option>
-            <option value="recent">Recently Used</option>
+            <option value="recent">Recently used</option>
           </select>
           <button
             type="button"
@@ -5192,13 +5179,22 @@ function ExercisePicker({
               ),
           )}
           {!visibleExerciseCount && (
-            <p className="muted-empty">
-              {filter === 'favorites' && !query
-                ? 'Tap the bookmark beside an exercise to add a favorite.'
-                : filter === 'recent' && !query
-                  ? 'Exercises from completed workouts will appear here.'
-                  : 'No exercises match that search.'}
-            </p>
+            <>
+              <p className="muted-empty">
+                {emptyState === 'favorites'
+                  ? 'Tap the bookmark beside an exercise to add a favorite.'
+                  : emptyState === 'recent'
+                    ? 'Exercises from completed workouts will appear here.'
+                    : emptyState === 'filtered'
+                      ? 'No exercises match these filters.'
+                      : 'No exercises are available to add.'}
+              </p>
+              {emptyState === 'filtered' && (
+                <button type="button" className="exercise-filter-reset" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
+            </>
           )}
           {pickerError && <p className="inline-error">{pickerError}</p>}
         </div>
@@ -5228,16 +5224,15 @@ function ExercisePicker({
           exercises={exercises}
           categoryLabels={categoryNames}
           initialName={query}
-          initialCategory={
-            filter === 'all' || filter === 'favorites' || filter === 'recent' ? '' : filter
-          }
+          initialCategory={categoryFilter === 'all' ? '' : categoryFilter}
           viewportHeight={viewport.height}
           viewportTop={viewport.top}
           onCreate={onCreateExercise}
           onCreated={(exercise) => {
             setCreateExerciseOpen(false);
             setPickerError(null);
-            setFilter('all');
+            setCategoryFilter('all');
+            setListFilter('all');
             setSearch(exercise.name);
             setSelectedIds((current) =>
               singleSelect ? [exercise.id] : [...new Set([...current, exercise.id])],

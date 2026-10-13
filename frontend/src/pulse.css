@@ -3447,6 +3447,19 @@ html.edge-swipe-ready .edge-swipe-indicator {
   color: #fff;
 }
 
+.exercise-picker .exercise-filter-reset {
+  display: block;
+  margin: 0.75rem auto 0;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 12px;
+  background: var(--p-surface-2);
+  color: var(--p-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .exercise-picker .exercise-list-section h3 {
   color: var(--p-muted);
   font-size: 0.6875rem;
