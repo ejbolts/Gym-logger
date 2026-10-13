@@ -36,12 +36,18 @@ MEGABYTE = 1024 * 1024
 LIMIT_KEY_PREFIX = "limit."
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
-# The messages users see. They read like any failed save and never mention a limit.
-WORKOUT_NOT_SAVED = "This workout couldn't be saved."
-EXERCISE_NOT_CREATED = "This exercise couldn't be created."
-PHOTO_NOT_UPLOADED = "This photo couldn't be uploaded."
-CARDIO_NOT_SAVED = "This cardio session couldn't be saved."
-IMPORT_NOT_SAVED = "This file couldn't be imported."
+# The messages users see. They read like any failed save and never mention a limit. Each one
+# gives a recovery step that is true for that kind of save: a new workout is kept on the device
+# while it is refused, and an edit stays open on the screen.
+RETRY_OR_ADMIN = "Try again later, or contact the app's administrator if this keeps happening."
+WORKOUT_NOT_SAVED = f"This workout couldn't be saved. It's still on this device. {RETRY_OR_ADMIN}"
+WORKOUT_CHANGES_NOT_SAVED = (
+    f"These changes couldn't be saved. Your changes are still on this screen. {RETRY_OR_ADMIN}"
+)
+EXERCISE_NOT_CREATED = f"This exercise couldn't be created. {RETRY_OR_ADMIN}"
+PHOTO_NOT_UPLOADED = f"This photo couldn't be uploaded. {RETRY_OR_ADMIN}"
+CARDIO_NOT_SAVED = f"This cardio session couldn't be saved. {RETRY_OR_ADMIN}"
+IMPORT_NOT_SAVED = f"This file couldn't be imported. {RETRY_OR_ADMIN}"
 TRY_AGAIN_SOON = "Couldn't save right now. Try again in a moment."
 
 
@@ -185,9 +191,11 @@ def check_workout_size(
             allowed_set_note,
         ),
     )
+    # An update is an edit to a saved workout, so it gets the wording for changes on screen.
+    message = WORKOUT_NOT_SAVED if existing is None else WORKOUT_CHANGES_NOT_SAVED
     for name, value, allowed in checks:
         if value > allowed:
-            raise refuse(user, name, WORKOUT_NOT_SAVED)
+            raise refuse(user, name, message)
 
 
 class SaveRateLimiter:

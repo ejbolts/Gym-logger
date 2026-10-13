@@ -90,6 +90,20 @@ function LoadProblem({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
+/** A failed load inside one section, with a retry. Shares the Profile sharing panel's styles. */
+function SectionLoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="sharing-load-error">
+      <p className="inline-error" role="alert">
+        {message}
+      </p>
+      <button type="button" className="profile-secondary" onClick={onRetry}>
+        Try again
+      </button>
+    </div>
+  );
+}
+
 /** Follow, request to follow, withdraw a request, or unfollow. */
 function FollowButton({
   profile,
@@ -171,6 +185,8 @@ function ConnectionList({
   emptyText,
   sinceLabel,
   actions,
+  loadError,
+  onRetry,
 }: {
   title: string;
   kicker: string;
@@ -178,8 +194,11 @@ function ConnectionList({
   emptyText?: string;
   sinceLabel: string;
   actions: (person: SharingConnection) => ReactNode;
+  /** Set when the list failed to load; the empty copy is then never shown. */
+  loadError: string | null;
+  onRetry: () => void;
 }) {
-  if (people.length === 0 && !emptyText) return null;
+  if (people.length === 0 && !emptyText && !loadError) return null;
   return (
     <section className="settings-panel panel sharing-connections">
       <header>
@@ -188,8 +207,9 @@ function ConnectionList({
           <h2>{title}</h2>
         </div>
       </header>
+      {loadError && <SectionLoadError message={loadError} onRetry={onRetry} />}
       {people.length === 0 ? (
-        <p className="shared-card-empty">{emptyText}</p>
+        !loadError && <p className="shared-card-empty">{emptyText}</p>
       ) : (
         <ul>
           {people.map((person) => (
@@ -221,11 +241,16 @@ export function SharedProfilesScreen({
 }) {
   const [profiles, setProfiles] = useState<SharedProfileSummary[] | null>(null);
   const [connections, setConnections] = useState<SharingConnections | null>(null);
+  const [connectionsError, setConnectionsError] = useState<string | null>(null);
   const [state, setState] = useState<LoadState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  function retry() {
+    setAttempt((count) => count + 1);
+  }
 
   useEffect(() => {
     // Refreshed whenever the screen is shown, so sharing changes appear straight away.
@@ -234,9 +259,13 @@ export function SharedProfilesScreen({
     api.sharing
       .connections()
       .then((next) => {
-        if (!cancelled) setConnections(next);
+        if (cancelled) return;
+        setConnections(next);
+        setConnectionsError(null);
       })
-      .catch(() => undefined);
+      .catch((reason: unknown) => {
+        if (!cancelled) setConnectionsError(authErrorMessage(reason));
+      });
     api.sharing
       .profiles()
       .then((next) => {
@@ -295,11 +324,13 @@ export function SharedProfilesScreen({
           {actionError}
         </p>
       )}
-      {connections && (
+      {(connections !== null || connectionsError !== null) && (
         <ConnectionList
           kicker="FOLLOW REQUESTS"
-          title={`${connections.requests.length} waiting for you`}
-          people={connections.requests}
+          title={connections ? `${connections.requests.length} waiting for you` : 'Follow requests'}
+          people={connections?.requests ?? []}
+          loadError={connectionsError}
+          onRetry={retry}
           sinceLabel="Asked"
           actions={(person) => (
             <>
@@ -338,6 +369,12 @@ export function SharedProfilesScreen({
         </p>
       ) : (
         <>
+          {state === 'error' && (
+            <SectionLoadError
+              message={error ?? 'Could not load shared profiles.'}
+              onRetry={retry}
+            />
+          )}
           <ul className="shared-profile-list" aria-label="Shared profiles">
             {profiles.map((profile) => {
               const action = followActionLabel(profile);
@@ -386,11 +423,13 @@ export function SharedProfilesScreen({
           )}
         </>
       )}
-      {connections && (
+      {(connections !== null || connectionsError !== null) && (
         <ConnectionList
           kicker="FOLLOWERS"
           title="Your followers"
-          people={connections.followers}
+          people={connections?.followers ?? []}
+          loadError={connectionsError}
+          onRetry={retry}
           sinceLabel="Following since"
           emptyText="Nobody follows you yet."
           actions={(person) => (

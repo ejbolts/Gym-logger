@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from datetime import date, timedelta
 
+import pytest
 from test_auth import named, upload_photo
 from test_cardio_energy import cardio_payload
 
@@ -12,6 +13,7 @@ from app.account_limits import (
     IMPORT_NOT_SAVED,
     PHOTO_NOT_UPLOADED,
     TRY_AGAIN_SOON,
+    WORKOUT_CHANGES_NOT_SAVED,
     WORKOUT_NOT_SAVED,
     AccountLimits,
     SaveRateLimiter,
@@ -123,7 +125,8 @@ def test_a_workout_saved_before_a_limit_was_lowered_can_still_be_edited(client, 
     )
     grown = workout(bench, sets=5, notes="x" * 40)
     assert_refused_quietly(
-        other_client.put(f"/api/workouts/{saved.json()['id']}", json=grown), WORKOUT_NOT_SAVED
+        other_client.put(f"/api/workouts/{saved.json()['id']}", json=grown),
+        WORKOUT_CHANGES_NOT_SAVED,
     )
 
 
@@ -228,6 +231,26 @@ def test_changes_are_rate_limited_per_account_but_reading_and_admins_are_not(cli
     admin_bench = named(client, "Barbell Bench Press")["id"]
     for _ in range(4):
         assert favorite(client, admin_bench).status_code == 200
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        WORKOUT_NOT_SAVED,
+        WORKOUT_CHANGES_NOT_SAVED,
+        EXERCISE_NOT_CREATED,
+        PHOTO_NOT_UPLOADED,
+        CARDIO_NOT_SAVED,
+        IMPORT_NOT_SAVED,
+        TRY_AGAIN_SOON,
+    ],
+)
+def test_refusal_messages_give_a_recovery_step_without_revealing_limits(message):
+    lowered = message.lower()
+    assert "try again" in lowered
+    assert not re.search(r"\d", message)
+    for hidden in ("limit", "quota", "storage", "maximum", "allowed", "too many", "up to"):
+        assert hidden not in lowered
 
 
 def test_rate_limiter_counts_the_last_minute_only():
