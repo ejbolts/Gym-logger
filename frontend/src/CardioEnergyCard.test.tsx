@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CardioEnergyCard } from './CardioEnergyCard';
 import type { CardioEnergyPeriod } from './types';
 
@@ -44,5 +47,26 @@ describe('cardio energy card', () => {
   });
   it('tolerates a cached dashboard from before calorie tracking', () => {
     expect(renderToStaticMarkup(<CardioEnergyCard summaries={undefined} />)).toBe('');
+  });
+  it('labels the calorie-derived fat figure as an equivalent, not burnt fat', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<CardioEnergyCard summaries={[week]} />));
+      await act(async () =>
+        container.querySelector<HTMLButtonElement>('.cardio-progress-toggle')?.click(),
+      );
+      const text = container.textContent ?? '';
+      expect(text).toContain('Fat-energy equivalent');
+      expect(text).toContain('≈ 200 g');
+      expect(text).toContain('not measured fat loss');
+      expect(text).not.toMatch(/burnt/i);
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+      vi.unstubAllGlobals();
+    }
   });
 });

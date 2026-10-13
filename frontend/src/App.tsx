@@ -7852,7 +7852,7 @@ function CardioScreen({
                 <small className="cardio-session-energy">
                   {session.calories_kcal == null
                     ? 'Calories not logged'
-                    : `${session.calories_kcal.toLocaleString()} kcal · ≈ ${fatEnergyEquivalent(session.calories_kcal, weightUnit)} fat burnt`}
+                    : `${session.calories_kcal.toLocaleString()} kcal · ≈ ${fatEnergyEquivalent(session.calories_kcal, weightUnit)} fat-energy equivalent`}
                 </small>
                 <small className="cardio-session-performance">
                   {[

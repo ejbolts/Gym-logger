@@ -146,15 +146,15 @@ export function CardioEnergyCard({ summaries }: { summaries: CardioEnergyPeriod[
               </small>
             </article>
             <article>
-              <span>Fat burnt</span>
+              <span>Fat-energy equivalent</span>
               <strong>
                 {caloriesRecorded
                   ? `≈ ${fatEnergyEquivalent(summary.calories_kcal, weightUnit)}`
                   : '—'}
               </strong>
-              <small>Calculated from logged calories</small>
+              <small>At 7,700 kcal per kg; not measured fat loss</small>
               <small className="cardio-progress-comparison">
-                {caloriesRecorded ? fatComparison : 'Not measured fat loss'}
+                {caloriesRecorded ? fatComparison : 'No calories logged'}
               </small>
             </article>
             <article>
