@@ -198,6 +198,7 @@ import {
 import { finalizeWorkoutIdentity } from './workoutCategory';
 import {
   replaceMovementExercise,
+  restoreWorkoutDraftMovements,
   type WorkoutDraftMovement as DraftMovement,
   type WorkoutDraftSet as DraftSet,
 } from './workoutMovements';
@@ -205,7 +206,11 @@ import { applySupersetSelection, clearSuperset } from './workoutSupersets';
 import { upsertWorkoutByRecency } from './workoutHistory';
 import { calculateDraftPrs } from './workoutPr';
 import { completedWorkoutDurationMinutes } from './workoutResume';
-import { isWorkoutSetAutoSavable, workoutSetForAutoSave } from './workoutAutoSave';
+import {
+  isWorkoutSetAutoSavable,
+  workoutSetAfterEdit,
+  workoutSetForAutoSave,
+} from './workoutAutoSave';
 import { readDashboardCache, writeDashboardCache } from './workoutCache';
 import { trainingDataActivityLabel } from './trainingDataRefresh';
 import {
@@ -482,7 +487,17 @@ export function App() {
   currentTabRef.current = tab;
   const [visitedTabs, setVisitedTabs] = useState(() => new Set<AppTab>([tab]));
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exerciseCatalogue, setExerciseCatalogue] = useState<{
+    exercises: Exercise[];
+    loaded: boolean;
+    error: string | null;
+  }>({ exercises: [], loaded: false, error: null });
+  const { exercises } = exerciseCatalogue;
+  const setExercises = (update: Exercise[] | ((current: Exercise[]) => Exercise[])) =>
+    setExerciseCatalogue((current) => ({
+      ...current,
+      exercises: typeof update === 'function' ? update(current.exercises) : update,
+    }));
   const [workouts, setWorkouts] = useState<TrackedWorkout[]>([]);
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
@@ -566,6 +581,11 @@ export function App() {
   const resumingWorkout = resumingWorkoutId
     ? (workouts.find((workout) => workout.id === resumingWorkoutId) ?? null)
     : null;
+  const activeDraft = editingWorkout ? null : readActiveWorkoutDraft();
+  const restoredDraftMovements = activeDraft
+    ? restoreWorkoutDraftMovements(activeDraft.movements, exercises)
+    : [];
+  const workoutCatalogueReady = exerciseCatalogue.loaded && restoredDraftMovements !== null;
   const todayMeasurement = measurements.find(
     (measurement) => measurement.measurement_date === localDate(),
   );
@@ -633,9 +653,20 @@ export function App() {
           startTransition(() => setDashboard(nextDashboard));
           void writeDashboardCache(nextDashboard);
         }),
-        api.listExercises().then((nextExercises) => {
-          startTransition(() => setExercises(nextExercises));
-        }),
+        api
+          .listExercises()
+          .then((nextExercises) => {
+            // Publish readiness with the actual catalogue, so an urgent loading update cannot
+            // mount the logger against an empty or partial list and overwrite its stored draft.
+            setExerciseCatalogue({ exercises: nextExercises, loaded: true, error: null });
+          })
+          .catch((reason: unknown) => {
+            setExerciseCatalogue((current) => ({
+              ...current,
+              error: reason instanceof Error ? reason.message : 'Could not load your exercises.',
+            }));
+            throw reason;
+          }),
         api.listWorkouts().then((nextWorkouts) => {
           startTransition(() => setWorkouts(nextWorkouts));
         }),
@@ -647,7 +678,10 @@ export function App() {
         }),
       ]);
       const firstFailure = results.find(
-        (result): result is PromiseRejectedResult => result.status === 'rejected',
+        (result, index): result is PromiseRejectedResult =>
+          result.status === 'rejected' &&
+          // Recovery already explains catalogue failures and provides the retry action.
+          (index !== 1 || (activeWorkoutStartedAt === null && tab !== 'log')),
       );
 
       if (!silent)
@@ -1101,44 +1135,69 @@ export function App() {
             activeWorkoutStartedAt !== null ||
             (visitedTabs.has('log') && editingWorkout !== null)) && (
             <CachedTabPanel active={tab === 'log'}>
-              <WorkoutLogger
-                key={
-                  editingWorkout
-                    ? `edit-${editingWorkout.id}`
-                    : `active-${activeWorkoutStartedAt ?? workoutStartDate}`
-                }
-                exercises={exercises}
-                recommendation={dashboard?.recommendation ?? null}
-                template={workoutTemplate}
-                initialDate={workoutStartDate}
-                initialWorkout={editingWorkout}
-                resumingWorkout={resumingWorkout}
-                currentBodyweight={measurements[0]?.weight_kg ?? null}
-                historicalWorkouts={workouts}
-                restTimerEnabled={restTimerEnabled}
-                categoryColors={workoutTypeColors}
-                onExerciseHistory={(exerciseId) => openHistorySection('progress', exerciseId)}
-                onExerciseFavorite={updateExerciseFavorite}
-                onCreateExercise={createExercise}
-                onSave={saveWorkout}
-                onAutoSaved={() =>
-                  setMessage('Your inactive workout passed its time limit and was auto-saved.')
-                }
-                activeStartedAt={activeWorkoutStartedAt}
-                onClose={navigateBack}
-                onDelete={() => {
-                  if (editingWorkout) {
-                    void deleteWorkout(editingWorkout);
-                    setTab('history');
-                  } else {
-                    clearActiveWorkoutDraft();
-                    setActiveWorkoutStartedAt(null);
-                    setResumingWorkoutId(null);
-                    setTab('dashboard');
+              {workoutCatalogueReady ? (
+                <WorkoutLogger
+                  key={
+                    editingWorkout
+                      ? `edit-${editingWorkout.id}`
+                      : `active-${activeWorkoutStartedAt ?? workoutStartDate}`
                   }
-                  setEditingWorkout(null);
-                }}
-              />
+                  exercises={exercises}
+                  restoredDraftMovements={restoredDraftMovements}
+                  recommendation={dashboard?.recommendation ?? null}
+                  template={workoutTemplate}
+                  initialDate={workoutStartDate}
+                  initialWorkout={editingWorkout}
+                  resumingWorkout={resumingWorkout}
+                  currentBodyweight={measurements[0]?.weight_kg ?? null}
+                  historicalWorkouts={workouts}
+                  restTimerEnabled={restTimerEnabled}
+                  categoryColors={workoutTypeColors}
+                  onExerciseHistory={(exerciseId) => openHistorySection('progress', exerciseId)}
+                  onExerciseFavorite={updateExerciseFavorite}
+                  onCreateExercise={createExercise}
+                  onSave={saveWorkout}
+                  onAutoSaved={() =>
+                    setMessage('Your inactive workout passed its time limit and was auto-saved.')
+                  }
+                  activeStartedAt={activeWorkoutStartedAt}
+                  onClose={navigateBack}
+                  onDelete={() => {
+                    if (editingWorkout) {
+                      void deleteWorkout(editingWorkout);
+                      setTab('history');
+                    } else {
+                      clearActiveWorkoutDraft();
+                      setActiveWorkoutStartedAt(null);
+                      setResumingWorkoutId(null);
+                      setTab('dashboard');
+                    }
+                    setEditingWorkout(null);
+                  }}
+                />
+              ) : (
+                <section className="logger-screen content-page" aria-live="polite">
+                  <OverlayScreenHeader
+                    title="Workout recovery"
+                    subtitle="Your workout is saved on this device"
+                    onBack={navigateBack}
+                  />
+                  <p>
+                    {exerciseCatalogue.error
+                      ? 'Your exercises could not be loaded.'
+                      : 'Some exercises in your saved workout are not available yet.'}{' '}
+                    Your saved workout is safe on this device. Reload the exercises to resume it.
+                  </p>
+                  {exerciseCatalogue.error && <p>{exerciseCatalogue.error}</p>}
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={() => void refreshData({ activityLabel: 'Reloading exercises…' })}
+                  >
+                    Retry loading exercises
+                  </button>
+                </section>
+              )}
             </CachedTabPanel>
           )}
         {!loading && (tab === 'body' || visitedTabs.has('body')) && (
@@ -1863,6 +1922,7 @@ function localCalendarDate(value: Date): string {
 
 function WorkoutLogger({
   exercises,
+  restoredDraftMovements,
   categoryColors,
   recommendation,
   template,
@@ -1882,6 +1942,7 @@ function WorkoutLogger({
   onDelete,
 }: {
   exercises: Exercise[];
+  restoredDraftMovements: DraftMovement[];
   categoryColors: WorkoutTypeColors;
   recommendation: WorkoutRecommendation | null;
   template: SessionTemplate | null;
@@ -1965,23 +2026,7 @@ function WorkoutLogger({
           })),
         }))
       : restoredDraft
-        ? restoredDraft.movements.flatMap((movement) => {
-            const exercise = exercises.find((item) => item.id === movement.exerciseId);
-            return exercise
-              ? [
-                  {
-                    key: movement.key,
-                    exercise,
-                    notes: movement.notes,
-                    machinePhotoIds: movement.machinePhotoIds,
-                    machinePhotosInitialized: true,
-                    supersetKey: movement.supersetKey,
-                    isComplete: movement.isComplete ?? false,
-                    sets: movement.sets,
-                  },
-                ]
-              : [];
-          })
+        ? restoredDraftMovements
         : (template?.exercises ?? []).map(({ exercise }) => ({
             key: crypto.randomUUID(),
             exercise,
@@ -2456,7 +2501,7 @@ function WorkoutLogger({
       current.map((movement) => {
         if (movement.key !== movementKey) return movement;
         const sets = movement.sets.map((item) =>
-          item.key === setKey ? { ...item, ...update, fromPrevious: false } : item,
+          item.key === setKey ? workoutSetAfterEdit(item, update) : item,
         );
         return {
           ...movement,
