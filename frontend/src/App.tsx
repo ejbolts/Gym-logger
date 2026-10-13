@@ -922,11 +922,11 @@ function AppContent() {
 
   async function deleteSampleData() {
     try {
-      await withBackgroundActivity('Removing sample workouts…', async () => {
+      await withBackgroundActivity('Removing sample data…', async () => {
         await api.deleteSampleData();
         await refreshData({ activityLabel: null });
       });
-      showToast('Sample workouts removed. They will not be seeded again.');
+      showToast('Sample data removed. It will not be seeded again.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not remove sample data.');
     }
@@ -1038,7 +1038,7 @@ function AppContent() {
 
   async function removeSampleDataFromHome() {
     await removeSampleData();
-    setMessage('Sample data removed. Home now shows only your own training.');
+    showToast('Sample data removed. Home now shows only your own training.');
   }
 
   function closeWelcome() {
