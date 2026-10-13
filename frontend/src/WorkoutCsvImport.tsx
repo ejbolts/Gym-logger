@@ -23,10 +23,20 @@ export function WorkoutImportReview({
       <div className="workout-import-review">
         <p className="workout-import-filename">{fileName}</p>
         <p>
-          <strong>{preview.workouts_to_create} sessions</strong> and{' '}
-          <strong>{preview.sets_to_import} sets</strong> will be added.
+          <strong>
+            {preview.workouts_to_create} {preview.workouts_to_create === 1 ? 'session' : 'sessions'}
+          </strong>{' '}
+          and{' '}
+          <strong>
+            {preview.sets_to_import} {preview.sets_to_import === 1 ? 'set' : 'sets'}
+          </strong>{' '}
+          will be added.
           {preview.workouts_to_skip > 0 && (
-            <> {preview.workouts_to_skip} identical existing sessions will be skipped.</>
+            <>
+              {' '}
+              {preview.workouts_to_skip} identical existing{' '}
+              {preview.workouts_to_skip === 1 ? 'session' : 'sessions'} will be skipped.
+            </>
           )}
         </p>
         <p>
@@ -57,7 +67,8 @@ export function WorkoutImportReview({
                 <span>{session.duplicate ? 'Skip duplicate' : 'Add session'}</span>
               </div>
               <small>
-                {session.workout_date} · {session.sets} sets · {session.exercises.join(', ')}
+                {session.workout_date} · {session.sets} {session.sets === 1 ? 'set' : 'sets'} ·{' '}
+                {session.exercises.join(', ')}
               </small>
             </li>
           ))}

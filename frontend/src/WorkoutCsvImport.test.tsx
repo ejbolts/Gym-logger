@@ -137,7 +137,7 @@ describe('workout CSV review flow', () => {
       />,
     );
     expect(markup).toContain('Review workout import');
-    expect(markup).toContain('1 sessions');
+    expect(markup).toContain('1 session');
     expect(markup).toContain('2 sets');
     expect(markup).toContain('New exercises: Safety Test Press');
     expect(markup).toContain('Skip duplicate');
