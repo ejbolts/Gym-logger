@@ -80,34 +80,57 @@ export const HOME_SECTIONS = [
 }>;
 
 export type HomeSectionId = (typeof HOME_SECTIONS)[number]['id'];
+export type HomeSectionWidth = 'compact' | 'full';
+export type HomeSectionWidths = Partial<Record<HomeSectionId, HomeSectionWidth>>;
 export interface HomeLayout {
   order: HomeSectionId[];
   hidden: HomeSectionId[];
+  /** Missing entries retain the original adaptive row packing. */
+  widths?: HomeSectionWidths;
 }
 
 export function defaultHomeLayout(): HomeLayout {
-  return { order: HOME_SECTIONS.map((section) => section.id), hidden: [] };
+  return { order: HOME_SECTIONS.map((section) => section.id), hidden: [], widths: {} };
 }
 
 /** Fill each row when hiding or moving a small card leaves fewer neighbours. */
-export function homeSectionSpans(ids: HomeSectionId[]): number[] {
+export function homeSectionSpans(ids: HomeSectionId[], widths: HomeSectionWidths = {}): number[] {
   const spans: number[] = [];
+  const sizeFor = (id: HomeSectionId) => {
+    const size = HOME_SECTIONS.find((section) => section.id === id)!.size;
+    return widths[id] === 'full'
+      ? 'full'
+      : widths[id] === 'compact' && size === 'full'
+        ? 'half'
+        : size;
+  };
   for (let start = 0; start < ids.length;) {
-    const size = HOME_SECTIONS.find((section) => section.id === ids[start])!.size;
+    const size = sizeFor(ids[start]);
     let end = start + 1;
-    while (
-      end < ids.length &&
-      HOME_SECTIONS.find((section) => section.id === ids[end])!.size === size
-    )
-      end++;
+    while (end < ids.length && sizeFor(ids[end]) === size) end++;
     const perRow = size === 'stat' ? 3 : size === 'half' ? 2 : 1;
     for (let row = start; row < end; row += perRow) {
       const count = Math.min(perRow, end - row);
-      for (let item = 0; item < count; item++) spans.push(6 / count);
+      const compactCount = ids
+        .slice(row, row + count)
+        .filter((id) => widths[id] === 'compact').length;
+      const compactSpan = 6 / perRow;
+      const adaptiveSpan = (6 - compactCount * compactSpan) / (count - compactCount || 1);
+      for (let item = 0; item < count; item++)
+        spans.push(widths[ids[row + item]] === 'compact' ? compactSpan : adaptiveSpan);
     }
     start = end;
   }
   return spans;
+}
+
+/** Explicit compact widths stay compact even when a card has no neighbour. */
+export function toggleHomeSectionWidth(
+  layout: HomeLayout,
+  id: HomeSectionId,
+  span: number,
+): HomeLayout {
+  return { ...layout, widths: { ...layout.widths, [id]: span === 6 ? 'compact' : 'full' } };
 }
 
 /** Move to the target's position, preserving hidden sections and every other section. */

@@ -6,6 +6,7 @@ import {
   homeSectionSpans,
   moveHomeSection,
   toggleHomeSection,
+  toggleHomeSectionWidth,
   type HomeLayout,
   type HomeSectionId,
 } from './homeLayout';
@@ -44,7 +45,7 @@ export function HomeLayoutSections({
     (id) => !layout.hidden.includes(id) && (edit || sections[id] != null),
   );
   const hidden = layout.order.filter((id) => layout.hidden.includes(id));
-  const spans = homeSectionSpans(visible);
+  const spans = homeSectionSpans(visible, layout.widths);
   const [dragging, setDragging] = useState<HomeSectionId | null>(null);
   const [over, setOver] = useState<HomeSectionId | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -127,7 +128,7 @@ export function HomeLayoutSections({
             </button>
           </div>
           <p>
-            Drag a handle to move a card. Tap <b>−</b> to hide.
+            Drag a handle to move a card. Use the width button to resize. Tap <b>−</b> to hide.
           </p>
           <div className="home-layout-options">
             {hidden.length > 0 && (
@@ -180,6 +181,7 @@ export function HomeLayoutSections({
           <div
             key={id}
             data-home-section={id}
+            data-home-span={spans[index]}
             style={{ gridColumn: `span ${spans[index]}` }}
             className={`home-section home-section-${HOME_SECTIONS.find((section) => section.id === id)!.size}${dragging === id ? ' is-dragging' : ''}${over === id ? ' is-drop-target' : ''}`}
           >
@@ -206,6 +208,34 @@ export function HomeLayoutSections({
                     }}
                   >
                     <span aria-hidden="true">−</span>
+                  </button>
+                  <button
+                    className="home-card-resize"
+                    type="button"
+                    disabled={busy}
+                    aria-label={`${spans[index] === 6 ? 'Shrink' : 'Expand'} ${titleFor(id)} ${spans[index] === 6 ? 'to compact width' : 'to full width'}`}
+                    title={spans[index] === 6 ? 'Shrink to compact width' : 'Expand to full width'}
+                    onClick={() => {
+                      edit.onChange(toggleHomeSectionWidth(layout, id, spans[index]));
+                      setAnnouncement(
+                        `${titleFor(id)} set to ${spans[index] === 6 ? 'compact' : 'full'} width.`,
+                      );
+                    }}
+                  >
+                    <svg
+                      className="pulse-icon"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        d={
+                          spans[index] === 6
+                            ? 'M3 12h7m-3-3 3 3-3 3m14-3h-7m3-3-3 3 3 3'
+                            : 'M10 12H3m3-3-3 3 3 3m8-3h7m-3-3 3 3-3 3'
+                        }
+                      />
+                    </svg>
                   </button>
                   <button
                     className="home-drag-handle"

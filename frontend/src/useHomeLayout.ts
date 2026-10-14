@@ -3,7 +3,7 @@ import { api } from './api';
 import { defaultHomeLayout } from './homeLayout';
 import { useUserSession } from './userContext';
 
-export function useHomeLayout() {
+export function useHomeLayout(active = true) {
   const { user } = useUserSession();
   const [layout, setLayout] = useState(defaultHomeLayout);
   const [loaded, setLoaded] = useState(!user);
@@ -15,6 +15,14 @@ export function useHomeLayout() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const editButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (active) return;
+    setEditing(false);
+    setDraft(defaultHomeLayout());
+    setError(null);
+    setMessage('');
+  }, [active]);
 
   useEffect(() => {
     if (!user) return;
@@ -54,7 +62,11 @@ export function useHomeLayout() {
     editButton,
     retry: () => setAttempt((value) => value + 1),
     edit: () => {
-      setDraft({ order: [...layout.order], hidden: [...layout.hidden] });
+      setDraft({
+        order: [...layout.order],
+        hidden: [...layout.hidden],
+        widths: { ...layout.widths },
+      });
       setError(null);
       setMessage('');
       setEditing(true);

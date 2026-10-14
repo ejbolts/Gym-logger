@@ -61,8 +61,9 @@ import {
   summarizeBodyWeightTrend,
 } from './bodyTrend';
 import type { BodyTrendDuration, BodyTrendRange, BodyTrendStatistic } from './bodyTrend';
-import { summarizeBodyHistory } from './bodyMeasurementHistory';
+import { bodyHistoryWithWeightChanges, summarizeBodyHistory } from './bodyMeasurementHistory';
 import type { BodyHistoryPeriod } from './bodyMeasurementHistory';
+import { BodyHistoryWeightChange } from './BodyHistoryWeightChange';
 import {
   DEFAULT_BODY_TREND_PREFERENCE,
   loadBodyTrendPreference,
@@ -1108,6 +1109,7 @@ function AppContent() {
               <TodaySkeleton />
             ) : (
               <TodayScreen
+                active={tab === 'dashboard'}
                 data={dashboard}
                 workouts={workouts}
                 measurements={measurements}
@@ -6560,11 +6562,20 @@ export function BodyCompositionScreen({
   const [trendStatistic, setTrendStatistic] = useState<BodyTrendStatistic>(
     trendPreference.statistic,
   );
-  const historySummaries =
-    historyView === 'daily' ? [] : summarizeBodyHistory(measurements, historyView, trendStatistic);
+  const activeGoal = goals.find((goal) => goal.active) ?? null;
+  const dailyHistory = bodyHistoryWithWeightChanges(
+    measurements
+      .slice()
+      .sort((first, second) => second.measurement_date.localeCompare(first.measurement_date)),
+    activeGoal,
+  );
+  const historySummaries = bodyHistoryWithWeightChanges(
+    historyView === 'daily' ? [] : summarizeBodyHistory(measurements, historyView, trendStatistic),
+    activeGoal,
+  );
   const historyCount = historyView === 'daily' ? measurements.length : historySummaries.length;
   const checkInPageCount = Math.max(1, Math.ceil(historyCount / HISTORY_PAGE_SIZE));
-  const pagedMeasurements = measurements.slice(
+  const pagedMeasurements = dailyHistory.slice(
     (checkInPage - 1) * HISTORY_PAGE_SIZE,
     checkInPage * HISTORY_PAGE_SIZE,
   );
@@ -6573,7 +6584,6 @@ export function BodyCompositionScreen({
     checkInPage * HISTORY_PAGE_SIZE,
   );
   const latest = measurements[0];
-  const activeGoal = goals.find((goal) => goal.active) ?? null;
   const targetWeight = goalTarget;
   const hasValidTarget =
     targetWeight !== null &&
@@ -7015,7 +7025,13 @@ export function BodyCompositionScreen({
                   <small>{measurement.measurement_date.slice(0, 4)}</small>
                 </div>
                 <div className="body-history-weight">
-                  <strong>{formatWeight(measurement.weight_kg, weightUnit)}</strong>
+                  <strong>
+                    {formatWeight(measurement.weight_kg, weightUnit)}
+                    <BodyHistoryWeightChange
+                      change={measurement.weight_change}
+                      comparison="previous check-in"
+                    />
+                  </strong>
                   <small>{measurement.is_sample && 'Sample'}</small>
                   {measurement.notes && <p>{measurement.notes}</p>}
                 </div>
@@ -7115,6 +7131,10 @@ export function BodyCompositionScreen({
               <div className="body-history-weight">
                 <strong>
                   {weightFromKg(summary.weight_kg, weightUnit).toFixed(1)} {weightUnit}
+                  <BodyHistoryWeightChange
+                    change={summary.weight_change}
+                    comparison={`previous ${historyView === 'week' ? 'week' : 'month'} with check-ins`}
+                  />
                 </strong>
                 <small>
                   {summary.count} {summary.count === 1 ? 'check-in' : 'check-ins'}

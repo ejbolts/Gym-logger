@@ -81,6 +81,7 @@ const RECORD_LABELS: Partial<Record<PersonalRecord['record_type'], string>> = {
 };
 
 export interface TodayScreenProps {
+  active?: boolean;
   data: DashboardData | null;
   workouts: TrackedWorkout[];
   measurements: BodyMeasurement[];
@@ -109,6 +110,7 @@ export interface TodayScreenProps {
 }
 
 export function TodayScreen({
+  active = true,
   data,
   workouts,
   measurements,
@@ -198,7 +200,7 @@ export function TodayScreen({
       : CATEGORY_LABELS[recommendation.category]
     : null;
 
-  const home = useHomeLayout();
+  const home = useHomeLayout(active);
   const sections: Record<HomeSectionId, ReactNode> = {
     'next-workout':
       workoutStartedAt === null ? (

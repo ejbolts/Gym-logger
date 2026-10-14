@@ -30,6 +30,9 @@ LAYOUT_KEY = "home_layout"
 class HomeLayout(BaseModel):
     order: list[HomeSection] = Field(default_factory=lambda: SECTION_IDS.copy(), max_length=10)
     hidden: list[HomeSection] = Field(default_factory=list, max_length=10)
+    widths: dict[HomeSection, Literal["compact", "full"]] = Field(
+        default_factory=dict, max_length=10
+    )
 
     @model_validator(mode="after")
     def validate_sections(self) -> HomeLayout:

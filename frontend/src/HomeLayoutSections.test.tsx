@@ -42,6 +42,8 @@ describe('Home layout rendering', () => {
     );
     expect(markup).toContain('aria-label="Drag Next workout to reorder"');
     expect(markup).toContain('aria-label="Hide Workouts"');
+    expect(markup).toContain('aria-label="Expand Workouts to full width"');
+    expect(markup).toContain('aria-label="Shrink Daily check-in to compact width"');
     expect(markup).toContain('class="home-section-content" inert=""');
     expect(markup).toContain('<p>workouts</p>');
     expect(markup).not.toContain('data-home-section="consistency"');
@@ -58,6 +60,7 @@ describe('Home layout rendering', () => {
     expect(markup).not.toContain('inert=""');
     expect(markup).not.toContain('home-drag-handle');
     expect(markup).not.toContain('home-card-hide');
+    expect(markup).not.toContain('home-card-resize');
   });
 
   it('can configure next-workout visibility during an active workout', () => {
