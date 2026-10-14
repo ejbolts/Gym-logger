@@ -1,0 +1,25 @@
+.body-history-panel .body-history-weight strong {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.body-history-weight-change {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #a6a5a2;
+}
+
+.body-history-weight-change .pulse-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  stroke-width: 2.5;
+}
+
+.body-history-weight-change.favorable {
+  color: #69d89a;
+}
+
+.body-history-weight-change.unfavorable {
+  color: #ff8188;
+}

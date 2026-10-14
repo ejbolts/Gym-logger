@@ -5,6 +5,7 @@ import {
   homeSectionSpans,
   moveHomeSection,
   toggleHomeSection,
+  toggleHomeSectionWidth,
 } from './homeLayout';
 
 describe('Home layout edits', () => {
@@ -36,5 +37,48 @@ describe('Home layout edits', () => {
     expect(hidden.hidden).toEqual(['workouts']);
     expect(saved.hidden).toEqual([]);
     expect(toggleHomeSection(hidden, 'workouts')).toEqual(saved);
+  });
+
+  it('keeps explicitly resized cards at their chosen width and preserves default packing', () => {
+    expect(
+      homeSectionSpans(['workouts', 'cardio-sessions', 'weekly-bodyweight'], {
+        workouts: 'full',
+      }),
+    ).toEqual([6, 3, 3]);
+    expect(
+      homeSectionSpans(['daily-check-in', 'records'], {
+        'daily-check-in': 'compact',
+        records: 'compact',
+      }),
+    ).toEqual([3, 3]);
+    expect(homeSectionSpans(['daily-check-in'], { 'daily-check-in': 'compact' })).toEqual([3]);
+    expect(homeSectionSpans(['workouts'], { workouts: 'compact' })).toEqual([2]);
+  });
+
+  it('resizes without mutating saved widths, order or visibility and resets overrides', () => {
+    const saved = { ...defaultHomeLayout(), widths: { records: 'compact' as const } };
+    const compact = toggleHomeSectionWidth(saved, 'daily-check-in', 6);
+    expect(compact.widths).toEqual({ records: 'compact', 'daily-check-in': 'compact' });
+    expect(compact.order).toEqual(saved.order);
+    expect(compact.hidden).toEqual(saved.hidden);
+    expect(saved.widths).toEqual({ records: 'compact' });
+    expect(toggleHomeSectionWidth(compact, 'daily-check-in', 3).widths).toEqual({
+      records: 'compact',
+      'daily-check-in': 'full',
+    });
+    expect(moveHomeSection(compact, 'records', 'workouts').widths).toEqual(compact.widths);
+    expect(toggleHomeSection(compact, 'records').widths).toEqual(compact.widths);
+    expect(defaultHomeLayout().widths).toEqual({});
+  });
+
+  it('returns expanded stats to their shared row when shrinking and fills remaining space', () => {
+    const stats = ['workouts', 'cardio-sessions', 'weekly-bodyweight'] as const;
+    const expanded = toggleHomeSectionWidth(defaultHomeLayout(), 'workouts', 2);
+    expect(homeSectionSpans([...stats], expanded.widths)).toEqual([6, 3, 3]);
+    const shrunk = toggleHomeSectionWidth(expanded, 'workouts', 6);
+    expect(homeSectionSpans([...stats], shrunk.widths)).toEqual([2, 2, 2]);
+    expect(homeSectionSpans(['workouts', 'cardio-sessions'], shrunk.widths)).toEqual([2, 4]);
+    expect(homeSectionSpans(['cardio-sessions', 'workouts'], shrunk.widths)).toEqual([4, 2]);
+    expect(homeSectionSpans(['workouts', 'consistency'], shrunk.widths)).toEqual([2, 6]);
   });
 });

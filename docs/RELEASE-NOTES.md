@@ -1,5 +1,35 @@
 # Gym Logger release notes
 
+## 0.5.4
+
+- In **Today > Edit Home**, use the resize button beside a card's drag handle to
+  switch between compact and full width. Save widths with the card order and
+  visibility across devices. Cancel discards edits; Reset layout restores default
+  sizing. Existing layouts keep their automatic sizing until a card is resized.
+- The **Daily check-in** weight field is vertically centred with its minus and
+  plus buttons. Compact cards move Log/Update below the weight controls.
+- Switching away from **Today** cancels layout editing and discards unsaved
+  changes. Returning to Today shows the saved layout.
+- **Body** history shows an up/down arrow beside each changed weight. For a cut,
+  weight loss is green and gain is red; for a bulk, gain is green and loss is red.
+  The active goal's start and target weights determine the direction. No active
+  goal or a maintenance target uses neutral arrows. Unchanged weights and the
+  oldest entry have no arrow.
+- Daily entries compare with the previous check-in; weekly and monthly summaries
+  compare with the previous period containing check-ins. Comparisons continue
+  across pages and use stored kilogram values for either display unit.
+- No database migration is required; card widths use existing account settings.
+
+<img src="screenshots/releases/0.5.4-home-card-widths.png" alt="Today in edit mode with the Daily check-in field centred between minus and plus buttons, width controls beside the drag handles, and Body weight expanded across the row." width="390">
+
+Expand or shrink Home cards without leaving the dashboard. Captured at phone width
+from the verified 0.5.4 build with fictional records in a separate sample database.
+
+<img src="screenshots/releases/0.5.4-body-goal-arrows.png" alt="Weekly bodyweight history for a cutting goal shows green downward arrows for weight loss and a red upward arrow for a weight gain." width="390">
+
+Arrows show the direction of change, with colours reflecting the active goal.
+Both cut and bulk goals were exercised with the isolated sample account.
+
 ## 0.5.3
 
 ### User-review corrections before deployment

@@ -16,6 +16,52 @@ export interface BodyHistorySummary {
   count: number;
 }
 
+interface BodyHistoryGoal {
+  start_weight_kg: number;
+  target_weight_kg: number;
+}
+
+export interface BodyHistoryWeightChange {
+  direction: 'up' | 'down';
+  status: 'favorable' | 'unfavorable' | 'neutral';
+  goalDirection: 'loss' | 'gain' | null;
+}
+
+function weightDirection(current: number, previous: number): 'up' | 'down' | null {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return null;
+  // Aggregates can differ by floating-point noise even when their weights are equal.
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(current), Math.abs(previous)) * 8;
+  if (Math.abs(current - previous) <= tolerance) return null;
+  return current > previous ? 'up' : 'down';
+}
+
+/** Compare newest-first history before pagination, using stored kg rather than display units. */
+export function bodyHistoryWithWeightChanges<T extends { weight_kg: number }>(
+  history: T[],
+  goal: BodyHistoryGoal | null,
+): (T & { weight_change: BodyHistoryWeightChange | null })[] {
+  const goalDirection = goal ? weightDirection(goal.target_weight_kg, goal.start_weight_kg) : null;
+  return history.map((entry, index) => {
+    const previous = history[index + 1];
+    const direction = previous ? weightDirection(entry.weight_kg, previous.weight_kg) : null;
+    return {
+      ...entry,
+      weight_change: direction
+        ? {
+            direction,
+            status: goalDirection
+              ? direction === goalDirection
+                ? 'favorable'
+                : 'unfavorable'
+              : 'neutral',
+            goalDirection:
+              goalDirection === 'down' ? 'loss' : goalDirection === 'up' ? 'gain' : null,
+          }
+        : null,
+    };
+  });
+}
+
 function statistic(values: number[], selected: BodyTrendStatistic): number | null {
   if (values.length === 0) return null;
   if (selected === 'average') {
