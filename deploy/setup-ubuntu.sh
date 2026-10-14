@@ -325,7 +325,7 @@ Setup finished.
   App logs:      sudo journalctl -u gym-logger -f
   Caddy logs:    sudo journalctl -u caddy -f
   Update:        sudo bash ${APP_DIR}/deploy/update.sh
-  Backups:       sudo bash ${APP_DIR}/deploy/backup.sh   (see docs/DEPLOY-ORACLE-CLOUD.md for a schedule)
+  Backups:       sudo bash ${APP_DIR}/deploy/backup.sh
   Admin CLI:     cd ${APP_DIR} && sudo -u ${APP_USER} .venv/bin/python -m app.manage list-users
 
 Next: open https://${DOMAIN} in a browser and create the first account with your invite code.

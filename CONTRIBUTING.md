@@ -4,7 +4,7 @@ Thanks for helping improve Gym Logger. Bug reports, documentation, accessibility
 
 ## Before you start
 
-- Read [README.md](README.md) for architecture, setup and checks, and [AGENTS.md](AGENTS.md) for verification and release conventions.
+- Read [README.md](README.md) for the app overview, the [technical reference](docs/TECHNICAL-REFERENCE.md) for local setup and checks, and [AGENTS.md](AGENTS.md) for verification and release conventions.
 - Search existing issues and open pull requests to avoid duplicate work. Discuss large features or schema changes in an issue before implementation.
 - Bug reports should include the app version, browser/device, reproduction steps, expected behavior and actual behavior. Use synthetic examples and remove personal information from screenshots.
 - Do not post passwords, session cookies, invite codes, workout records, uploads or credentials. Report security concerns privately to the maintainer; use GitHub's private vulnerability reporting if it is available on the repository.
@@ -12,7 +12,7 @@ Thanks for helping improve Gym Logger. Bug reports, documentation, accessibility
 ## Make a focused change
 
 1. Fork the repository if needed, clone it and create a feature branch from current `master`. Contributors with write access can use a branch in this repository. Keep one purpose per pull request.
-2. Follow the README's local setup using Python 3.12 and Node.js 20+. Use mock YouTube uploads and a separate sample database, upload directory, VAPID key and session-cookie name. Never develop against real user data or a running stable checkout.
+2. Follow the [local setup instructions](docs/TECHNICAL-REFERENCE.md#first-local-run-mock-youtube) using Python 3.12 and Node.js 20+. Use mock YouTube uploads and a separate sample database, upload directory, VAPID key and session-cookie name. Never develop against real user data or a running stable checkout.
 3. Follow existing React/TypeScript and FastAPI/SQLAlchemy patterns. Label fields, support keyboard navigation and small screens, and respect reduced motion. Preserve account isolation and require authentication on new APIs.
 4. Add regression tests for meaningful behavior changes. For schema changes, include an Alembic migration and test an existing database upgrade; creating fresh tables is not an upgrade test.
 5. Run the checks below and exercise changed behavior with sample data. Include a reviewed screenshot for visible changes and a short recording when a sequence is needed to explain the behavior.

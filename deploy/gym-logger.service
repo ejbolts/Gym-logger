@@ -1,10 +1,9 @@
 # systemd unit for Gym Logger (FastAPI backend, serves the built PWA).
 # Installed to /etc/systemd/system/gym-logger.service by deploy/setup-ubuntu.sh.
-# Full walkthrough: docs/DEPLOY-ORACLE-CLOUD.md
 
 [Unit]
 Description=Gym Logger (FastAPI + SQLite, multi-user)
-Documentation=https://github.com/ejbolts/Gym-video-logger/blob/master/docs/DEPLOY-ORACLE-CLOUD.md
+Documentation=https://github.com/ejbolts/Gym-video-logger/blob/master/README.md
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=300
