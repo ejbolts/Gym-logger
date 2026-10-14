@@ -42,7 +42,7 @@ export async function fetchRelease(): Promise<Release | null> {
   }
 }
 
-/** Checks once after sign-in, and again on reconnection or returning to the app. */
+/** Check while the app stays open, as well as on reconnection and returning. */
 export function watchReleases(
   onRelease: (release: Release) => void,
   load: () => Promise<Release | null> = fetchRelease,
@@ -64,12 +64,14 @@ export function watchReleases(
   window.addEventListener('online', check);
   window.addEventListener('focus', check);
   document.addEventListener('visibilitychange', check);
+  const interval = setInterval(check, 60_000);
   void check();
   return () => {
     stopped = true;
     window.removeEventListener('online', check);
     window.removeEventListener('focus', check);
     document.removeEventListener('visibilitychange', check);
+    clearInterval(interval);
   };
 }
 

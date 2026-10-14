@@ -9,6 +9,11 @@ import {
 } from './releaseAnnouncements';
 import { parseRelease } from './releaseMetadata';
 
+const screenshot = {
+  url: 'https://raw.githubusercontent.com/owner/repo/0123456789abcdef0123456789abcdef01234567/docs/screenshots/sample-release.png',
+  alt: 'Sample release notification and refresh button',
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -30,24 +35,29 @@ describe('release announcements', () => {
       { ...metadata, url: 'https://user@github.com/' },
       { ...metadata, image: null },
       { ...metadata, image: {} },
-      { ...metadata, image: { ...metadata.image, alt: ' ' } },
-      { ...metadata, image: { ...metadata.image, url: 'javascript:alert(1)' } },
-      { ...metadata, image: { ...metadata.image, url: 'http://raw.githubusercontent.com/a.png' } },
+      { ...metadata, image: { ...screenshot, alt: ' ' } },
+      { ...metadata, image: { ...screenshot, url: 'javascript:alert(1)' } },
+      { ...metadata, image: { ...screenshot, url: 'http://raw.githubusercontent.com/a.png' } },
       {
         ...metadata,
-        image: { ...metadata.image, url: 'https://raw.githubusercontent.com.evil/a.png' },
+        image: { ...screenshot, url: 'https://raw.githubusercontent.com.evil/a.png' },
       },
       {
         ...metadata,
-        image: { ...metadata.image, url: 'https://user@raw.githubusercontent.com/a.png' },
+        image: { ...screenshot, url: 'https://user@raw.githubusercontent.com/a.png' },
       },
       {
         ...metadata,
-        image: { ...metadata.image, url: 'https://github.com/owner/repo/blob/main/a.png' },
+        image: { ...screenshot, url: 'https://github.com/owner/repo/blob/main/a.png' },
       },
     ]) {
       expect(parseRelease(invalid)).toBeNull();
     }
+  });
+
+  it('accepts a release with an accessible HTTPS screenshot', () => {
+    const illustrated = { ...metadata, image: screenshot };
+    expect(parseRelease(illustrated)).toEqual(illustrated);
   });
 
   it('accepts older releases without an image', () => {
@@ -132,6 +142,32 @@ function browser() {
 }
 
 describe('release reconnection checks', () => {
+  it('finds a new release while the visible app remains open and stops polling on cleanup', async () => {
+    vi.useFakeTimers();
+    const { document, navigator } = browser();
+    const load = vi.fn().mockResolvedValue(metadata);
+    const received = vi.fn();
+    const stop = watchReleases(received, load);
+    await Promise.resolve();
+    expect(load).toHaveBeenCalledOnce();
+    load.mockResolvedValue({ ...metadata, version: '99.0.0' });
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(received).toHaveBeenLastCalledWith({ ...metadata, version: '99.0.0' });
+    expect(load).toHaveBeenCalledTimes(2);
+
+    document.visibilityState = 'hidden';
+    await vi.advanceTimersByTimeAsync(60_000);
+    document.visibilityState = 'visible';
+    navigator.onLine = false;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(load).toHaveBeenCalledTimes(2);
+    navigator.onLine = true;
+    stop();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('checks at startup and on focus, resume and reconnect; skips offline and hidden checks', async () => {
     const { window, document, navigator } = browser();
     const load = vi.fn().mockResolvedValue(metadata);

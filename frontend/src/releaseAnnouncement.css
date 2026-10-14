@@ -82,3 +82,79 @@
   width: auto;
   flex-shrink: 0;
 }
+
+.tracker-app {
+  --app-update-height: calc(4.5rem + env(safe-area-inset-top));
+}
+
+.tracker-app.has-app-update {
+  padding-top: var(--app-update-height);
+}
+
+.app-update-banner {
+  position: fixed;
+  z-index: 100;
+  inset: 0 0 auto;
+  height: var(--app-update-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: calc(0.5rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.5rem
+    max(1rem, env(safe-area-inset-left));
+  border-bottom: 1px solid #365f8c;
+  background: #142c47;
+  color: #f0f7ff;
+}
+
+.app-update-banner > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.app-update-banner strong {
+  font-size: 0.875rem;
+}
+
+.app-update-banner span {
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.app-update-refresh {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #6392c6;
+  border-radius: 0.75rem;
+  background: #23466f;
+  color: #fff;
+}
+
+.app-update-refresh svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.has-app-update .overlay-screen-header {
+  top: var(--app-update-height);
+}
+
+.has-app-update .background-activity-bar {
+  top: calc(var(--app-update-height) + 0.4rem);
+}
+
+.has-app-update .live-workout-bar {
+  top: var(--app-update-height);
+}
+
+.release-update-check {
+  margin-top: 0.75rem;
+}
+
+.release-update-check p {
+  margin-top: 0.65rem;
+}

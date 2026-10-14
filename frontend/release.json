@@ -1,17 +1,13 @@
 {
-  "version": "0.5.4",
-  "title": "Flexible Home cards and goal-aware weight changes",
-  "summary": "Resize your Home cards and see whether body-weight changes match your goal.",
+  "version": "0.5.5",
+  "title": "Update when you are ready",
+  "summary": "Keep logging through app releases, then refresh when it suits you.",
   "changes": [
-    "Use the resize button beside each Home card's drag handle to switch between compact and full width, and save widths across devices.",
-    "The Daily check-in weight field is vertically aligned with its minus and plus buttons and adapts to compact cards.",
-    "Leaving Today cancels layout editing and discards unsaved changes.",
-    "Body history arrows show weight direction: green for loss during a cut or gain during a bulk, red for the opposite.",
-    "Daily, weekly and monthly history compare consecutive check-ins or periods, including across pages; no-goal and maintenance changes use neutral arrows."
+    "A top notification checks for releases while the app is open. Use its refresh arrow when you are ready; updates no longer reload your screen automatically.",
+    "Keep using the current cached app while the next update downloads in the background.",
+    "Settings now has a Check for updates button with current-version, available-update and connection feedback.",
+    "Refresh preserves your active workout draft on this device. If the draft cannot be saved, the update waits until you save your work.",
+    "What's new describes the version you have loaded and stays dismissed for that account and release in this browser, including after signing in again."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#054",
-  "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/01c584f96cc8174b9567321ebc7952263be9d8f5/docs/screenshots/releases/0.5.4-home-card-widths.png",
-    "alt": "Today layout editing with an aligned Daily check-in, resize buttons beside the drag handles and a full-width Body weight card."
-  }
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#055"
 }

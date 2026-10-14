@@ -4,6 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import metadata from '../release.json';
 import { ReleaseAnnouncement } from './ReleaseAnnouncement';
 
+const screenshot = {
+  url: 'https://raw.githubusercontent.com/owner/repo/0123456789abcdef0123456789abcdef01234567/docs/screenshots/sample-release.png',
+  alt: 'Sample release notification and refresh button',
+};
+
 vi.mock('react-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-dom')>()),
   createPortal: (children: ReactNode) => children,
@@ -30,11 +35,11 @@ describe('release popup', () => {
 
   it('shows an accessible screenshot linking to the original image without sending a referrer', () => {
     const markup = renderToStaticMarkup(
-      <ReleaseAnnouncement release={metadata} onClose={vi.fn()} />,
+      <ReleaseAnnouncement release={{ ...metadata, image: screenshot }} onClose={vi.fn()} />,
     );
-    expect(markup).toContain(`src="${metadata.image.url}"`);
-    expect(markup).toContain(`alt="${metadata.image.alt}"`);
-    expect(markup).toContain(`href="${metadata.image.url}"`);
+    expect(markup).toContain(`src="${screenshot.url}"`);
+    expect(markup).toContain(`alt="${screenshot.alt}"`);
+    expect(markup).toContain(`href="${screenshot.url}"`);
     expect(markup).toContain('referrerPolicy="no-referrer"');
   });
 
