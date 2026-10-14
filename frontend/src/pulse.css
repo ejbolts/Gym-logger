@@ -3618,14 +3618,17 @@ small.custom-exercise-label,
 }
 
 .exercise-picker .exercise-picker-actions:not(.single-action) {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
 }
 
 .exercise-picker .create-superset-button,
 .exercise-picker .add-selected-button {
-  padding: 0 1rem;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
   font-size: 0.9375rem;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* ───────── Motion ───────── */
