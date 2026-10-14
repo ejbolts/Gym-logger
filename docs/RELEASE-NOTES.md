@@ -8,6 +8,11 @@ The Add selected exercises button wraps its label and selection count inside the
 button on small screens. The adjacent Create super set button also wraps as needed,
 keeping both actions readable and aligned. This fix retains the pending 0.5.3 release.
 
+<img src="screenshots/releases/0.5.3-exercise-picker-buttons.png" alt="The exercise picker on a phone, with Add selected exercises (2) wrapping clearly across two lines inside the blue button." width="390">
+
+The complete action label and selection count remain visible. Captured at phone width
+on MainPC's loopback 8003 using a fresh synthetic sample database.
+
 ### Exercise and set ticks
 
 - Ticking an exercise completes all its sets, including warm-ups and suggested sets.
