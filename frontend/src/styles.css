@@ -4266,6 +4266,56 @@ body:has(.popup-dialog[open]) {
   color: white;
 }
 
+.workout-import-review {
+  padding: 0.25rem 1rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.workout-import-filename,
+.workout-import-safety {
+  color: var(--muted-ink);
+}
+
+.workout-import-warnings {
+  border: 1px solid #66573c;
+  border-radius: 8px;
+  padding: 0.65rem;
+  background: #302a20;
+}
+
+.workout-import-warnings ul {
+  max-height: 9rem;
+  overflow-y: auto;
+  padding-left: 1.25rem;
+}
+
+.workout-import-sessions {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+.workout-import-sessions li {
+  border: 1px solid #3b4346;
+  border-radius: 8px;
+  padding: 0.65rem;
+}
+
+.workout-import-sessions li > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.3rem;
+}
+
+.workout-import-sessions span,
+.workout-import-sessions small {
+  color: var(--muted-ink);
+}
+
 .workout-finish-dialog > p {
   margin: 0;
   padding: 1rem 1rem 0;

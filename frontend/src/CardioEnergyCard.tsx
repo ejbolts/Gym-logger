@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { CardioEnergyPeriod } from './types';
 import { fatEnergyEquivalent } from './cardioEnergy';
+import { useWeightUnit } from './trainingPreferencesContext';
+import { weightFromKg } from './weightUnits';
 
 const periods: { value: CardioEnergyPeriod['period']; label: string }[] = [
   { value: 'week', label: 'This week' },
@@ -22,14 +24,15 @@ function prettyDate(value: string): string {
 function comparison(current: number | null, previous: number | null, unit = ''): string {
   if (current === null || previous === null) return 'No prior comparison';
   const difference = current - previous;
-  const decimals = ['bpm', 'g', 'kcal'].includes(unit) ? 0 : 1;
-  const unchangedThreshold = decimals === 0 ? 0.5 : 0.05;
+  const decimals = ['bpm', 'g', 'kcal'].includes(unit) ? 0 : unit === 'lb' ? 2 : 1;
+  const unchangedThreshold = 0.5 / 10 ** decimals;
   if (Math.abs(difference) < unchangedThreshold) return 'No change vs prior';
   const prefix = difference > 0 ? '↑' : '↓';
   return `${prefix} ${Math.abs(difference).toFixed(decimals)}${unit ? ` ${unit}` : ''} vs prior`;
 }
 
 export function CardioEnergyCard({ summaries }: { summaries: CardioEnergyPeriod[] | undefined }) {
+  const weightUnit = useWeightUnit();
   const [period, setPeriod] = useState<CardioEnergyPeriod['period']>('week');
   const [expanded, setExpanded] = useState(false);
   const summary = summaries?.find((item) => item.period === period);
@@ -43,9 +46,15 @@ export function CardioEnergyCard({ summaries }: { summaries: CardioEnergyPeriod[
   const previousCalories = summary.previous_calories_kcal ?? null;
   const caloriesComparison = comparison(summary.calories_kcal, previousCalories, 'kcal');
   const fatComparison = comparison(
-    (summary.calories_kcal / 7700) * 1000,
-    previousCalories === null ? null : (previousCalories / 7700) * 1000,
-    'g',
+    weightUnit === 'lb'
+      ? weightFromKg(summary.calories_kcal / 7700, weightUnit)
+      : (summary.calories_kcal / 7700) * 1000,
+    previousCalories === null
+      ? null
+      : weightUnit === 'lb'
+        ? weightFromKg(previousCalories / 7700, weightUnit)
+        : (previousCalories / 7700) * 1000,
+    weightUnit === 'lb' ? 'lb' : 'g',
   );
   const heartRate = summary.average_heart_rate_bpm ?? null;
   const distance = summary.distance_km ?? 0;
@@ -139,7 +148,9 @@ export function CardioEnergyCard({ summaries }: { summaries: CardioEnergyPeriod[
             <article>
               <span>Fat burnt</span>
               <strong>
-                {caloriesRecorded ? `≈ ${fatEnergyEquivalent(summary.calories_kcal)}` : '—'}
+                {caloriesRecorded
+                  ? `≈ ${fatEnergyEquivalent(summary.calories_kcal, weightUnit)}`
+                  : '—'}
               </strong>
               <small>Calculated from logged calories</small>
               <small className="cardio-progress-comparison">

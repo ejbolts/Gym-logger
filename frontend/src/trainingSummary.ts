@@ -1,3 +1,4 @@
+import { formatWeight, formatWeightNumber, weightFromKg, type WeightUnit } from './weightUnits';
 import type {
   Exercise,
   PersonalRecord,
@@ -201,7 +202,8 @@ export function workoutDisplayName(workout: Pick<TrackedWorkout, 'name' | 'categ
   return name;
 }
 
-export function formatVolume(kg: number): string {
+export function formatVolume(kg: number, unit: WeightUnit = 'kg'): string {
+  if (unit === 'lb') return `${Math.round(weightFromKg(kg, unit)).toLocaleString('en-GB')} lb`;
   if (kg >= 10_000) return `${(kg / 1000).toFixed(1)} t`;
   return `${Math.round(kg).toLocaleString('en-GB')} kg`;
 }
@@ -249,14 +251,17 @@ export function topWorkingSet(sets: TrackedSet[]): TrackedSet | null {
   }, null);
 }
 
-export function setLabel(item: Pick<TrackedSet, 'weight_kg' | 'reps'>): string {
-  return `${Number((item.weight_kg ?? 0).toFixed(2))} × ${item.reps ?? '–'}`;
+export function setLabel(
+  item: Pick<TrackedSet, 'weight_kg' | 'reps'>,
+  unit: WeightUnit = 'kg',
+): string {
+  return `${formatWeight(item.weight_kg ?? 0, unit)} × ${item.reps ?? '–'}`;
 }
 
 export interface SessionTemplateExercise {
   exercise: Exercise;
   topSet: TrackedSet | null;
-  /** “157.5 × 5” for strength, “30 min · 4.8 km” for cardio. */
+  /** “157.5 kg × 5” for strength, “30 min · 4.8 km” for cardio. */
   summary: string;
 }
 
@@ -285,6 +290,7 @@ export function sessionTemplateFor(
   workouts: TrackedWorkout[],
   category: WorkoutCategory,
   today: string,
+  unit: WeightUnit = 'kg',
 ): SessionTemplate | null {
   const source = workouts
     .filter(
@@ -314,7 +320,7 @@ export function sessionTemplateFor(
             movement.exercise.kind === 'cardio'
               ? cardioSummary(movement.sets)
               : topSet
-                ? setLabel(topSet)
+                ? setLabel(topSet, unit)
                 : '–',
         };
       }),
@@ -440,14 +446,14 @@ export function weeklyBestPoints<T extends { workout_date: string }>(
 }
 
 /** “157.5×5 ×2, 157.5×4”: consecutive identical working sets collapsed. */
-export function compactSetSummary(sets: TrackedSet[]): string {
+export function compactSetSummary(sets: TrackedSet[], unit: WeightUnit = 'kg'): string {
   const parts: Array<{ label: string; count: number }> = [];
   for (const item of sets.filter(isCompletedWorkingSet)) {
     if (item.weight_kg === null && item.reps === null) continue;
     const label =
       item.weight_kg === null
         ? `${item.reps} reps`
-        : `${Number(item.weight_kg.toFixed(2))}×${item.reps ?? '–'}`;
+        : `${formatWeightNumber(item.weight_kg, unit)}×${item.reps ?? '–'}`;
     const last = parts.at(-1);
     if (last && last.label === label) last.count += 1;
     else parts.push({ label, count: 1 });

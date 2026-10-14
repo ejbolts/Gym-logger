@@ -8,7 +8,11 @@ Weekly muscle-set tracking excludes warmups and cardio, reports raw and RPE-awar
 
 Personal records have two types: **Weight PR** for a heavier completed working set for an exercise, and **Volume PR** for more reps in one set at a previously logged weight for that exercise. First attempts establish a baseline. Ties, total session volume, warmups, incomplete/zero-rep sets, and failed sets below their target do not trigger records. A short popup names the record when a set is completed. Estimated 1RM remains a Progress metric.
 
-Workout history can be imported and exported from the History screen using CSV. The round-trip format uses these exact columns: `Date Lifted`, `Exercise`, `Weight (kg)`, `Weight (lb)`, `Reps`, `Bodyweight (kg)`, `Bodyweight (lb)`, `Percentile (%)`, and `Warmup`. Imports accept both comma-separated CSV and tab-separated text copied from a spreadsheet. Missing exercises are added to the local exercise library automatically.
+Completed workout set history can be imported and exported from **Settings > Workout data** using CSV. Uncompleted planned or suggested rows are excluded, so importing an export cannot turn them into performed sets. The required columns are `Date Lifted`, `Exercise`, `Weight (kg)`, `Weight (lb)`, `Reps`, `Bodyweight (kg)`, `Bodyweight (lb)`, `Percentile (%)`, and `Warmup`. New exports append optional `Workout ID` and `Workout name` columns so separate sessions on the same date stay separate. IDs group rows within the file; importing always creates account-owned records with new IDs and never uses a supplied ID to overwrite a workout. Older nine-column files remain valid, but all rows on one date become one session because those files contain no session identity. Imports accept comma-separated CSV and tab-separated text copied from a spreadsheet.
+
+Choosing a file opens a read-only review of sessions, sets, new exercises, duplicates and warnings. **Cancel** saves nothing. **Save import** revalidates the file and current limits, skips identical existing sessions in your account, and atomically adds the remaining sessions and any missing exercises. Repeated identical sets within a session are retained. Duplicate matching uses the date and completed set content, so renaming a workout does not cause a duplicate. To preserve separate same-date sessions with identical sets, include them together with different Workout IDs in one file; importing identical sessions through separate files may skip them as duplicates. Exercise aliases are compared by canonical name and pound-only legacy weights are converted to kilograms. Existing workouts and body-weight check-ins are kept; only missing body-weight dates are added from imported sets. CSV covers these set fields and session names, rather than notes, photos, videos, cardio metrics or a complete account backup.
+
+Choose kilograms or pounds in **Settings > Training preferences** for weight entry and display across Home, the workout logger, History, Body, Progress and shared profiles. Changing this preference preserves saved weights and active entries. Workout CSVs keep both kg and lb columns; bodyweight CSVs continue to use the explicit `Weight (kg)` column regardless of the display preference.
 
 On a fresh workout database, the app seeds five sample sessions across one week so the dashboard, heatmap, history, and progression graphs can be evaluated immediately. Set `GYM_SEED_SAMPLE_DATA=false` before first startup to disable this. Seeded workouts are labelled **Sample**; **Remove samples** in History deletes all of them without affecting real workouts or video sessions, and they will not reappear after a restart.
 
@@ -159,6 +163,14 @@ Limits stop one account from bloating the server. They sit far above real use (a
 | Photo upload size | 5 MB (shown to people) | everyone |
 
 CSV imports follow the same limits and save nothing if any is exceeded. A workout saved before a limit was lowered can still be edited, but not grown.
+
+## User review and follow-up work
+
+The [13 October 2026 user review](docs/reviews/2026-10-13/USER-REVIEW.md) records the
+reviewed revision, sample-data evidence, prioritized findings and feature roadmap.
+Use [GitHub issue #29](https://github.com/ejbolts/Gym-video-logger/issues/29) as its
+tracking index; each P1 finding has a separate issue. Recheck historical findings
+against the current code before starting new work.
 
 ## Checks
 

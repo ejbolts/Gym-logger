@@ -31,4 +31,14 @@ describe('set entry confirmation', () => {
       'Add high rep and weight set?',
     );
   });
+
+  it('keeps warning thresholds in kg and describes the entered and reference loads in pounds', () => {
+    const warning = unusualSetEntryWarning({ reps: 5, weightKg: 120, referenceWeightKg: 60 }, 'lb');
+    expect(warning?.title).toBe('Is 264.55 lb intended?');
+    expect(warning?.message).toContain('132.28 lb');
+    expect(warning?.message).not.toContain('kg');
+    expect(
+      unusualSetEntryWarning({ reps: 5, weightKg: 100, referenceWeightKg: 80 }, 'lb'),
+    ).toBeNull();
+  });
 });

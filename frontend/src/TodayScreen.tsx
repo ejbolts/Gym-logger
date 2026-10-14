@@ -28,6 +28,16 @@ import type {
   WorkoutTypeColors,
 } from './types';
 import { localDate } from './utils';
+import { useWeightUnit } from './trainingPreferencesContext';
+import { WeightInput } from './WeightInput';
+import {
+  formatWeight,
+  recordDisplayValue,
+  weightFromKg,
+  weightToKg,
+  weightInputValue,
+  weightUnitName,
+} from './weightUnits';
 import { formatElapsed, useElapsedSeconds } from './elapsed';
 
 export function PageHeader({
@@ -122,6 +132,7 @@ export function TodayScreen({
   calendar,
   today = localDate(),
 }: TodayScreenProps) {
+  const weightUnit = useWeightUnit();
   const weekStartDay = weekStartDayFrom(data?.weekly_sets?.week_start ?? data?.zone2?.week_start);
   const weeks = useMemo(
     () => weeklyTrainingTotals(workouts, today, weekStartDay, 12),
@@ -133,8 +144,11 @@ export function TodayScreen({
   );
   const recommendation = data?.recommendation ?? null;
   const template = useMemo(
-    () => (recommendation ? sessionTemplateFor(workouts, recommendation.category, today) : null),
-    [recommendation, today, workouts],
+    () =>
+      recommendation
+        ? sessionTemplateFor(workouts, recommendation.category, today, weightUnit)
+        : null,
+    [recommendation, today, workouts, weightUnit],
   );
   const currentWeek = weeks.at(-1);
   const history = weeks.slice(0, -1);
@@ -294,10 +308,12 @@ export function TodayScreen({
     'weekly-bodyweight': (
       <button type="button" className="pulse-kpi" onClick={onOpenBody}>
         <span>Body weight</span>
-        <strong>{latest ? `${latest.weight_kg.toFixed(1)} kg` : '–'}</strong>
+        <strong>
+          {latest ? `${weightFromKg(latest.weight_kg, weightUnit).toFixed(1)} ${weightUnit}` : '–'}
+        </strong>
         <em>
           {monthChange !== null
-            ? `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${Math.abs(monthChange).toFixed(1)} kg / 4 wk`
+            ? `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${weightFromKg(Math.abs(monthChange), weightUnit).toFixed(1)} ${weightUnit} / 4 wk`
             : measurements.length
               ? `${measurements.length} ${measurements.length === 1 ? 'check-in' : 'check-ins'}`
               : 'No check-ins'}
@@ -397,14 +413,14 @@ export function TodayScreen({
       <button type="button" className="pulse-card pulse-mini" onClick={onOpenBody}>
         <span>Bodyweight</span>
         <strong>
-          {latest ? latest.weight_kg.toFixed(1) : '–'}
-          <small> kg</small>
+          {latest ? weightFromKg(latest.weight_kg, weightUnit).toFixed(1) : '–'}
+          <small> {weightUnit}</small>
         </strong>
         <Sparkline values={recentWeights} label="Bodyweight, last 30 check-ins" />
         <p className={monthChange !== null && monthChange < 0 ? 'trend-down' : ''}>
           {monthChange === null
             ? `${measurements.length} check-ins`
-            : `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${Math.abs(monthChange).toFixed(1)} kg in 30 days`}
+            : `${monthChange > 0 ? '+' : monthChange < 0 ? '−' : '±'}${weightFromKg(Math.abs(monthChange), weightUnit).toFixed(1)} ${weightUnit} in 30 days`}
         </p>
       </button>
     ),
@@ -436,14 +452,12 @@ export function TodayScreen({
                     <small>
                       {RECORD_LABELS[record.record_type]}
                       {record.record_type === 'reps_at_weight' && record.weight_kg != null
-                        ? ` @ ${record.weight_kg} kg`
+                        ? ` @ ${formatWeight(record.weight_kg, weightUnit)}`
                         : ''}{' '}
                       · {shortDate(record.achieved_date)}
                     </small>
                   </span>
-                  <strong className="num">
-                    {Number(record.value.toFixed(1))} {record.unit}
-                  </strong>
+                  <strong className="num">{recordDisplayValue(record, weightUnit)}</strong>
                 </button>
               </li>
             ))}
@@ -575,21 +589,27 @@ export function DashboardQuickBodyweight({
   todayBodyweight: number | null;
   onSave: (weight: number) => Promise<void>;
 }) {
+  const weightUnit = useWeightUnit();
   const initialWeight = todayBodyweight ?? latestBodyweight;
-  const [weight, setWeight] = useState(initialWeight === null ? '' : initialWeight.toFixed(1));
+  const [weight, setWeight] = useState<number | null>(initialWeight);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const selectedWeight = Number(weight);
+  const selectedWeight = weight;
 
   useEffect(() => {
     const nextWeight = todayBodyweight ?? latestBodyweight;
-    if (nextWeight !== null) setWeight(nextWeight.toFixed(1));
+    setWeight(nextWeight);
   }, [latestBodyweight, todayBodyweight]);
 
   async function save() {
-    if (!Number.isFinite(selectedWeight) || selectedWeight <= 0 || selectedWeight > 500) {
-      setError('Enter a bodyweight between 1 and 500 kg.');
+    if (
+      selectedWeight === null ||
+      !Number.isFinite(selectedWeight) ||
+      selectedWeight <= 0 ||
+      selectedWeight > 500
+    ) {
+      setError(`Enter a bodyweight above 0 and up to ${formatWeight(500, weightUnit)}.`);
       setMessage(null);
       return;
     }
@@ -598,7 +618,7 @@ export function DashboardQuickBodyweight({
     setMessage(null);
     try {
       await onSave(selectedWeight);
-      setMessage(`${selectedWeight.toFixed(1)} kg saved for today.`);
+      setMessage(`${formatWeight(selectedWeight, weightUnit)} saved for today.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save today’s weight.');
     } finally {
@@ -608,10 +628,15 @@ export function DashboardQuickBodyweight({
 
   function nudge(delta: number) {
     const base =
-      Number.isFinite(selectedWeight) && selectedWeight > 0
+      selectedWeight !== null && Number.isFinite(selectedWeight) && selectedWeight > 0
         ? selectedWeight
         : (latestBodyweight ?? 0);
-    setWeight(Math.max(0, base + delta).toFixed(1));
+    setWeight(
+      weightToKg(
+        Number(Math.max(0, weightFromKg(base, weightUnit) + delta).toFixed(2)),
+        weightUnit,
+      ),
+    );
     setError(null);
     setMessage(null);
   }
@@ -623,7 +648,7 @@ export function DashboardQuickBodyweight({
         <span className={todayBodyweight === null ? '' : 'logged'}>
           {todayBodyweight === null
             ? 'Not logged today'
-            : `Today · ${todayBodyweight.toFixed(1)} kg`}
+            : `Today · ${weightFromKg(todayBodyweight, weightUnit).toFixed(1)} ${weightUnit}`}
         </span>
       </header>
       <form
@@ -637,33 +662,33 @@ export function DashboardQuickBodyweight({
           type="button"
           className="stepper"
           onClick={() => nudge(-0.1)}
-          aria-label="Decrease by 0.1 kg"
+          aria-label={`Decrease by 0.1 ${weightUnit}`}
         >
           −
         </button>
         <label>
-          <span className="sr-only">Bodyweight in kilograms</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="1"
-            max="500"
-            step="0.1"
-            value={weight}
-            style={{ '--bw-chars': `${Math.max(weight.length, 1)}ch` } as CSSProperties}
-            onChange={(event) => {
-              setWeight(event.target.value);
+          <span className="sr-only">Bodyweight in {weightUnitName(weightUnit)}</span>
+          <WeightInput
+            weightKg={weight}
+            aria-label={`Bodyweight in ${weightUnitName(weightUnit)}`}
+            style={
+              {
+                '--bw-chars': `${Math.max(weightInputValue(weight, weightUnit).length, 1)}ch`,
+              } as CSSProperties
+            }
+            onWeightChange={(kg) => {
+              setWeight(kg);
               setError(null);
               setMessage(null);
             }}
           />
-          <b aria-hidden="true">kg</b>
+          <b aria-hidden="true">{weightUnit}</b>
         </label>
         <button
           type="button"
           className="stepper"
           onClick={() => nudge(0.1)}
-          aria-label="Increase by 0.1 kg"
+          aria-label={`Increase by 0.1 ${weightUnit}`}
         >
           +
         </button>

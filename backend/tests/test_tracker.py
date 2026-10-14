@@ -690,11 +690,15 @@ def test_csv_import_and_export_use_supplied_column_format(client):
     assert imported.status_code == 201
     assert imported.json() == {
         "workouts_created": 1,
+        "workouts_skipped": 0,
         "exercises_created": 1,
         "sets_imported": 2,
         "body_measurements_created": 1,
         "body_measurements_updated": 0,
-        "warnings": [],
+        "warnings": [
+            "Rows without Workout ID are grouped into one session per date. "
+            "Older nine-column files cannot distinguish morning and evening workouts.",
+        ],
     }
     imported_exercise = next(
         item
@@ -715,7 +719,7 @@ def test_csv_import_and_export_use_supplied_column_format(client):
     decoded = exported.content.decode("utf-8-sig")
     assert decoded.splitlines()[0] == (
         "Date Lifted,Exercise,Weight (kg),Weight (lb),Reps,Bodyweight (kg),"
-        "Bodyweight (lb),Percentile (%),Warmup"
+        "Bodyweight (lb),Percentile (%),Warmup,Workout ID,Workout name"
     )
     assert "2026-07-17,Machine Reverse Fly,45,99.2,10,83.6,184.3,38,1" in decoded
 

@@ -22,12 +22,10 @@ export function isUnusuallyHighWeight(
   return increase >= 100 || (increase >= 20 && weightKg >= referenceWeightKg * 2);
 }
 
-export function unusualSetEntryWarning({
-  reps,
-  weightKg,
-  referenceWeightKg,
-  originalReps,
-}: SetEntryValues): SetEntryWarning | null {
+export function unusualSetEntryWarning(
+  { reps, weightKg, referenceWeightKg, originalReps }: SetEntryValues,
+  weightUnit: WeightUnit = 'kg',
+): SetEntryWarning | null {
   const highReps =
     reps !== null && reps > 20 && (originalReps === undefined || reps !== originalReps);
   const highWeight = isUnusuallyHighWeight(weightKg, referenceWeightKg);
@@ -35,7 +33,7 @@ export function unusualSetEntryWarning({
   if (highReps && highWeight) {
     return {
       title: 'Add high rep and weight set?',
-      message: `You entered ${reps} reps at ${weightKg} kg. Confirm that both values are intended.`,
+      message: `You entered ${reps} reps at ${formatWeight(weightKg!, weightUnit)}. Confirm that both values are intended.`,
     };
   }
   if (highReps) {
@@ -46,12 +44,13 @@ export function unusualSetEntryWarning({
   }
   if (highWeight) {
     return {
-      title: `Is ${weightKg} kg intended?`,
+      title: `Is ${formatWeight(weightKg!, weightUnit)} intended?`,
       message:
         referenceWeightKg !== null && referenceWeightKg > 0
-          ? `This is unusually high compared with the reference set at ${referenceWeightKg} kg.`
+          ? `This is unusually high compared with the reference set at ${formatWeight(referenceWeightKg, weightUnit)}.`
           : 'This is an unusually high weight with no nearby reference set.',
     };
   }
   return null;
 }
+import { formatWeight, type WeightUnit } from './weightUnits';

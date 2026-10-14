@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { AppTabBar } from './AppTabBar';
 import { TodayScreen } from './TodayScreen';
-import type { DashboardData, User, WorkoutTypeColors } from './types';
+import type { DashboardData, TrackedWorkout, User, WorkoutTypeColors } from './types';
 import { UserContext, type UserSession } from './userContext';
+import { TrainingPreferencesContext } from './trainingPreferencesContext';
+import type { WeightUnit } from './weightUnits';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -52,70 +54,156 @@ function renderSignedIn(hash: string, user: User) {
   );
 }
 
-function renderToday(overrides: Partial<Parameters<typeof TodayScreen>[0]> = {}) {
+function renderToday(
+  overrides: Partial<Parameters<typeof TodayScreen>[0]> = {},
+  weightUnit: WeightUnit = 'kg',
+) {
   return renderToStaticMarkup(
-    <TodayScreen
-      data={
-        {
-          workouts_this_week: 4,
-          sets_this_week: 25,
-          volume_this_week_kg: 23057.5,
-          current_streak: 4,
-          cardio_minutes_this_week: 30,
-          zone2: {
-            week_start: '2026-10-05',
-            week_end: '2026-10-11',
-            goal_minutes: 150,
-            completed_minutes: 30,
-            remaining_minutes: 120,
-            percentage: 20,
-            complete: false,
-          },
-          weekly_sets: {
-            week_start: '2026-10-05',
-            week_end: '2026-10-11',
-            raw_sets: 25,
-            effective_sets: 25,
-            unrated_sets: 0,
-            low_rpe_sets: 0,
-            rpe_logging_percent: 33.3,
-            muscle_groups: [
-              { muscle_group: 'Quadriceps', raw_sets: 10, effective_sets: 10, average_rpe: null },
-              { muscle_group: 'Side delts', raw_sets: 0, effective_sets: 0, average_rpe: null },
-            ],
-          },
-          recommendation: {
-            category: 'pull',
-            session_name: 'Pull workout',
-            rotation_next: 'pull',
-            reason: 'Next in your Push → Pull → Legs rotation.',
-            muscle_frequency: [],
-          },
-        } as unknown as DashboardData
-      }
-      workouts={[]}
-      measurements={[]}
-      personalRecords={[]}
-      categoryColors={colors}
-      workoutStartedAt={null}
-      todayBodyweight={null}
-      onSaveBodyweight={vi.fn()}
-      onStartTemplate={vi.fn()}
-      onStartEmpty={vi.fn()}
-      onResumeWorkout={vi.fn()}
-      onOpenHistory={vi.fn()}
-      onOpenProgress={vi.fn()}
-      onOpenCardio={vi.fn()}
-      onOpenBody={vi.fn()}
-      onOpenSettings={vi.fn()}
-      onOpenVideos={vi.fn()}
-      today="2026-10-06"
-      {...overrides}
-    />,
+    <TrainingPreferencesContext.Provider
+      value={{
+        preferences: {
+          preferred_weight_unit: weightUnit,
+          week_start: 'monday',
+          zone2_goal_minutes: 150,
+        },
+        error: null,
+        applySaved: vi.fn(),
+      }}
+    >
+      <TodayScreen
+        data={
+          {
+            workouts_this_week: 4,
+            sets_this_week: 25,
+            volume_this_week_kg: 23057.5,
+            current_streak: 4,
+            cardio_minutes_this_week: 30,
+            zone2: {
+              week_start: '2026-10-05',
+              week_end: '2026-10-11',
+              goal_minutes: 150,
+              completed_minutes: 30,
+              remaining_minutes: 120,
+              percentage: 20,
+              complete: false,
+            },
+            weekly_sets: {
+              week_start: '2026-10-05',
+              week_end: '2026-10-11',
+              raw_sets: 25,
+              effective_sets: 25,
+              unrated_sets: 0,
+              low_rpe_sets: 0,
+              rpe_logging_percent: 33.3,
+              muscle_groups: [
+                { muscle_group: 'Quadriceps', raw_sets: 10, effective_sets: 10, average_rpe: null },
+                { muscle_group: 'Side delts', raw_sets: 0, effective_sets: 0, average_rpe: null },
+              ],
+            },
+            recommendation: {
+              category: 'pull',
+              session_name: 'Pull workout',
+              rotation_next: 'pull',
+              reason: 'Next in your Push → Pull → Legs rotation.',
+              muscle_frequency: [],
+            },
+          } as unknown as DashboardData
+        }
+        workouts={[]}
+        measurements={[]}
+        personalRecords={[]}
+        categoryColors={colors}
+        workoutStartedAt={null}
+        todayBodyweight={null}
+        onSaveBodyweight={vi.fn()}
+        onStartTemplate={vi.fn()}
+        onStartEmpty={vi.fn()}
+        onResumeWorkout={vi.fn()}
+        onOpenHistory={vi.fn()}
+        onOpenProgress={vi.fn()}
+        onOpenCardio={vi.fn()}
+        onOpenBody={vi.fn()}
+        onOpenSettings={vi.fn()}
+        onOpenVideos={vi.fn()}
+        today="2026-10-06"
+        {...overrides}
+      />
+    </TrainingPreferencesContext.Provider>,
   );
 }
 
 describe('App startup', () => {
+  it.each([
+    ['kg', '100 kg × 6'],
+    ['lb', '220.46 lb × 6'],
+  ] as const)(
+    'shows the Home Up next source set in %s while preserving its kg value',
+    (unit, expectedSummary) => {
+      const workout: TrackedWorkout = {
+        id: 'source-workout',
+        name: 'Pull day',
+        workout_date: '2026-10-05',
+        category: 'pull',
+        notes: null,
+        duration_minutes: 30,
+        start_time: null,
+        end_time: null,
+        is_sample: true,
+        created_at: '2026-10-05T10:00:00Z',
+        updated_at: '2026-10-05T10:00:00Z',
+        movements: [
+          {
+            id: 'source-movement',
+            order_index: 0,
+            notes: null,
+            machine_photos: [],
+            superset_group_id: null,
+            superset_name: null,
+            exercise: {
+              id: 'deadlift',
+              name: 'Deadlift',
+              category: 'pull',
+              kind: 'strength',
+              muscle_group: 'Back',
+              equipment: 'Barbell',
+              is_custom: false,
+              is_favorite: false,
+              muscle_contributions: [],
+            },
+            sets: [
+              {
+                id: 'source-set',
+                order_index: 0,
+                weight_kg: 100,
+                reps: 6,
+                rpe: null,
+                rest_seconds: null,
+                duration_seconds: null,
+                distance_km: null,
+                incline_percent: null,
+                speed_kph: null,
+                bodyweight_kg: null,
+                percentile: null,
+                warmup: false,
+                set_type: 'normal',
+                failed: false,
+                target_reps: null,
+                notes: null,
+                completed: true,
+              },
+            ],
+          },
+        ],
+      };
+      const before = structuredClone(workout);
+      const markup = renderToday({ workouts: [workout] }, unit);
+      expect(markup).toContain('Up next');
+      expect(markup).toContain(`<b class="num">${expectedSummary}</b>`);
+      expect(workout).toEqual(before);
+      expect(workout.movements[0].sets[0].weight_kg).toBe(100);
+    },
+  );
+
   it('renders a Today-shaped skeleton before training data has loaded', () => {
     stubWindow('');
 
