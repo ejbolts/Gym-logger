@@ -2,6 +2,12 @@
 
 ## 0.5.3
 
+### Exercise picker buttons
+
+The Add selected exercises button wraps its label and selection count inside the
+button on small screens. The adjacent Create super set button also wraps as needed,
+keeping both actions readable and aligned. This fix retains the pending 0.5.3 release.
+
 ### Exercise and set ticks
 
 - Ticking an exercise completes all its sets, including warm-ups and suggested sets.

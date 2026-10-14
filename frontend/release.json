@@ -3,6 +3,7 @@
   "title": "Safer workout records, imports and shared training",
   "summary": "Keep workouts safe through reloads and across devices, use your preferred units, log long sessions compactly, review imports, and choose who sees your training.",
   "changes": [
+    "Keep exercise picker button labels and selection counts inside their buttons on small screens.",
     "Tick an exercise to complete all its sets, or untick it to clear all set ticks while keeping their values.",
     "Drag workout sets with a lifted row that follows your mouse or finger vertically, including when scrolling.",
     "Drag, hide and restore the actual Home cards in edit mode, then save your layout across devices.",

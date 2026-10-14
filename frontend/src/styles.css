@@ -6037,6 +6037,13 @@ body,
   grid-template-columns: 1fr;
 }
 
+.exercise-picker-actions > button {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
 .create-superset-button {
   width: 100%;
   border: 1px solid var(--accent);
