@@ -11,7 +11,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#054",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/a8799f0212f636419f747c85da8b9f1ae926da12/docs/screenshots/releases/0.5.3-home-layout.png",
-    "alt": "Home layout editing with drag handles and card controls."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/01c584f96cc8174b9567321ebc7952263be9d8f5/docs/screenshots/releases/0.5.4-home-card-widths.png",
+    "alt": "Today layout editing with an aligned Daily check-in, resize buttons beside the drag handles and a full-width Body weight card."
   }
 }
