@@ -2,6 +2,12 @@
 
 Follow this repository's README and checks, together with the user's shared verification and Git synchronization instructions.
 
+## Private URLs in repository content and pull requests
+
+- Keep personal Tailscale hostnames, tailnet identifiers, private IP addresses and other installation-specific URLs out of new or updated committed content, including documentation, source examples, tests and release notes. Use generic examples such as `https://gym.example.com` or loopback URLs such as `http://127.0.0.1:8000`; obtain actual deployment addresses from local configuration or `tailscale serve status`.
+- Apply the same rule to PR titles, descriptions, comments and shared screenshots or recordings. Before committing or publishing a PR update, inspect the staged additions, PR text and selected evidence for private URLs; omit or redact them, including browser address bars. Do not repeat a removed private URL in commit messages or PR explanations.
+- Private replies to the user may include the actual clickable local or Tailscale URL. Keep actual host/address details in private replies or local verification notes; describe the environment generically in PRs while retaining the relevant port, branch/commit and sample-data isolation details.
+
 ## Release versions and announcements
 
 For every application feature, fix, or other user-visible change, keep `frontend/release.json` and the release notes accurate in the same change or pull request before considering the task complete. Its `version` controls whether users see the release announcement again. Versions identify application releases, not the number of pull requests.
@@ -38,4 +44,4 @@ Use **private Tailscale Serve**, with local app servers bound to loopback. Do no
 
 Retired MainPC routes (removed 10 October 2026): **8444 -> 8088** (Calorie Tracker), **8445 -> 5174** (old gym Vite preview), **8886 -> 8000** (gym alias), and **8443 -> 3000** (owner unconfirmed). Do not recreate them unless explicitly requested. MainPC now has only 443, 8446 and 8447 configured. Inspect other hosts independently.
 
-Git synchronization does not authorize starting, rebuilding, restarting or promoting the stable app. For verification evidence, report the actual host, HTTPS port, branch/commit (and any uncommitted edits) and data environment. Follow the shared verification skill for checks and required screenshots or recordings.
+Git synchronization does not authorize starting, rebuilding, restarting or promoting the stable app. For private verification evidence, report the actual host, HTTPS port, branch/commit (and any uncommitted edits) and data environment. For PRs and committed documentation, use a generic host as described above. Follow the shared verification skill for checks and required screenshots or recordings.
