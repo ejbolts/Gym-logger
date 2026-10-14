@@ -3628,6 +3628,7 @@ small.custom-exercise-label,
   font-size: 0.9375rem;
   line-height: 1.25;
   white-space: normal;
+  text-wrap: balance;
   overflow-wrap: anywhere;
 }
 
