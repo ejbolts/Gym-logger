@@ -28,29 +28,20 @@ Each account chooses who can see its profile in **Profile > Profile sharing**: *
 
 When upgrading an email-based account database, migration `0030_username_accounts` derives usernames from the old address's part before `@`, replaces unsupported characters with hyphens, and adds numeric suffixes for duplicates. Short or unusable names become `user`. Account IDs, passwords, sessions, preferences and workout ownership are preserved. Run `python -m app.manage list-users` after migration to see the assigned usernames. The account email column is removed; rolling back requires the pre-upgrade database backup and previous app version. Existing backup archives stay unchanged; new account snapshots use manifest format 2 with an owner username.
 
-## Architecture
-
-```text
-Phone PWA ── private Tailnet HTTPS ── Tailscale Serve ── 127.0.0.1:8000
-                                                            │
-                                                     FastAPI + SQLite
-                                                            │
-                                            local uploads / ffmpeg / YouTube
-```
+## Project structure
 
 - `frontend/`: React, TypeScript, Vite and `vite-plugin-pwa`; the default screen is the two-row menu with total and weekly stats.
 - `backend/app/`: FastAPI API, SQLite/SQLAlchemy models, streamed multipart storage, in-process processor, and YouTube uploader interface.
 - `backend/migrations/`: Alembic initial schema migration.
 - `data/` (ignored by Git): SQLite database, reusable machine photos, original uploads, normalized temp files, and stitched outputs.
 
-The backend serves the built PWA from the same origin when `frontend/dist/` exists. Sign-in uses cookie-based sessions with per-user accounts and authorization checks on each request. A sign-in lasts until the person signs out or goes 90 days (`GYM_SESSION_DAYS`) without using the app; each day of use restarts the count. Signing out, changing the password (other devices), disabling an account, or deleting it ends sessions immediately. Another instance on the same host, such as a test copy on a different port, must set its own `GYM_SESSION_COOKIE`, because browsers share cookies across ports. Cloud storage, Redis, Celery, AI recognition, and rep counting are not present.
+Sign-in uses cookie-based sessions with per-user accounts and authorization checks on each request. A sign-in lasts until the person signs out or goes 90 days (`GYM_SESSION_DAYS`) without using the app; each day of use restarts the count. Signing out, changing the password (other devices), disabling an account, or deleting it ends sessions immediately.
 
 ## Prerequisites
 
 - Python 3.12
 - Node.js 20+ and npm (or pnpm)
 - ffmpeg and ffprobe available on `PATH` (or configured with environment variables)
-- Tailscale installed on the always-on home PC for phone access
 
 Windows PowerShell (using winget where available):
 
@@ -58,7 +49,6 @@ Windows PowerShell (using winget where available):
 winget install Python.Python.3.12
 winget install OpenJS.NodeJS.LTS
 winget install Gyan.FFmpeg
-winget install Tailscale.Tailscale
 ```
 
 Linux (Debian/Ubuntu example):
@@ -66,7 +56,6 @@ Linux (Debian/Ubuntu example):
 ```bash
 sudo apt update
 sudo apt install python3.12 python3.12-venv nodejs npm ffmpeg
-# Install Tailscale from https://tailscale.com/download/linux
 ```
 
 Check the video tools before starting:
@@ -112,7 +101,7 @@ uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 
 Open `http://127.0.0.1:8000`. To create the first (admin) account, either set `GYM_REGISTRATION_INVITE_CODE` in `.env` and sign up in the browser with that code, or run `python -m app.manage create-user --username yourname --display-name "Your Name"` from the repository root. That first account takes ownership of any existing workout data. Other people can sign up only when `GYM_ALLOW_REGISTRATION=true`; `GYM_ALLOW_REGISTRATION` and `GYM_VIDEO_UPLOADS` are starting values that the admin console overrides once changed. For frontend hot reload during development, run `npm run dev` from `frontend/`; Vite proxies `/api` to the local FastAPI server.
 
-On Windows, `./start-app.ps1` builds the current frontend before starting the server and opens that same production build on port 8000. `./start-app.ps1 -Dev` also refreshes that phone build before starting Vite on port 5173, so development cannot leave the phone endpoint on an older bundle. Phone access should proxy port 8000 through your private Tailscale HTTPS address, illustrated here as `https://gym.example.com`. This is a placeholder; use the actual host and HTTPS port shown by `tailscale serve status`.
+On Windows, `./start-app.ps1` builds and starts a local copy. Use `./start-app.ps1 -Dev` to include Vite for frontend development.
 
 The menu has one current dark/blue theme, with three total stats above three weekly/bodyweight-trend stats. The old powerlifting stars menu is retired. Building replaces the previous `frontend/dist` assets. The server revalidates HTML, the service worker, and the manifest; fingerprinted assets may be cached. Service-worker updates activate in the background, clean obsolete precaches, and are checked when returning to the app or reconnecting. Normal screens reload when a new worker takes control. Workout and upload screens wait for the next manual reload so work is not interrupted. The Vite development server replaces any installed production worker with a cache-clearing pass-through worker while preserving push support. Workout data, drafts, settings, and push subscriptions are retained.
 
@@ -128,7 +117,7 @@ The normal multipart upload is intentionally non-resumable: if a file upload fai
 
 After an upload finishes, YouTube may still need time to create playback versions. The backend polls the video's owner-only `processingDetails` status every 20 seconds and only marks the session complete when YouTube reports success. It sends a Web Push notification to every subscribed phone if YouTube finishes successfully or reports a failure.
 
-On the installed phone PWA, open the app through its Tailscale HTTPS address and choose **Enable alerts**. The browser asks for notification permission, saves the phone's subscription, and sends a test alert immediately. iPhone notifications require the PWA to be installed from Safari's **Add to Home Screen** flow. The server creates its local VAPID private key at `data/web-push-vapid-private.pem`; this is ignored by Git and must remain private.
+On the installed phone PWA, choose **Enable alerts**. The browser asks for notification permission, saves the phone's subscription, and sends a test alert immediately. iPhone notifications require the PWA to be installed from Safari's **Add to Home Screen** flow. The server creates its local VAPID private key at `data/web-push-vapid-private.pem`; this is ignored by Git and must remain private.
 
 The workout logger uses the same subscription for rest-timer alerts. Start a rest timer and tap **Alert** on its compact top bar once; subsequent rest timers notify that phone automatically, including while the PWA is backgrounded or the screen is locked. Extending or skipping the visible timer reschedules or cancels its pending notification.
 
@@ -189,43 +178,12 @@ Set-Location frontend; npm run format:check; npm run lint; npm run build; npm te
 
 Use `ruff format backend` and `npm run format` to apply formatting.
 
-## Tailscale: private phone access
-
-Keep Uvicorn bound to `127.0.0.1`; do not bind it directly to a LAN or public interface, open a router port, or use Tailscale Funnel. Anyone your Tailnet policy lets reach this PC can reach the sign-in page. Each account's data stays private, but keep the Tailnet restricted to your own devices anyway.
-
-On the home PC, first inspect the installed client instead of assuming an older CLI form:
-
-```powershell
-tailscale version
-tailscale serve --help
-```
-
-The current Tailscale Serve syntax is `tailscale serve [flags] <target>`. With FastAPI listening on port 8000, configure its private HTTPS reverse proxy as follows:
-
-```powershell
-tailscale serve --https=443 http://127.0.0.1:8000
-tailscale serve status
-```
-
-The command above is private Serve, not Funnel. Open the HTTPS MagicDNS URL shown by `tailscale serve status` on your phone while it is connected to the same Tailnet. Install the PWA from that HTTPS page:
-
-- iPhone/iPad: Safari → Share → **Add to Home Screen**.
-- Android: Chrome menu → **Install app** / **Add to Home screen**.
-
-Use restrictive Tailscale grants or ACLs that permit only your phone identity/device to connect to this home PC and service. Re-check `tailscale serve --help` after updating the Tailscale client; Tailscale changed Serve and Funnel CLI syntax in client version 1.52.
-
-## Hosting on Oracle Cloud
-
-To run the app on an always-on Oracle Cloud VM with a public HTTPS address instead of the home PC, follow [docs/DEPLOY-ORACLE-CLOUD.md](DEPLOY-ORACLE-CLOUD.md). The `deploy/` folder contains the VM setup, update, and backup scripts, the systemd unit, the Caddy reverse-proxy configuration, and a production `.env` template.
-
-The **What's new** pop-up announces the deployed version after sign-in, returning to the app or reconnecting. Each account/browser remembers dismissed versions. Open **Settings → What's new → View changes** to preview it locally or read it again. Set the next version, summary and GitHub link in `frontend/release.json` before building and deploying. See [release notes and publishing instructions](RELEASE-NOTES.md).
-
 ## Switching to real YouTube uploads
 
 1. Create a Google Cloud OAuth **Desktop app** credential with the YouTube Data API v3 enabled.
 2. Save the downloaded client-secret JSON outside source control, for example `secrets/youtube-client-secret.json`.
 3. Set `GYM_YOUTUBE_MOCK_MODE=false` and configure `GYM_YOUTUBE_CLIENT_SECRET_PATH` and `GYM_YOUTUBE_TOKEN_PATH` in `.env`.
-4. On the home PC, complete the local OAuth flow:
+4. Complete the local OAuth flow:
 
    ```powershell
    python -m app.oauth_setup
@@ -250,7 +208,7 @@ See `.env.example` for all supported variables:
 - cleanup of original uploads and the stitched video after YouTube confirms success
 - start/end trimming for each clip before it is stitched (5 seconds each by default)
 
-By default, the original uploads and stitched output are retained while YouTube is processing, then deleted after YouTube confirms the video is ready. Set `GYM_DELETE_ORIGINALS_AFTER_SUCCESS=false` or `GYM_DELETE_OUTPUT_AFTER_SUCCESS=false` to retain either copy. The processor uses an in-process queue appropriate to this one-user, one-PC deployment; it is not a distributed job queue. Queued jobs survive a restart, while a job interrupted during ffmpeg or YouTube upload is marked failed with a useful retry message.
+By default, the original uploads and stitched output are retained while YouTube is processing, then deleted after YouTube confirms the video is ready. Set `GYM_DELETE_ORIGINALS_AFTER_SUCCESS=false` or `GYM_DELETE_OUTPUT_AFTER_SUCCESS=false` to retain either copy. Queued jobs survive a restart, while a job interrupted during ffmpeg or YouTube upload is marked failed with a useful retry message.
 
 Each clip is also trimmed by 5 seconds at its start and end before it is normalized and stitched. Change `GYM_TRIM_START_SECONDS` or `GYM_TRIM_END_SECONDS` to adjust this (set both to `0` to disable it). Clips always retain at least 3 seconds, so very short videos are trimmed proportionally rather than made empty.
 
@@ -258,7 +216,7 @@ Each clip is also trimmed by 5 seconds at its start and end before it is normali
 
 - Uploads are not resumable and mobile browsers can suspend a backgrounded PWA.
 - A processing job cannot be cancelled once ffmpeg work begins; cancellation is supported during upload.
-- The in-process worker processes one session at a time and is not suitable for multi-user or distributed deployment.
+- Video processing handles one session at a time.
 - Real YouTube uploads need credentials and internet access; mock mode remains ideal for local verification.
 - Future milestones could add saved workout templates, richer YouTube processing progress, or carefully designed exercise analysis. AI exercise recognition and rep counting are deliberately out of scope here.
 

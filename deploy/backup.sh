@@ -19,7 +19,7 @@
 #   sudo systemctl start gym-logger
 #
 # This archive lives on the same boot volume as the app. Copy it off the VM regularly
-# (see docs/DEPLOY-ORACLE-CLOUD.md) so a failed disk does not take the backups with it.
+# so a failed disk does not take the backups with it.
 
 set -euo pipefail
 umask 077

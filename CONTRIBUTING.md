@@ -4,7 +4,7 @@ Thanks for helping improve Gym Logger. Bug reports, documentation, accessibility
 
 ## Before you start
 
-- Read [README.md](README.md) for the app overview, the [technical reference](docs/TECHNICAL-REFERENCE.md) for architecture, setup and checks, and [AGENTS.md](AGENTS.md) for verification and release conventions.
+- Read [README.md](README.md) for the app overview, the [technical reference](docs/TECHNICAL-REFERENCE.md) for local setup and checks, and [AGENTS.md](AGENTS.md) for verification and release conventions.
 - Search existing issues and open pull requests to avoid duplicate work. Discuss large features or schema changes in an issue before implementation.
 - Bug reports should include the app version, browser/device, reproduction steps, expected behavior and actual behavior. Use synthetic examples and remove personal information from screenshots.
 - Do not post passwords, session cookies, invite codes, workout records, uploads or credentials. Report security concerns privately to the maintainer; use GitHub's private vulnerability reporting if it is available on the repository.
