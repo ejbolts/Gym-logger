@@ -291,7 +291,7 @@ If a flag is rejected, run `sudo -u gymlogger /opt/gym-logger/.venv/bin/python -
 
 The default `GYM_YOUTUBE_MOCK_MODE=true` returns a fake YouTube link and uploads nothing. To publish for real, you need the OAuth client secret and a token. The VM has no web browser, so create the token on your PC and copy it over.
 
-1. Follow the README's "Switching to real YouTube uploads" steps on your PC. That creates `secrets\youtube-client-secret.json`, then runs `python -m app.oauth_setup` to create `secrets\youtube-token.json`.
+1. Follow the [Switching to real YouTube uploads](TECHNICAL-REFERENCE.md#switching-to-real-youtube-uploads) steps on your PC. That creates `secrets\youtube-client-secret.json`, then runs `python -m app.oauth_setup` to create `secrets\youtube-token.json`.
 2. Copy both files to the VM:
 
    ```powershell
@@ -306,7 +306,7 @@ The default `GYM_YOUTUBE_MOCK_MODE=true` returns a fake YouTube link and uploads
 
 4. Edit `.env`, set `GYM_YOUTUBE_MOCK_MODE=false`, then restart with `sudo systemctl restart gym-logger`.
 
-The app refreshes the token file in place, so the `secrets` folder must stay writable by `gymlogger` (the unit already allows this). Unaudited Google projects are still limited to private uploads, as the README explains.
+The app refreshes the token file in place, so the `secrets` folder must stay writable by `gymlogger` (the unit already allows this). Unaudited Google projects are still limited to private uploads, as the [technical reference explains](TECHNICAL-REFERENCE.md#switching-to-real-youtube-uploads).
 
 ## 9. Operations
 
