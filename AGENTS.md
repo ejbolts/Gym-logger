@@ -34,6 +34,14 @@ Before merging a batch into `master`:
 4. Reconcile `frontend/release.json`, its GitHub link and `docs/RELEASE-NOTES.md` into one coherent announcement covering the whole batch. Preserve deployed release history and screenshot references. Resolve competing version edits to the selected batch version, rather than accepting successive increments from each PR.
 5. Verify the combined code at a fixed revision before declaring the batch ready. Perform integration at a task boundary and rerun affected checks after any code changes. During merging, re-check the next PR's current head, checks and conflicts as earlier merges can affect it; keep the batch version unchanged. Finish by confirming `master` contains the selected changes and matching release metadata. Merging a batch alone does not authorize deployment or a stable-app restart.
 
+## Deleting branches after merging
+
+After merging a PR or branch into `master`, delete its head branch on GitHub (and the local branch, when no worktree or other agent is using it), then run `git fetch --prune`.
+
+- For stacked PRs, retarget each child PR to `master` (or merge them bottom-up) before merging and deleting its parent. A child merged into a parent branch after the parent has already reached `master` never reaches `master` itself, even though GitHub shows it as merged.
+- Delete a branch only after confirming that its current head reached `master`: it is an ancestor of `master`, or it matches the head of a PR merged into `master` (squash merges). Keep a branch that has commits newer than its merged PR, and report it instead.
+- Keep `pr-media` and `media/*` branches. They host screenshots and recordings referenced by PR descriptions and are never merged.
+
 ## Private Tailscale endpoints
 
 - **443 -> 3773: T3 Code.** Leave this route untouched; it does not belong to the gym app.
