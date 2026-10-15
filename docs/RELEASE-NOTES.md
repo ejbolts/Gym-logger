@@ -1,7 +1,9 @@
 # Gym Logger release notes
 
-## 0.5.6
+## 0.6.0
 
+- Progress shows the selected exercise illustration beside the latest metric and
+  change, above the graph. The illustration updates when you choose another exercise.
 - Signing in and opening the app load the current month and the two before it,
   rather than every workout ever logged. With seven years of sample training, the
   startup workout download fell from about 21 MB to 0.6 MB and the Today summary
@@ -34,6 +36,11 @@ then Today appears with its data already loaded.
 
 July 2026 loaded when the calendar reached its oldest month. Captures use a separate
 database of generated sample training.
+
+<img src="screenshots/releases/0.6.0-progress-exercise-icon.png" alt="Back Squat progress with its exercise illustration beside the estimated one-rep max and improvement, above the graph." width="434">
+
+The exercise illustration follows the selected exercise. This capture uses generated
+sample workouts in an isolated database.
 
 ## 0.5.5
 
