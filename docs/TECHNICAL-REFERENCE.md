@@ -2,6 +2,8 @@
 
 Setup, maintenance and detailed behavior for contributors and administrators. For a plain-language app overview, see the [README](../README.md). Commands below run from the repository root unless stated otherwise.
 
+For authorized releases to the existing Ubuntu/Oracle server, use the [server release runbook](SERVER-RELEASE-RUNBOOK.md).
+
 ## Detailed app behavior
 
 A private, multi-user mobile PWA for batching individual gym-set videos, stitching them locally, and uploading one unlisted workout video to YouTube. Each person signs in with their own account and a cookie session, and each user's workout data is private by default, with optional profile sharing. The first account created becomes the admin and claims any existing data. The admin console (Settings → Admin console) lets the admin disable accounts, see each account's activity and storage, check disk space and the video queue, and switch video uploads (off, admins only, or everyone) and new sign-ups on or off without a restart. Video uploads are admin-only by default.

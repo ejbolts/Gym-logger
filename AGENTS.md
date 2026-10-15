@@ -2,6 +2,8 @@
 
 Follow this repository's README and checks, together with the user's shared verification and Git synchronization instructions.
 
+For an authorized update of the existing Ubuntu/Oracle deployment, follow [the server release runbook](docs/SERVER-RELEASE-RUNBOOK.md). It covers pinned builds, backups, preserving server edits, migrations, verification and rollback; reading it does not authorize a deployment.
+
 ## Private URLs in repository content and pull requests
 
 - Keep personal Tailscale hostnames, tailnet identifiers, private IP addresses and other installation-specific URLs out of new or updated committed content, including documentation, source examples, tests and release notes. Use generic examples such as `https://gym.example.com` or loopback URLs such as `http://127.0.0.1:8000`; obtain actual deployment addresses from local configuration or `tailscale serve status`.
