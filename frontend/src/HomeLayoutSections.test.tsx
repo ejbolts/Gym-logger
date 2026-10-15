@@ -37,7 +37,7 @@ describe('Home layout rendering', () => {
       <HomeLayoutSections
         layout={layout}
         sections={sections}
-        edit={{ onChange: vi.fn(), onSave: vi.fn(), onCancel: vi.fn(), saving: false, error: null }}
+        edit={{ onChange: vi.fn(), saving: false }}
       />,
     );
     expect(markup).toContain('aria-label="Drag Next workout to reorder"');
@@ -50,7 +50,8 @@ describe('Home layout rendering', () => {
     expect(markup).not.toContain('home-layout-list');
     expect(markup).toContain('aria-label="Add Consistency"');
     expect(markup).toContain('Add sections');
-    expect(markup).toContain('Save layout');
+    expect(markup).not.toContain('home-layout-toolbar');
+    expect(markup).not.toContain('Save layout');
   });
 
   it('keeps editing controls out of the normal cards', () => {
@@ -68,7 +69,7 @@ describe('Home layout rendering', () => {
       <HomeLayoutSections
         layout={defaultHomeLayout()}
         sections={{ ...sections, 'next-workout': null }}
-        edit={{ onChange: vi.fn(), onSave: vi.fn(), onCancel: vi.fn(), saving: false, error: null }}
+        edit={{ onChange: vi.fn(), saving: false }}
       />,
     );
     expect(markup).toContain('Your active workout stays above the cards.');

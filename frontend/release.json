@@ -1,8 +1,9 @@
 {
   "version": "0.5.6",
-  "title": "Faster start with long histories",
-  "summary": "Today and History open with your recent months, then load older training as you scroll.",
+  "title": "Faster start and easier Home editing",
+  "summary": "Today and History load recent training first, and Home layout controls stay within reach in the bottom bar.",
   "changes": [
+    "Editing Home fades the bottom tabs into Cancel, a green tick to save, and Reset layout. The old toolbar above the cards is gone.",
     "Signing in loads the last three months of workouts instead of your whole log, so Today appears quickly even with years of training.",
     "After you sign in, the form closes and the Gym Logger logo glides to the centre and fades while Today loads behind it.",
     "Swipe the training calendar back past its oldest month to load the six months before it. The month you are viewing stays in place.",

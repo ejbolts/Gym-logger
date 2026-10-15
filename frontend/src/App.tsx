@@ -158,6 +158,7 @@ import {
   type HistorySection,
 } from './appNavigation';
 import { AppTabBar } from './AppTabBar';
+import { useHomeLayout } from './useHomeLayout';
 import { Icon } from './Icon';
 import { TrendChart, type GoalPath, type TrendPoint } from './PulseCharts';
 import { PageHeader, SettingsButton, TodayScreen, TodaySkeleton } from './TodayScreen';
@@ -544,6 +545,7 @@ function AppContent() {
     return initialTab === 'shared-profile' ? 'shared' : initialTab;
   });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
+  const home = useHomeLayout(tab === 'dashboard');
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
   const currentTabRef = useRef(tab);
@@ -1242,7 +1244,7 @@ function AppContent() {
               <TodaySkeleton />
             ) : (
               <TodayScreen
-                active={tab === 'dashboard'}
+                home={home}
                 data={dashboard}
                 workouts={workouts}
                 measurements={measurements}
@@ -1497,6 +1499,7 @@ function AppContent() {
 
       {showTabBar && (
         <AppTabBar
+          homeLayout={home}
           active={activeMainTab}
           workoutStartedAt={activeWorkoutStartedAt}
           onSelect={(nextTab) => {

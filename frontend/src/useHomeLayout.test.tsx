@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 import { defaultHomeLayout, toggleHomeSectionWidth, type HomeLayout } from './homeLayout';
 import { useHomeLayout } from './useHomeLayout';
+import { AppTabBar } from './AppTabBar';
+import { HomeLayoutSections } from './HomeLayoutSections';
+import { HOME_SECTIONS, type HomeSectionId } from './homeLayout';
 
 vi.mock('./api', () => ({ api: { getHomeLayout: vi.fn(), saveHomeLayout: vi.fn() } }));
 vi.mock('./userContext', () => {
@@ -23,6 +26,44 @@ const saved: HomeLayout = {
 function Harness({ active }: { active: boolean }) {
   home = useHomeLayout(active);
   return <p>{home.editing ? 'Editing Home' : 'Viewing Home'}</p>;
+}
+
+function EditorHarness() {
+  home = useHomeLayout();
+  return (
+    <>
+      <button ref={home.editButton} onClick={home.edit}>
+        Edit Home layout
+      </button>
+      <HomeLayoutSections
+        layout={home.editing ? home.draft : home.layout}
+        sections={
+          Object.fromEntries(HOME_SECTIONS.map(({ id }) => [id, <p key={id}>{id}</p>])) as Record<
+            HomeSectionId,
+            React.ReactNode
+          >
+        }
+        edit={
+          home.editing
+            ? { onChange: home.change, saving: home.saving, onDraggingChange: home.setDragging }
+            : undefined
+        }
+      />
+      <AppTabBar
+        active="dashboard"
+        workoutStartedAt={null}
+        onSelect={vi.fn()}
+        onStart={vi.fn()}
+        homeLayout={home}
+      />
+    </>
+  );
+}
+
+async function click(label: string) {
+  await act(async () =>
+    container.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!.click(),
+  );
 }
 
 beforeEach(() => {
@@ -78,5 +119,61 @@ describe('account Home layout drafts', () => {
     await act(async () => home.cancel());
     await act(async () => home.edit());
     expect(home.draft.widths).toEqual({ ...saved.widths, records: 'compact' });
+  });
+
+  it('uses the bottom controls to save, reset as a draft, and cancel without losing the saved layout', async () => {
+    await act(async () => root.render(<EditorHarness />));
+    await act(async () => home.editButton.current!.click());
+    expect(container.querySelector('.app-tab-navigation')?.hasAttribute('inert')).toBe(true);
+    expect(container.querySelector('.app-tab-layout')?.hasAttribute('inert')).toBe(false);
+    expect(container.querySelector('.home-layout-toolbar')).toBeNull();
+    await click('Hide Workouts');
+    await click('Save layout');
+    expect(api.saveHomeLayout).toHaveBeenCalledWith({ ...saved, hidden: ['workouts'] });
+    expect(home.editing).toBe(false);
+    expect(document.activeElement).toBe(home.editButton.current);
+
+    await act(async () => home.editButton.current!.click());
+    await click('Reset layout');
+    expect(home.draft).toEqual(defaultHomeLayout());
+    expect(home.editing).toBe(true);
+    expect(api.saveHomeLayout).toHaveBeenCalledTimes(1);
+    await click('Cancel layout changes');
+    expect(home.layout.hidden).toEqual(['workouts']);
+    expect(container.querySelector('.app-tab-navigation')?.hasAttribute('inert')).toBe(false);
+
+    await act(async () => home.editButton.current!.click());
+    await click('Reset layout');
+    await click('Save layout');
+    expect(api.saveHomeLayout).toHaveBeenLastCalledWith(defaultHomeLayout());
+    expect(home.layout).toEqual(defaultHomeLayout());
+  });
+
+  it('locks the bottom controls while saving and retains the draft and retry action after failure', async () => {
+    let rejectSave!: (reason: Error) => void;
+    vi.mocked(api.saveHomeLayout).mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectSave = reject;
+        }),
+    );
+    await act(async () => root.render(<EditorHarness />));
+    await act(async () => home.editButton.current!.click());
+    await click('Hide Workouts');
+    await click('Save layout');
+    expect(
+      [...container.querySelectorAll<HTMLButtonElement>('.app-tab-layout button')].every(
+        (button) => button.disabled,
+      ),
+    ).toBe(true);
+    await act(async () => rejectSave(new Error('offline')));
+    expect(home.editing).toBe(true);
+    expect(home.draft.hidden).toEqual(['workouts']);
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+      'Tap the green tick to try again',
+    );
+    await click('Save layout');
+    expect(home.editing).toBe(false);
+    expect(home.layout.hidden).toEqual(['workouts']);
   });
 });

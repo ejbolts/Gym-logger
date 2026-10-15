@@ -2,6 +2,17 @@
 
 ## 0.5.6
 
+- Tap the Today pencil to edit the cards. The bottom tabs fade into **Cancel**, a
+  **green tick** to save, and **Reset layout**, keeping the controls within reach
+  as you scroll. The old editing box above the cards is removed. Reset previews
+  the default layout; tap the tick to keep it or Cancel to keep your saved layout.
+  Hidden cards remain available through **Add sections**.
+
+<img src="screenshots/releases/0.5.6-home-layout-controls.png" alt="Today in layout edit mode, with card handles and Cancel, a green save tick, and Reset layout in the bottom bar." width="390">
+
+Home layout controls replace the bottom tabs while editing. Captured with a
+separate sample account and generated training data.
+
 - Signing in and opening the app load the current month and the two before it,
   rather than every workout ever logged. With seven years of sample training, the
   startup workout download fell from about 21 MB to 0.6 MB and the Today summary
