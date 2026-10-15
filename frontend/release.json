@@ -7,5 +7,9 @@
     "Earlier versions lists previous releases. Expand any version to read its summary, changes, screenshot and GitHub notes.",
     "Settings > What's new > View changes opens the same release history at any time."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#056"
+  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#056",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/a5d12c9edb9888e762ac38667535529621f7a2cc/docs/screenshots/releases/0.5.6-release-history.png",
+    "alt": "What's new with this version's changes collapsed and an Earlier versions list with version 0.2.0 expanded."
+  }
 }
