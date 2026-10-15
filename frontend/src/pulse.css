@@ -1670,9 +1670,11 @@ button.pulse-card:hover {
 }
 
 .progress-hero > .exercise-icon {
-  width: clamp(4.5rem, 22vw, 6rem);
+  --progress-icon-size: clamp(4.5rem, 22vw, 6rem);
+  width: var(--progress-icon-size);
   height: auto;
-  margin-right: 1rem;
+  /* Centre between All (13.875rem from the left) and fullscreen (1rem from the right). */
+  margin-right: max(0px, calc(50% - 6.4375rem - var(--progress-icon-size) / 2));
   aspect-ratio: 1;
   border: 0;
   border-radius: 0.75rem;
