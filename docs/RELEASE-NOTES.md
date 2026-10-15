@@ -5,10 +5,13 @@
 - **Settings > What's new** places **Check for updates** on the right, aligned
   with **View changes** and **Replay guide**.
 - Checking for updates shows a timestamped notification for six seconds, with a
-  dismiss button. Results no longer add persistent text or empty space to the
-  Settings card. Available updates still have their refresh notification above.
+  dismiss button and a blue bar along its bottom edge that shrinks from right to
+  left as the time runs out, like the personal-record popup. Reduced-motion
+  settings show the countdown in one-second steps. Results no longer add persistent
+  text or empty space to the Settings card. Available updates still have their
+  refresh notification above.
 
-<img src="screenshots/releases/0.5.6-settings-button-alignment.png" alt="A brief Up to date notification includes the check time above Settings, with Check for updates aligned to the other buttons and no inline status text." width="390">
+<img src="screenshots/releases/0.5.6-settings-button-alignment.png" alt="A timestamped Up to date notification has a blue countdown bar along its bottom edge above the compact Settings card." width="390">
 
 Settings actions share the same right edge, while results appear temporarily above
 the page. Captured with an isolated sample account.

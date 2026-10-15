@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { UpdateCheckStatus } from './useAppUpdates';
 
@@ -62,6 +62,7 @@ export function AppUpdateCheck({
             role="status"
             aria-live="polite"
             aria-atomic="true"
+            style={{ '--update-toast-duration': `${FEEDBACK_MS}ms` } as CSSProperties}
           >
             <div>
               <strong>{feedback.message}</strong>
@@ -81,6 +82,9 @@ export function AppUpdateCheck({
             >
               ×
             </button>
+            <span className="release-update-countdown" aria-hidden="true">
+              <span className="release-update-countdown-fill" />
+            </span>
           </aside>,
           document.body,
         )}
