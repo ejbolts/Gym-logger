@@ -1061,7 +1061,11 @@ function AppContent() {
         />
       )}
       {announcement.open && canShowPrompts && (
-        <ReleaseAnnouncement release={announcement.release} onClose={announcement.dismiss} />
+        <ReleaseAnnouncement
+          release={announcement.release}
+          history={announcement.history}
+          onClose={announcement.dismiss}
+        />
       )}
       {(guideRequested || (guideWaiting && announcement.checked)) &&
         !announcement.open &&

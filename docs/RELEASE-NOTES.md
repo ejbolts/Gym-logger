@@ -1,5 +1,23 @@
 # Gym Logger release notes
 
+## 0.5.6
+
+- **What's new** can be compacted. Select **Hide changes** below the summary to
+  collapse the change list, screenshot and GitHub link for the current version;
+  **Show N changes** expands them again. The title and summary stay visible.
+- An **Earlier versions** list follows the current notes. Each previous release
+  starts collapsed with its version and title; expand one to read its summary,
+  changes, screenshot and GitHub notes. Versions open and close independently, and
+  their screenshots load only when expanded.
+- **Settings > What's new > View changes** opens the same history at any time.
+- The history is bundled with the app from `frontend/release-history.json`, so it
+  works offline and needs no database migration.
+
+<img src="screenshots/releases/0.5.6-release-history.png" alt="What's new for version 0.5.6 with its changes collapsed behind Show 3 changes, followed by an Earlier versions list where 0.2.0 is expanded to show its summary, changes and GitHub link." width="390">
+
+The current notes compacted and one earlier version expanded, captured at phone
+width with a fictional account in a separate sample database.
+
 ## 0.5.5
 
 - A persistent top notification announces a new app release without interrupting
@@ -227,7 +245,7 @@ Username-based account creation in v0.3.0, captured with empty fields in the iso
 
 ## Publishing the next announcement
 
-1. Edit `frontend/release.json`. Choose the version manually following [the agent release policy](../AGENTS.md#release-versions-and-announcements). Before merging a batch, [evaluate the currently open GitHub PRs](../AGENTS.md#reviewing-and-merging-a-pr-batch), select the included PRs and reconcile their release metadata. A coordinated batch of multiple PRs for an application release gets **one minor bump** (`0.3.0` to `0.4.0`), even if its changes are mostly patches. Every PR in that batch shares the version and contributes to one announcement; do not accumulate its individual version proposals. Reuse an already pending minor release for that batch, consolidate unpublished patch notes into it, and retain the version for follow-up fixes before deployment. For an independently released single PR, default to a patch (`0.3.0` to `0.3.1`); a substantial new capability can justify a minor bump. Documentation/test/tooling-only batches with no application behavior change need no app bump. Compare deployed and pending versions, never reuse a deployed number, and preserve deployed release history. Update `title`, `summary`, `changes` and `url`. `url` must be an HTTPS GitHub link to your release, changelog or pull request. The build validates the metadata but does not increment versions automatically.
+1. Edit `frontend/release.json`. Choose the version manually following [the agent release policy](../AGENTS.md#release-versions-and-announcements). Before merging a batch, [evaluate the currently open GitHub PRs](../AGENTS.md#reviewing-and-merging-a-pr-batch), select the included PRs and reconcile their release metadata. A coordinated batch of multiple PRs for an application release gets **one minor bump** (`0.3.0` to `0.4.0`), even if its changes are mostly patches. Every PR in that batch shares the version and contributes to one announcement; do not accumulate its individual version proposals. Reuse an already pending minor release for that batch, consolidate unpublished patch notes into it, and retain the version for follow-up fixes before deployment. For an independently released single PR, default to a patch (`0.3.0` to `0.3.1`); a substantial new capability can justify a minor bump. Documentation/test/tooling-only batches with no application behavior change need no app bump. Compare deployed and pending versions, never reuse a deployed number, and preserve deployed release history. Before replacing a deployed release's notes, move its existing `release.json` object to the top of `frontend/release-history.json` so the app keeps showing it under **Earlier versions**; leave unpublished pending versions out of the history. Update `title`, `summary`, `changes` and `url`. `url` must be an HTTPS GitHub link to your release, changelog or pull request. The build validates the metadata but does not increment versions automatically.
 2. Add the detailed notes here (keep previous versions), or publish a GitHub release and link to it instead. If this repository is private, readers need GitHub access to open that link; the short notes remain visible inside the app.
    For a visible feature or UI improvement, include a screenshot of the verified revision using isolated sample data. Inspect it for private information, commit it under `docs/screenshots/releases/` with a versioned filename, and embed it here using a relative image path, descriptive alt text and a caption. Before/after images are useful when they clarify the change. Explain omitted screenshots in the notes or pull request when capture is unavailable or the change has no visible result.
    The optional `image` object in `frontend/release.json` uses `url` and `alt` to display the same screenshot in the app's pop-up. Use a direct HTTPS `raw.githubusercontent.com` image URL pinned to the screenshot's commit, not a GitHub page URL or temporary browser-artifact path. Check anonymous access before publishing; private-repository images may not be accessible to app users. If the image is unavailable, the app still shows the text and dismissal controls.
@@ -236,4 +254,4 @@ Username-based account creation in v0.3.0, captured with empty fields in the iso
 
 Vite emits `release.json` into `frontend/dist` with the app and serves it directly during development. The browser checks that deployed file using `cache: no-store`; the service worker does not precache it. The announcement therefore follows the current frontend build. Changing source notes without rebuilding the frontend leaves its announcement unchanged.
 
-If users miss several releases, they see the latest summary and can follow the link for earlier notes. Network failures leave the app usable and are retried when it returns to the foreground or reconnects. Dismissal survives sign-out; deleting browser storage shows the notes again. Browsers that block storage remember dismissal for the current page session only.
+If users miss several releases, they see the latest notes and can expand earlier versions in the same pop-up. The build rejects a history entry that is invalid, out of order, duplicated or not older than the current version. Network failures leave the app usable and are retried when it returns to the foreground or reconnects. Dismissal survives sign-out; deleting browser storage shows the notes again. Browsers that block storage remember dismissal for the current page session only.

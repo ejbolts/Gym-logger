@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import history from '../release-history.json';
 import metadata from '../release.json';
 import {
   canShowReleaseAnnouncement,
@@ -7,7 +8,7 @@ import {
   rememberRelease,
   watchReleases,
 } from './releaseAnnouncements';
-import { parseRelease } from './releaseMetadata';
+import { compareVersions, parseRelease, parseReleaseHistory } from './releaseMetadata';
 
 const screenshot = {
   url: 'https://raw.githubusercontent.com/owner/repo/0123456789abcdef0123456789abcdef01234567/docs/screenshots/sample-release.png',
@@ -63,6 +64,27 @@ describe('release announcements', () => {
   it('accepts older releases without an image', () => {
     const textOnly = { ...metadata, image: undefined };
     expect(parseRelease(textOnly)).toEqual(textOnly);
+  });
+
+  it('ships earlier releases newest first, all older than the current version', () => {
+    expect(parseReleaseHistory(history, metadata.version)).toEqual(history);
+    expect(history.map((release) => release.version)).not.toContain(metadata.version);
+    expect(compareVersions('0.10.0', '0.9.9')).toBeGreaterThan(0);
+    expect(compareVersions('1.2.3', '1.2.3')).toBe(0);
+  });
+
+  it('rejects release history that is invalid, unordered, duplicated or not older', () => {
+    const older = { ...metadata, version: '0.1.1' };
+    const oldest = { ...metadata, version: '0.1.0' };
+    expect(parseReleaseHistory([], '1.0.0')).toEqual([]);
+    expect(parseReleaseHistory(older, '1.0.0')).toBeNull();
+    expect(
+      parseReleaseHistory([older, { ...oldest, url: 'http://github.com/x' }], '1.0.0'),
+    ).toBeNull();
+    expect(parseReleaseHistory([oldest, older], '1.0.0')).toBeNull();
+    expect(parseReleaseHistory([older, older], '1.0.0')).toBeNull();
+    expect(parseReleaseHistory([older], '0.1.1')).toBeNull();
+    expect(parseReleaseHistory([older], '0.1.0')).toBeNull();
   });
 
   it('remembers dismissal per account and version, including on another browser session', () => {
