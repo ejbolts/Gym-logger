@@ -11,7 +11,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/5271486d27440c3e5e40a5fe1eb4a3a5f20797ad/docs/screenshots/releases/0.5.6-calendar-older-months.png",
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/db8f5390860f414e249fdb07d26b56f1a78a3bb9/docs/screenshots/releases/0.5.6-calendar-older-months.png",
     "alt": "The Today consistency calendar shows July 2026, loaded on demand after swiping back past the three months shown at startup."
   }
 }
