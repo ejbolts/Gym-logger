@@ -152,6 +152,9 @@
 }
 
 .release-update-check {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   margin-top: 0.75rem;
 }
 

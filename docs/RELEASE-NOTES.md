@@ -1,5 +1,14 @@
 # Gym Logger release notes
 
+## 0.5.6
+
+- **Settings > What's new** places **Check for updates** on the right, aligned
+  with **View changes** and **Replay guide**.
+
+<img src="screenshots/releases/0.5.6-settings-button-alignment.png" alt="Settings shows Check for updates aligned to the right edge of View changes and Replay guide." width="390">
+
+Settings actions share the same right edge. Captured with an isolated sample account.
+
 ## 0.5.5
 
 - A persistent top notification announces a new app release without interrupting
