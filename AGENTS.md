@@ -2,7 +2,7 @@
 
 Follow this repository's README and checks, together with the user's shared verification and Git synchronization instructions.
 
-For an authorized update of the existing Ubuntu/Oracle deployment, follow [the server release runbook](docs/SERVER-RELEASE-RUNBOOK.md). It covers pinned builds, backups, preserving server edits, migrations, verification and rollback; reading it does not authorize a deployment.
+Keep server release runbooks and private operator notes local. Do not commit them or include their contents in pull requests. Consult the operator's local instructions before an explicitly authorized deployment.
 
 ## Private URLs in repository content and pull requests
 
