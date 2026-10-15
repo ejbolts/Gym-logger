@@ -1,5 +1,37 @@
 # Gym Logger release notes
 
+## 0.5.5
+
+- A persistent top notification announces a new app release without interrupting
+  your current screen. Checks run every minute while the app is visible and online,
+  and when you return or reconnect. Use the refresh arrow when ready.
+- The current app's cached assets remain available while a replacement service
+  worker downloads and waits. App screens no longer reload automatically on updates.
+- **Settings > What's new > Check for updates** checks both release information and
+  the installed app, with feedback for an available update, the latest version or
+  a connection problem.
+- Refreshing saves and restores the active workout draft on the same browser and
+  device, including exercises, sets, completion and notes. A failed local save blocks
+  the refresh; save your workout before updating. Editing a previously saved workout
+  also requires saving those edits first. Drafts become server records when the
+  workout is finished; clearing browser data removes a local draft.
+- The release popup describes the version actually loaded. Once dismissed, it stays
+  dismissed for that account and version in this browser, including after logout and
+  login. Another device or cleared browser storage can show it again. Settings can
+  reopen the notes. Popups wait while logging or uploading and behind other dialogs.
+- These update controls apply after loading this release. Older open app versions
+  retain their previous update behavior until refreshed. No database migration is required.
+
+<img src="screenshots/releases/0.5.5-update-notification.png" alt="An update notification with a refresh arrow sits above a live sample workout, retaining its completed and planned bench-press sets." width="390">
+
+The current workout stays usable while an update waits. The next-version label is
+a simulated deployment in an isolated sample environment, not an announced release.
+Using the arrow restored the completed set, planned set and notes in the new build.
+
+<img src="screenshots/releases/0.5.5-settings-update-check.png" alt="Settings shows version 0.5.5, a Check for updates button and confirmation that the latest version is installed." width="390">
+
+Check manually from Settings. Captures use fictional records and a separate database.
+
 ## 0.5.4
 
 - In **Today > Edit Home**, use the resize button beside a card's drag handle to

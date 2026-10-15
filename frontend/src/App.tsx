@@ -76,6 +76,10 @@ import { NotificationDialog } from './NotificationDialog';
 import { PopupDialog } from './PopupDialog';
 import { ReleaseAnnouncement } from './ReleaseAnnouncement';
 import { useReleaseAnnouncement } from './useReleaseAnnouncement';
+import { useAppUpdates } from './useAppUpdates';
+import { AppUpdateBanner } from './AppUpdateBanner';
+import { AppUpdateCheck } from './AppUpdateCheck';
+import { BEFORE_APP_REFRESH_EVENT } from './appUpdates';
 import { canShowReleaseAnnouncement } from './releaseAnnouncements';
 import { HomeScreenGuide } from './HomeScreenGuide';
 import { useHomeScreenGuide } from './useHomeScreenGuide';
@@ -489,6 +493,7 @@ export function App() {
 function AppContent() {
   const { user } = useUserSession();
   const announcement = useReleaseAnnouncement(user?.id ?? null);
+  const appUpdates = useAppUpdates();
   const homeScreenGuide = useHomeScreenGuide(user?.id ?? null, announcement.checked);
   const [guideWaiting, setGuideWaiting] = useState(() => user !== null && appGuideWaiting(user.id));
   const [guideRequested, setGuideRequested] = useState(false);
@@ -1044,7 +1049,17 @@ function AppContent() {
   }
 
   return (
-    <div className={`tracker-app ${showTabBar ? 'has-tab-bar' : ''}`}>
+    <div
+      className={`tracker-app${showTabBar ? ' has-tab-bar' : ''}${appUpdates.available ? ' has-app-update' : ''}`}
+    >
+      {appUpdates.available && (
+        <AppUpdateBanner
+          version={appUpdates.availableRelease?.version}
+          refreshing={appUpdates.refreshing}
+          error={appUpdates.refreshError}
+          onRefresh={() => void appUpdates.refresh()}
+        />
+      )}
       {announcement.open && canShowPrompts && (
         <ReleaseAnnouncement release={announcement.release} onClose={announcement.dismiss} />
       )}
@@ -1298,6 +1313,13 @@ function AppContent() {
               onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
               releaseVersion={announcement.release.version}
               onOpenReleaseNotes={announcement.show}
+              updateCheck={
+                <AppUpdateCheck
+                  available={appUpdates.available}
+                  status={appUpdates.status}
+                  onCheck={() => void appUpdates.check()}
+                />
+              }
               onOpenHomeScreenGuide={homeScreenGuide.show}
               onOpenAppGuide={() => {
                 guideReturnTab.current = tab;
@@ -2137,10 +2159,15 @@ function WorkoutLogger({
   }, [initialWorkout, startedAt]);
 
   useEffect(() => {
-    if (initialWorkout) return;
+    if (initialWorkout) {
+      // Saved-workout edits have no active draft; keep them open until explicitly saved.
+      const keepEdits = (event: Event) => event.preventDefault();
+      window.addEventListener(BEFORE_APP_REFRESH_EVENT, keepEdits);
+      return () => window.removeEventListener(BEFORE_APP_REFRESH_EVENT, keepEdits);
+    }
     let lastActivityWriteAt = 0;
     const persistDraft = () => {
-      writeActiveWorkoutDraft({
+      return writeActiveWorkoutDraft({
         version: 1,
         startedAt,
         ...(resumedWorkoutId && {
@@ -2185,12 +2212,17 @@ function WorkoutLogger({
       }
     };
     persistDraft();
+    const persistBeforeRefresh = (event: Event) => {
+      if (savingRef.current || !persistDraft()) event.preventDefault();
+    };
+    window.addEventListener(BEFORE_APP_REFRESH_EVENT, persistBeforeRefresh);
     window.addEventListener('pagehide', persistDraft);
     window.addEventListener('pointerdown', recordActivity, { capture: true, passive: true });
     window.addEventListener('keydown', recordActivity, true);
     window.addEventListener('scroll', recordActivity, { capture: true, passive: true });
     document.addEventListener('visibilitychange', persistWhenHidden);
     return () => {
+      window.removeEventListener(BEFORE_APP_REFRESH_EVENT, persistBeforeRefresh);
       window.removeEventListener('pagehide', persistDraft);
       window.removeEventListener('pointerdown', recordActivity, true);
       window.removeEventListener('keydown', recordActivity, true);
@@ -5817,11 +5849,13 @@ function SettingsScreen({
   onOpenAdmin,
   releaseVersion,
   onOpenReleaseNotes,
+  updateCheck,
   onOpenHomeScreenGuide,
   onOpenAppGuide,
 }: {
   releaseVersion: string;
   onOpenReleaseNotes: () => void;
+  updateCheck: ReactNode;
   onOpenHomeScreenGuide: () => void;
   onOpenAppGuide: () => void;
   account: User | null;
@@ -6052,6 +6086,7 @@ function SettingsScreen({
           </button>
         </header>
         <p>Read the latest release notes and see what's changed in Gym Logger.</p>
+        {updateCheck}
       </section>
       <section className="settings-panel panel" aria-labelledby="app-guide-settings-title">
         <header>

@@ -3,6 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { BEFORE_APP_REFRESH_EVENT } from './appUpdates';
 import { api } from './api';
 import { readDashboardCache, writeDashboardCache } from './workoutCache';
 import {
@@ -154,6 +155,25 @@ afterEach(async () => {
 });
 
 describe('active workout recovery at startup', () => {
+  it('flushes the live draft before an update and blocks refresh if device storage fails', async () => {
+    const draft = storedDraft();
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    const refresh = new Event(BEFORE_APP_REFRESH_EVENT, { cancelable: true });
+    expect(window.dispatchEvent(refresh)).toBe(true);
+    expectPreserved(draft);
+    const save = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('device storage is full');
+    });
+    const blocked = new Event(BEFORE_APP_REFRESH_EVENT, { cancelable: true });
+    expect(window.dispatchEvent(blocked)).toBe(false);
+    expectPreserved(draft);
+    save.mockRestore();
+    expect(window.dispatchEvent(new Event(BEFORE_APP_REFRESH_EVENT, { cancelable: true }))).toBe(
+      true,
+    );
+  });
+
   it('restores every movement, set and note before the first draft write on a normal reload', async () => {
     const draft = storedDraft();
     writeActiveWorkoutDraft(draft);
@@ -265,6 +285,10 @@ describe('inactive workout suggestions', () => {
     vi.mocked(api.createWorkout).mockReturnValueOnce(new Promise<TrackedWorkout>(() => {}));
     await mount();
     expect(api.createWorkout).toHaveBeenCalledOnce();
+    // An update cannot reload while the server save is still awaiting its response.
+    expect(window.dispatchEvent(new Event(BEFORE_APP_REFRESH_EVENT, { cancelable: true }))).toBe(
+      false,
+    );
     const payload = vi.mocked(api.createWorkout).mock.calls[0][0] as WorkoutInput;
     const sets = payload.movements.flatMap((movement) => movement.sets);
     expect(sets.map((set) => set.completed)).toEqual([true, false, false]);

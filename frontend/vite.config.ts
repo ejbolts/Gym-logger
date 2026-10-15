@@ -80,8 +80,9 @@ export default defineConfig({
     VitePWA({
       // Registration is managed in appUpdates.ts without interrupting open forms.
       injectRegister: false,
+      registerType: 'prompt',
       workbox: {
-        skipWaiting: true,
+        skipWaiting: false,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         // Never answer API navigations with the app shell, and never cache /api responses:
