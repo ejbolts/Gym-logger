@@ -2,7 +2,7 @@ import type { HeatmapDay, TrackedWorkout, WorkoutHistorySummary } from './types'
 
 /**
  * Long training logs load recent months first. Startup reads this many calendar months, including
- * the current one; scrolling back through the calendar or History reads older ones in chunks.
+ * the current one; scrolling back through the calendar or choosing Show more reads older chunks.
  */
 export const INITIAL_HISTORY_MONTHS = 3;
 export const OLDER_HISTORY_MONTHS = 6;
