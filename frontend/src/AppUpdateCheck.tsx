@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { UpdateCheckStatus } from './useAppUpdates';
 
-const FEEDBACK_MS = 6000;
+const FEEDBACK_MS = 3000;
 
 export function AppUpdateCheck({
   available,

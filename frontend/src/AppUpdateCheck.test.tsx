@@ -64,7 +64,7 @@ describe('update check notification', () => {
     expect(container.querySelector('[role="status"]')).toBeNull();
     expect(container.querySelector('p')).toBeNull();
 
-    await act(async () => vi.advanceTimersByTime(5999));
+    await act(async () => vi.advanceTimersByTime(2999));
     expect(document.querySelector('[role="status"]')).not.toBeNull();
     await act(async () => vi.advanceTimersByTime(1));
     expect(document.querySelector('[role="status"]')).toBeNull();
@@ -74,14 +74,14 @@ describe('update check notification', () => {
   it('gives each repeated check a fresh timestamp and full notification duration', async () => {
     await check();
     await finish('current');
-    await act(async () => vi.advanceTimersByTime(4000));
+    await act(async () => vi.advanceTimersByTime(2000));
     await check();
     expect(document.querySelector('[role="status"]')).toBeNull();
     await finish('current');
-    expect(document.querySelector('time')!.dateTime).toBe('2026-10-15T12:00:04.000Z');
-    await act(async () => vi.advanceTimersByTime(2000));
+    expect(document.querySelector('time')!.dateTime).toBe('2026-10-15T12:00:02.000Z');
+    await act(async () => vi.advanceTimersByTime(1000));
     expect(document.querySelector('[role="status"]')).not.toBeNull();
-    await act(async () => vi.advanceTimersByTime(4000));
+    await act(async () => vi.advanceTimersByTime(2000));
     expect(document.querySelector('[role="status"]')).toBeNull();
   });
 

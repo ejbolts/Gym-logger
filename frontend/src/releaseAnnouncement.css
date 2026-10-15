@@ -236,11 +236,11 @@
 @media (prefers-reduced-motion: reduce) {
   .release-update-countdown-fill {
     animation-duration: var(--update-toast-duration) !important;
-    animation-timing-function: steps(6, end);
+    animation-timing-function: steps(3, end);
   }
 }
 
 html[data-reduce-motion] .release-update-countdown-fill {
   animation-duration: var(--update-toast-duration) !important;
-  animation-timing-function: steps(6, end);
+  animation-timing-function: steps(3, end);
 }

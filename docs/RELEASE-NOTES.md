@@ -4,7 +4,7 @@
 
 - **Settings > What's new** places **Check for updates** on the right, aligned
   with **View changes** and **Replay guide**.
-- Checking for updates shows a timestamped notification for six seconds, with a
+- Checking for updates shows a timestamped notification for three seconds, with a
   dismiss button and a blue bar along its bottom edge that shrinks from right to
   left as the time runs out, like the personal-record popup. Reduced-motion
   settings show the countdown in one-second steps. Results no longer add persistent

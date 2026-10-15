@@ -4,7 +4,7 @@
   "summary": "Check for updates with aligned controls and a brief timestamped notification.",
   "changes": [
     "Settings places Check for updates on the right, aligned with View changes and Replay guide.",
-    "Update checks show a timestamped notification with a blue countdown bar that shrinks from right to left over six seconds, instead of leaving status text in the Settings card."
+    "Update checks show a timestamped notification with a blue countdown bar that shrinks from right to left over three seconds, instead of leaving status text in the Settings card."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056"
 }
