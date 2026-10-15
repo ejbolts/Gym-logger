@@ -8,5 +8,9 @@
     "Open a pinned photo in any saved workout and choose All workouts on this machine to jump straight to its history.",
     "While logging, each saved equipment photo shows when you last used it, to help you pick the right machine when you return to a gym."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/36a46e72bfebaf1a129e93e093c8fb6967bc2f2f/docs/screenshots/releases/0.5.6-machine-history-filter.png",
+    "alt": "History filtered by one saved leg press machine, showing it was last used a year ago with the most recent session on it expanded."
+  }
 }
