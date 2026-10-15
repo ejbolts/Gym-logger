@@ -102,4 +102,29 @@ describe('recent exercise history', () => {
       'previous',
     );
   });
+
+  it('adds the latest older session after the loaded ones, once', () => {
+    const loaded = workout('loaded', '2026-07-08', '2026-07-08T09:00:00Z', [
+      trackedSet('loaded-set', 0),
+    ]);
+    const older = {
+      workout_id: 'older',
+      workout_date: '2025-01-03',
+      workout_name: 'Old push',
+      movement_notes: 'Seat 3',
+      sets: [trackedSet('older-set', 0)],
+    };
+
+    expect(
+      recentExerciseHistory([loaded], exercise.id, undefined, 5, older).map(
+        (entry) => entry.workoutId,
+      ),
+    ).toEqual(['loaded', 'older']);
+    expect(recentExerciseHistory([], exercise.id, undefined, 5, older)[0]).toMatchObject({
+      workoutName: 'Old push',
+      movementNotes: 'Seat 3',
+    });
+    expect(recentExerciseHistory([loaded], exercise.id, undefined, 1, older)).toHaveLength(1);
+    expect(recentExerciseHistory([], exercise.id, 'older', 5, older)).toEqual([]);
+  });
 });

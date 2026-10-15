@@ -40,6 +40,7 @@ import type {
   DashboardData,
   Exercise,
   ExerciseCreateInput,
+  ExerciseHistoryBaseline,
   ExerciseProgress,
   MachinePhoto,
   PersonalRecord,
@@ -48,6 +49,7 @@ import type {
   TrackedWorkout,
   TrainingPreferences,
   WorkoutCategory,
+  WorkoutHistorySummary,
   User,
   WorkoutTypeColors,
   WorkoutInput,
@@ -71,6 +73,14 @@ import {
   type BodyTrendPreference,
 } from './bodyTrendPreference';
 import { monthCountFromOldestWorkout } from './calendarRange';
+import {
+  appendOlderWorkouts,
+  hasOlderHistory,
+  initialHistoryStart,
+  keepLoadedBefore,
+  olderHistoryWindow,
+  prependOlderDays,
+} from './historyWindow';
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { NotificationDialog } from './NotificationDialog';
 import { PopupDialog } from './PopupDialog';
@@ -262,6 +272,20 @@ const defaultCategoryColors: WorkoutTypeColors = {
 
 const restOptions = [60, 90, 120, 150, 180, 210, 240, 270, 300];
 const HISTORY_PAGE_SIZE = 8;
+
+/** Each exercise's history before `before`, the start of the window loaded at the time. */
+type HistoryBaselines = {
+  before: string;
+  byExercise: Map<string, ExerciseHistoryBaseline>;
+};
+
+type OlderHistoryProps = {
+  historyStart: string;
+  hasOlder: boolean;
+  loadingOlder: boolean;
+  olderError: string | null;
+  onLoadOlder: () => void;
+};
 const CARDIO_HISTORY_PAGE_SIZE = 5;
 const UNDO_TOAST_MS = 4000;
 const IMPORTED_BODYWEIGHT_NOTE = 'Imported from workout CSV.';
@@ -288,8 +312,19 @@ function suggestedSetsFromHistory(
   exercise: Exercise,
   onOrBeforeDate: string,
   excludedWorkoutId?: string,
+  olderHistory?: Map<string, ExerciseHistoryBaseline> | null,
 ): DraftSet[] {
-  const previousSets = latestExerciseSets(workouts, exercise.id, onOrBeforeDate, excludedWorkoutId);
+  let previousSets = latestExerciseSets(workouts, exercise.id, onOrBeforeDate, excludedWorkoutId);
+  // Not logged in the loaded window: fall back to its latest session from older history.
+  const older = olderHistory?.get(exercise.id)?.latest;
+  if (
+    !previousSets.length &&
+    older &&
+    older.workout_id !== excludedWorkoutId &&
+    older.workout_date <= onOrBeforeDate
+  ) {
+    previousSets = older.sets;
+  }
   if (!previousSets.length) return [emptySet(exercise.kind)];
   return previousSets.map((previous) => ({
     key: crypto.randomUUID(),
@@ -529,6 +564,15 @@ function AppContent() {
       exercises: typeof update === 'function' ? update(current.exercises) : update,
     }));
   const [workouts, setWorkouts] = useState<TrackedWorkout[]>([]);
+  // Workouts and calendar days are loaded from this date onwards; older ones load on demand.
+  const [historyStart, setHistoryStart] = useState(() => initialHistoryStart());
+  const historyStartRef = useRef(historyStart);
+  const [olderHistory, setOlderHistory] = useState<{ loading: boolean; error: string | null }>({
+    loading: false,
+    error: null,
+  });
+  const loadingOlderHistoryRef = useRef(false);
+  const [historyBaselines, setHistoryBaselines] = useState<HistoryBaselines | null>(null);
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [completionRecords, setCompletionRecords] = useState<PersonalRecord[]>([]);
@@ -678,10 +722,36 @@ function AppContent() {
     activityLabel = trainingDataActivityLabel('startup'),
   }: { silent?: boolean; activityLabel?: string | null } = {}) {
     const refresh = async () => {
+      const windowStart = historyStartRef.current;
       const results = await Promise.allSettled([
-        api.dashboard().then((nextDashboard) => {
-          startTransition(() => setDashboard(nextDashboard));
+        api.dashboard(windowStart).then((nextDashboard) => {
+          startTransition(() =>
+            setDashboard((current) => {
+              const olderDays = keepLoadedBefore(
+                current?.heatmap ?? [],
+                windowStart,
+                historyStartRef.current,
+              );
+              return olderDays.length
+                ? { ...nextDashboard, heatmap: [...olderDays, ...nextDashboard.heatmap] }
+                : nextDashboard;
+            }),
+          );
           void writeDashboardCache(nextDashboard);
+          if (hasOlderHistory(windowStart, nextDashboard.history)) {
+            // Logging compares sets with older history; its summary loads off the startup path.
+            void api
+              .exerciseHistoryBaselines(windowStart)
+              .then((baselines) =>
+                setHistoryBaselines({
+                  before: windowStart,
+                  byExercise: new Map(
+                    baselines.map((baseline) => [baseline.exercise_id, baseline]),
+                  ),
+                }),
+              )
+              .catch(() => undefined);
+          } else setHistoryBaselines(null);
         }),
         api
           .listExercises()
@@ -697,8 +767,13 @@ function AppContent() {
             }));
             throw reason;
           }),
-        api.listWorkouts().then((nextWorkouts) => {
-          startTransition(() => setWorkouts(nextWorkouts));
+        api.listWorkouts(windowStart).then((nextWorkouts) => {
+          startTransition(() =>
+            setWorkouts((current) => [
+              ...nextWorkouts,
+              ...keepLoadedBefore(current, windowStart, historyStartRef.current),
+            ]),
+          );
         }),
         api.listBodyMeasurements().then((nextMeasurements) => {
           startTransition(() => setMeasurements(nextMeasurements));
@@ -728,6 +803,48 @@ function AppContent() {
     if (activityLabel) await withBackgroundActivity(activityLabel, refresh);
     else await refresh();
   }
+
+  const historySummary = dashboard?.history ?? null;
+  const olderHistoryAvailable = hasOlderHistory(historyStart, historySummary);
+
+  async function loadOlderHistory() {
+    if (loadingOlderHistoryRef.current) return;
+    if (!hasOlderHistory(historyStartRef.current, historySummary)) return;
+    loadingOlderHistoryRef.current = true;
+    setOlderHistory({ loading: true, error: null });
+    const { start, end } = olderHistoryWindow(historyStartRef.current);
+    try {
+      const older = await api.listOlderHistory(start, end);
+      historyStartRef.current = start;
+      setHistoryStart(start);
+      setWorkouts((current) => appendOlderWorkouts(current, older.workouts));
+      setDashboard((current) =>
+        current
+          ? { ...current, heatmap: prependOlderDays(current.heatmap, older.heatmap) }
+          : current,
+      );
+      setOlderHistory({ loading: false, error: null });
+    } catch (reason) {
+      setOlderHistory({
+        loading: false,
+        error: reason instanceof Error ? reason.message : 'Could not load older workouts.',
+      });
+    } finally {
+      loadingOlderHistoryRef.current = false;
+    }
+  }
+
+  const loadOlderHistoryRef = useRef(loadOlderHistory);
+  loadOlderHistoryRef.current = loadOlderHistory;
+  // Stable, so scroll observers in the calendar and History are not renewed on every render.
+  const onLoadOlderHistory = useCallback(() => void loadOlderHistoryRef.current(), []);
+  const olderHistoryProps: OlderHistoryProps = {
+    historyStart,
+    hasOlder: olderHistoryAvailable,
+    loadingOlder: olderHistory.loading,
+    olderError: olderHistory.error,
+    onLoadOlder: onLoadOlderHistory,
+  };
 
   function refreshAfterMutation(): Promise<void> {
     return refreshData({ silent: true, activityLabel: trainingDataActivityLabel('mutation') });
@@ -1156,6 +1273,7 @@ function AppContent() {
                   <InteractiveWorkoutCalendar
                     entries={dashboard?.heatmap ?? []}
                     workouts={workouts}
+                    olderHistory={olderHistoryProps}
                     categoryColors={workoutTypeColors}
                     activeWorkout={activeWorkoutStartedAt !== null}
                     activeWorkoutDate={activeWorkoutDate}
@@ -1190,6 +1308,7 @@ function AppContent() {
                   resumingWorkout={resumingWorkout}
                   currentBodyweight={measurements[0]?.weight_kg ?? null}
                   historicalWorkouts={workouts}
+                  historyBaselines={historyBaselines}
                   restTimerEnabled={restTimerEnabled}
                   categoryColors={workoutTypeColors}
                   onExerciseHistory={(exerciseId) => openHistorySection('progress', exerciseId)}
@@ -1283,6 +1402,8 @@ function AppContent() {
               initialExerciseId={historyExerciseId}
               weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
               heatmap={dashboard?.heatmap ?? []}
+              historySummary={historySummary}
+              olderHistory={olderHistoryProps}
               activeWorkout={activeWorkoutStartedAt !== null}
               activeWorkoutDate={activeWorkoutDate}
               onResumeWorkout={() => setTab('log')}
@@ -1295,6 +1416,7 @@ function AppContent() {
           <CachedTabPanel active={tab === 'settings'}>
             <SettingsScreen
               workouts={workouts}
+              historySummary={historySummary}
               measurements={measurements}
               workoutTypeColors={workoutTypeColors}
               onWorkoutTypeColorsChange={setWorkoutTypeColors}
@@ -1615,20 +1737,27 @@ function CalendarCreateWorkoutDialog({
   );
 }
 
+/** Scrolling within this many screen widths of the oldest loaded month loads older ones. */
+const CALENDAR_LOAD_OLDER_SCREENS = 1.5;
+
 function WorkoutCalendar({
   entries,
   categoryColors,
   activeWorkoutDate = null,
   onActiveWorkoutClick,
   onDayClick,
+  olderHistory,
 }: {
   entries: DashboardData['heatmap'];
   categoryColors: WorkoutTypeColors;
   activeWorkoutDate?: string | null;
   onActiveWorkoutClick?: () => void;
   onDayClick: (workoutDate: string, entry: DashboardData['heatmap'][number] | undefined) => void;
+  olderHistory?: OlderHistoryProps;
 }) {
   const calendarScrollRef = useRef<HTMLDivElement>(null);
+  const historyStart = olderHistory?.historyStart ?? null;
+  const hasOlder = olderHistory?.hasOlder ?? false;
   const map = useMemo(
     () => new Map(entries.map((entry) => [entry.workout_date, entry])),
     [entries],
@@ -1636,9 +1765,17 @@ function WorkoutCalendar({
   const months = useMemo(() => {
     const today = new Date();
     today.setHours(12, 0, 0, 0);
-    const datedEntries = activeWorkoutDate
-      ? [...entries, { workout_date: activeWorkoutDate }]
+    // Days before the loaded window (from a dashboard cached by an earlier release) are left out,
+    // since their workouts are not loaded. While older history remains, the window's first month
+    // leads; otherwise the calendar starts at the oldest workout, as before.
+    const loadedEntries = historyStart
+      ? entries.filter((entry) => entry.workout_date >= historyStart)
       : entries;
+    const datedEntries = [
+      ...loadedEntries,
+      ...(activeWorkoutDate ? [{ workout_date: activeWorkoutDate }] : []),
+      ...(hasOlder && historyStart ? [{ workout_date: historyStart }] : []),
+    ];
     const allMonthCount = monthCountFromOldestWorkout(datedEntries, today);
     return Array.from({ length: Math.max(allMonthCount, 1) }, (_, offset) => {
       const first = new Date(today.getFullYear(), today.getMonth() - offset, 1, 12);
@@ -1658,29 +1795,87 @@ function WorkoutCalendar({
         cells,
       };
     }).reverse();
-  }, [activeWorkoutDate, entries]);
+  }, [activeWorkoutDate, entries, hasOlder, historyStart]);
   const todayKey = localCalendarDate(new Date());
   // Taps read the latest handlers from a ref, so the memoised grid below never calls a stale one.
-  const handlersRef = useRef({ onDayClick, onActiveWorkoutClick });
+  const handlersRef = useRef({ onDayClick, onActiveWorkoutClick, olderHistory });
   useLayoutEffect(() => {
-    handlersRef.current = { onDayClick, onActiveWorkoutClick };
+    handlersRef.current = { onDayClick, onActiveWorkoutClick, olderHistory };
   });
+
+  // The month in view, so prepending older months (or showing a hidden screen again) keeps it in
+  // place. `null` follows the newest month; `before` means the loading card ahead of `key`.
+  const anchorRef = useRef<{ key: string; before: boolean } | null>(null);
+  const restoringScrollRef = useRef(false);
+  const restoreScroll = useCallback(() => {
+    const calendar = calendarScrollRef.current;
+    if (!calendar || calendar.clientWidth === 0) return;
+    const anchor = anchorRef.current;
+    const month = anchor
+      ? calendar.querySelector<HTMLElement>(`[data-month="${anchor.key}"]`)
+      : null;
+    restoringScrollRef.current = true;
+    if (!anchor || !month) {
+      calendar.scrollLeft = calendar.scrollWidth - calendar.clientWidth;
+    } else {
+      const monthBox = month.getBoundingClientRect();
+      const gap = parseFloat(getComputedStyle(calendar).columnGap) || 0;
+      // From the loading card, land on the newest of the months that just loaded.
+      calendar.scrollLeft +=
+        monthBox.left -
+        calendar.getBoundingClientRect().left -
+        (anchor.before ? monthBox.width + gap : 0);
+    }
+    window.requestAnimationFrame(() => {
+      restoringScrollRef.current = false;
+    });
+  }, []);
+
+  useLayoutEffect(restoreScroll, [months, hasOlder, restoreScroll]);
 
   useEffect(() => {
     const calendar = calendarScrollRef.current;
-    if (!calendar) return;
-    const frame = window.requestAnimationFrame(() => {
-      calendar.scrollLeft = calendar.scrollWidth - calendar.clientWidth;
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [months]);
+    if (!calendar || typeof ResizeObserver === 'undefined') return;
+    // A hidden screen has no width; once shown again, return to the month that was in view.
+    const observer = new ResizeObserver(restoreScroll);
+    observer.observe(calendar);
+    return () => observer.disconnect();
+  }, [restoreScroll]);
+
+  const handleScroll = useCallback(() => {
+    const calendar = calendarScrollRef.current;
+    if (!calendar || calendar.clientWidth === 0) return;
+    if (!restoringScrollRef.current) {
+      const left = calendar.getBoundingClientRect().left;
+      let closest: { key: string; before: boolean; distance: number } | null = null;
+      for (const child of Array.from(calendar.children) as HTMLElement[]) {
+        const distance = Math.abs(child.getBoundingClientRect().left - left);
+        if (closest && distance >= closest.distance) continue;
+        const key =
+          child.dataset.month ?? (child.nextElementSibling as HTMLElement | null)?.dataset.month;
+        if (key) closest = { key, before: !child.dataset.month, distance };
+      }
+      const atNewest = calendar.scrollLeft >= calendar.scrollWidth - calendar.clientWidth - 2;
+      anchorRef.current =
+        closest && !atNewest ? { key: closest.key, before: closest.before } : null;
+    }
+    const older = handlersRef.current.olderHistory;
+    if (
+      older?.hasOlder &&
+      !older.loadingOlder &&
+      !older.olderError &&
+      calendar.scrollLeft < calendar.clientWidth * CALENDAR_LOAD_OLDER_SCREENS
+    ) {
+      older.onLoadOlder();
+    }
+  }, []);
 
   // Each tab switch re-renders the cached screens, and redrawing thousands of day cells was most
   // of that cost. The grid now only rebuilds when its data changes.
   const monthGrid = useMemo(
     () =>
       months.map((month) => (
-        <article className="calendar-month" key={month.key}>
+        <article className="calendar-month" key={month.key} data-month={month.key}>
           <h3>{month.title}</h3>
           <div className="calendar-weekdays" aria-hidden="true">
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
@@ -1763,7 +1958,28 @@ function WorkoutCalendar({
   );
 
   return (
-    <div className="calendar-scroll" ref={calendarScrollRef}>
+    <div className="calendar-scroll" ref={calendarScrollRef} onScroll={handleScroll}>
+      {hasOlder && olderHistory && (
+        <div className="calendar-month calendar-month-older" aria-live="polite">
+          {olderHistory.olderError ? (
+            <>
+              <p>Earlier months could not load.</p>
+              <button type="button" onClick={olderHistory.onLoadOlder}>
+                Try again
+              </button>
+            </>
+          ) : olderHistory.loadingOlder ? (
+            <>
+              <span className="calendar-older-spinner" aria-hidden="true" />
+              <p>Loading earlier months…</p>
+            </>
+          ) : (
+            <button type="button" onClick={olderHistory.onLoadOlder}>
+              Load earlier months
+            </button>
+          )}
+        </div>
+      )}
       {monthGrid}
     </div>
   );
@@ -1772,6 +1988,7 @@ function WorkoutCalendar({
 function InteractiveWorkoutCalendar({
   entries,
   workouts,
+  olderHistory,
   categoryColors,
   activeWorkout,
   activeWorkoutDate,
@@ -1782,6 +1999,7 @@ function InteractiveWorkoutCalendar({
 }: {
   entries: DashboardData['heatmap'];
   workouts: TrackedWorkout[];
+  olderHistory?: OlderHistoryProps;
   categoryColors: WorkoutTypeColors;
   activeWorkout: boolean;
   activeWorkoutDate: string | null;
@@ -1800,6 +2018,7 @@ function InteractiveWorkoutCalendar({
     <>
       <WorkoutCalendar
         entries={entries}
+        olderHistory={olderHistory}
         categoryColors={categoryColors}
         activeWorkoutDate={activeWorkoutDate}
         onActiveWorkoutClick={onResumeWorkout}
@@ -1985,6 +2204,7 @@ function WorkoutLogger({
   resumingWorkout,
   currentBodyweight,
   historicalWorkouts,
+  historyBaselines = null,
   restTimerEnabled,
   onExerciseHistory,
   onExerciseFavorite,
@@ -2004,7 +2224,9 @@ function WorkoutLogger({
   initialWorkout: TrackedWorkout | null;
   resumingWorkout: TrackedWorkout | null;
   currentBodyweight: number | null;
+  /** Loaded recent workouts; `historyBaselines` condenses everything older. */
   historicalWorkouts: TrackedWorkout[];
+  historyBaselines?: HistoryBaselines | null;
   restTimerEnabled: boolean;
   onExerciseHistory: (exerciseId: string) => void;
   onExerciseFavorite: (exerciseId: string, isFavorite: boolean) => Promise<void>;
@@ -2093,7 +2315,15 @@ function WorkoutLogger({
             machinePhotosInitialized: false,
             supersetKey: null,
             isComplete: false,
-            sets: suggestedSetsFromHistory(historicalWorkouts, exercise, initialDate),
+            sets: suggestedSetsFromHistory(
+              historicalWorkouts,
+              exercise,
+              initialDate,
+              undefined,
+              historyBaselines && initialDate >= historyBaselines.before
+                ? historyBaselines.byExercise
+                : null,
+            ),
           })),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -2297,6 +2527,10 @@ function WorkoutLogger({
     return () => window.clearTimeout(timer);
   }, [undoDeletion]);
 
+  // Older history only precedes workouts inside the window it was condensed for. An earlier
+  // date (editing an older loaded workout) compares with the loaded workouts alone.
+  const olderHistory =
+    historyBaselines && workoutDate >= historyBaselines.before ? historyBaselines.byExercise : null;
   const prBadges = useMemo(
     () =>
       calculateDraftPrs(
@@ -2304,8 +2538,16 @@ function WorkoutLogger({
         historicalWorkouts,
         initialWorkout?.id ?? resumedWorkoutId,
         workoutDate,
+        olderHistory,
       ),
-    [movements, historicalWorkouts, initialWorkout?.id, resumedWorkoutId, workoutDate],
+    [
+      movements,
+      historicalWorkouts,
+      initialWorkout?.id,
+      resumedWorkoutId,
+      workoutDate,
+      olderHistory,
+    ],
   );
   const completedSetKeysRef = useRef(
     new Set(
@@ -2380,7 +2622,13 @@ function WorkoutLogger({
   }, [historicalWorkouts]);
 
   function suggestedSetsForExercise(exercise: Exercise): DraftSet[] {
-    return suggestedSetsFromHistory(historicalWorkouts, exercise, workoutDate, initialWorkout?.id);
+    return suggestedSetsFromHistory(
+      historicalWorkouts,
+      exercise,
+      workoutDate,
+      initialWorkout?.id,
+      olderHistory,
+    );
   }
 
   function addExercises(selected: Exercise[], createSuperset = false) {
@@ -3027,6 +3275,8 @@ function WorkoutLogger({
               historicalWorkouts,
               movement.exercise.id,
               initialWorkout?.id,
+              undefined,
+              olderHistory?.get(movement.exercise.id)?.latest ?? null,
             )}
             onExerciseHistory={() => onExerciseHistory(movement.exercise.id)}
             onExerciseComplete={(isComplete) =>
@@ -5831,6 +6081,7 @@ function ExportTimeFrame({
 
 function SettingsScreen({
   workouts,
+  historySummary,
   measurements,
   workoutTypeColors,
   onWorkoutTypeColorsChange,
@@ -5863,6 +6114,7 @@ function SettingsScreen({
   /** Present only for administrators. */
   onOpenAdmin?: () => void;
   workouts: TrackedWorkout[];
+  historySummary: WorkoutHistorySummary | null;
   measurements: BodyMeasurement[];
   workoutTypeColors: WorkoutTypeColors;
   onWorkoutTypeColorsChange: (colors: WorkoutTypeColors) => void;
@@ -6004,16 +6256,17 @@ function SettingsScreen({
     }
   }
 
+  // Only recent workouts may be loaded; export ranges count back from the latest one logged.
+  const workoutDates = [
+    ...workouts.map((workout) => workout.workout_date),
+    ...(historySummary?.last_workout_date ? [historySummary.last_workout_date] : []),
+  ];
+
   async function exportWorkouts() {
     if (exportingWorkouts) return;
     setExportingWorkouts(true);
     try {
-      await onExportWorkouts(
-        dateRangeForDates(
-          workouts.map((workout) => workout.workout_date),
-          workoutExportRange,
-        ),
-      );
+      await onExportWorkouts(dateRangeForDates(workoutDates, workoutExportRange));
     } finally {
       setExportingWorkouts(false);
     }
@@ -6477,7 +6730,7 @@ function SettingsScreen({
         <ExportTimeFrame
           label="Workout export time frame"
           value={workoutExportRange}
-          dates={workouts.map((workout) => workout.workout_date)}
+          dates={workoutDates}
           disabled={exportingWorkouts}
           onChange={setWorkoutExportRange}
         />
@@ -6486,7 +6739,8 @@ function SettingsScreen({
           <button type="button" disabled={exportingWorkouts} onClick={() => void exportWorkouts()}>
             {exportingWorkouts ? 'Exporting…' : '↓ Export workout CSV'}
           </button>
-          {workouts.some((workout) => workout.is_sample) && (
+          {(historySummary?.has_sample_workouts ??
+            workouts.some((workout) => workout.is_sample)) && (
             <InlineConfirmButton
               className="sample-clear"
               label="Remove sample workouts"
@@ -8016,6 +8270,8 @@ function HistoryScreen({
   initialExerciseId,
   weekStartDay,
   heatmap,
+  historySummary,
+  olderHistory,
   activeWorkout,
   activeWorkoutDate,
   onResumeWorkout,
@@ -8040,6 +8296,8 @@ function HistoryScreen({
   initialExerciseId: string | null;
   weekStartDay: number;
   heatmap: DashboardData['heatmap'];
+  historySummary: WorkoutHistorySummary | null;
+  olderHistory: OlderHistoryProps;
   activeWorkout: boolean;
   activeWorkoutDate: string | null;
   onResumeWorkout: () => void;
@@ -8075,6 +8333,29 @@ function HistoryScreen({
     () => mostTrainedExerciseId(workouts, today),
     [today, workouts],
   );
+  const totalWorkouts = Math.max(historySummary?.total_workouts ?? 0, workouts.length);
+  const { hasOlder, loadingOlder, olderError, onLoadOlder } = olderHistory;
+  const moreWorkouts = visibleCount < workouts.length || hasOlder;
+  const showMoreRef = useRef<HTMLDivElement>(null);
+
+  // Hidden pagination: nearing the end of the list reveals more loaded workouts, then fetches
+  // the next older window. The observer is renewed after each step, so a short page keeps going.
+  useEffect(() => {
+    const sentinel = showMoreRef.current;
+    if (!sentinel || loadingOlder || olderError || typeof IntersectionObserver === 'undefined')
+      return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        if (visibleCount < workouts.length) {
+          setVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2);
+        } else if (hasOlder) onLoadOlder();
+      },
+      { rootMargin: '0px 0px 600px 0px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasOlder, loadingOlder, olderError, onLoadOlder, visibleCount, workouts.length]);
 
   useEffect(() => {
     if (section !== 'history' || !revealWorkoutRef.current) return;
@@ -8101,7 +8382,7 @@ function HistoryScreen({
             eyebrow={
               section === 'cardio'
                 ? 'Zone 2 · energy · sessions'
-                : `${workouts.length} ${workouts.length === 1 ? 'workout' : 'workouts'} logged`
+                : `${totalWorkouts} ${totalWorkouts === 1 ? 'workout' : 'workouts'} logged`
             }
             title={section === 'cardio' ? 'Cardio' : 'History'}
             onOpenSettings={onOpenSettings}
@@ -8180,6 +8461,7 @@ function HistoryScreen({
             <InteractiveWorkoutCalendar
               entries={heatmap}
               workouts={workouts}
+              olderHistory={olderHistory}
               categoryColors={categoryColors}
               activeWorkout={activeWorkout}
               activeWorkoutDate={activeWorkoutDate}
@@ -8189,7 +8471,7 @@ function HistoryScreen({
               onReplaceActiveWorkout={onReplaceActiveWorkout}
             />
           </section>
-          {!workouts.length && (
+          {!workouts.length && !hasOlder && (
             <EmptyState
               title="Your log is empty"
               body="Your completed workouts will show up here."
@@ -8238,14 +8520,30 @@ function HistoryScreen({
               </section>
             );
           })}
-          {visibleCount < workouts.length && (
-            <button
-              type="button"
-              className="show-more-button"
-              onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2)}
-            >
-              Show more · {workouts.length - visibleCount} older
-            </button>
+          {moreWorkouts && (
+            <div ref={showMoreRef} className="history-show-more">
+              <button
+                type="button"
+                className="show-more-button"
+                disabled={loadingOlder}
+                onClick={() => {
+                  if (visibleCount < workouts.length) {
+                    setVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2);
+                  } else onLoadOlder();
+                }}
+              >
+                {loadingOlder
+                  ? 'Loading older workouts…'
+                  : olderError && visibleCount >= workouts.length
+                    ? 'Retry loading older workouts'
+                    : `Show more · ${Math.max(totalWorkouts - visibleCount, 0)} older`}
+              </button>
+              {olderError && visibleCount >= workouts.length && (
+                <p className="history-show-more-error" role="alert">
+                  {olderError}
+                </p>
+              )}
+            </div>
           )}
         </CachedTabPanel>
       )}

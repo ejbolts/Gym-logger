@@ -1,13 +1,12 @@
 {
-  "version": "0.5.5",
-  "title": "Update when you are ready",
-  "summary": "Keep logging through app releases, then refresh when it suits you.",
+  "version": "0.5.6",
+  "title": "Faster start with long histories",
+  "summary": "Today and History open with your recent months, then load older training as you scroll.",
   "changes": [
-    "A top notification checks for releases while the app is open. Use its refresh arrow when you are ready; updates no longer reload your screen automatically.",
-    "Keep using the current cached app while the next update downloads in the background.",
-    "Settings now has a Check for updates button with current-version, available-update and connection feedback.",
-    "Refresh preserves your active workout draft on this device. If the draft cannot be saved, the update waits until you save your work.",
-    "What's new describes the version you have loaded and stays dismissed for that account and release in this browser, including after signing in again."
+    "Signing in loads the last six months of workouts instead of your whole log, so Today appears quickly even with years of training.",
+    "Swipe the training calendar back past its oldest month to load the six months before it. The month you are viewing stays in place.",
+    "Scrolling to the end of History loads older workouts automatically, and the header still counts every workout you have logged.",
+    "Streaks, the next-workout suggestion, PR badges and set suggestions while logging still account for your full history."
   ],
-  "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#055"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056"
 }

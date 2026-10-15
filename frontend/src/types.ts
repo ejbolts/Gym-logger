@@ -311,6 +311,29 @@ export interface DashboardData {
   muscle_volume: MuscleVolume[];
   zone2: Zone2Week;
   recent_workouts: TrackedWorkout[];
+  /** Whole-log facts; absent from dashboards cached by earlier releases. */
+  history?: WorkoutHistorySummary | null;
+}
+
+export interface WorkoutHistorySummary {
+  total_workouts: number;
+  first_workout_date: string | null;
+  last_workout_date: string | null;
+  has_sample_workouts: boolean;
+}
+
+/** An exercise's history before the loaded window, condensed by the server. */
+export interface ExerciseHistoryBaseline {
+  exercise_id: string;
+  best_weight_kg: number | null;
+  reps_by_weight: Array<{ weight_kg: number; reps: number }>;
+  latest: {
+    workout_id: string;
+    workout_date: string;
+    workout_name: string;
+    movement_notes: string | null;
+    sets: TrackedSet[];
+  } | null;
 }
 
 export interface MuscleVolume {
