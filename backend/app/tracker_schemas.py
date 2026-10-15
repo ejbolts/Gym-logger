@@ -75,6 +75,14 @@ class MachinePhotoRead(BaseModel):
     created_at: datetime
 
 
+class MachinePhotoUsageRead(MachinePhotoRead):
+    """A saved machine with when, and how often, saved workouts have pinned it."""
+
+    exercise_name: str
+    workout_count: int
+    last_used_date: date | None
+
+
 class WorkoutSetCreate(BaseModel):
     reps: int | None = Field(default=None, ge=0, le=10_000)
     weight_kg: float | None = Field(default=None, ge=0, le=10_000)

@@ -23,6 +23,7 @@ import type {
   AuthConfig,
   LoginInput,
   MachinePhoto,
+  MachinePhotoUsage,
   MuscleVolume,
   PersonalRecord,
   ProfileUpdateInput,
@@ -284,7 +285,10 @@ export const api = {
       body: JSON.stringify({ is_favorite: isFavorite }),
     }),
   listMachinePhotos: (exerciseId: string) =>
-    request<MachinePhoto[]>(`/api/exercises/${exerciseId}/machine-photos`),
+    request<MachinePhotoUsage[]>(`/api/exercises/${exerciseId}/machine-photos`),
+  listAllMachinePhotos: () => request<MachinePhotoUsage[]>('/api/machine-photos'),
+  machinePhotoWorkouts: (photoId: string) =>
+    request<TrackedWorkout[]>(`/api/machine-photos/${photoId}/workouts`),
   lastUsedMachinePhotos: (exerciseId: string) =>
     request<MachinePhoto[]>(`/api/exercises/${exerciseId}/machine-photos/last-used`),
   uploadMachinePhoto: (exerciseId: string, file: File, caption: string) => {

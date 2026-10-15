@@ -42,6 +42,7 @@ import type {
   ExerciseCreateInput,
   ExerciseProgress,
   MachinePhoto,
+  MachinePhotoUsage,
   PersonalRecord,
   SharedProfileSummary,
   TrackedSet,
@@ -74,6 +75,12 @@ import { monthCountFromOldestWorkout } from './calendarRange';
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { NotificationDialog } from './NotificationDialog';
 import { PopupDialog } from './PopupDialog';
+import {
+  MachineFilterBanner,
+  MachineFilterPicker,
+  type MachineFilter,
+} from './MachineHistoryFilter';
+import { machineDate, machineUsedShort } from './machineHistory';
 import { ReleaseAnnouncement } from './ReleaseAnnouncement';
 import { useReleaseAnnouncement } from './useReleaseAnnouncement';
 import { useAppUpdates } from './useAppUpdates';
@@ -4563,7 +4570,7 @@ function MachinePhotoChooser({
   autoPinLastUsed: boolean;
   onChange: (photoIds: string[]) => void;
 }) {
-  const [photos, setPhotos] = useState<MachinePhoto[]>([]);
+  const [photos, setPhotos] = useState<MachinePhotoUsage[]>([]);
   const [pending, setPending] = useState<{ file: File; previewUrl: string } | null>(null);
   const [caption, setCaption] = useState('');
   const [expanded, setExpanded] = useState<MachinePhoto | null>(null);
@@ -4631,7 +4638,10 @@ function MachinePhotoChooser({
     try {
       const upload = await optimisePhoto(pending.file);
       const photo = await api.uploadMachinePhoto(exercise.id, upload, caption.trim());
-      setPhotos((current) => [photo, ...current]);
+      setPhotos((current) => [
+        { ...photo, exercise_name: exercise.name, workout_count: 0, last_used_date: null },
+        ...current,
+      ]);
       onChange(choosingReplacement ? [photo.id] : [...new Set([...selectedIds, photo.id])]);
       setChoosingReplacement(false);
       setPending(null);
@@ -4659,7 +4669,9 @@ function MachinePhotoChooser({
 
   async function updatePhoto(photo: MachinePhoto, nextCaption: string) {
     const updated = await api.updateMachinePhoto(photo.id, nextCaption);
-    setPhotos((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    setPhotos((current) =>
+      current.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+    );
     setExpanded(updated);
   }
 
@@ -4679,6 +4691,7 @@ function MachinePhotoChooser({
     });
   }
 
+  const today = localDate();
   const pinnedPhotos = photos.filter((photo) => selectedIds.includes(photo.id));
   const primaryPinnedPhoto = pinnedPhotos[0] ?? null;
   const photoSummary = primaryPinnedPhoto
@@ -4765,6 +4778,16 @@ function MachinePhotoChooser({
                       <img src={photo.thumbnail_url} alt={photo.caption} loading="lazy" />
                     </button>
                     <strong title={photo.caption}>{photo.caption}</strong>
+                    <small
+                      className="machine-last-used"
+                      title={
+                        photo.last_used_date
+                          ? `Last used ${machineDate(photo.last_used_date)}`
+                          : undefined
+                      }
+                    >
+                      {machineUsedShort(photo.last_used_date, today)}
+                    </small>
                     <button
                       type="button"
                       className="machine-pin"
@@ -4834,12 +4857,15 @@ function MachinePhotoDetail({
   onUpdate,
   onDelete,
   onChooseAnother,
+  onShowHistory,
 }: {
   photo: MachinePhoto;
   onClose: () => void;
   onUpdate?: (photo: MachinePhoto, caption: string) => Promise<void>;
   onDelete?: (photo: MachinePhoto) => Promise<void>;
   onChooseAnother?: () => void;
+  /** Filters History to the workouts that pinned this machine. */
+  onShowHistory?: () => void;
 }) {
   const [caption, setCaption] = useState(photo.caption);
   const [saving, setSaving] = useState(false);
@@ -4899,6 +4925,12 @@ function MachinePhotoDetail({
           {onChooseAnother && (
             <button type="button" className="photo-choose-other" onClick={onChooseAnother}>
               Switch photo
+            </button>
+          )}
+          {onShowHistory && (
+            <button type="button" className="photo-machine-history" onClick={onShowHistory}>
+              <Icon name="filter" />
+              All workouts on this machine
             </button>
           )}
           {onDelete && (
@@ -8057,10 +8089,22 @@ function HistoryScreen({
     initialOpenId ? initialExerciseId : null,
   );
   const [expandedPhoto, setExpandedPhoto] = useState<MachinePhoto | null>(null);
+  const [machineFilter, setMachineFilter] = useState<MachineFilter | null>(null);
+  const [machinePickerOpen, setMachinePickerOpen] = useState(false);
+  const [machineHistory, setMachineHistory] = useState<{
+    photoId: string;
+    workouts: TrackedWorkout[];
+  } | null>(null);
+  const [machineHistoryError, setMachineHistoryError] = useState<string | null>(null);
+  const openFirstMachineWorkoutRef = useRef(false);
+  const machineFilterRef = useRef<HTMLElement>(null);
   const openWorkoutSummaryRef = useRef<HTMLButtonElement>(null);
   const targetExerciseRef = useRef<HTMLDivElement>(null);
   const revealWorkoutRef = useRef(initialOpenId !== null);
   const today = localDate();
+  const machineFilterId = machineFilter?.photo.id ?? null;
+  const machineWorkouts =
+    machineHistory && machineHistory.photoId === machineFilterId ? machineHistory.workouts : null;
   const weekGroups = useMemo(
     () => groupWorkoutsByWeek(workouts.slice(0, visibleCount), weekStartDay),
     [visibleCount, weekStartDay, workouts],
@@ -8075,6 +8119,92 @@ function HistoryScreen({
     () => mostTrainedExerciseId(workouts, today),
     [today, workouts],
   );
+
+  // Loaded from the server, so a machine last used long ago is found even when older history is
+  // not loaded here. Reloads after edits, which replace the workouts list.
+  useEffect(() => {
+    if (!machineFilterId) return;
+    let active = true;
+    api
+      .machinePhotoWorkouts(machineFilterId)
+      .then((items) => {
+        if (!active) return;
+        setMachineHistoryError(null);
+        setMachineHistory({ photoId: machineFilterId, workouts: items });
+        if (openFirstMachineWorkoutRef.current) {
+          openFirstMachineWorkoutRef.current = false;
+          setOpenId(items[0]?.id ?? null);
+        }
+      })
+      .catch((loadError: unknown) => {
+        if (active)
+          setMachineHistoryError(
+            loadError instanceof Error
+              ? loadError.message
+              : 'Could not load the workouts for this machine.',
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [machineFilterId, workouts]);
+
+  useEffect(() => {
+    if (!machineFilterId) return;
+    const frame = window.requestAnimationFrame(() =>
+      machineFilterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    );
+    return () => window.cancelAnimationFrame(frame);
+  }, [machineFilterId]);
+
+  function filterByMachine(filter: MachineFilter) {
+    setMachinePickerOpen(false);
+    setExpandedPhoto(null);
+    setMachineHistoryError(null);
+    setMachineFilter(filter);
+    setTargetExerciseId(filter.photo.exercise_id);
+    setOpenId(null);
+    openFirstMachineWorkoutRef.current = true;
+  }
+
+  function clearMachineFilter() {
+    setMachineFilter(null);
+    setMachineHistory(null);
+    setMachineHistoryError(null);
+    setExpandedPhoto(null);
+    setTargetExerciseId(null);
+    setOpenId(null);
+  }
+
+  function renderWorkoutCard(workout: TrackedWorkout) {
+    return (
+      <HistoryWorkoutCard
+        key={workout.id}
+        workout={workout}
+        open={openId === workout.id}
+        summaryRef={openId === workout.id ? openWorkoutSummaryRef : null}
+        targetExerciseId={targetExerciseId}
+        targetExerciseRef={targetExerciseRef}
+        categoryColor={categoryColors[workout.category]}
+        records={recordCounts.get(workout.id) ?? 0}
+        personalRecords={personalRecords}
+        activeWorkout={activeWorkout}
+        expandedPhoto={expandedPhoto}
+        onExpandPhoto={setExpandedPhoto}
+        onFilterMachine={(photo, exerciseName) => filterByMachine({ photo, exerciseName })}
+        machineFilterId={machineFilterId}
+        showYear={machineFilter !== null}
+        onToggle={() => {
+          setTargetExerciseId(machineFilter ? machineFilter.photo.exercise_id : null);
+          setOpenId((current) => (current === workout.id ? null : workout.id));
+        }}
+        onOpenExercise={onOpenExercise}
+        onResume={() => onResume(workout)}
+        onEdit={() => onEdit(workout)}
+        onDelete={() => onDelete(workout)}
+      />
+    );
+  }
 
   useEffect(() => {
     if (section !== 'history' || !revealWorkoutRef.current) return;
@@ -8170,82 +8300,97 @@ function HistoryScreen({
       )}
       {visitedSections.has('history') && (
         <CachedTabPanel active={section === 'history'}>
-          <section
-            className="history-calendar-panel calendar-panel pulse-card"
-            aria-label="Workout calendar"
-          >
-            <header className="pulse-card-header">
-              <h2>Calendar</h2>
-            </header>
-            <InteractiveWorkoutCalendar
-              entries={heatmap}
-              workouts={workouts}
-              categoryColors={categoryColors}
-              activeWorkout={activeWorkout}
-              activeWorkoutDate={activeWorkoutDate}
-              onResumeWorkout={onResumeWorkout}
-              onEditWorkout={onEdit}
-              onStartWorkout={onStartWorkout}
-              onReplaceActiveWorkout={onReplaceActiveWorkout}
-            />
-          </section>
-          {!workouts.length && (
-            <EmptyState
-              title="Your log is empty"
-              body="Your completed workouts will show up here."
-              action="Start a workout"
-              onAction={() => onStartWorkout()}
-            />
-          )}
-          {weekGroups.map((group) => {
-            const label = weekGroupLabel(group.weekStart, today, weekStartDay);
-            return (
-              <section className="history-week" key={group.weekStart} aria-label={label}>
-                <header className="history-week-header">
-                  <h2>{label}</h2>
-                  <span className="num">
-                    {group.workouts.length} {group.workouts.length === 1 ? 'workout' : 'workouts'} ·{' '}
-                    {group.sets} sets
-                    {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg, weightUnit)}` : ''}
-                  </span>
-                </header>
-                <div className="history-week-list">
-                  {group.workouts.map((workout) => (
-                    <HistoryWorkoutCard
-                      key={workout.id}
-                      workout={workout}
-                      open={openId === workout.id}
-                      summaryRef={openId === workout.id ? openWorkoutSummaryRef : null}
-                      targetExerciseId={targetExerciseId}
-                      targetExerciseRef={targetExerciseRef}
-                      categoryColor={categoryColors[workout.category]}
-                      records={recordCounts.get(workout.id) ?? 0}
-                      personalRecords={personalRecords}
-                      activeWorkout={activeWorkout}
-                      expandedPhoto={expandedPhoto}
-                      onExpandPhoto={setExpandedPhoto}
-                      onToggle={() => {
-                        setTargetExerciseId(null);
-                        setOpenId((current) => (current === workout.id ? null : workout.id));
-                      }}
-                      onOpenExercise={onOpenExercise}
-                      onResume={() => onResume(workout)}
-                      onEdit={() => onEdit(workout)}
-                      onDelete={() => onDelete(workout)}
-                    />
-                  ))}
+          {machineFilter ? (
+            <section ref={machineFilterRef} className="machine-filter-results">
+              <MachineFilterBanner
+                filter={machineFilter}
+                workoutDates={machineWorkouts?.map((workout) => workout.workout_date) ?? null}
+                loading={machineWorkouts === null}
+                error={machineHistoryError}
+                today={today}
+                onChange={() => setMachinePickerOpen(true)}
+                onClear={clearMachineFilter}
+              />
+              {machineWorkouts && machineWorkouts.length > 0 && (
+                <section className="history-week" aria-label="Workouts on this machine">
+                  <header className="history-week-header">
+                    <h2>On this machine</h2>
+                    <span className="num">Newest first</span>
+                  </header>
+                  <div className="history-week-list">{machineWorkouts.map(renderWorkoutCard)}</div>
+                </section>
+              )}
+            </section>
+          ) : (
+            <>
+              {workouts.length > 0 && (
+                <div className="history-filter-bar">
+                  <button type="button" onClick={() => setMachinePickerOpen(true)}>
+                    <Icon name="filter" />
+                    Filter by machine
+                  </button>
                 </div>
+              )}
+              <section
+                className="history-calendar-panel calendar-panel pulse-card"
+                aria-label="Workout calendar"
+              >
+                <header className="pulse-card-header">
+                  <h2>Calendar</h2>
+                </header>
+                <InteractiveWorkoutCalendar
+                  entries={heatmap}
+                  workouts={workouts}
+                  categoryColors={categoryColors}
+                  activeWorkout={activeWorkout}
+                  activeWorkoutDate={activeWorkoutDate}
+                  onResumeWorkout={onResumeWorkout}
+                  onEditWorkout={onEdit}
+                  onStartWorkout={onStartWorkout}
+                  onReplaceActiveWorkout={onReplaceActiveWorkout}
+                />
               </section>
-            );
-          })}
-          {visibleCount < workouts.length && (
-            <button
-              type="button"
-              className="show-more-button"
-              onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2)}
-            >
-              Show more · {workouts.length - visibleCount} older
-            </button>
+              {!workouts.length && (
+                <EmptyState
+                  title="Your log is empty"
+                  body="Your completed workouts will show up here."
+                  action="Start a workout"
+                  onAction={() => onStartWorkout()}
+                />
+              )}
+              {weekGroups.map((group) => {
+                const label = weekGroupLabel(group.weekStart, today, weekStartDay);
+                return (
+                  <section className="history-week" key={group.weekStart} aria-label={label}>
+                    <header className="history-week-header">
+                      <h2>{label}</h2>
+                      <span className="num">
+                        {group.workouts.length}{' '}
+                        {group.workouts.length === 1 ? 'workout' : 'workouts'} · {group.sets} sets
+                        {group.volumeKg > 0 ? ` · ${formatVolume(group.volumeKg, weightUnit)}` : ''}
+                      </span>
+                    </header>
+                    <div className="history-week-list">{group.workouts.map(renderWorkoutCard)}</div>
+                  </section>
+                );
+              })}
+              {visibleCount < workouts.length && (
+                <button
+                  type="button"
+                  className="show-more-button"
+                  onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2)}
+                >
+                  Show more · {workouts.length - visibleCount} older
+                </button>
+              )}
+            </>
+          )}
+          {machinePickerOpen && (
+            <MachineFilterPicker
+              today={today}
+              onSelect={filterByMachine}
+              onClose={() => setMachinePickerOpen(false)}
+            />
           )}
         </CachedTabPanel>
       )}
@@ -8319,6 +8464,9 @@ function HistoryWorkoutCard({
   activeWorkout,
   expandedPhoto,
   onExpandPhoto,
+  onFilterMachine,
+  machineFilterId = null,
+  showYear = false,
   onToggle,
   onOpenExercise,
   onResume,
@@ -8336,6 +8484,11 @@ function HistoryWorkoutCard({
   activeWorkout: boolean;
   expandedPhoto: MachinePhoto | null;
   onExpandPhoto: (photo: MachinePhoto | null) => void;
+  /** Lists only workouts that pinned this machine. Omitted for shared, read-only history. */
+  onFilterMachine?: (photo: MachinePhoto, exerciseName: string) => void;
+  machineFilterId?: string | null;
+  /** Machine history can span years, so its dates include the year. */
+  showYear?: boolean;
   onToggle: () => void;
   /** Omitted for another member's shared workout, which is read-only. */
   onOpenExercise?: (exerciseId: string) => void;
@@ -8355,7 +8508,9 @@ function HistoryWorkoutCard({
     0,
   );
   const meta = [
-    shortDate(workout.workout_date),
+    showYear
+      ? `${shortDate(workout.workout_date)} ${workout.workout_date.slice(0, 4)}`
+      : shortDate(workout.workout_date),
     workout.duration_minutes ? formatMinutesDuration(workout.duration_minutes) : null,
     workingSetCount ? `${workingSetCount} sets` : null,
   ].filter(Boolean);
@@ -8475,6 +8630,11 @@ function HistoryWorkoutCard({
                         <MachinePhotoDetail
                           photo={expandedPhoto}
                           onClose={() => onExpandPhoto(null)}
+                          onShowHistory={
+                            onFilterMachine && expandedPhoto.id !== machineFilterId
+                              ? () => onFilterMachine(expandedPhoto, movement.exercise.name)
+                              : undefined
+                          }
                         />
                       )}
                   </>

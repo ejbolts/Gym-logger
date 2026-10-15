@@ -1,5 +1,34 @@
 # Gym Logger release notes
 
+## 0.5.6
+
+- **History > Workouts** has a **Filter by machine** button. Choose one of your
+  saved machine photos to list only the workouts where you pinned that photo,
+  newest first. Workouts with the same exercise on other machines are hidden, so a
+  machine you last used a year ago is easy to find after many sessions elsewhere.
+- The machine list shows each photo's exercise, last-used date, time since then and
+  number of workouts. Search appears when you have more than six saved machines.
+- The filter summary shows the last-used date, time since then and workout count.
+  The most recent session on that machine opens with its exercise highlighted, and
+  filtered dates include the year. Use **Change** to pick another machine or
+  **Clear** to return to the full History list and calendar.
+- In a saved workout, open a pinned photo and choose **All workouts on this
+  machine** to filter History by it.
+- While logging, each saved equipment photo shows when you last used it, such as
+  **Used 1 year ago**, to help you pin the right machine.
+- Machine history is loaded from the server, so it includes older workouts. Only
+  saved workouts with a pinned photo appear; unpinned sessions of the exercise do not.
+  No database migration is required.
+
+<img src="screenshots/releases/0.5.6-machine-history-filter.png" alt="History filtered by the Northside Hammer Strength leg press photo, showing it was last used on 9 October 2025, one year ago, across two workouts, with the most recent session expanded." width="390">
+
+Filter History by one machine to find your last session there. Captured at phone
+width with fictional gyms, photos and workouts in a separate sample database.
+
+<img src="screenshots/releases/0.5.6-machine-picker.png" alt="The Filter by machine list shows four saved machine photos with their exercise, last-used date, time since and workout count." width="390">
+
+Choose from your saved machine photos, ordered by most recent use.
+
 ## 0.5.5
 
 - A persistent top notification announces a new app release without interrupting
