@@ -1089,11 +1089,11 @@ button.pulse-card:hover {
 }
 
 .app-tab-start-bubble {
-  width: 3.375rem;
+  width: 2.375rem;
   height: 2.375rem;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--p-accent);
   color: #fff;
   box-shadow: 0 6px 18px rgb(57 135 229 / 32%);

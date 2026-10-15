@@ -3,7 +3,7 @@
   "title": "Faster start and easier Home editing",
   "summary": "Today and History load recent training first, and Home layout controls stay within reach in the bottom bar.",
   "changes": [
-    "Editing Home fades the bottom tabs into Cancel, a green tick to save, and Reset layout. Tap a card's X to hide it. Card controls stay circular even on compact cards, and the old toolbar above the cards is gone.",
+    "Editing Home fades the bottom tabs into Cancel, a green tick to save, and Reset layout. Start and the green save tick use the same square button. Tap a card's X to hide it. Card controls stay circular even on compact cards, and the old toolbar above the cards is gone.",
     "Signing in loads the last three months of workouts instead of your whole log, so Today appears quickly even with years of training.",
     "After you sign in, the form closes and the Gym Logger logo glides to the centre and fades while Today loads behind it.",
     "Swipe the training calendar back past its oldest month to load the six months before it. The month you are viewing stays in place.",

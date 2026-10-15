@@ -8,8 +8,10 @@
   the default layout; tap the tick to keep it or Cancel to keep your saved layout.
   Tap a card's **X** to hide it. Hidden cards remain available through **Add sections**.
   Hide, resize and drag controls stay circular on compact cards, too.
+  The blue **Start** button and green save tick share the same square shape and
+  rounded corners, keeping their size consistent as the footer changes modes.
 
-<img src="screenshots/releases/0.5.6-home-layout-controls.png" alt="Today in layout edit mode, with circular X, width and drag controls on the cards, and Cancel, a green save tick, and Reset layout in the bottom bar." width="390">
+<img src="screenshots/releases/0.5.6-home-layout-controls.png" alt="Today in layout edit mode, with circular X, width and drag controls on the cards, and Cancel, a square green save tick, and Reset layout in the bottom bar." width="390">
 
 Home layout controls replace the bottom tabs while editing. Captured with a
 separate sample account and generated training data.
