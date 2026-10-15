@@ -4,10 +4,14 @@
 
 - **Settings > What's new** places **Check for updates** on the right, aligned
   with **View changes** and **Replay guide**.
+- Checking for updates shows a timestamped notification for six seconds, with a
+  dismiss button. Results no longer add persistent text or empty space to the
+  Settings card. Available updates still have their refresh notification above.
 
-<img src="screenshots/releases/0.5.6-settings-button-alignment.png" alt="Settings shows Check for updates aligned to the right edge of View changes and Replay guide." width="390">
+<img src="screenshots/releases/0.5.6-settings-button-alignment.png" alt="A brief Up to date notification includes the check time above Settings, with Check for updates aligned to the other buttons and no inline status text." width="390">
 
-Settings actions share the same right edge. Captured with an isolated sample account.
+Settings actions share the same right edge, while results appear temporarily above
+the page. Captured with an isolated sample account.
 
 ## 0.5.5
 

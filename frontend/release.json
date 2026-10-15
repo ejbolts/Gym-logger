@@ -1,9 +1,10 @@
 {
   "version": "0.5.6",
   "title": "Aligned Settings actions",
-  "summary": "The update check lines up with the other Settings buttons.",
+  "summary": "Check for updates with aligned controls and a brief timestamped notification.",
   "changes": [
-    "Settings places Check for updates on the right, aligned with View changes and Replay guide."
+    "Settings places Check for updates on the right, aligned with View changes and Replay guide.",
+    "Update checks show a timestamped notification that disappears after six seconds instead of leaving status text in the Settings card."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056"
 }
