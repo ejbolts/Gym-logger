@@ -164,7 +164,7 @@ export function HomeLayoutSections({
                       setAnnouncement(`${titleFor(id)} hidden. Restore it from Add sections.`);
                     }}
                   >
-                    <span aria-hidden="true">−</span>
+                    <Icon name="close" />
                   </button>
                   <button
                     className="home-card-resize"
@@ -275,7 +275,7 @@ export function HomeLayoutSections({
         <>
           <span id="home-drag-help" className="sr-only">
             Drag to another card, or use the arrow keys to move it. Escape cancels a drag. Use the
-            width button to resize, minus to hide, and the green tick below to save.
+            width button to resize, X to hide, and the green tick below to save.
           </span>
           <span className="sr-only" role="status" aria-live="polite">
             {announcement}

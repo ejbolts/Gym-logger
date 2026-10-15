@@ -6,9 +6,10 @@
   **green tick** to save, and **Reset layout**, keeping the controls within reach
   as you scroll. The old editing box above the cards is removed. Reset previews
   the default layout; tap the tick to keep it or Cancel to keep your saved layout.
-  Hidden cards remain available through **Add sections**.
+  Tap a card's **X** to hide it. Hidden cards remain available through **Add sections**.
+  Hide, resize and drag controls stay circular on compact cards, too.
 
-<img src="screenshots/releases/0.5.6-home-layout-controls.png" alt="Today in layout edit mode, with card handles and Cancel, a green save tick, and Reset layout in the bottom bar." width="390">
+<img src="screenshots/releases/0.5.6-home-layout-controls.png" alt="Today in layout edit mode, with circular X, width and drag controls on the cards, and Cancel, a green save tick, and Reset layout in the bottom bar." width="390">
 
 Home layout controls replace the bottom tabs while editing. Captured with a
 separate sample account and generated training data.
