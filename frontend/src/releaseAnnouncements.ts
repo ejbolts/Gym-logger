@@ -79,10 +79,13 @@ export function canShowReleaseAnnouncement({
   loading,
   tab,
   hasOtherDialog,
+  signingIn = false,
 }: {
   loading: boolean;
   tab: string;
   hasOtherDialog: boolean;
+  /** The sign-in screen is still animating away; data can finish loading before it ends. */
+  signingIn?: boolean;
 }): boolean {
-  return !loading && tab !== 'log' && tab !== 'videos' && !hasOtherDialog;
+  return !loading && !signingIn && tab !== 'log' && tab !== 'videos' && !hasOtherDialog;
 }

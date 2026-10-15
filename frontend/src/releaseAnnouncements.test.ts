@@ -128,6 +128,8 @@ describe('release announcements', () => {
     expect(canShowReleaseAnnouncement({ ...ready, tab: 'log' })).toBe(false);
     expect(canShowReleaseAnnouncement({ ...ready, tab: 'videos' })).toBe(false);
     expect(canShowReleaseAnnouncement({ ...ready, hasOtherDialog: true })).toBe(false);
+    // Waits until the sign-in screen has finished animating away, even with data loaded.
+    expect(canShowReleaseAnnouncement({ ...ready, signingIn: true })).toBe(false);
   });
 });
 

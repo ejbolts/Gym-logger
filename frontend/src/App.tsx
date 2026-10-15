@@ -526,7 +526,7 @@ export function App() {
 }
 
 function AppContent() {
-  const { user } = useUserSession();
+  const { user, signingIn = false } = useUserSession();
   const announcement = useReleaseAnnouncement(user?.id ?? null);
   const appUpdates = useAppUpdates();
   const homeScreenGuide = useHomeScreenGuide(user?.id ?? null, announcement.checked);
@@ -1148,6 +1148,7 @@ function AppContent() {
     loading,
     tab,
     hasOtherDialog: message !== null || completionRecords.length > 0,
+    signingIn,
   });
 
   function openSharedProfile(profile: SharedProfileSummary) {

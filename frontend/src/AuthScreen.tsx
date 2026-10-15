@@ -1,12 +1,4 @@
-import {
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
+import { useId, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   DEFAULT_AUTH_CONFIG,
   MIN_PASSWORD_LENGTH,
@@ -30,9 +22,32 @@ interface AuthScreenProps {
   onExited?: () => void;
 }
 
-/** Matches the longest animation in auth.css: the card closes, the logo centres, then all fades. */
-export const AUTH_EXIT_MS = 1300;
+/** The whole exit: the card closes, the logo glides to the centre and fades, then the screen
+ *  fades. Matches the screen animation in auth.css. */
+export const AUTH_EXIT_MS = 1500;
 const AUTH_EXIT_REDUCED_MS = 250;
+
+/**
+ * The logo's glide, as fractions of AUTH_EXIT_MS. It runs through the Web Animations API with
+ * measured pixel distances: Safari does not pick up a CSS variable set as its keyframes start.
+ */
+function brandMarkExit(shift: number): Keyframe[] {
+  const centred = `translateY(${shift}px) scale(1.04)`;
+  return [
+    { offset: 0, transform: 'translateY(0) scale(1)', opacity: 1 },
+    {
+      offset: 0.24,
+      transform: 'translateY(0) scale(1)',
+      opacity: 1,
+      easing: 'cubic-bezier(0.45, 0, 0.2, 1)',
+    },
+    { offset: 0.6, transform: centred, opacity: 1 },
+    { offset: 0.66, transform: centred, opacity: 1, easing: 'ease-in' },
+    // Gone before the screen starts fading at 82% (auth.css), so it never overlaps the app.
+    { offset: 0.8, transform: `translateY(${shift}px) scale(1.1)`, opacity: 0 },
+    { offset: 1, transform: `translateY(${shift}px) scale(1.1)`, opacity: 0 },
+  ];
+}
 
 function Spinner() {
   return <span className="auth-spinner" aria-hidden="true" />;
@@ -112,7 +127,6 @@ export function AuthScreen({
   const shellTopRef = useRef<number | null>(null);
   const onExitedRef = useRef(onExited);
   onExitedRef.current = onExited;
-  const [exitStyle, setExitStyle] = useState<CSSProperties>({});
 
   useLayoutEffect(() => {
     if (!exiting) return;
@@ -121,23 +135,28 @@ export function AuthScreen({
     const mark = screen?.querySelector<HTMLElement>('.auth-brand-mark');
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     window.scrollTo(0, 0);
+    const reduced = motionReduced();
+    let glide: Animation | undefined;
     if (shell && mark) {
-      // The screen becomes a fixed overlay; keep the form where it was, then aim the logo at
-      // the middle of the screen.
+      // The screen is now a fixed overlay; keep the form where it was on screen.
       const offset =
         (shellTopRef.current ?? shell.getBoundingClientRect().top) -
         shell.getBoundingClientRect().top;
-      const box = mark.getBoundingClientRect();
-      setExitStyle({
-        '--auth-exit-offset': `${offset}px`,
-        '--auth-exit-shift': `${window.innerHeight / 2 - (box.top + offset + box.height / 2)}px`,
-      } as CSSProperties);
+      shell.style.transform = `translateY(${offset}px)`;
+      if (!reduced && typeof mark.animate === 'function') {
+        const box = mark.getBoundingClientRect();
+        const shift = window.innerHeight / 2 - (box.top + box.height / 2);
+        glide = mark.animate(brandMarkExit(shift), { duration: AUTH_EXIT_MS, fill: 'forwards' });
+      }
     }
     const timer = window.setTimeout(
       () => onExitedRef.current?.(),
-      motionReduced() ? AUTH_EXIT_REDUCED_MS : AUTH_EXIT_MS,
+      reduced ? AUTH_EXIT_REDUCED_MS : AUTH_EXIT_MS,
     );
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      glide?.cancel();
+    };
   }, [exiting]);
 
   const creating = mode === 'create-account';
@@ -203,7 +222,6 @@ export function AuthScreen({
     <main
       ref={screenRef}
       className={`auth-screen${exiting ? ' auth-exiting' : ''}`}
-      style={exitStyle}
       inert={exiting}
       aria-hidden={exiting || undefined}
     >

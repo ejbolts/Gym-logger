@@ -649,11 +649,7 @@
   z-index: 1000;
   overflow: hidden;
   pointer-events: none;
-  animation: auth-exit-screen 1300ms ease-in both;
-}
-
-.auth-exiting .auth-shell {
-  transform: translateY(var(--auth-exit-offset, 0px));
+  animation: auth-exit-screen 1500ms ease-in both;
 }
 
 .auth-exiting .auth-card {
@@ -664,9 +660,7 @@
   animation: auth-exit-fade 280ms ease-out both;
 }
 
-.auth-exiting .auth-brand-mark {
-  animation: auth-exit-mark 1300ms both;
-}
+/* The logo's glide to the centre runs from AuthScreen.tsx (Web Animations API). */
 
 @keyframes auth-exit-card {
   0% {
@@ -689,30 +683,10 @@
   }
 }
 
-/* The logo leaves before the backdrop, so it never ghosts over the app being revealed. */
-@keyframes auth-exit-mark {
-  0%,
-  26% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
-  }
-  60%,
-  68% {
-    opacity: 1;
-    transform: translateY(var(--auth-exit-shift, 0px)) scale(1.04);
-    animation-timing-function: ease-in;
-  }
-  86%,
-  100% {
-    opacity: 0;
-    transform: translateY(var(--auth-exit-shift, 0px)) scale(1.1);
-  }
-}
-
+/* The backdrop fades after the logo has gone, so it never ghosts over the app. */
 @keyframes auth-exit-screen {
   0%,
-  80% {
+  82% {
     opacity: 1;
   }
   100% {
@@ -727,8 +701,7 @@
   }
 
   .auth-exiting .auth-card,
-  .auth-exiting .auth-brand p,
-  .auth-exiting .auth-brand-mark {
+  .auth-exiting .auth-brand p {
     animation: none;
   }
 }
@@ -738,8 +711,7 @@
 }
 
 [data-reduce-motion] .auth-exiting .auth-card,
-[data-reduce-motion] .auth-exiting .auth-brand p,
-[data-reduce-motion] .auth-exiting .auth-brand-mark {
+[data-reduce-motion] .auth-exiting .auth-brand p {
   animation: none;
 }
 

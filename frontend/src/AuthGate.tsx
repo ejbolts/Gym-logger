@@ -175,8 +175,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
         await clearAfterAccountDeletion();
         restartApp();
       },
+      signingIn: signInExiting,
     }),
-    [state],
+    [signInExiting, state],
   );
 
   return (

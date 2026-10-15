@@ -9,6 +9,7 @@
 - After a successful sign-in, the form closes from top and bottom, the tagline fades,
   and the Gym Logger logo glides to the centre and fades out. Today is already loading
   underneath, so with a typical phone connection it is ready when the logo leaves.
+  What's new and the first-run guides wait until the animation has finished.
   Reduce motion (in Settings or on the phone) replaces this with a short fade.
 - Swipe the Today or History calendar back past its oldest month to load the six
   months before it. A card at the edge shows while they load, and the month you
