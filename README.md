@@ -1,4 +1,4 @@
-# Gym Video Logger
+# Gym-logger
 
 Gym Logger is a mobile-first app for recording workouts and following your progress. Keep strength training, cardio, body measurements and optional workout videos together in one place, with your own account and private training history.
 
