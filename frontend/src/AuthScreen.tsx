@@ -1,4 +1,12 @@
-import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import {
   DEFAULT_AUTH_CONFIG,
   MIN_PASSWORD_LENGTH,
@@ -9,6 +17,7 @@ import {
 } from './authForm';
 import { queueHomeScreenGuide } from './homeScreenGuideState';
 import { queueAppGuide } from './appGuideState';
+import { motionReduced } from './motion';
 import type { AuthConfig, User } from './types';
 
 interface AuthScreenProps {
@@ -16,7 +25,14 @@ interface AuthScreenProps {
   config: AuthConfig | null;
   onAuthenticated: (user: User) => Promise<void> | void;
   initialMode?: AuthMode;
+  /** Signed in: the screen plays its exit above the app, then calls `onExited`. */
+  exiting?: boolean;
+  onExited?: () => void;
 }
+
+/** Matches the longest animation in auth.css: the card closes, the logo centres, then all fades. */
+export const AUTH_EXIT_MS = 1300;
+const AUTH_EXIT_REDUCED_MS = 250;
 
 function Spinner() {
   return <span className="auth-spinner" aria-hidden="true" />;
@@ -61,14 +77,22 @@ function describedBy(id: string, error?: string, hint?: string): string | undefi
 export function AuthBrand() {
   return (
     <header className="auth-brand">
-      <img src="/icon.svg" alt="" width={72} height={72} />
-      <h1>Gym Logger</h1>
+      <div className="auth-brand-mark">
+        <img src="/icon.svg" alt="" width={72} height={72} />
+        <h1>Gym Logger</h1>
+      </div>
       <p>Log every set, track every PR.</p>
     </header>
   );
 }
 
-export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }: AuthScreenProps) {
+export function AuthScreen({
+  config,
+  onAuthenticated,
+  initialMode = 'sign-in',
+  exiting = false,
+  onExited,
+}: AuthScreenProps) {
   const effectiveConfig = config ?? DEFAULT_AUTH_CONFIG;
   const registrationOpen = effectiveConfig.registration_open;
   const idPrefix = useId();
@@ -83,6 +107,38 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
+
+  const screenRef = useRef<HTMLElement>(null);
+  const shellTopRef = useRef<number | null>(null);
+  const onExitedRef = useRef(onExited);
+  onExitedRef.current = onExited;
+  const [exitStyle, setExitStyle] = useState<CSSProperties>({});
+
+  useLayoutEffect(() => {
+    if (!exiting) return;
+    const screen = screenRef.current;
+    const shell = screen?.querySelector<HTMLElement>('.auth-shell');
+    const mark = screen?.querySelector<HTMLElement>('.auth-brand-mark');
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+    if (shell && mark) {
+      // The screen becomes a fixed overlay; keep the form where it was, then aim the logo at
+      // the middle of the screen.
+      const offset =
+        (shellTopRef.current ?? shell.getBoundingClientRect().top) -
+        shell.getBoundingClientRect().top;
+      const box = mark.getBoundingClientRect();
+      setExitStyle({
+        '--auth-exit-offset': `${offset}px`,
+        '--auth-exit-shift': `${window.innerHeight / 2 - (box.top + offset + box.height / 2)}px`,
+      } as CSSProperties);
+    }
+    const timer = window.setTimeout(
+      () => onExitedRef.current?.(),
+      motionReduced() ? AUTH_EXIT_REDUCED_MS : AUTH_EXIT_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [exiting]);
 
   const creating = mode === 'create-account';
   const showInviteCode = creating && (effectiveConfig.invite_code_required || inviteRevealed);
@@ -116,6 +172,8 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
         queueHomeScreenGuide(result.user.id);
         queueAppGuide(result.user.id);
       }
+      shellTopRef.current =
+        screenRef.current?.querySelector('.auth-shell')?.getBoundingClientRect().top ?? null;
       try {
         await onAuthenticated(result.user);
       } finally {
@@ -139,8 +197,16 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
     if (firstInvalid) window.requestAnimationFrame(() => document.getElementById(target)?.focus());
   }
 
+  const busy = submitting || exiting;
+
   return (
-    <main className="auth-screen">
+    <main
+      ref={screenRef}
+      className={`auth-screen${exiting ? ' auth-exiting' : ''}`}
+      style={exitStyle}
+      inert={exiting}
+      aria-hidden={exiting || undefined}
+    >
       <div className="auth-shell">
         <AuthBrand />
         <section className="auth-card" aria-label="Account access">
@@ -296,15 +362,10 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
               )}
             </div>
 
-            <button
-              type="submit"
-              className="auth-submit"
-              disabled={submitting}
-              aria-busy={submitting}
-            >
-              {submitting && <Spinner />}
+            <button type="submit" className="auth-submit" disabled={busy} aria-busy={busy}>
+              {busy && <Spinner />}
               <span>
-                {submitting
+                {busy
                   ? creating
                     ? 'Creating account…'
                     : 'Signing in…'

@@ -19,9 +19,9 @@ const workout = (id: string, workout_date: string) => ({ id, workout_date }) as 
 const day = (workout_date: string) => ({ workout_date }) as HeatmapDay;
 
 describe('history windows', () => {
-  it('starts with the current month and the five before it', () => {
-    expect(initialHistoryStart(new Date(2026, 9, 15, 12))).toBe('2026-05-01');
-    expect(initialHistoryStart(new Date(2026, 2, 1, 12))).toBe('2025-10-01');
+  it('starts with the current month and the two before it', () => {
+    expect(initialHistoryStart(new Date(2026, 9, 15, 12))).toBe('2026-08-01');
+    expect(initialHistoryStart(new Date(2026, 2, 1, 12))).toBe('2026-01-01');
   });
 
   it('steps back six whole months, across years', () => {

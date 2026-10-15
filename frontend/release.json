@@ -3,7 +3,8 @@
   "title": "Faster start with long histories",
   "summary": "Today and History open with your recent months, then load older training as you scroll.",
   "changes": [
-    "Signing in loads the last six months of workouts instead of your whole log, so Today appears quickly even with years of training.",
+    "Signing in loads the last three months of workouts instead of your whole log, so Today appears quickly even with years of training.",
+    "After you sign in, the form closes and the Gym Logger logo glides to the centre and fades while Today loads behind it.",
     "Swipe the training calendar back past its oldest month to load the six months before it. The month you are viewing stays in place.",
     "Scrolling to the end of History loads older workouts automatically, and the header still counts every workout you have logged.",
     "Streaks, the next-workout suggestion, PR badges and set suggestions while logging still account for your full history."
@@ -11,6 +12,6 @@
   "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056",
   "image": {
     "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/5271486d27440c3e5e40a5fe1eb4a3a5f20797ad/docs/screenshots/releases/0.5.6-calendar-older-months.png",
-    "alt": "The Today consistency calendar shows April 2026, loaded on demand after swiping back past the six months shown at startup."
+    "alt": "The Today consistency calendar shows July 2026, loaded on demand after swiping back past the three months shown at startup."
   }
 }
