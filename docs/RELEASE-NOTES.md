@@ -75,10 +75,13 @@ Choose from your saved machine photos, ordered by most recent use.
 
 ### Easier Home editing
 
-- Tap the Today pencil to edit the cards. The bottom tabs fade into **Cancel**, a
-  **green tick** to save, and **Reset layout**, keeping the controls within reach
-  as you scroll. The old editing box above the cards is removed. Reset previews
+- Tap the Today pencil to edit the cards. The bottom tabs cross-fade into **Cancel**,
+  a **green tick** to save, and **Reset layout**, keeping the controls within reach
+  as you scroll, and fade back when you finish. Reduce motion makes the swap
+  immediate. The old editing box above the cards is removed. Reset previews
   the default layout; tap the tick to keep it or Cancel to keep your saved layout.
+- The pencil is highlighted while editing. Tap it again to cancel, just like
+  **Cancel**: unsaved changes are discarded and your saved layout stays.
   Tap a card's **X** to hide it. Hidden cards remain available through **Add sections**.
   Hide, resize and drag controls stay circular on compact cards, too.
   The blue **Start** button and green save tick share the same square shape and

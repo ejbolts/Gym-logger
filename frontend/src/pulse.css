@@ -163,6 +163,11 @@ body {
   color: var(--p-ink);
 }
 
+.icon-button-pulse[aria-pressed='true'] {
+  border-color: var(--p-accent);
+  color: var(--p-accent-text);
+}
+
 .icon-button-pulse.accent {
   border-color: transparent;
   background: var(--p-accent);
@@ -1031,7 +1036,7 @@ button.pulse-card:hover {
   grid-area: 1 / 1 / 2 / -1;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  transition: opacity 120ms ease;
+  transition: opacity 180ms ease-in;
 }
 
 .app-tab-layout {
@@ -1045,7 +1050,19 @@ button.pulse-card:hover {
 
 .app-tab-items[aria-hidden='false'] {
   opacity: 1;
-  transition-delay: 100ms;
+  transition: opacity 220ms ease-out 140ms;
+}
+
+html[data-reduce-motion] .app-tab-items[aria-hidden] {
+  transition-duration: 1ms;
+  transition-delay: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-tab-items[aria-hidden] {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+  }
 }
 
 .app-tab-layout .app-tab {
