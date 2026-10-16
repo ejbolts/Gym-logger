@@ -42,7 +42,7 @@ Sign-in uses cookie-based sessions with per-user accounts and authorization chec
 ## Prerequisites
 
 - Python 3.12
-- Node.js 20+ and npm (or pnpm)
+- Node.js 20+ and npm
 - ffmpeg and ffprobe available on `PATH` (or configured with environment variables)
 
 Windows PowerShell (using winget where available):
