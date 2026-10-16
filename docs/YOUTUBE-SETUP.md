@@ -57,7 +57,7 @@ GYM_YOUTUBE_MOCK_MODE=false
 GYM_YOUTUBE_WEB_CLIENT_SECRET_PATH=/opt/gym-logger/secrets/youtube-web-client-secret.json
 GYM_YOUTUBE_REDIRECT_URI=https://gym.example.com/api/youtube/callback
 GYM_YOUTUBE_CREDENTIALS_KEY_PATH=/opt/gym-logger/secrets/youtube-credentials.key
-GYM_YOUTUBE_PRIVACY_STATUS=unlisted
+GYM_YOUTUBE_PRIVACY_STATUS=private
 GYM_COOKIE_SECURE=true
 ```
 
@@ -89,16 +89,26 @@ snapshots exclude YouTube credentials and pending authorization state.
 3. In the app, connect a designated test user's channel. Confirm the displayed channel name.
 4. Upload a short synthetic clip, keep the app open until the transfer completes, and confirm
    the combined video appears on that channel. Check playback and timestamp links after
-   YouTube processing. If using unlisted, check the link while signed out of Google.
+   YouTube processing. For Private uploads, open the video on YouTube while signed in to that
+   channel, and confirm a signed-out browser cannot watch it using the link alone.
 5. Confirm a second Gym Logger account starts disconnected and must connect independently.
    Test **Disconnect**, and confirm the video remains on YouTube.
 6. Monitor the project's YouTube API quota and server storage/processing queue. Each user's
    channel is separate, but the application still shares its Cloud project's API quota and
    the server's processing capacity.
 
-**Unlisted is not private:** anyone with the link can watch. Choose the server-wide privacy
-default intentionally and explain it to users. Phone alerts are optional. On iPhone, install
-the app using Safari's Add to Home Screen before enabling alerts.
+**Uploads default to Private:** only the owner and people they invite through YouTube can watch.
+The video page explains this before upload and directs private-video playback to YouTube, where
+the user signs in to their connected channel. A link alone does not grant access.
+
+For an existing installation, explicitly set `GYM_YOUTUBE_PRIVACY_STATUS=private` in its server
+environment when releasing this change. An existing `unlisted` or `public` override is retained,
+and the app will accurately describe that visibility instead of promising privacy. This setting
+does not change the visibility of videos already on YouTube.
+
+Phone alerts are configured in **Settings > Timers & notifications > Phone alerts**. On iPhone,
+install the app using Safari's Add to Home Screen before enabling them. The video toolbar has
+only New upload; it does not duplicate the History or alert controls.
 
 ## Existing uploads, reconnects and removal
 

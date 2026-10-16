@@ -65,6 +65,22 @@
 }
 
 .youtube-connection p.youtube-privacy-copy {
+  padding: 12px 14px;
+  border: 1px solid #354760;
+  border-radius: 12px;
+  background: #1b2635;
+  color: #c8d8ec;
+  font-size: 13px;
+}
+
+.youtube-privacy-copy strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #e6efff;
+  font-size: 14px;
+}
+
+.youtube-connection p.youtube-retention-copy {
   color: #a7b5c7;
   font-size: 12px;
 }

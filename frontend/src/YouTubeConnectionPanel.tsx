@@ -132,11 +132,22 @@ export function YouTubeConnectionPanel({
       {connection && <p>{connection.message}</p>}
       {available && (
         <p className="youtube-privacy-copy">
-          {connection.privacy_status === 'unlisted'
-            ? 'Videos are unlisted. Anyone with the link can watch.'
-            : connection.privacy_status === 'private'
-              ? 'Videos are private on YouTube. You control who can watch there.'
-              : 'Videos are public on YouTube. Anyone can find and watch them.'}{' '}
+          <strong>
+            {connection.privacy_status === 'private'
+              ? 'Your videos upload as Private'
+              : connection.privacy_status === 'unlisted'
+                ? 'Your videos upload as Unlisted'
+                : 'Your videos upload as Public'}
+          </strong>
+          {connection.privacy_status === 'private'
+            ? 'Only you and people you invite on YouTube can watch. A link alone does not give access.'
+            : connection.privacy_status === 'unlisted'
+              ? 'Anyone with the link can watch.'
+              : 'Anyone can find and watch them.'}
+        </p>
+      )}
+      {available && (
+        <p className="youtube-retention-copy">
           Your videos stay on your channel when you disconnect.
         </p>
       )}

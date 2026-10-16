@@ -3,14 +3,9 @@ import { api } from './api';
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import type { Health, LocalClip, SessionStatus, WorkoutSession, YouTubeConnection } from './types';
-import {
-  enablePhonePushNotifications,
-  existingPhonePushSubscription,
-  PHONE_PUSH_PREFERENCE_EVENT,
-} from './push';
 import { formatBytes, formatSeconds, localDate } from './utils';
 
-type Screen = 'upload' | 'progress' | 'processing' | 'complete' | 'history';
+type Screen = 'upload' | 'progress' | 'processing' | 'complete';
 const terminalStatuses: SessionStatus[] = ['complete', 'failed', 'cancelled'];
 const processingStatuses: SessionStatus[] = [
   'queued',
@@ -43,13 +38,10 @@ export function VideoUpload() {
   const [notes, setNotes] = useState('');
   const [clips, setClips] = useState<LocalClip[]>([]);
   const [serverSession, setServerSession] = useState<WorkoutSession | null>(null);
-  const [history, setHistory] = useState<WorkoutSession[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [youtube, setYoutube] = useState<YouTubeConnection | null>(null);
   const [exerciseNames, setExerciseNames] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushEnabling, setPushEnabling] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const pickerRef = useRef<HTMLInputElement>(null);
   const previewUrls = useRef(new Set<string>());
@@ -68,25 +60,6 @@ export function VideoUpload() {
     return () => {
       for (const url of urls) URL.revokeObjectURL(url);
       if (wakeLock.current) void wakeLock.current.release();
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const syncPushState = () => {
-      void existingPhonePushSubscription()
-        .then((subscription) => {
-          if (active) setPushEnabled(subscription !== null);
-        })
-        .catch(() => {
-          if (active) setPushEnabled(false);
-        });
-    };
-    syncPushState();
-    window.addEventListener(PHONE_PUSH_PREFERENCE_EVENT, syncPushState);
-    return () => {
-      active = false;
-      window.removeEventListener(PHONE_PUSH_PREFERENCE_EVENT, syncPushState);
     };
   }, []);
 
@@ -288,56 +261,11 @@ export function VideoUpload() {
       );
   }
 
-  async function showHistory() {
-    try {
-      setHistory(await api.listSessions());
-      setScreen('history');
-      setMessage(null);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not load previous sessions.');
-    }
-  }
-
-  async function enablePushNotifications() {
-    if (pushEnabled || pushEnabling) return;
-    if (
-      !('serviceWorker' in navigator) ||
-      !('PushManager' in window) ||
-      !('Notification' in window)
-    ) {
-      setMessage('Push notifications are not supported by this browser. Install the PWA first.');
-      return;
-    }
-    setPushEnabling(true);
-    setMessage(null);
-    try {
-      await enablePhonePushNotifications();
-      await api.testPush();
-      setPushEnabled(true);
-      setMessage('Completion alerts are enabled. A test notification is on its way.');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not enable phone notifications.');
-    } finally {
-      setPushEnabling(false);
-    }
-  }
-
-  async function openSession(id: string) {
-    try {
-      const session = await api.getSession(id);
-      setServerSession(session);
-      setScreen(session.status === 'complete' ? 'complete' : 'processing');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not load that session.');
-    }
-  }
-
   async function deleteSession(session: WorkoutSession) {
     setBusy(true);
     setMessage(null);
     try {
       await api.deleteSession(session.id);
-      setHistory((current) => current.filter((item) => item.id !== session.id));
       if (serverSession?.id === session.id) resetUpload();
       else setMessage('Session deleted.');
     } catch (error) {
@@ -375,18 +303,6 @@ export function VideoUpload() {
           <span aria-hidden="true">＋</span>
           New upload
         </button>
-        <div className="video-toolbar-actions">
-          <button
-            className="video-tool"
-            disabled={pushEnabled || pushEnabling}
-            onClick={() => void enablePushNotifications()}
-          >
-            {pushEnabled ? 'Alerts on' : pushEnabling ? 'Enabling…' : 'Enable alerts'}
-          </button>
-          <button className="video-tool" onClick={() => void showHistory()}>
-            History
-          </button>
-        </div>
       </header>
       <YouTubeConnectionPanel disabled={busy} onChange={setYoutube} />
       {message && (
@@ -579,7 +495,7 @@ export function VideoUpload() {
                 {serverSession.status === 'uploading_to_youtube' &&
                   'Sending the combined video to your connected YouTube channel.'}
                 {serverSession.status === 'youtube_processing' &&
-                  'YouTube is preparing playback versions. We will notify this phone when it is ready.'}
+                  'YouTube is preparing playback versions. Configure completion alerts in Settings.'}
                 {serverSession.status === 'draft' &&
                   'This batch was never started. Delete it if you no longer have the original clips.'}
                 {serverSession.status === 'uploading' &&
@@ -622,7 +538,12 @@ export function VideoUpload() {
         <section className="video-page">
           <p className="eyebrow">Session complete</p>
           <h1>{serverSession.name}</h1>
-          {serverSession.youtube_video_id && (
+          {youtube?.privacy_status === 'private' && (
+            <p className="card privacy-note">
+              Watch your private video on YouTube while signed in to your connected channel.
+            </p>
+          )}
+          {serverSession.youtube_video_id && youtube?.privacy_status !== 'private' && (
             <iframe
               className="youtube-frame"
               src={`https://www.youtube-nocookie.com/embed/${serverSession.youtube_video_id}`}
@@ -663,40 +584,6 @@ export function VideoUpload() {
             confirmLabel="Confirm deletion"
             onConfirm={() => deleteSession(serverSession)}
           />
-        </section>
-      )}
-
-      {screen === 'history' && (
-        <section className="video-page">
-          <p className="eyebrow">Session history</p>
-          <h1>Previous sessions</h1>
-          {history.length === 0 ? (
-            <p className="muted">No sessions yet.</p>
-          ) : (
-            history.map((item) => (
-              <article className="history-item" key={item.id}>
-                <button className="history-open" onClick={() => void openSession(item.id)}>
-                  <span className={`status-dot ${item.status}`} />
-                  <span>
-                    <strong>{item.name}</strong>
-                    <small>
-                      {item.workout_date} · {item.clips.length} clips
-                    </small>
-                  </span>
-                  <em>{statusText(item.status)}</em>
-                </button>
-                {!processingStatuses.includes(item.status) && (
-                  <InlineConfirmButton
-                    className="history-delete"
-                    disabled={busy}
-                    label="Delete"
-                    confirmLabel="Confirm"
-                    onConfirm={() => deleteSession(item)}
-                  />
-                )}
-              </article>
-            ))
-          )}
         </section>
       )}
     </div>

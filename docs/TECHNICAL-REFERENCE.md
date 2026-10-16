@@ -4,7 +4,7 @@ Setup, maintenance and detailed behavior for contributors and administrators. Fo
 
 ## Detailed app behavior
 
-A private, multi-user mobile PWA for batching individual gym-set videos, stitching them locally, and uploading one unlisted workout video to YouTube. Each person signs in with their own account and a cookie session, and each user's workout data is private by default, with optional profile sharing. The first account created becomes the admin and claims any existing data. The admin console (Settings → Admin console) lets the admin disable accounts, see each account's activity and storage, check disk space and the video queue, and switch video uploads (off, admins only, or everyone) and new sign-ups on or off without a restart. Video uploads are admin-only by default.
+A private, multi-user mobile PWA for batching individual gym-set videos, stitching them locally, and uploading one private workout video to YouTube by default. Each person signs in with their own account and a cookie session, and each user's workout data is private by default, with optional profile sharing. The first account created becomes the admin and claims any existing data. The admin console (Settings → Admin console) lets the admin disable accounts, see each account's activity and storage, check disk space and the video queue, and switch video uploads (off, admins only, or everyone) and new sign-ups on or off without a restart. Video uploads are admin-only by default.
 
 The app also includes a structured, dark, mobile-first workout tracker: an exercise library, set/reps/weight logging, RPE and rest tracking, per-set notes, a live rest timer, workout history, a colour-coded training heatmap, weekly muscle-set tracking, and per-exercise progression charts. Reusable machine photos can be captured from a phone, captioned, pinned to an exercise in a particular workout, and expanded from History. Workout records and photo metadata live in the local SQLite database independently of the optional video workflow; processed photo files live under `data/machine-photos/`.
 
@@ -119,7 +119,7 @@ The normal multipart upload is intentionally non-resumable: if a file upload fai
 
 After an upload finishes, YouTube may still need time to create playback versions. The backend polls the video's owner-only `processingDetails` status every 20 seconds and only marks the session complete when YouTube reports success. It sends a Web Push notification to every subscribed phone if YouTube finishes successfully or reports a failure.
 
-On the installed phone PWA, choose **Enable alerts**. The browser asks for notification permission, saves the phone's subscription, and sends a test alert immediately. iPhone notifications require the PWA to be installed from Safari's **Add to Home Screen** flow. The server creates its local VAPID private key at `data/web-push-vapid-private.pem`; this is ignored by Git and must remain private.
+On the installed phone PWA, enable **Settings > Timers & notifications > Phone alerts**. The browser asks for notification permission, saves the phone's subscription, and sends a test alert immediately. iPhone notifications require the PWA to be installed from Safari's **Add to Home Screen** flow. The server creates its local VAPID private key at `data/web-push-vapid-private.pem`; this is ignored by Git and must remain private.
 
 The workout logger uses the same subscription for rest-timer alerts. Start a rest timer and tap **Alert** on its compact top bar once; subsequent rest timers notify that phone automatically, including while the PWA is backgrounded or the screen is locked. Extending or skipping the visible timer reschedules or cancels its pending notification.
 
@@ -194,7 +194,7 @@ video links remain; unfinished older batches must be uploaded again with a conne
 Google's current API reference no longer imposes the old blanket private-only restriction for
 unverified projects; see the setup guide for OAuth production/testing and verification details.
 
-Server-to-YouTube uploads are resumable and default to `unlisted`; phone-to-server transfers
+Server-to-YouTube uploads are resumable and default to `private`; phone-to-server transfers
 remain non-resumable. Title and description templates can use `{session_name}`, `{workout_date}`,
 `{notes}`, and `{chapters}`. Timestamp links are always saved; chapter text is added only when
 the timestamps satisfy common YouTube chapter minimums.
