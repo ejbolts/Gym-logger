@@ -142,7 +142,7 @@ export function YouTubeConnectionPanel({
           {connection.privacy_status === 'private'
             ? 'Only you and people you invite on YouTube can watch. A link alone does not give access.'
             : connection.privacy_status === 'unlisted'
-              ? 'Anyone with the link can watch.'
+              ? "They aren't listed on your channel's Videos tab. Anyone with the link can watch and share them."
               : 'Anyone can find and watch them.'}
         </p>
       )}

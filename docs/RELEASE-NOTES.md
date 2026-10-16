@@ -11,10 +11,10 @@
   channel; the old shared server token is never used as a fallback.
 - Reconnect expired or revoked access and disconnect without deleting videos from YouTube.
   Changing channels and disconnecting are protected while a video is processing.
-- New uploads default to YouTube Private. A highlighted explanation says only you and people
-  you invite on YouTube can watch; a link alone does not give access. Private playback opens
-  on YouTube while signed in to the connected channel. Existing server overrides are described
-  accurately; the app's profile-sharing settings do not control YouTube access.
+- New uploads default to YouTube Unlisted. A highlighted explanation says videos are not
+  listed on your channel's Videos tab, and anyone with the link can watch and share them.
+  Existing server overrides are described accurately; the app's profile-sharing settings do
+  not control YouTube access.
 - The video toolbar has only New upload. Phone alerts remain in Settings; the separate
   video History and Enable alerts buttons have been removed.
 - Existing video links remain. Older unfinished batches without a personal channel binding
@@ -29,7 +29,7 @@ This independently released feature introduces per-user channel authorization an
 a substantial new account workflow, so it uses a minor version bump from 0.6.0 to 0.7.0.
 The deployed 0.6.0 announcement is preserved in Earlier versions.
 
-<img src="screenshots/releases/0.7.0-youtube-channel.png" alt="Video logger showing a connected sample YouTube channel, a highlighted Private upload explanation, and a simplified toolbar with only New upload." width="420">
+<img src="screenshots/releases/0.7.0-youtube-channel.png" alt="Video logger showing a connected sample YouTube channel, a highlighted Unlisted upload and link-sharing explanation, and a simplified toolbar with only New upload." width="420">
 
 A connected sample channel in the isolated verification environment. Google responses were
 simulated; the administrator must complete the documented real-channel check after configuring

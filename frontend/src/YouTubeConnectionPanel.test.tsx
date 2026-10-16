@@ -19,7 +19,7 @@ const disconnected: YouTubeConnection = {
   channel_url: null,
   can_disconnect: true,
   message: 'Connect your own channel to upload workout videos.',
-  privacy_status: 'private',
+  privacy_status: 'unlisted',
 };
 const connected: YouTubeConnection = {
   ...disconnected,
@@ -58,7 +58,7 @@ async function render(value: YouTubeConnection, props = {}) {
 describe('personal YouTube connection', () => {
   it.each([
     ['private', 'Your videos upload as Private', 'A link alone does not give access'],
-    ['unlisted', 'Your videos upload as Unlisted', 'Anyone with the link can watch'],
+    ['unlisted', 'Your videos upload as Unlisted', 'Anyone with the link can watch and share them'],
     ['public', 'Your videos upload as Public', 'Anyone can find and watch them'],
   ] as const)(
     'explains the configured %s visibility accurately',
@@ -74,9 +74,9 @@ describe('personal YouTube connection', () => {
   it('shows the first-use connection, privacy and a recoverable authorization failure', async () => {
     const onChange = vi.fn();
     await render(disconnected, { onChange });
-    expect(container.textContent).toContain('Your videos upload as Private');
-    expect(container.textContent).toContain('Only you and people you invite on YouTube can watch');
-    expect(container.textContent).toContain('A link alone does not give access');
+    expect(container.textContent).toContain('Your videos upload as Unlisted');
+    expect(container.textContent).toContain("They aren't listed on your channel's Videos tab");
+    expect(container.textContent).toContain('Anyone with the link can watch and share them');
     expect(container.textContent).toContain('No API keys or files needed');
     expect(onChange).toHaveBeenLastCalledWith(disconnected);
     vi.mocked(api.youtube.connect).mockRejectedValue(

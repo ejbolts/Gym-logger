@@ -128,9 +128,9 @@ def test_mock_youtube_uploader_returns_a_deterministic_link(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "override, expected", [(None, "private"), ("unlisted", "unlisted"), ("public", "public")]
+    "override, expected", [(None, "unlisted"), ("private", "private"), ("public", "public")]
 )
-def test_youtube_uploads_are_private_by_default_and_honor_explicit_overrides(
+def test_youtube_uploads_are_unlisted_by_default_and_honor_explicit_overrides(
     tmp_path, monkeypatch, override, expected
 ):
     from unittest.mock import Mock
