@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from bisect import bisect_right
 from collections import defaultdict
 from datetime import date, timedelta
 from typing import Annotated
@@ -75,11 +76,14 @@ from .tracker_schemas import (
     DashboardRead,
     ExerciseCreate,
     ExerciseFavoriteUpdate,
+    ExerciseHistoryBaselineRead,
+    ExerciseLatestSessionRead,
     ExerciseProgressRead,
     ExerciseRead,
     HeatmapDay,
     MachinePhotoCaptionUpdate,
     MachinePhotoRead,
+    MachinePhotoUsageRead,
     MuscleFrequencyRead,
     MuscleVolumeRead,
     PersonalRecordRead,
@@ -92,8 +96,11 @@ from .tracker_schemas import (
     WeeklyExerciseBreakdown,
     WeeklyMuscleSetsRead,
     WeeklySetsRead,
+    WeightRepsRead,
     WorkoutCacheRevisionRead,
+    WorkoutHistorySummaryRead,
     WorkoutRecommendationRead,
+    WorkoutSetRead,
     WorkoutSnapshotRead,
     WorkoutTypeColors,
     Zone2WeekRead,
@@ -305,8 +312,11 @@ def weekly_sets(
 
 
 def workout_recommendation(
-    workouts: list[TrainingWorkout], today: date
+    workouts: list[TrainingWorkout],
+    today: date,
+    earlier_rotation: WorkoutCategory | None = None,
 ) -> WorkoutRecommendationRead:
+    """``earlier_rotation`` is the latest rotation category older than ``workouts``, if any."""
     recent_start = today - timedelta(days=6)
     group_dates: dict[str, set[date]] = defaultdict(set)
     for workout in workouts:
@@ -320,7 +330,7 @@ def workout_recommendation(
 
     last_rotation = next(
         (workout.category for workout in workouts if workout.category in TRAINING_ROTATION),
-        None,
+        earlier_rotation,
     )
     rotation_next = (
         WorkoutCategory.PUSH
@@ -802,17 +812,99 @@ def update_exercise_favorite(
     return exercise
 
 
-@router.get("/exercises/{exercise_id}/machine-photos", response_model=list[MachinePhotoRead])
-def list_machine_photos(exercise_id: str, db: DbSession, user: CurrentUser) -> list[MachinePhoto]:
-    if not get_owned(db, Exercise, exercise_id, user.id):
-        raise HTTPException(status_code=404, detail="Exercise was not found.")
-    return list(
+def machine_photo_usage(
+    db: Session, user_id: str, photos: list[MachinePhoto]
+) -> list[MachinePhotoUsageRead]:
+    """Attach each photo's saved-workout count and most recent workout date."""
+    usage: dict[str, tuple[int, date | None]] = {}
+    if photos:
+        rows = db.execute(
+            select(
+                movement_machine_photos.c.machine_photo_id,
+                func.count(func.distinct(TrainingWorkout.id)),
+                func.max(TrainingWorkout.workout_date),
+            )
+            .select_from(movement_machine_photos)
+            .join(WorkoutMovement, WorkoutMovement.id == movement_machine_photos.c.movement_id)
+            .join(TrainingWorkout, TrainingWorkout.id == WorkoutMovement.workout_id)
+            .where(
+                movement_machine_photos.c.machine_photo_id.in_([photo.id for photo in photos]),
+                TrainingWorkout.user_id == user_id,
+            )
+            .group_by(movement_machine_photos.c.machine_photo_id)
+        )
+        usage = {photo_id: (count, last_used) for photo_id, count, last_used in rows}
+    machines = []
+    for photo in photos:
+        workout_count, last_used_date = usage.get(photo.id, (0, None))
+        machines.append(
+            MachinePhotoUsageRead(
+                **MachinePhotoRead.model_validate(photo).model_dump(),
+                exercise_name=photo.exercise.name,
+                workout_count=workout_count,
+                last_used_date=last_used_date,
+            )
+        )
+    return machines
+
+
+@router.get("/machine-photos", response_model=list[MachinePhotoUsageRead])
+def list_all_machine_photos(db: DbSession, user: CurrentUser) -> list[MachinePhotoUsageRead]:
+    """Every saved machine, most recently used first, so History can filter by one."""
+    photos = list(
         db.scalars(
             select(MachinePhoto)
-            .where(MachinePhoto.exercise_id == exercise_id, MachinePhoto.user_id == user.id)
+            .where(MachinePhoto.user_id == user.id)
+            .options(selectinload(MachinePhoto.exercise))
             .order_by(MachinePhoto.created_at.desc())
         )
     )
+    machines = machine_photo_usage(db, user.id, photos)
+    # Stable sorts: unused machines stay newest-first after the used ones.
+    machines.sort(key=lambda item: item.last_used_date or date.min, reverse=True)
+    return machines
+
+
+@router.get("/machine-photos/{photo_id}/workouts", response_model=list[TrainingWorkoutRead])
+def list_machine_photo_workouts(
+    photo_id: str, db: DbSession, user: CurrentUser
+) -> list[TrainingWorkout]:
+    """Saved workouts where this machine was pinned, newest first."""
+    if not get_owned(db, MachinePhoto, photo_id, user.id):
+        raise HTTPException(status_code=404, detail="Machine photo was not found.")
+    pinned_workout_ids = (
+        select(WorkoutMovement.workout_id)
+        .join(
+            movement_machine_photos,
+            movement_machine_photos.c.movement_id == WorkoutMovement.id,
+        )
+        .where(movement_machine_photos.c.machine_photo_id == photo_id)
+    )
+    return list(
+        db.scalars(
+            select(TrainingWorkout)
+            .where(TrainingWorkout.user_id == user.id, TrainingWorkout.id.in_(pinned_workout_ids))
+            .options(*workout_options())
+            .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
+        )
+    )
+
+
+@router.get("/exercises/{exercise_id}/machine-photos", response_model=list[MachinePhotoUsageRead])
+def list_machine_photos(
+    exercise_id: str, db: DbSession, user: CurrentUser
+) -> list[MachinePhotoUsageRead]:
+    if not get_owned(db, Exercise, exercise_id, user.id):
+        raise HTTPException(status_code=404, detail="Exercise was not found.")
+    photos = list(
+        db.scalars(
+            select(MachinePhoto)
+            .where(MachinePhoto.exercise_id == exercise_id, MachinePhoto.user_id == user.id)
+            .options(selectinload(MachinePhoto.exercise))
+            .order_by(MachinePhoto.created_at.desc())
+        )
+    )
+    return machine_photo_usage(db, user.id, photos)
 
 
 @router.get(
@@ -1422,16 +1514,28 @@ def weekly_muscle_volume(
     ]
 
 
+def workouts_between(
+    db: Session, user_id: str, start: date | None = None, end: date | None = None
+) -> list[TrainingWorkout]:
+    """A user's workouts, newest first, optionally limited to an inclusive date window."""
+    if start is not None and end is not None and start > end:
+        raise HTTPException(status_code=422, detail="Start date must not be after end date.")
+    query = (
+        select(TrainingWorkout)
+        .where(TrainingWorkout.user_id == user_id)
+        .options(*workout_options())
+        .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
+    )
+    if start is not None:
+        query = query.where(TrainingWorkout.workout_date >= start)
+    if end is not None:
+        query = query.where(TrainingWorkout.workout_date <= end)
+    return list(db.scalars(query))
+
+
 @router.get("/workouts", response_model=list[TrainingWorkoutRead])
 def list_workouts(db: DbSession, user: CurrentUser) -> list[TrainingWorkout]:
-    return list(
-        db.scalars(
-            select(TrainingWorkout)
-            .where(TrainingWorkout.user_id == user.id)
-            .options(*workout_options())
-            .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
-        )
-    )
+    return workouts_between(db, user.id)
 
 
 @router.get("/workouts/revision", response_model=WorkoutCacheRevisionRead)
@@ -1440,11 +1544,114 @@ def get_workout_cache_revision(db: DbSession, user: CurrentUser) -> WorkoutCache
 
 
 @router.get("/workouts/snapshot", response_model=WorkoutSnapshotRead)
-def get_workout_snapshot(db: DbSession, user: CurrentUser) -> WorkoutSnapshotRead:
+def get_workout_snapshot(
+    db: DbSession, user: CurrentUser, start: date | None = None, end: date | None = None
+) -> WorkoutSnapshotRead:
+    """Workouts with the cache revision; ``start``/``end`` load long histories in windows."""
     return WorkoutSnapshotRead(
         revision=workout_cache_revision(db, user.id),
-        workouts=list_workouts(db, user),
+        workouts=workouts_between(db, user.id, start, end),
     )
+
+
+@router.get("/calendar", response_model=list[HeatmapDay])
+def calendar_days(
+    db: DbSession, user: CurrentUser, start: date, end: date | None = None
+) -> list[HeatmapDay]:
+    """Calendar days for a window older than the one the dashboard loaded."""
+    workouts = workouts_between(db, user.id, start, end)
+    return build_heatmap(workouts, body_measurements_by_date(db, user.id))
+
+
+@router.get("/exercise-history-baselines", response_model=list[ExerciseHistoryBaselineRead])
+def exercise_history_baselines(
+    db: DbSession, user: CurrentUser, before: date
+) -> list[ExerciseHistoryBaselineRead]:
+    """Condense each exercise's history before ``before`` for clients holding recent workouts.
+
+    Live PR badges need an exercise's heaviest eligible weight and best reps at every weight,
+    and set suggestions need its latest completed sets, however long ago those were logged.
+    """
+    rows = db.execute(
+        select(
+            WorkoutMovement.id.label("movement_id"),
+            WorkoutMovement.exercise_id,
+            WorkoutMovement.notes.label("movement_notes"),
+            TrainingWorkout.id.label("workout_id"),
+            TrainingWorkout.workout_date,
+            TrainingWorkout.name.label("workout_name"),
+            Exercise.kind,
+            WorkoutSet.weight_kg,
+            WorkoutSet.reps,
+            WorkoutSet.completed,
+            WorkoutSet.warmup,
+            WorkoutSet.set_type,
+            WorkoutSet.failed,
+            WorkoutSet.target_reps,
+        )
+        .select_from(WorkoutSet)
+        .join(WorkoutMovement, WorkoutSet.movement_id == WorkoutMovement.id)
+        .join(TrainingWorkout, WorkoutMovement.workout_id == TrainingWorkout.id)
+        .join(Exercise, WorkoutMovement.exercise_id == Exercise.id)
+        .where(TrainingWorkout.user_id == user.id, TrainingWorkout.workout_date < before)
+        .order_by(
+            TrainingWorkout.workout_date.desc(),
+            TrainingWorkout.created_at.desc(),
+            WorkoutMovement.order_index,
+        )
+    )
+    reps_by_weight: dict[str, dict[float, int]] = {}
+    latest: dict[str, ExerciseLatestSessionRead] = {}
+    latest_movement_ids: dict[str, str] = {}
+    for row in rows:
+        weights = reps_by_weight.setdefault(row.exercise_id, {})
+        if row.completed and row.exercise_id not in latest:
+            latest[row.exercise_id] = ExerciseLatestSessionRead(
+                workout_id=row.workout_id,
+                workout_date=row.workout_date,
+                workout_name=row.workout_name,
+                movement_notes=row.movement_notes,
+                sets=[],
+            )
+            latest_movement_ids[row.movement_id] = row.exercise_id
+        # Mirrors the client's PR-eligibility check for strength sets.
+        if (
+            row.kind != ExerciseKind.STRENGTH
+            or not is_pr_eligible(row)
+            or row.weight_kg is None
+            or row.weight_kg < 0
+            or not row.reps
+        ):
+            continue
+        # Four decimals absorb unit-conversion noise, as in the client's comparison.
+        weight = round(row.weight_kg, 4)
+        weights[weight] = max(weights.get(weight, 0), row.reps)
+
+    if latest_movement_ids:
+        for item in db.scalars(
+            select(WorkoutSet)
+            .where(
+                WorkoutSet.movement_id.in_(latest_movement_ids),
+                WorkoutSet.completed.is_(True),
+            )
+            .order_by(WorkoutSet.order_index)
+        ):
+            latest[latest_movement_ids[item.movement_id]].sets.append(
+                WorkoutSetRead.model_validate(item)
+            )
+
+    return [
+        ExerciseHistoryBaselineRead(
+            exercise_id=exercise_id,
+            best_weight_kg=max(weights) if weights else None,
+            reps_by_weight=[
+                WeightRepsRead(weight_kg=weight, reps=reps)
+                for weight, reps in sorted(weights.items())
+            ],
+            latest=latest.get(exercise_id),
+        )
+        for exercise_id, weights in reps_by_weight.items()
+    ]
 
 
 @router.post("/workouts", response_model=TrainingWorkoutRead, status_code=201)
@@ -1674,79 +1881,67 @@ def delete_sample_data(db: DbSession, user: CurrentUser) -> None:
     db.commit()
 
 
-@router.get("/dashboard", response_model=DashboardRead)
-def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
-    today = date.today()
-    workouts = list(
-        db.scalars(
-            select(TrainingWorkout)
-            .where(TrainingWorkout.user_id == user.id)
-            .options(*workout_options())
-            .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
-        )
-    )
-    preferences = training_preferences(db, user.id)
-    week_start = start_of_week(today, preferences.week_start)
-    this_week = [workout for workout in workouts if week_start <= workout.workout_date <= today]
-    measurements = list(
+def completed_working_sets(workout: TrainingWorkout) -> list[WorkoutSet]:
+    return [
+        item for movement in workout.movements for item in movement.sets if is_working_set(item)
+    ]
+
+
+def display_categories(items: list[TrainingWorkout]) -> list[WorkoutCategory]:
+    """Collapse a day to one strength colour plus cardio when both occurred."""
+    has_cardio = False
+    strength_categories: list[WorkoutCategory] = []
+    for workout in items:
+        movement_categories = {movement.exercise.category for movement in workout.movements}
+        has_cardio = has_cardio or WorkoutCategory.CARDIO in movement_categories
+        non_cardio = movement_categories - {WorkoutCategory.CARDIO}
+        if non_cardio:
+            category = workout.category
+            if category == WorkoutCategory.CARDIO:
+                category = (
+                    next(iter(non_cardio)) if len(non_cardio) == 1 else WorkoutCategory.FULL_BODY
+                )
+            strength_categories.append(category)
+        elif workout.category == WorkoutCategory.CARDIO:
+            has_cardio = True
+        else:
+            strength_categories.append(workout.category)
+    unique_strength = list(dict.fromkeys(strength_categories))
+    if len(unique_strength) > 1:
+        unique_strength = [WorkoutCategory.FULL_BODY]
+    return [*unique_strength, *([WorkoutCategory.CARDIO] if has_cardio else [])]
+
+
+def body_measurements_by_date(db: Session, user_id: str) -> list[BodyMeasurement]:
+    return list(
         db.scalars(
             select(BodyMeasurement)
-            .where(BodyMeasurement.user_id == user.id)
+            .where(BodyMeasurement.user_id == user_id)
             .order_by(BodyMeasurement.measurement_date)
         )
     )
 
+
+def build_heatmap(
+    workouts: list[TrainingWorkout], measurements: list[BodyMeasurement]
+) -> list[HeatmapDay]:
+    """Calendar days for ``workouts``; ``measurements`` must be sorted by date."""
+    measurement_dates = [item.measurement_date for item in measurements]
+
     def bodyweight_on(workout_date: date) -> float | None:
-        applicable = [
-            item.weight_kg for item in measurements if item.measurement_date <= workout_date
-        ]
-        return applicable[-1] if applicable else None
+        # Bisect rather than scan: years of daily check-ins made a scan per exercise quadratic.
+        index = bisect_right(measurement_dates, workout_date)
+        return measurements[index - 1].weight_kg if index else None
 
-    def completed_sets(workout: TrainingWorkout) -> list[WorkoutSet]:
-        return [
-            item for movement in workout.movements for item in movement.sets if is_working_set(item)
-        ]
-
-    def display_categories(items: list[TrainingWorkout]) -> list[WorkoutCategory]:
-        """Collapse a day to one strength colour plus cardio when both occurred."""
-        has_cardio = False
-        strength_categories: list[WorkoutCategory] = []
-        for workout in items:
-            movement_categories = {movement.exercise.category for movement in workout.movements}
-            has_cardio = has_cardio or WorkoutCategory.CARDIO in movement_categories
-            non_cardio = movement_categories - {WorkoutCategory.CARDIO}
-            if non_cardio:
-                category = workout.category
-                if category == WorkoutCategory.CARDIO:
-                    category = (
-                        next(iter(non_cardio))
-                        if len(non_cardio) == 1
-                        else WorkoutCategory.FULL_BODY
-                    )
-                strength_categories.append(category)
-            elif workout.category == WorkoutCategory.CARDIO:
-                has_cardio = True
-            else:
-                strength_categories.append(workout.category)
-        unique_strength = list(dict.fromkeys(strength_categories))
-        if len(unique_strength) > 1:
-            unique_strength = [WorkoutCategory.FULL_BODY]
-        return [*unique_strength, *([WorkoutCategory.CARDIO] if has_cardio else [])]
-
-    volume_this_week = sum(
-        (item.weight_kg or 0) * (item.reps or 0)
-        for workout in this_week
-        for item in completed_sets(workout)
-    )
     day_groups: dict[date, list[TrainingWorkout]] = defaultdict(list)
     for workout in workouts:
         day_groups[workout.workout_date].append(workout)
-    heatmap = [
+    return [
         HeatmapDay(
             workout_date=workout_date,
             categories=display_categories(items),
             workout_count=len(items),
-            set_count=sum(len(completed_sets(item)) for item in items),
+            set_count=sum(len(completed_working_sets(item)) for item in items),
             workouts=[
                 CalendarWorkoutRead(
                     id=item.id,
@@ -1779,6 +1974,59 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
         )
         for workout_date, items in sorted(day_groups.items())
     ]
+
+
+def workout_history_summary(db: Session, user_id: str) -> WorkoutHistorySummaryRead:
+    total, first, last = db.execute(
+        select(
+            func.count(TrainingWorkout.id),
+            func.min(TrainingWorkout.workout_date),
+            func.max(TrainingWorkout.workout_date),
+        ).where(TrainingWorkout.user_id == user_id)
+    ).one()
+    sample_id = db.scalar(
+        select(TrainingWorkout.id)
+        .where(TrainingWorkout.user_id == user_id, TrainingWorkout.is_sample.is_(True))
+        .limit(1)
+    )
+    return WorkoutHistorySummaryRead(
+        total_workouts=total,
+        first_workout_date=first,
+        last_workout_date=last,
+        has_sample_workouts=sample_id is not None,
+    )
+
+
+@router.get("/dashboard", response_model=DashboardRead)
+def dashboard(
+    db: DbSession, user: CurrentUser, calendar_start: date | None = None
+) -> DashboardRead:
+    """Today's summary. ``calendar_start`` limits the calendar to recent days so long histories
+    open quickly; ``/calendar`` serves older days. Without it, every day is included."""
+    today = date.today()
+    preferences = training_preferences(db, user.id)
+    week_start = start_of_week(today, preferences.week_start)
+    # Weekly figures look back at most four weeks, so a calendar window never truncates them.
+    window_start = (
+        min(calendar_start, week_start, today - timedelta(days=27)) if calendar_start else None
+    )
+    workouts = workouts_between(db, user.id, window_start)
+    this_week = [workout for workout in workouts if week_start <= workout.workout_date <= today]
+    measurements = body_measurements_by_date(db, user.id)
+
+    volume_this_week = sum(
+        (item.weight_kg or 0) * (item.reps or 0)
+        for workout in this_week
+        for item in completed_working_sets(workout)
+    )
+    heatmap = build_heatmap(
+        [
+            workout
+            for workout in workouts
+            if calendar_start is None or workout.workout_date >= calendar_start
+        ],
+        measurements,
+    )
 
     weekly_groups: dict[date, list[TrainingWorkout]] = defaultdict(list)
     for workout in this_week:
@@ -1819,7 +2067,7 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
         exercises.sort(
             key=lambda item: (item.muscle_group.casefold(), item.exercise_name.casefold())
         )
-        day_sets = sum(len(completed_sets(item)) for item in items)
+        day_sets = sum(len(completed_working_sets(item)) for item in items)
         weekly_days.append(
             WeeklyDayBreakdown(
                 workout_date=workout_date,
@@ -1829,7 +2077,7 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
                     sum(
                         (item.weight_kg or 0) * (item.reps or 0)
                         for workout in items
-                        for item in completed_sets(workout)
+                        for item in completed_working_sets(workout)
                     ),
                     1,
                 ),
@@ -1839,7 +2087,15 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
             )
         )
 
-    workout_dates = sorted(day_groups, reverse=True)
+    # A streak can run back past the loaded window, so it reads every training date.
+    workout_dates = list(
+        db.scalars(
+            select(TrainingWorkout.workout_date)
+            .where(TrainingWorkout.user_id == user.id)
+            .distinct()
+            .order_by(TrainingWorkout.workout_date.desc())
+        )
+    )
     streak = 0
     if workout_dates and workout_dates[0] >= today - timedelta(days=1):
         cursor = workout_dates[0]
@@ -1850,7 +2106,20 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
             elif workout_date < cursor:
                 break
 
-    preferences = training_preferences(db, user.id)
+    earlier_rotation = None
+    if window_start is not None and not any(
+        workout.category in TRAINING_ROTATION for workout in workouts
+    ):
+        earlier_rotation = db.scalar(
+            select(TrainingWorkout.category)
+            .where(
+                TrainingWorkout.user_id == user.id,
+                TrainingWorkout.workout_date < window_start,
+                TrainingWorkout.category.in_(TRAINING_ROTATION),
+            )
+            .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
+            .limit(1)
+        )
     cardio_sessions = list(
         db.scalars(select(CardioSession).where(CardioSession.user_id == user.id))
     )
@@ -1863,7 +2132,7 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
     muscle_totals = muscle_volume(workouts, week_start, today)
     return DashboardRead(
         workouts_this_week=len(this_week),
-        sets_this_week=sum(len(completed_sets(workout)) for workout in this_week),
+        sets_this_week=sum(len(completed_working_sets(workout)) for workout in this_week),
         volume_this_week_kg=round(volume_this_week, 1),
         current_streak=streak,
         total_cardio_sessions=len(cardio_sessions),
@@ -1871,7 +2140,7 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
         cardio_energy_periods=cardio_energy_periods(cardio_sessions, today, preferences.week_start),
         heatmap=heatmap,
         weekly_days=weekly_days,
-        recommendation=workout_recommendation(workouts, today),
+        recommendation=workout_recommendation(workouts, today, earlier_rotation),
         weekly_sets=weekly_sets(workouts, today, preferences.week_start),
         muscle_volume=[
             MuscleVolumeRead(muscle_name=name, set_total=value)
@@ -1883,6 +2152,7 @@ def dashboard(db: DbSession, user: CurrentUser) -> DashboardRead:
             preferences.zone2_goal_minutes,
         ),
         recent_workouts=workouts[:5],
+        history=workout_history_summary(db, user.id),
     )
 
 

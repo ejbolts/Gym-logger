@@ -9,6 +9,8 @@ const DASHBOARD_CACHE_KEY = 'dashboard-v1';
 export interface CachedWorkoutSnapshot {
   revision: string;
   workouts: TrackedWorkout[];
+  /** The oldest workout date the snapshot covers; caches from earlier releases hold everything. */
+  since?: string;
 }
 
 async function readCacheValue<T>(key: string): Promise<T | null> {
@@ -97,9 +99,14 @@ export async function clearWorkoutCache(): Promise<void> {
   }
 }
 
+/** Cached workouts from `since` onwards, when the cache is current and reaches back that far. */
 export function cachedWorkoutsForRevision(
   cached: CachedWorkoutSnapshot | null,
   revision: string,
+  since?: string,
 ): TrackedWorkout[] | null {
-  return cached?.revision === revision ? cached.workouts : null;
+  if (cached?.revision !== revision) return null;
+  if (since === undefined) return cached.since === undefined ? cached.workouts : null;
+  if (cached.since !== undefined && cached.since > since) return null;
+  return cached.workouts.filter((workout) => workout.workout_date >= since);
 }

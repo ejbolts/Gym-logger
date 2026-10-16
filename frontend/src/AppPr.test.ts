@@ -199,4 +199,36 @@ describe('exercise weight and volume PRs', () => {
     expect(labels([set(100.000001, 9)])).toEqual([['Volume PR']]);
     expect(labels([set(100.04, 9)], [history([set(100.05, 10)])])).toEqual([]);
   });
+
+  it('compares with older history condensed by the server', () => {
+    const older = new Map([
+      [
+        bench.id,
+        {
+          exercise_id: bench.id,
+          best_weight_kg: 120,
+          reps_by_weight: [
+            { weight_kg: 100, reps: 10 },
+            { weight_kg: 120, reps: 3 },
+          ],
+          latest: null,
+        },
+      ],
+    ]);
+    const withOlder = (sets: WorkoutSetInput[]) => [
+      ...(calculateDraftPrs([draft(sets)], [baseline], null, '2026-01-15', older)
+        .get('movement')
+        ?.values() ?? []),
+    ];
+    // Loaded history alone would celebrate these; years-old bests outrank them.
+    expect(withOlder([set(105, 1)])).toEqual([]);
+    expect(withOlder([set(100, 9)])).toEqual([]);
+    expect(withOlder([set(100, 11), set(125, 1), set(120, 4)])).toEqual([
+      ['Volume PR'],
+      ['Weight PR'],
+      ['Volume PR'],
+    ]);
+    // Loaded workouts still count alongside it.
+    expect(withOlder([set(90, 12)])).toEqual([]);
+  });
 });

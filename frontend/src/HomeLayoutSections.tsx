@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import {
-  defaultHomeLayout,
   HOME_SECTIONS,
   homeSectionSpans,
   moveHomeSection,
@@ -14,10 +13,8 @@ import './homeLayout.css';
 
 interface HomeEditActions {
   onChange: (layout: HomeLayout) => void;
-  onSave: () => void;
-  onCancel: () => void;
+  onDraggingChange?: (dragging: boolean) => void;
   saving: boolean;
-  error: string | null;
 }
 interface CardDrag {
   id: HomeSectionId;
@@ -102,79 +99,39 @@ export function HomeLayoutSections({
     return () => cancelAnimationFrame(frame);
   }, [dragging]);
 
+  const onDraggingChange = edit?.onDraggingChange;
+  useEffect(() => {
+    onDraggingChange?.(dragging !== null);
+  }, [dragging, onDraggingChange]);
+
   const busy = Boolean(edit?.saving || dragging);
   return (
     <>
-      {edit && (
-        <section className="home-layout-toolbar" aria-label="Edit Home layout">
-          <div className="home-layout-actions">
-            <b>Edit Home</b>
-            <button
-              className="pulse-button secondary"
-              type="button"
-              disabled={busy}
-              onClick={edit.onCancel}
-            >
-              Cancel
-            </button>
-            <button
-              className="pulse-button primary"
-              type="button"
-              disabled={busy}
-              onClick={edit.onSave}
-            >
-              <Icon name="check" />
-              {edit.saving ? 'Saving…' : 'Save layout'}
-            </button>
+      {edit && hidden.length > 0 && (
+        <details className="home-layout-add">
+          <summary>
+            <Icon name="plus" />
+            Add sections <span>{hidden.length}</span>
+          </summary>
+          <div className="home-hidden-options">
+            {hidden.map((id) => (
+              <button
+                className="pulse-button secondary"
+                type="button"
+                key={id}
+                disabled={busy}
+                aria-label={`Add ${titleFor(id)}`}
+                onClick={() => {
+                  edit.onChange(toggleHomeSection(layout, id));
+                  setAnnouncement(`${titleFor(id)} added.`);
+                }}
+              >
+                <Icon name="plus" />
+                {titleFor(id)}
+              </button>
+            ))}
           </div>
-          <p>
-            Drag a handle to move a card. Use the width button to resize. Tap <b>−</b> to hide.
-          </p>
-          <div className="home-layout-options">
-            {hidden.length > 0 && (
-              <details className="home-layout-add">
-                <summary>
-                  <Icon name="plus" />
-                  Add sections <span>{hidden.length}</span>
-                </summary>
-                <div className="home-hidden-options">
-                  {hidden.map((id) => (
-                    <button
-                      className="pulse-button secondary"
-                      type="button"
-                      key={id}
-                      disabled={busy}
-                      aria-label={`Add ${titleFor(id)}`}
-                      onClick={() => {
-                        edit.onChange(toggleHomeSection(layout, id));
-                        setAnnouncement(`${titleFor(id)} added.`);
-                      }}
-                    >
-                      <Icon name="plus" />
-                      {titleFor(id)}
-                    </button>
-                  ))}
-                </div>
-              </details>
-            )}
-            <button
-              className="text-link"
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                edit.onChange(defaultHomeLayout());
-                setAnnouncement('Default layout restored. Save to keep it.');
-              }}
-            >
-              Reset layout
-            </button>
-          </div>
-          {edit.error && (
-            <p className="inline-error" role="alert">
-              {edit.error}
-            </p>
-          )}
-        </section>
+        </details>
       )}
       <div className={`home-sections${edit ? ' is-editing' : ''}`}>
         {visible.map((id, index) => (
@@ -207,7 +164,7 @@ export function HomeLayoutSections({
                       setAnnouncement(`${titleFor(id)} hidden. Restore it from Add sections.`);
                     }}
                   >
-                    <span aria-hidden="true">−</span>
+                    <Icon name="close" />
                   </button>
                   <button
                     className="home-card-resize"
@@ -317,7 +274,8 @@ export function HomeLayoutSections({
       {edit && (
         <>
           <span id="home-drag-help" className="sr-only">
-            Drag to another card, or use the arrow keys to move it. Escape cancels a drag.
+            Drag to another card, or use the arrow keys to move it. Escape cancels a drag. Use the
+            width button to resize, X to hide, and the green tick below to save.
           </span>
           <span className="sr-only" role="status" aria-live="polite">
             {announcement}

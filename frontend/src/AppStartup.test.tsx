@@ -2,7 +2,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { AppTabBar } from './AppTabBar';
-import { TodayScreen } from './TodayScreen';
+import { TodayScreen, type TodayScreenProps } from './TodayScreen';
+import { useHomeLayout } from './useHomeLayout';
 import type { DashboardData, TrackedWorkout, User, WorkoutTypeColors } from './types';
 import { UserContext, type UserSession } from './userContext';
 import { TrainingPreferencesContext } from './trainingPreferencesContext';
@@ -54,6 +55,11 @@ function renderSignedIn(hash: string, user: User) {
   );
 }
 
+function TodayPreview(props: Omit<TodayScreenProps, 'home'>) {
+  const home = useHomeLayout();
+  return <TodayScreen home={home} {...props} />;
+}
+
 function renderToday(
   overrides: Partial<Parameters<typeof TodayScreen>[0]> = {},
   weightUnit: WeightUnit = 'kg',
@@ -70,7 +76,7 @@ function renderToday(
         applySaved: vi.fn(),
       }}
     >
-      <TodayScreen
+      <TodayPreview
         data={
           {
             workouts_this_week: 4,

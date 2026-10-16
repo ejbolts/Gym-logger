@@ -1,5 +1,140 @@
 # Gym Logger release notes
 
+## 0.6.0
+
+This release combines PRs #48–#54.
+
+### Faster start with long histories
+
+- Signing in and opening the app load the current month and the two before it,
+  rather than every workout ever logged. With seven years of sample training, the
+  startup workout download fell from about 21 MB to 0.6 MB and the Today summary
+  from about 4.8 s to 0.06 s on the server.
+- After a successful sign-in, the form closes from top and bottom, the tagline fades,
+  and the Gym Logger logo glides to the centre and fades out. Today is already loading
+  underneath, so with a typical phone connection it is ready when the logo leaves.
+  What's new and the first-run guides wait until the animation has finished.
+  Reduce motion (in Settings or on the phone) replaces this with a short fade.
+- Swipe the Today or History calendar back past its oldest month to load the six
+  months before it. A card at the edge shows while they load, and the month you
+  were viewing stays in place. Both calendars and the History list share what has
+  loaded.
+- Vertical scrolling in History does not reveal or load more workouts automatically.
+  Choose **Show more** to reveal more loaded workouts or fetch the next older six months.
+  Horizontal calendar scrolling still loads older months, and the header counts every
+  workout logged.
+- Whole-history figures are unchanged: streaks, the suggested next workout, export
+  time frames and sample-workout removal read the full log. While logging, PR badges
+  and previous-set suggestions also compare with a server summary of older sessions.
+- The calendar's body-weight lookup no longer rescans every check-in for each
+  exercise, which also speeds up apps that have not yet refreshed to this release.
+
+<img src="screenshots/releases/0.6.0-sign-in-transition.png" alt="Three moments after signing in: the form closing towards its middle under the logo, the logo and name centred on an empty screen, and the Today screen with its calendar revealed." width="780">
+
+Frames from a recording of the sign-in transition: the form closes, the logo centres,
+then Today appears with its data already loaded.
+
+<img src="screenshots/releases/0.6.0-calendar-older-months.png" alt="The Today consistency calendar shows July 2026, loaded on demand after swiping back past the three months shown at startup, above the weekly sets-per-muscle card." width="390">
+
+July 2026 loaded when the calendar reached its oldest month. Captures use a separate
+database of generated sample training.
+
+<img src="screenshots/releases/0.6.0-history-manual-show-more.png" alt="The bottom of History stops after the displayed workouts with a Show more button for deliberately loading more." width="390">
+
+Vertical scrolling leaves History at **Show more** until you choose to load more.
+Captured with fictional workouts in a separate sample database.
+
+### Find the last time you used a machine
+
+- **History > Workouts** has a **Filter by machine** button. Choose one of your
+  saved machine photos to list only the workouts where you pinned that photo,
+  newest first. Workouts with the same exercise on other machines are hidden, so a
+  machine you last used a year ago is easy to find after many sessions elsewhere.
+- The machine list shows each photo's exercise, last-used date, time since then and
+  number of workouts. Search appears when you have more than six saved machines.
+- The filter summary shows the last-used date, time since then and workout count.
+  The most recent session on that machine opens with its exercise highlighted, and
+  filtered dates include the year. Use **Change** to pick another machine or
+  **Clear** to return to the full History list and calendar.
+- In a saved workout, open a pinned photo and choose **All workouts on this
+  machine** to filter History by it.
+- While logging, each saved equipment photo shows when you last used it, such as
+  **Used 1 year ago**, to help you pin the right machine.
+- Machine history is loaded from the server, so it includes older workouts that
+  History has not loaded yet. Only saved workouts with a pinned photo appear;
+  unpinned sessions of the exercise do not.
+
+<img src="screenshots/releases/0.6.0-machine-history-filter.png" alt="History filtered by the Northside Hammer Strength leg press photo, showing it was last used on 9 October 2025, one year ago, across two workouts, with the most recent session expanded." width="390">
+
+Filter History by one machine to find your last session there. Captured at phone
+width with fictional gyms, photos and workouts in a separate sample database.
+
+<img src="screenshots/releases/0.6.0-machine-picker.png" alt="The Filter by machine list shows four saved machine photos with their exercise, last-used date, time since and workout count." width="390">
+
+Choose from your saved machine photos, ordered by most recent use.
+
+### Easier Home editing
+
+- Tap the Today pencil to edit the cards. The bottom tabs fade into **Cancel**, a
+  **green tick** to save, and **Reset layout**, keeping the controls within reach
+  as you scroll. The old editing box above the cards is removed. Reset previews
+  the default layout; tap the tick to keep it or Cancel to keep your saved layout.
+  Tap a card's **X** to hide it. Hidden cards remain available through **Add sections**.
+  Hide, resize and drag controls stay circular on compact cards, too.
+  The blue **Start** button and green save tick share the same square shape and
+  rounded corners, keeping their size consistent as the footer changes modes.
+
+<img src="screenshots/releases/0.6.0-home-layout-controls.png" alt="Today in layout edit mode, with circular X, width and drag controls on the cards, and Cancel, a square green save tick, and Reset layout in the bottom bar." width="390">
+
+Home layout controls replace the bottom tabs while editing. Captured with a
+separate sample account and generated training data.
+
+### Exercise artwork in Progress
+
+- Progress shows the selected exercise illustration beside the latest metric and
+  change, above the graph. The illustration updates when you choose another exercise.
+
+<img src="screenshots/releases/0.6.0-progress-exercise-icon.png" alt="Back Squat progress with its exercise illustration beside the estimated one-rep max and improvement, above the graph." width="434">
+
+The exercise illustration follows the selected exercise. This capture uses generated
+sample workouts in an isolated database.
+
+### Earlier releases in What's new
+
+- **What's new** can be compacted. Select **Hide changes** below the summary to
+  collapse the change list, screenshot and GitHub link for the current version;
+  **Show N changes** expands them again. The title and summary stay visible.
+- An **Earlier versions** list follows the current notes. Each previous release
+  starts collapsed with its version and title; expand one to read its summary,
+  changes, screenshot and GitHub notes. Versions open and close independently, and
+  their screenshots load only when expanded.
+- **Settings > What's new > View changes** opens the same history at any time.
+- The history is bundled with the app from `frontend/release-history.json`, so it
+  works offline.
+
+<img src="screenshots/releases/0.6.0-release-history.png" alt="What's new with its changes collapsed behind Show 3 changes, followed by an Earlier versions list where 0.2.0 is expanded to show its summary, changes and GitHub link." width="390">
+
+The current notes compacted and one earlier version expanded, captured at phone
+width with a fictional account in a separate sample database.
+
+### Aligned Settings update checks
+
+- **Settings > What's new** places **Check for updates** on the right, aligned
+  with **View changes** and **Replay guide**.
+- Checking for updates shows a timestamped notification for three seconds, with a
+  dismiss button and a blue bar along its bottom edge that shrinks from right to
+  left as the time runs out, like the personal-record popup. Reduced-motion
+  settings show the countdown in one-second steps. Results no longer add persistent
+  text or empty space to the Settings card. Available updates still have their
+  refresh notification above.
+
+<img src="screenshots/releases/0.6.0-settings-button-alignment.png" alt="A timestamped Up to date notification has a blue countdown bar along its bottom edge above the compact Settings card." width="390">
+
+Settings actions share the same right edge, while results appear temporarily above
+the page. Captured with an isolated sample account.
+
+No database migration is required for this release.
+
 ## 0.5.5
 
 - A persistent top notification announces a new app release without interrupting
@@ -227,7 +362,7 @@ Username-based account creation in v0.3.0, captured with empty fields in the iso
 
 ## Publishing the next announcement
 
-1. Edit `frontend/release.json`. Choose the version manually following [the agent release policy](../AGENTS.md#release-versions-and-announcements). Before merging a batch, [evaluate the currently open GitHub PRs](../AGENTS.md#reviewing-and-merging-a-pr-batch), select the included PRs and reconcile their release metadata. A coordinated batch of multiple PRs for an application release gets **one minor bump** (`0.3.0` to `0.4.0`), even if its changes are mostly patches. Every PR in that batch shares the version and contributes to one announcement; do not accumulate its individual version proposals. Reuse an already pending minor release for that batch, consolidate unpublished patch notes into it, and retain the version for follow-up fixes before deployment. For an independently released single PR, default to a patch (`0.3.0` to `0.3.1`); a substantial new capability can justify a minor bump. Documentation/test/tooling-only batches with no application behavior change need no app bump. Compare deployed and pending versions, never reuse a deployed number, and preserve deployed release history. Update `title`, `summary`, `changes` and `url`. `url` must be an HTTPS GitHub link to your release, changelog or pull request. The build validates the metadata but does not increment versions automatically.
+1. Edit `frontend/release.json`. Choose the version manually following [the agent release policy](../AGENTS.md#release-versions-and-announcements). Before merging a batch, [evaluate the currently open GitHub PRs](../AGENTS.md#reviewing-and-merging-a-pr-batch), select the included PRs and reconcile their release metadata. A coordinated batch of multiple PRs for an application release gets **one minor bump** (`0.3.0` to `0.4.0`), even if its changes are mostly patches. Every PR in that batch shares the version and contributes to one announcement; do not accumulate its individual version proposals. Reuse an already pending minor release for that batch, consolidate unpublished patch notes into it, and retain the version for follow-up fixes before deployment. For an independently released single PR, default to a patch (`0.3.0` to `0.3.1`); a substantial new capability can justify a minor bump. Documentation/test/tooling-only batches with no application behavior change need no app bump. Compare deployed and pending versions, never reuse a deployed number, and preserve deployed release history. Before replacing a deployed release's notes, move its existing `release.json` object to the top of `frontend/release-history.json` so the app keeps showing it under **Earlier versions**; leave unpublished pending versions out of the history. Update `title`, `summary`, `changes` and `url`. `url` must be an HTTPS GitHub link to your release, changelog or pull request. The build validates the metadata but does not increment versions automatically.
 2. Add the detailed notes here (keep previous versions), or publish a GitHub release and link to it instead. If this repository is private, readers need GitHub access to open that link; the short notes remain visible inside the app.
    For a visible feature or UI improvement, include a screenshot of the verified revision using isolated sample data. Inspect it for private information, commit it under `docs/screenshots/releases/` with a versioned filename, and embed it here using a relative image path, descriptive alt text and a caption. Before/after images are useful when they clarify the change. Explain omitted screenshots in the notes or pull request when capture is unavailable or the change has no visible result.
    The optional `image` object in `frontend/release.json` uses `url` and `alt` to display the same screenshot in the app's pop-up. Use a direct HTTPS `raw.githubusercontent.com` image URL pinned to the screenshot's commit, not a GitHub page URL or temporary browser-artifact path. Check anonymous access before publishing; private-repository images may not be accessible to app users. If the image is unavailable, the app still shows the text and dismissal controls.
@@ -236,4 +371,4 @@ Username-based account creation in v0.3.0, captured with empty fields in the iso
 
 Vite emits `release.json` into `frontend/dist` with the app and serves it directly during development. The browser checks that deployed file using `cache: no-store`; the service worker does not precache it. The announcement therefore follows the current frontend build. Changing source notes without rebuilding the frontend leaves its announcement unchanged.
 
-If users miss several releases, they see the latest summary and can follow the link for earlier notes. Network failures leave the app usable and are retried when it returns to the foreground or reconnects. Dismissal survives sign-out; deleting browser storage shows the notes again. Browsers that block storage remember dismissal for the current page session only.
+If users miss several releases, they see the latest notes and can expand earlier versions in the same pop-up. The build rejects a history entry that is invalid, out of order, duplicated or not older than the current version. Network failures leave the app usable and are retried when it returns to the foreground or reconnects. Dismissal survives sign-out; deleting browser storage shows the notes again. Browsers that block storage remember dismissal for the current page session only.

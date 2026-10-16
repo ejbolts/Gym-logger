@@ -12,6 +12,7 @@ export function useHomeLayout(active = true) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(defaultHomeLayout);
   const [saving, setSaving] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const editButton = useRef<HTMLButtonElement>(null);
@@ -19,6 +20,7 @@ export function useHomeLayout(active = true) {
   useEffect(() => {
     if (active) return;
     setEditing(false);
+    setDragging(false);
     setDraft(defaultHomeLayout());
     setError(null);
     setMessage('');
@@ -47,6 +49,7 @@ export function useHomeLayout(active = true) {
 
   function finish() {
     setEditing(false);
+    setDragging(false);
     requestAnimationFrame(() => editButton.current?.focus());
   }
 
@@ -57,6 +60,8 @@ export function useHomeLayout(active = true) {
     editing,
     draft,
     saving,
+    dragging,
+    setDragging,
     error,
     message,
     editButton,
@@ -77,6 +82,11 @@ export function useHomeLayout(active = true) {
       finish();
     },
     change: setDraft,
+    reset: () => {
+      setDraft(defaultHomeLayout());
+      setError(null);
+      setMessage('Default layout restored. Tap the green tick to keep it.');
+    },
     save: async () => {
       setSaving(true);
       setError(null);
@@ -86,7 +96,9 @@ export function useHomeLayout(active = true) {
         setMessage('Home layout saved.');
         finish();
       } catch {
-        setError('Could not save your layout. Your changes are still here. Try Save layout again.');
+        setError(
+          'Could not save your layout. Your changes are still here. Tap the green tick to try again.',
+        );
       } finally {
         setSaving(false);
       }

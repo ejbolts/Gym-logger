@@ -50,6 +50,9 @@ export interface AuthGateViewProps {
   children: ReactNode;
   onAuthenticated: (user: User) => Promise<void>;
   onRetry: () => void;
+  /** Just signed in: the sign-in screen animates away above the app, which is already loading. */
+  signInExiting?: boolean;
+  onSignInExited?: () => void;
 }
 
 /** Chooses what to show for an auth state. Kept separate from the effects so it can be tested. */
@@ -60,6 +63,8 @@ export function AuthGateView({
   children,
   onAuthenticated,
   onRetry,
+  signInExiting = false,
+  onSignInExited,
 }: AuthGateViewProps) {
   switch (state.status) {
     case 'loading':
@@ -67,14 +72,29 @@ export function AuthGateView({
     case 'unreachable':
       return <AuthUnreachable message={state.message} onRetry={onRetry} />;
     case 'signed-out':
-      return <AuthScreen config={authConfig} onAuthenticated={onAuthenticated} />;
-    case 'authenticated':
+    case 'authenticated': {
+      const signedIn = state.status === 'authenticated';
+      // Both states keep the same two slots, so the sign-in screen (and what was typed into it)
+      // stays mounted while it animates away above the newly mounted app.
       return (
-        <UserContext.Provider value={session}>
-          {/* Keyed by account so a different user always starts from fresh React state. */}
-          <Fragment key={state.user.id}>{children}</Fragment>
-        </UserContext.Provider>
+        <>
+          {signedIn && (
+            <UserContext.Provider value={session}>
+              {/* Keyed by account so a different user always starts from fresh React state. */}
+              <Fragment key={state.user.id}>{children}</Fragment>
+            </UserContext.Provider>
+          )}
+          {(!signedIn || signInExiting) && (
+            <AuthScreen
+              config={authConfig}
+              onAuthenticated={onAuthenticated}
+              exiting={signedIn}
+              onExited={onSignInExited}
+            />
+          )}
+        </>
       );
+    }
   }
 }
 
@@ -129,9 +149,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setAttempt((current) => current + 1);
   }, []);
 
+  // Signing in mounts the app straight away, so its data loads while the sign-in screen exits.
+  const [signInExiting, setSignInExiting] = useState(false);
   const onAuthenticated = useCallback(async (user: User) => {
-    setState(await adoptSignedInUser(user, browserDeps()));
+    const next = await adoptSignedInUser(user, browserDeps());
+    setSignInExiting(true);
+    setState(next);
   }, []);
+  const onSignInExited = useCallback(() => setSignInExiting(false), []);
 
   const session = useMemo<UserSession>(
     () => ({
@@ -150,8 +175,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
         await clearAfterAccountDeletion();
         restartApp();
       },
+      signingIn: signInExiting,
     }),
-    [state],
+    [signInExiting, state],
   );
 
   return (
@@ -161,6 +187,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
       session={session}
       onAuthenticated={onAuthenticated}
       onRetry={retry}
+      signInExiting={signInExiting}
+      onSignInExited={onSignInExited}
     >
       {children}
     </AuthGateView>

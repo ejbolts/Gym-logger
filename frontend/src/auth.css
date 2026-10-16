@@ -26,6 +26,12 @@
   text-align: center;
 }
 
+.auth-brand-mark {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+}
+
 .auth-brand img {
   width: 4.5rem;
   height: 4.5rem;
@@ -629,4 +635,88 @@
   background: var(--p-surface);
   color: var(--p-ink);
   font-weight: 700;
+}
+
+/* ───────── Sign-in exit ─────────
+   After signing in, the app mounts underneath and starts loading while this screen leaves:
+   the form closes from top and bottom to its middle, the tagline fades, the logo and name
+   glide to the centre of the screen, then everything fades to reveal the app.
+   Total length matches AUTH_EXIT_MS in AuthScreen.tsx. */
+
+.auth-screen.auth-exiting {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+  animation: auth-exit-screen 1500ms ease-in both;
+}
+
+.auth-exiting .auth-card {
+  animation: auth-exit-card 480ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.auth-exiting .auth-brand p {
+  animation: auth-exit-fade 280ms ease-out both;
+}
+
+/* The logo's glide to the centre runs from AuthScreen.tsx (Web Animations API). */
+
+@keyframes auth-exit-card {
+  0% {
+    clip-path: inset(0 0 0 0 round var(--p-radius));
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(50% 0 50% 0 round var(--p-radius));
+    opacity: 0;
+  }
+}
+
+@keyframes auth-exit-fade {
+  to {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+}
+
+/* The backdrop fades after the logo has gone, so it never ghosts over the app. */
+@keyframes auth-exit-screen {
+  0%,
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Less motion: no closing or gliding, just a short fade to the app (AUTH_EXIT_REDUCED_MS). */
+@media (prefers-reduced-motion: reduce) {
+  .auth-screen.auth-exiting {
+    animation: auth-exit-reduced 250ms ease-out both;
+  }
+
+  .auth-exiting .auth-card,
+  .auth-exiting .auth-brand p {
+    animation: none;
+  }
+}
+
+[data-reduce-motion] .auth-screen.auth-exiting {
+  animation: auth-exit-reduced 250ms ease-out both;
+}
+
+[data-reduce-motion] .auth-exiting .auth-card,
+[data-reduce-motion] .auth-exiting .auth-brand p {
+  animation: none;
+}
+
+@keyframes auth-exit-reduced {
+  to {
+    opacity: 0;
+  }
 }
