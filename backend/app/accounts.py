@@ -67,6 +67,8 @@ from .models import (
     WorkoutMovement,
     WorkoutSession,
     WorkoutSet,
+    YouTubeConnection,
+    YouTubeOAuthState,
     movement_machine_photos,
 )
 from .photo_storage import (
@@ -85,6 +87,7 @@ from .tracker import (
 )
 from .tracker_seed import seed_sample_body_measurements, seed_sample_workouts
 from .training_metrics import rebuild_personal_records
+from .youtube_connections import YouTubeConnectionError, decrypt_credentials, revoke_credentials
 
 DbDependency = Annotated[Session, Depends(get_db)]
 Throttle = Annotated[LoginThrottle, Depends(get_login_throttle)]
@@ -266,6 +269,13 @@ def create_user(
 def delete_account(db: Session, settings: Settings, user: User, app_state=None) -> None:
     """Delete a user and everything they own, including files on disk."""
     user_id = user.id
+    youtube_credentials = None
+    youtube_connection = db.get(YouTubeConnection, user_id)
+    if youtube_connection:
+        try:
+            youtube_credentials = decrypt_credentials(settings, youtube_connection)
+        except YouTubeConnectionError:
+            pass
     profile_photo_filename = user.profile_photo_filename
     photo_files = [
         (row.full_filename, row.thumbnail_filename)
@@ -314,6 +324,8 @@ def delete_account(db: Session, settings: Settings, user: User, app_state=None) 
         delete(ProfileFollow).where(
             (ProfileFollow.follower_id == user_id) | (ProfileFollow.followee_id == user_id)
         ),
+        delete(YouTubeOAuthState).where(YouTubeOAuthState.user_id == user_id),
+        delete(YouTubeConnection).where(YouTubeConnection.user_id == user_id),
         delete(UserSession).where(UserSession.user_id == user_id),
         delete(AccountBackup).where(AccountBackup.user_id == user_id),
         delete(User).where(User.id == user_id),
@@ -321,6 +333,8 @@ def delete_account(db: Session, settings: Settings, user: User, app_state=None) 
     for statement in statements:
         db.execute(statement)
     db.commit()
+    if youtube_credentials:
+        revoke_credentials(youtube_credentials)
 
     for full_filename, thumbnail_filename in photo_files:
         delete_machine_photo_files(settings, full_filename, thumbnail_filename)

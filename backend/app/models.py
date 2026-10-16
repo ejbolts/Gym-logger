@@ -210,6 +210,32 @@ class UserSession(Base):
     user_agent: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
 
+class YouTubeConnection(Base):
+    """An account's channel and encrypted OAuth credentials; never included in backups."""
+
+    __tablename__ = "youtube_connections"
+
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    channel_id: Mapped[str] = mapped_column(String(100))
+    channel_title: Mapped[str] = mapped_column(String(200))
+    encrypted_credentials: Mapped[str] = mapped_column(Text)
+    needs_reconnect: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+
+
+class YouTubeOAuthState(Base):
+    """Short-lived, single-use authorization tied to the initiating app sign-in."""
+
+    __tablename__ = "youtube_oauth_states"
+
+    state_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("user_sessions.id", ondelete="CASCADE"))
+    encrypted_verifier: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class UserSetting(Base):
     __tablename__ = "user_settings"
 
@@ -282,6 +308,7 @@ class WorkoutSession(Base):
     uploaded_clip_count: Mapped[int] = mapped_column(Integer, default=0)
     processing_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     youtube_video_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    youtube_channel_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     youtube_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

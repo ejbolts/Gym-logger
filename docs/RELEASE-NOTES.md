@@ -1,5 +1,36 @@
 # Gym Logger release notes
 
+## 0.7.0
+
+### Your videos, your YouTube channel
+
+- Connect your own channel from Settings or Video logger: choose your Google account and
+  YouTube channel, approve access, and confirm the channel displayed in the app. Users do
+  not need API keys, credential downloads or terminal commands.
+- Each account has a separate encrypted connection. Video batches stay tied to their original
+  channel; the old shared server token is never used as a fallback.
+- Reconnect expired or revoked access and disconnect without deleting videos from YouTube.
+  Changing channels and disconnecting are protected while a video is processing.
+- See the selected privacy setting before uploading. Unlisted means anyone with the link
+  can watch; the app's profile-sharing settings do not control YouTube access.
+- Existing video links remain. Older unfinished batches without a personal channel binding
+  must be started again. Phone uploads still require the app to remain open.
+- The video screen leaves room below the final upload action so the bottom navigation does
+  not cover it on a phone.
+- Administrators configure one Google Web application OAuth client and persistent encryption
+  key. See [YouTube setup](YOUTUBE-SETUP.md) for Google configuration, production consent,
+  migration and first real-upload checks. Migration: `0034_youtube_connections`.
+
+This independently released feature introduces per-user channel authorization and routing,
+a substantial new account workflow, so it uses a minor version bump from 0.6.0 to 0.7.0.
+The deployed 0.6.0 announcement is preserved in Earlier versions.
+
+<img src="screenshots/releases/0.7.0-youtube-channel.png" alt="Video logger showing a connected sample YouTube channel, reconnect and disconnect controls, and the unlisted video privacy explanation." width="420">
+
+A connected sample channel in the isolated verification environment. Google responses were
+simulated; the administrator must complete the documented real-channel check after configuring
+the installation's Google client.
+
 ## 0.6.0
 
 This release combines PRs #48–#54.

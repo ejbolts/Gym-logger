@@ -298,4 +298,4 @@ def test_missing_youtube_processing_scope_becomes_actionable_failure(monkeypatch
     with SessionLocal() as db:
         failed = db.get(WorkoutSession, session_id)
         assert failed and failed.status == SessionStatus.FAILED
-        assert "Run `python -m app.oauth_setup`" in (failed.processing_error or "")
+        assert "Reconnect your channel in Video logger" in (failed.processing_error or "")

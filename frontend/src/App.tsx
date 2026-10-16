@@ -204,6 +204,7 @@ import {
   workoutTimeInputValue,
 } from './utils';
 import { VideoUpload } from './VideoUpload';
+import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
 import {
   SharedProfileScreen,
@@ -6470,6 +6471,7 @@ function SettingsScreen({
           </button>
         </section>
       )}
+      <YouTubeConnectionPanel canConnect={canUploadVideos(account)} />
       <section className="settings-panel panel" aria-labelledby="notification-settings-title">
         <header>
           <div>

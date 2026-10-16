@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from './api';
 import { InlineConfirmButton } from './InlineConfirmButton';
-import type { Health, LocalClip, SessionStatus, WorkoutSession } from './types';
+import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
+import type { Health, LocalClip, SessionStatus, WorkoutSession, YouTubeConnection } from './types';
 import {
   enablePhonePushNotifications,
   existingPhonePushSubscription,
@@ -44,6 +45,7 @@ export function VideoUpload() {
   const [serverSession, setServerSession] = useState<WorkoutSession | null>(null);
   const [history, setHistory] = useState<WorkoutSession[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
+  const [youtube, setYoutube] = useState<YouTubeConnection | null>(null);
   const [exerciseNames, setExerciseNames] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -122,6 +124,10 @@ export function VideoUpload() {
   }
 
   function attachFiles(files: FileList | File[]) {
+    if (!youtubeReady) {
+      setMessage('Connect your YouTube channel before adding clips.');
+      return;
+    }
     const accepted = Array.from(files).filter((file) => /\.(mp4|mov|m4v)$/i.test(file.name));
     if (accepted.length !== Array.from(files).length)
       setMessage('Only MP4, MOV, and M4V video files were added.');
@@ -217,7 +223,7 @@ export function VideoUpload() {
   }
 
   async function startUpload() {
-    if (!sessionName.trim() || !workoutDate || !clips.length || busy) return;
+    if (!sessionName.trim() || !workoutDate || !clips.length || busy || !youtubeReady) return;
     setBusy(true);
     setMessage(null);
     await acquireWakeLock();
@@ -355,7 +361,9 @@ export function VideoUpload() {
     setScreen('upload');
   }
 
-  const uploadDisabled = !clips.length || !sessionName.trim() || !workoutDate || busy;
+  const youtubeReady = youtube?.status === 'connected' || youtube?.status === 'mock';
+  const uploadDisabled =
+    !clips.length || !sessionName.trim() || !workoutDate || busy || !youtubeReady;
   const failedClips = clips.filter((clip) => clip.status === 'failed');
   const canDeleteCurrentSession =
     serverSession !== null && !processingStatuses.includes(serverSession.status);
@@ -380,6 +388,7 @@ export function VideoUpload() {
           </button>
         </div>
       </header>
+      <YouTubeConnectionPanel disabled={busy} onChange={setYoutube} />
       {message && (
         <p className="message" role="alert">
           {message}
@@ -437,7 +446,11 @@ export function VideoUpload() {
               <option key={name} value={name} />
             ))}
           </datalist>
-          <button className="picker" onClick={() => pickerRef.current?.click()}>
+          <button
+            className="picker"
+            disabled={!youtubeReady}
+            onClick={() => pickerRef.current?.click()}
+          >
             <span aria-hidden="true">＋</span>
             Add set videos
           </button>
@@ -564,7 +577,7 @@ export function VideoUpload() {
                   'Preparing each phone video for a consistent, 1080p MP4 output.'}
                 {serverSession.status === 'stitching' && 'Joining sets in the order you selected.'}
                 {serverSession.status === 'uploading_to_youtube' &&
-                  'Sending the combined video to YouTube as unlisted.'}
+                  'Sending the combined video to your connected YouTube channel.'}
                 {serverSession.status === 'youtube_processing' &&
                   'YouTube is preparing playback versions. We will notify this phone when it is ready.'}
                 {serverSession.status === 'draft' &&
