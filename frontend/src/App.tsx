@@ -5873,25 +5873,28 @@ function ProgressScreen({
           {progress.points.length ? (
             <>
               <div className="progress-hero">
-                <strong className="progress-hero-value">
-                  {latestPoint ? formatMetricKg(latestPoint[metric]) : '–'}
-                  <small>{weightUnit}</small>
-                </strong>
-                <p className="progress-hero-caption">
-                  {latestPoint
-                    ? `${metricInfo.series} · latest session ${shortDate(latestPoint.workout_date)}`
-                    : 'No sessions in this range'}
-                </p>
-                {change !== null && firstPoint && (
-                  <p className={`progress-delta ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`}>
-                    <Icon name={change >= 0 ? 'up' : 'down'} />
-                    {change >= 0 ? '+' : '−'}
-                    {formatMetricKg(Math.abs(change))} {weightUnit}
-                    {changePercent !== null &&
-                      ` (${change >= 0 ? '+' : '−'}${Math.abs(changePercent).toFixed(1)}%)`}{' '}
-                    since {dayMonth(firstPoint.workout_date)}
+                <div className="progress-hero-summary">
+                  <strong className="progress-hero-value">
+                    {latestPoint ? formatMetricKg(latestPoint[metric]) : '–'}
+                    <small>{weightUnit}</small>
+                  </strong>
+                  <p className="progress-hero-caption">
+                    {latestPoint
+                      ? `${metricInfo.series} · latest session ${shortDate(latestPoint.workout_date)}`
+                      : 'No sessions in this range'}
                   </p>
-                )}
+                  {change !== null && firstPoint && (
+                    <p className={`progress-delta ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`}>
+                      <Icon name={change >= 0 ? 'up' : 'down'} />
+                      {change >= 0 ? '+' : '−'}
+                      {formatMetricKg(Math.abs(change))} {weightUnit}
+                      {changePercent !== null &&
+                        ` (${change >= 0 ? '+' : '−'}${Math.abs(changePercent).toFixed(1)}%)`}{' '}
+                      since {dayMonth(firstPoint.workout_date)}
+                    </p>
+                  )}
+                </div>
+                {selectedExercise && <ExerciseIcon exercise={selectedExercise} />}
               </div>
               <div
                 ref={rangeIndicatorRef}

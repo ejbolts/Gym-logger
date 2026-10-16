@@ -1658,7 +1658,31 @@ button.pulse-card:hover {
 }
 
 .progress-hero {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   padding: 0.5rem 0.375rem 0.25rem;
+}
+
+.progress-hero-summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.progress-hero > .exercise-icon {
+  --progress-icon-size: clamp(4.5rem, 22vw, 6rem);
+  width: var(--progress-icon-size);
+  height: auto;
+  /* Centre between All (13.875rem from the left) and fullscreen (1rem from the right). */
+  margin-right: max(0px, calc(50% - 6.4375rem - var(--progress-icon-size) / 2));
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 0.75rem;
+  background: transparent;
+}
+
+.progress-hero > .exercise-icon img {
+  object-fit: contain;
 }
 
 .progress-hero-value {
