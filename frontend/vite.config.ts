@@ -1,8 +1,9 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import releaseHistory from './release-history.json';
 import releaseMetadata from './release.json';
-import { parseRelease } from './src/releaseMetadata';
+import { parseRelease, parseReleaseHistory } from './src/releaseMetadata';
 
 export function releaseNotesPlugin(): Plugin {
   return {
@@ -11,6 +12,11 @@ export function releaseNotesPlugin(): Plugin {
       if (!parseRelease(releaseMetadata)) {
         this.error(
           'release.json needs a version, title, summary, changes and an HTTPS GitHub URL.',
+        );
+      }
+      if (!parseReleaseHistory(releaseHistory, releaseMetadata.version)) {
+        this.error(
+          'release-history.json must list valid earlier releases, newest first, below the current version.',
         );
       }
     },

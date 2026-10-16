@@ -1,0 +1,92 @@
+[
+  {
+    "version": "0.5.5",
+    "title": "Update when you are ready",
+    "summary": "Keep logging through app releases, then refresh when it suits you.",
+    "changes": [
+      "A top notification checks for releases while the app is open. Use its refresh arrow when you are ready; updates no longer reload your screen automatically.",
+      "Keep using the current cached app while the next update downloads in the background.",
+      "Settings now has a Check for updates button with current-version, available-update and connection feedback.",
+      "Refresh preserves your active workout draft on this device. If the draft cannot be saved, the update waits until you save your work.",
+      "What's new describes the version you have loaded and stays dismissed for that account and release in this browser, including after signing in again."
+    ],
+    "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#055"
+  },
+  {
+    "version": "0.5.4",
+    "title": "Flexible Home cards and goal-aware weight changes",
+    "summary": "Resize your Home cards and see whether body-weight changes match your goal.",
+    "changes": [
+      "Use the resize button beside each Home card's drag handle to switch between compact and full width, and save widths across devices.",
+      "The Daily check-in weight field is vertically aligned with its minus and plus buttons and adapts to compact cards.",
+      "Leaving Today cancels layout editing and discards unsaved changes.",
+      "Body history arrows show weight direction: green for loss during a cut or gain during a bulk, red for the opposite.",
+      "Daily, weekly and monthly history compare consecutive check-ins or periods, including across pages; no-goal and maintenance changes use neutral arrows."
+    ],
+    "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#054",
+    "image": {
+      "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/01c584f96cc8174b9567321ebc7952263be9d8f5/docs/screenshots/releases/0.5.4-home-card-widths.png",
+      "alt": "Today layout editing with an aligned Daily check-in, resize buttons beside the drag handles and a full-width Body weight card."
+    }
+  },
+  {
+    "version": "0.5.3",
+    "title": "Safer workout records, imports and shared training",
+    "summary": "Keep workouts through reloads, use your preferred units, review imports, and choose who sees your training.",
+    "changes": [
+      "Drag, hide and restore the actual Home cards in edit mode, then save your layout across devices.",
+      "Earn Weight PRs for heavier working sets and Volume PRs for more reps at the same weight, with a five-second countdown popup.",
+      "Choose Private, Friends only or Public profile sharing, follow members and approve follow requests.",
+      "Keep body weight, goals, cardio, notes and machine photos optional when sharing your training.",
+      "Recognise exercises you created by their Custom label in the picker, workout cards and Progress.",
+      "Explore the feature tour, Home Screen help, private feedback forms and profile photos.",
+      "Explore Progress and Body graphs full screen with accurate point selection, resizing and reliable Exit controls.",
+      "Preserve active exercises, sets and notes through reloads and retry when exercise data is unavailable.",
+      "Leave untouched previous-session suggestions unperformed when an inactive workout is saved.",
+      "Use kilograms or pounds consistently when logging and reading workout and body-weight data.",
+      "Review CSV imports before saving, skip existing sessions and retain separate same-day workouts. CSV is a set-data export, with its coverage explained."
+    ],
+    "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#053",
+    "image": {
+      "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/a8799f0212f636419f747c85da8b9f1ae926da12/docs/screenshots/releases/0.5.3-home-layout.png",
+      "alt": "The combined 0.5.3 Home editor with workout and stat cards, drag handles, hide buttons and a hidden Cardio sessions card ready to restore."
+    }
+  },
+  {
+    "version": "0.3.1",
+    "title": "See what's changed",
+    "summary": "Release announcements now include screenshots of visible changes, such as the recent username-based signup screen.",
+    "changes": [
+      "See a screenshot alongside the update notes when one is available.",
+      "Select the screenshot to view it full size.",
+      "Read illustrated release notes on GitHub."
+    ],
+    "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#031",
+    "image": {
+      "url": "https://raw.githubusercontent.com/ejbolts/Gym-video-logger/735bdf2124331a84c5427ef41f5035f0232c4152/docs/screenshots/releases/0.3.0-username-signup.png",
+      "alt": "Username-based signup, with no email field."
+    }
+  },
+  {
+    "version": "0.3.0",
+    "title": "Sign in with a username",
+    "summary": "Gym Logger accounts now use a username and password, with no email address required.",
+    "changes": [
+      "Choose a unique username when you create an account. Invite codes still control access.",
+      "View or change your username and display name in Profile.",
+      "Existing accounts keep their passwords and history; usernames are assigned from their old email names."
+    ],
+    "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#030"
+  },
+  {
+    "version": "0.2.0",
+    "title": "Stay up to date",
+    "summary": "Gym Logger now lets you know when a new version is ready.",
+    "changes": [
+      "See a summary of new features when you return to the app after an update.",
+      "Open What's new in Settings to read the latest changes again.",
+      "Follow the GitHub release notes for more detail."
+    ],
+    "url": "https://github.com/ejbolts/Gym-video-logger/blob/master/docs/RELEASE-NOTES.md#020"
+  }
+]

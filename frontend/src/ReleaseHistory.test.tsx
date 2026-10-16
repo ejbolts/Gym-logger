@@ -1,0 +1,93 @@
+// @vitest-environment jsdom
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import history from '../release-history.json';
+import metadata from '../release.json';
+import { ReleaseAnnouncement } from './ReleaseAnnouncement';
+
+let root: Root;
+let container: HTMLDivElement;
+
+beforeEach(() => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+    this.open = false;
+  };
+  container = document.createElement('div');
+  document.body.append(container);
+  root = createRoot(container);
+});
+
+afterEach(async () => {
+  await act(async () => root.unmount());
+  container.remove();
+  vi.unstubAllGlobals();
+});
+
+function button(name: string): HTMLButtonElement {
+  const match = [...document.querySelectorAll('button')].find(
+    (candidate) => candidate.textContent?.trim() === name,
+  );
+  if (!match) throw new Error(`No button named ${name}`);
+  return match;
+}
+
+function versionToggle(version: string): HTMLButtonElement {
+  const match = [...document.querySelectorAll('.release-history-toggle')].find(
+    (candidate) => candidate.querySelector('.release-history-version')?.textContent === version,
+  );
+  if (!(match instanceof HTMLButtonElement)) throw new Error(`No toggle for ${version}`);
+  return match;
+}
+
+it('compacts the current notes and expands earlier versions independently', async () => {
+  await act(async () =>
+    root.render(<ReleaseAnnouncement release={metadata} history={history} onClose={vi.fn()} />),
+  );
+  const current = document.querySelector('.release-current-details')!;
+  expect(current.querySelectorAll('li')).toHaveLength(metadata.changes.length);
+  expect(document.body.textContent).toContain(metadata.summary);
+
+  const toggle = button('Hide changes');
+  await act(async () => toggle.click());
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  expect(toggle.textContent).toBe(`Show ${metadata.changes.length} changes`);
+  expect(current.hasAttribute('hidden')).toBe(true);
+  expect(current.querySelectorAll('li')).toHaveLength(0);
+  expect(document.body.textContent).toContain(metadata.summary);
+
+  const items = document.querySelectorAll('.release-history-item');
+  expect(items).toHaveLength(history.length);
+  expect([...items].map((item) => item.querySelector('h4')?.textContent)).toEqual(
+    history.map((release) => `${release.version}${release.title}`),
+  );
+  expect(document.querySelectorAll('.release-history-details:not([hidden])')).toHaveLength(0);
+
+  const [latest, older] = history;
+  const latestToggle = versionToggle(latest.version);
+  await act(async () => latestToggle.click());
+  expect(latestToggle.getAttribute('aria-expanded')).toBe('true');
+  const details = document.getElementById(latestToggle.getAttribute('aria-controls')!)!;
+  expect(details.hidden).toBe(false);
+  expect(details.textContent).toContain(latest.summary);
+  expect(details.querySelectorAll('li')).toHaveLength(latest.changes.length);
+  expect(details.querySelector('a')?.getAttribute('href')).toBe(latest.url);
+  expect(details.textContent).toContain(`Read ${latest.version} notes on GitHub`);
+
+  const olderToggle = versionToggle(older.version);
+  expect(olderToggle.getAttribute('aria-expanded')).toBe('false');
+
+  await act(async () => button('Show 3 changes').click());
+  expect(current.querySelectorAll('li')).toHaveLength(metadata.changes.length);
+  await act(async () => latestToggle.click());
+  expect(details.hidden).toBe(true);
+});
+
+it('omits the earlier versions section when there is no history', async () => {
+  await act(async () => root.render(<ReleaseAnnouncement release={metadata} onClose={vi.fn()} />));
+  expect(document.querySelector('.release-history')).toBeNull();
+});

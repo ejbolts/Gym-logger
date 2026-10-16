@@ -44,3 +44,25 @@ export function parseRelease(value: unknown): Release | null {
   }
   return release as Release;
 }
+
+/** Compare the numeric `major.minor.patch` parts of two release versions. */
+export function compareVersions(left: string, right: string): number {
+  const parts = (version: string) => version.split('-')[0].split('.').map(Number);
+  const [a, b] = [parts(left), parts(right)];
+  for (let index = 0; index < 3; index += 1) {
+    if (a[index] !== b[index]) return a[index] - b[index];
+  }
+  return 0;
+}
+
+/** Accept earlier releases only when each is valid, unique and listed newest first. */
+export function parseReleaseHistory(value: unknown, currentVersion: string): Release[] | null {
+  if (!Array.isArray(value)) return null;
+  const releases = value.map(parseRelease);
+  let newer = currentVersion;
+  for (const release of releases) {
+    if (!release || compareVersions(release.version, newer) >= 0) return null;
+    newer = release.version;
+  }
+  return releases as Release[];
+}

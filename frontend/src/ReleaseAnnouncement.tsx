@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
 import type { Release } from './releaseMetadata';
 
@@ -22,13 +23,72 @@ function ReleaseScreenshot({ image }: { image: NonNullable<Release['image']> }) 
   );
 }
 
+function ReleaseDetails({ release, linkLabel }: { release: Release; linkLabel: string }) {
+  return (
+    <>
+      <ul>
+        {release.changes.map((change, index) => (
+          <li key={index}>{change}</li>
+        ))}
+      </ul>
+      {release.image && <ReleaseScreenshot key={release.image.url} image={release.image} />}
+      <a href={release.url} target="_blank" rel="noopener noreferrer">
+        {linkLabel} <span aria-hidden="true">↗</span>
+      </a>
+    </>
+  );
+}
+
+function EarlierRelease({ release }: { release: Release }) {
+  const [open, setOpen] = useState(false);
+  const detailsId = useId();
+
+  return (
+    <li className={`release-history-item ${open ? 'open' : ''}`.trim()}>
+      <h4>
+        <button
+          type="button"
+          className="release-history-toggle"
+          aria-expanded={open}
+          aria-controls={detailsId}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <span className="release-history-version num">{release.version}</span>
+          <span className="release-history-title">{release.title}</span>
+          <span className="release-chevron" aria-hidden="true">
+            <Icon name="chevron-down" />
+          </span>
+        </button>
+      </h4>
+      <div id={detailsId} className="release-history-details" hidden={!open}>
+        {open && (
+          <>
+            <p>{release.summary}</p>
+            <ReleaseDetails
+              release={release}
+              linkLabel={`Read ${release.version} notes on GitHub`}
+            />
+          </>
+        )}
+      </div>
+    </li>
+  );
+}
+
 export function ReleaseAnnouncement({
   release,
+  history = [],
   onClose,
 }: {
   release: Release;
+  history?: Release[];
   onClose: () => void;
 }) {
+  const [compact, setCompact] = useState(false);
+  const detailsId = useId();
+  const historyHeadingId = useId();
+  const changeCount = release.changes.length;
+
   return (
     <PopupDialog
       title={`Version ${release.version}`}
@@ -39,15 +99,33 @@ export function ReleaseAnnouncement({
       <div className="release-announcement-body">
         <h3>{release.title}</h3>
         <p>{release.summary}</p>
-        <ul>
-          {release.changes.map((change, index) => (
-            <li key={index}>{change}</li>
-          ))}
-        </ul>
-        {release.image && <ReleaseScreenshot key={release.image.url} image={release.image} />}
-        <a href={release.url} target="_blank" rel="noopener noreferrer">
-          Read more on GitHub <span aria-hidden="true">↗</span>
-        </a>
+        <button
+          type="button"
+          className={`release-compact-toggle ${compact ? '' : 'open'}`.trim()}
+          aria-expanded={!compact}
+          aria-controls={detailsId}
+          onClick={() => setCompact((value) => !value)}
+        >
+          {compact
+            ? `Show ${changeCount} ${changeCount === 1 ? 'change' : 'changes'}`
+            : 'Hide changes'}
+          <span className="release-chevron" aria-hidden="true">
+            <Icon name="chevron-down" />
+          </span>
+        </button>
+        <div id={detailsId} className="release-current-details" hidden={compact}>
+          {!compact && <ReleaseDetails release={release} linkLabel="Read more on GitHub" />}
+        </div>
+        {history.length > 0 && (
+          <section className="release-history" aria-labelledby={historyHeadingId}>
+            <h3 id={historyHeadingId}>Earlier versions</h3>
+            <ul>
+              {history.map((earlier) => (
+                <EarlierRelease key={earlier.version} release={earlier} />
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
       <footer className="popup-dialog-actions">
         <button type="button" className="popup-primary-action" onClick={onClose}>
