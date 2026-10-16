@@ -836,7 +836,7 @@ function AppContent() {
 
   const loadOlderHistoryRef = useRef(loadOlderHistory);
   loadOlderHistoryRef.current = loadOlderHistory;
-  // Stable, so scroll observers in the calendar and History are not renewed on every render.
+  // Stable, so calendar scroll handlers can keep the same callback across renders.
   const onLoadOlderHistory = useCallback(() => void loadOlderHistoryRef.current(), []);
   const olderHistoryProps: OlderHistoryProps = {
     historyStart,
@@ -8337,26 +8337,6 @@ function HistoryScreen({
   const totalWorkouts = Math.max(historySummary?.total_workouts ?? 0, workouts.length);
   const { hasOlder, loadingOlder, olderError, onLoadOlder } = olderHistory;
   const moreWorkouts = visibleCount < workouts.length || hasOlder;
-  const showMoreRef = useRef<HTMLDivElement>(null);
-
-  // Hidden pagination: nearing the end of the list reveals more loaded workouts, then fetches
-  // the next older window. The observer is renewed after each step, so a short page keeps going.
-  useEffect(() => {
-    const sentinel = showMoreRef.current;
-    if (!sentinel || loadingOlder || olderError || typeof IntersectionObserver === 'undefined')
-      return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        if (visibleCount < workouts.length) {
-          setVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2);
-        } else if (hasOlder) onLoadOlder();
-      },
-      { rootMargin: '0px 0px 600px 0px' },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasOlder, loadingOlder, olderError, onLoadOlder, visibleCount, workouts.length]);
 
   useEffect(() => {
     if (section !== 'history' || !revealWorkoutRef.current) return;
@@ -8522,7 +8502,7 @@ function HistoryScreen({
             );
           })}
           {moreWorkouts && (
-            <div ref={showMoreRef} className="history-show-more">
+            <div className="history-show-more">
               <button
                 type="button"
                 className="show-more-button"
@@ -8537,7 +8517,7 @@ function HistoryScreen({
                   ? 'Loading older workouts…'
                   : olderError && visibleCount >= workouts.length
                     ? 'Retry loading older workouts'
-                    : `Show more · ${Math.max(totalWorkouts - visibleCount, 0)} older`}
+                    : `Show more · ${Math.max(totalWorkouts - Math.min(visibleCount, workouts.length), 0)} older`}
               </button>
               {olderError && visibleCount >= workouts.length && (
                 <p className="history-show-more-error" role="alert">

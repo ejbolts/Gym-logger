@@ -15,9 +15,10 @@
   months before it. A card at the edge shows while they load, and the month you
   were viewing stays in place. Both calendars and the History list share what has
   loaded.
-- Scrolling towards the end of History reveals more workouts automatically and then
-  loads the next older six months. **Show more** remains as a button, and the header
-  still counts every workout logged.
+- Vertical scrolling in History no longer reveals or loads more workouts automatically.
+  Choose **Show more** to reveal more loaded workouts or fetch the next older six months.
+  Horizontal calendar scrolling still loads older months, and the header counts every
+  workout logged.
 - Whole-history figures are unchanged: streaks, the suggested next workout, export
   time frames and sample-workout removal read the full log. While logging, PR badges
   and previous-set suggestions also compare with a server summary of older sessions.
@@ -34,6 +35,11 @@ then Today appears with its data already loaded.
 
 July 2026 loaded when the calendar reached its oldest month. Captures use a separate
 database of generated sample training.
+
+<img src="screenshots/releases/0.5.6-history-manual-show-more.png" alt="The bottom of History stops after the displayed workouts with a Show more button for deliberately loading more." width="390">
+
+Vertical scrolling leaves History at **Show more** until you choose to load more.
+Captured with fictional workouts in a separate sample database.
 
 ## 0.5.5
 
