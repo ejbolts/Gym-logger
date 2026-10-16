@@ -6764,7 +6764,7 @@ function SettingsScreen({
         <p>
           For account snapshots, see the{' '}
           <a
-            href={`${PROJECT_URL}/blob/master/README.md#per-account-backups`}
+            href={`${PROJECT_URL}/blob/main/README.md#per-account-backups`}
             target="_blank"
             rel="noopener noreferrer"
           >

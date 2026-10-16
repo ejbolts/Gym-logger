@@ -3,7 +3,7 @@
 
 [Unit]
 Description=Gym Logger (FastAPI + SQLite, multi-user)
-Documentation=https://github.com/ejbolts/Gym-logger/blob/master/README.md
+Documentation=https://github.com/ejbolts/Gym-logger/blob/main/README.md
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=300
