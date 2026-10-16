@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   DEFAULT_AUTH_CONFIG,
   MIN_PASSWORD_LENGTH,
@@ -9,6 +9,7 @@ import {
 } from './authForm';
 import { queueHomeScreenGuide } from './homeScreenGuideState';
 import { queueAppGuide } from './appGuideState';
+import { motionReduced } from './motion';
 import type { AuthConfig, User } from './types';
 
 interface AuthScreenProps {
@@ -16,6 +17,36 @@ interface AuthScreenProps {
   config: AuthConfig | null;
   onAuthenticated: (user: User) => Promise<void> | void;
   initialMode?: AuthMode;
+  /** Signed in: the screen plays its exit above the app, then calls `onExited`. */
+  exiting?: boolean;
+  onExited?: () => void;
+}
+
+/** The whole exit: the card closes, the logo glides to the centre and fades, then the screen
+ *  fades. Matches the screen animation in auth.css. */
+export const AUTH_EXIT_MS = 1500;
+const AUTH_EXIT_REDUCED_MS = 250;
+
+/**
+ * The logo's glide, as fractions of AUTH_EXIT_MS. It runs through the Web Animations API with
+ * measured pixel distances: Safari does not pick up a CSS variable set as its keyframes start.
+ */
+function brandMarkExit(shift: number): Keyframe[] {
+  const centred = `translateY(${shift}px) scale(1.04)`;
+  return [
+    { offset: 0, transform: 'translateY(0) scale(1)', opacity: 1 },
+    {
+      offset: 0.24,
+      transform: 'translateY(0) scale(1)',
+      opacity: 1,
+      easing: 'cubic-bezier(0.45, 0, 0.2, 1)',
+    },
+    { offset: 0.6, transform: centred, opacity: 1 },
+    { offset: 0.66, transform: centred, opacity: 1, easing: 'ease-in' },
+    // Gone before the screen starts fading at 82% (auth.css), so it never overlaps the app.
+    { offset: 0.8, transform: `translateY(${shift}px) scale(1.1)`, opacity: 0 },
+    { offset: 1, transform: `translateY(${shift}px) scale(1.1)`, opacity: 0 },
+  ];
 }
 
 function Spinner() {
@@ -61,14 +92,22 @@ function describedBy(id: string, error?: string, hint?: string): string | undefi
 export function AuthBrand() {
   return (
     <header className="auth-brand">
-      <img src="/icon.svg" alt="" width={72} height={72} />
-      <h1>Gym Logger</h1>
+      <div className="auth-brand-mark">
+        <img src="/icon.svg" alt="" width={72} height={72} />
+        <h1>Gym Logger</h1>
+      </div>
       <p>Log every set, track every PR.</p>
     </header>
   );
 }
 
-export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }: AuthScreenProps) {
+export function AuthScreen({
+  config,
+  onAuthenticated,
+  initialMode = 'sign-in',
+  exiting = false,
+  onExited,
+}: AuthScreenProps) {
   const effectiveConfig = config ?? DEFAULT_AUTH_CONFIG;
   const registrationOpen = effectiveConfig.registration_open;
   const idPrefix = useId();
@@ -83,6 +122,42 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
+
+  const screenRef = useRef<HTMLElement>(null);
+  const shellTopRef = useRef<number | null>(null);
+  const onExitedRef = useRef(onExited);
+  onExitedRef.current = onExited;
+
+  useLayoutEffect(() => {
+    if (!exiting) return;
+    const screen = screenRef.current;
+    const shell = screen?.querySelector<HTMLElement>('.auth-shell');
+    const mark = screen?.querySelector<HTMLElement>('.auth-brand-mark');
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+    const reduced = motionReduced();
+    let glide: Animation | undefined;
+    if (shell && mark) {
+      // The screen is now a fixed overlay; keep the form where it was on screen.
+      const offset =
+        (shellTopRef.current ?? shell.getBoundingClientRect().top) -
+        shell.getBoundingClientRect().top;
+      shell.style.transform = `translateY(${offset}px)`;
+      if (!reduced && typeof mark.animate === 'function') {
+        const box = mark.getBoundingClientRect();
+        const shift = window.innerHeight / 2 - (box.top + box.height / 2);
+        glide = mark.animate(brandMarkExit(shift), { duration: AUTH_EXIT_MS, fill: 'forwards' });
+      }
+    }
+    const timer = window.setTimeout(
+      () => onExitedRef.current?.(),
+      reduced ? AUTH_EXIT_REDUCED_MS : AUTH_EXIT_MS,
+    );
+    return () => {
+      window.clearTimeout(timer);
+      glide?.cancel();
+    };
+  }, [exiting]);
 
   const creating = mode === 'create-account';
   const showInviteCode = creating && (effectiveConfig.invite_code_required || inviteRevealed);
@@ -116,6 +191,8 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
         queueHomeScreenGuide(result.user.id);
         queueAppGuide(result.user.id);
       }
+      shellTopRef.current =
+        screenRef.current?.querySelector('.auth-shell')?.getBoundingClientRect().top ?? null;
       try {
         await onAuthenticated(result.user);
       } finally {
@@ -139,8 +216,15 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
     if (firstInvalid) window.requestAnimationFrame(() => document.getElementById(target)?.focus());
   }
 
+  const busy = submitting || exiting;
+
   return (
-    <main className="auth-screen">
+    <main
+      ref={screenRef}
+      className={`auth-screen${exiting ? ' auth-exiting' : ''}`}
+      inert={exiting}
+      aria-hidden={exiting || undefined}
+    >
       <div className="auth-shell">
         <AuthBrand />
         <section className="auth-card" aria-label="Account access">
@@ -296,15 +380,10 @@ export function AuthScreen({ config, onAuthenticated, initialMode = 'sign-in' }:
               )}
             </div>
 
-            <button
-              type="submit"
-              className="auth-submit"
-              disabled={submitting}
-              aria-busy={submitting}
-            >
-              {submitting && <Spinner />}
+            <button type="submit" className="auth-submit" disabled={busy} aria-busy={busy}>
+              {busy && <Spinner />}
               <span>
-                {submitting
+                {busy
                   ? creating
                     ? 'Creating account…'
                     : 'Signing in…'

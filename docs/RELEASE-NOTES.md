@@ -1,5 +1,40 @@
 # Gym Logger release notes
 
+## 0.5.6
+
+- Signing in and opening the app load the current month and the two before it,
+  rather than every workout ever logged. With seven years of sample training, the
+  startup workout download fell from about 21 MB to 0.6 MB and the Today summary
+  from about 4.8 s to 0.06 s on the server.
+- After a successful sign-in, the form closes from top and bottom, the tagline fades,
+  and the Gym Logger logo glides to the centre and fades out. Today is already loading
+  underneath, so with a typical phone connection it is ready when the logo leaves.
+  What's new and the first-run guides wait until the animation has finished.
+  Reduce motion (in Settings or on the phone) replaces this with a short fade.
+- Swipe the Today or History calendar back past its oldest month to load the six
+  months before it. A card at the edge shows while they load, and the month you
+  were viewing stays in place. Both calendars and the History list share what has
+  loaded.
+- Scrolling towards the end of History reveals more workouts automatically and then
+  loads the next older six months. **Show more** remains as a button, and the header
+  still counts every workout logged.
+- Whole-history figures are unchanged: streaks, the suggested next workout, export
+  time frames and sample-workout removal read the full log. While logging, PR badges
+  and previous-set suggestions also compare with a server summary of older sessions.
+- The calendar's body-weight lookup no longer rescans every check-in for each
+  exercise, which also speeds up apps that have not yet refreshed to this release.
+  No database migration is required.
+
+<img src="screenshots/releases/0.5.6-sign-in-transition.png" alt="Three moments after signing in: the form closing towards its middle under the logo, the logo and name centred on an empty screen, and the Today screen with its calendar revealed." width="780">
+
+Frames from a recording of the sign-in transition: the form closes, the logo centres,
+then Today appears with its data already loaded.
+
+<img src="screenshots/releases/0.5.6-calendar-older-months.png" alt="The Today consistency calendar shows July 2026, loaded on demand after swiping back past the three months shown at startup, above the weekly sets-per-muscle card." width="390">
+
+July 2026 loaded when the calendar reached its oldest month. Captures use a separate
+database of generated sample training.
+
 ## 0.5.5
 
 - A persistent top notification announces a new app release without interrupting

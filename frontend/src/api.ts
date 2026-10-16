@@ -18,7 +18,9 @@ import type {
   DashboardData,
   Exercise,
   ExerciseCreateInput,
+  ExerciseHistoryBaseline,
   ExerciseProgress,
+  HeatmapDay,
   Health,
   AuthConfig,
   LoginInput,
@@ -102,17 +104,33 @@ async function requestBlob(path: string): Promise<Blob> {
   return response.blob();
 }
 
-async function listCachedWorkouts(): Promise<TrackedWorkout[]> {
+/** Workouts dated `since` or later, from the device cache while the server revision matches. */
+async function listCachedWorkouts(since: string): Promise<TrackedWorkout[]> {
   const [cached, current] = await Promise.all([
     readWorkoutCache(),
     request<WorkoutCacheRevision>('/api/workouts/revision'),
   ]);
-  const reusable = cachedWorkoutsForRevision(cached, current.revision);
+  const reusable = cachedWorkoutsForRevision(cached, current.revision, since);
   if (reusable) return reusable;
 
-  const snapshot = await request<WorkoutSnapshot>('/api/workouts/snapshot');
-  await writeWorkoutCache(snapshot);
+  const snapshot = await request<WorkoutSnapshot>(
+    `/api/workouts/snapshot?${new URLSearchParams({ start: since })}`,
+  );
+  await writeWorkoutCache({ ...snapshot, since });
   return snapshot.workouts;
+}
+
+/** Workouts and calendar days for an older window than the one loaded at startup. */
+async function listOlderHistory(
+  start: string,
+  end: string,
+): Promise<{ workouts: TrackedWorkout[]; heatmap: HeatmapDay[] }> {
+  const query = new URLSearchParams({ start, end });
+  const [snapshot, heatmap] = await Promise.all([
+    request<WorkoutSnapshot>(`/api/workouts/snapshot?${query}`),
+    request<HeatmapDay[]>(`/api/calendar?${query}`),
+  ]);
+  return { workouts: snapshot.workouts, heatmap };
 }
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
@@ -304,8 +322,16 @@ export const api = {
     }),
   deleteMachinePhoto: (photoId: string) =>
     request<void>(`/api/machine-photos/${photoId}`, { method: 'DELETE' }),
-  dashboard: () => request<DashboardData>('/api/dashboard'),
+  dashboard: (calendarStart?: string) =>
+    request<DashboardData>(
+      `/api/dashboard${calendarStart ? `?${new URLSearchParams({ calendar_start: calendarStart })}` : ''}`,
+    ),
   listWorkouts: listCachedWorkouts,
+  listOlderHistory,
+  exerciseHistoryBaselines: (before: string) =>
+    request<ExerciseHistoryBaseline[]>(
+      `/api/exercise-history-baselines?${new URLSearchParams({ before })}`,
+    ),
   listBodyMeasurements: () => request<BodyMeasurement[]>('/api/body-measurements'),
   saveBodyMeasurement: (payload: {
     measurement_date: string;

@@ -333,6 +333,56 @@ button.pulse-card:hover {
   font-weight: 600;
 }
 
+.history-show-more-error {
+  margin: 0.4rem 0 0;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* The leading calendar column while older months load; it keeps the month width so a fast
+   scroll lands on it rather than an edge. */
+.calendar-month.calendar-month-older {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.6rem;
+  min-height: 15rem;
+  color: var(--p-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.calendar-month-older p {
+  margin: 0;
+}
+
+.calendar-month-older button {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-accent-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.calendar-older-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--p-line-strong);
+  border-top-color: var(--p-accent);
+  border-radius: 50%;
+  animation: tracker-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-older-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
 .pulse-empty-line,
 .pulse-footnote {
   margin: 0.5rem 0 0;

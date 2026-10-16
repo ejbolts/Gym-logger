@@ -10,6 +10,8 @@ export interface UserSession {
   signOut: () => Promise<void>;
   /** Called once the server has deleted the account. */
   accountDeleted: () => Promise<void>;
+  /** True while the sign-in screen is still animating away above the app; prompts wait. */
+  signingIn?: boolean;
 }
 
 const noop = async () => undefined;

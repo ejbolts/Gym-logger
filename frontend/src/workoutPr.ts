@@ -1,4 +1,4 @@
-import type { TrackedWorkout, WorkoutSetInput } from './types';
+import type { ExerciseHistoryBaseline, TrackedWorkout, WorkoutSetInput } from './types';
 import type { WorkoutDraftMovement as DraftMovement } from './workoutMovements';
 
 // Compare canonical kilograms, independently of the preferred display unit.
@@ -25,9 +25,18 @@ export function calculateDraftPrs(
   historicalWorkouts: TrackedWorkout[],
   excludedWorkoutId: string | null,
   workoutDate: string,
+  /** History older than `historicalWorkouts`, condensed per exercise by the server. */
+  olderHistory?: Map<string, ExerciseHistoryBaseline> | null,
 ): Map<string, Map<string, string[]>> {
   type State = { weight: number; reps: Map<number, number> };
   const states = new Map<string, State>();
+  for (const [exerciseId, baseline] of olderHistory ?? []) {
+    if (baseline.best_weight_kg === null) continue;
+    states.set(exerciseId, {
+      weight: prWeight(baseline.best_weight_kg),
+      reps: new Map(baseline.reps_by_weight.map((item) => [prWeight(item.weight_kg), item.reps])),
+    });
+  }
   const excluded = historicalWorkouts.find((workout) => workout.id === excludedWorkoutId);
   const priorWorkouts = historicalWorkouts.filter(
     (workout) =>

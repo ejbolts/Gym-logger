@@ -1,4 +1,4 @@
-import type { TrackedSet, TrackedWorkout } from './types';
+import type { ExerciseHistoryBaseline, TrackedSet, TrackedWorkout } from './types';
 
 export type ExerciseHistoryEntry = {
   workoutId: string;
@@ -13,6 +13,8 @@ export function recentExerciseHistory(
   exerciseId: string,
   excludedWorkoutId?: string,
   limit = 5,
+  /** The exercise's latest session before the loaded workouts, if any. */
+  older: ExerciseHistoryBaseline['latest'] = null,
 ): ExerciseHistoryEntry[] {
   const newestFirst = [...workouts].sort(
     (left, right) =>
@@ -40,5 +42,18 @@ export function recentExerciseHistory(
     }
   }
 
+  if (
+    older &&
+    older.workout_id !== excludedWorkoutId &&
+    !entries.some((entry) => entry.workoutId === older.workout_id)
+  ) {
+    entries.push({
+      workoutId: older.workout_id,
+      workoutDate: older.workout_date,
+      workoutName: older.workout_name,
+      movementNotes: older.movement_notes,
+      sets: older.sets,
+    });
+  }
   return entries;
 }

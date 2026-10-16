@@ -229,6 +229,37 @@ class WorkoutSnapshotRead(WorkoutCacheRevisionRead):
     workouts: list[TrainingWorkoutRead]
 
 
+class WorkoutHistorySummaryRead(BaseModel):
+    """Whole-log facts, so screens that load recent history in windows know what lies beyond."""
+
+    total_workouts: int
+    first_workout_date: date | None
+    last_workout_date: date | None
+    has_sample_workouts: bool
+
+
+class WeightRepsRead(BaseModel):
+    weight_kg: float
+    reps: int
+
+
+class ExerciseLatestSessionRead(BaseModel):
+    workout_id: str
+    workout_date: date
+    workout_name: str
+    movement_notes: str | None
+    sets: list[WorkoutSetRead]
+
+
+class ExerciseHistoryBaselineRead(BaseModel):
+    """An exercise's history before a date, condensed for PR checks and set suggestions."""
+
+    exercise_id: str
+    best_weight_kg: float | None
+    reps_by_weight: list[WeightRepsRead]
+    latest: ExerciseLatestSessionRead | None
+
+
 class CalendarExerciseRead(BaseModel):
     exercise_name: str
     set_count: int
@@ -525,6 +556,7 @@ class DashboardRead(BaseModel):
     muscle_volume: list[MuscleVolumeRead]
     zone2: Zone2WeekRead
     recent_workouts: list[TrainingWorkoutRead]
+    history: WorkoutHistorySummaryRead | None = None
 
 
 class ProgressPoint(BaseModel):
