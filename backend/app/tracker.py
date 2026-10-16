@@ -83,6 +83,7 @@ from .tracker_schemas import (
     HeatmapDay,
     MachinePhotoCaptionUpdate,
     MachinePhotoRead,
+    MachinePhotoUsageRead,
     MuscleFrequencyRead,
     MuscleVolumeRead,
     PersonalRecordRead,
@@ -811,17 +812,99 @@ def update_exercise_favorite(
     return exercise
 
 
-@router.get("/exercises/{exercise_id}/machine-photos", response_model=list[MachinePhotoRead])
-def list_machine_photos(exercise_id: str, db: DbSession, user: CurrentUser) -> list[MachinePhoto]:
-    if not get_owned(db, Exercise, exercise_id, user.id):
-        raise HTTPException(status_code=404, detail="Exercise was not found.")
-    return list(
+def machine_photo_usage(
+    db: Session, user_id: str, photos: list[MachinePhoto]
+) -> list[MachinePhotoUsageRead]:
+    """Attach each photo's saved-workout count and most recent workout date."""
+    usage: dict[str, tuple[int, date | None]] = {}
+    if photos:
+        rows = db.execute(
+            select(
+                movement_machine_photos.c.machine_photo_id,
+                func.count(func.distinct(TrainingWorkout.id)),
+                func.max(TrainingWorkout.workout_date),
+            )
+            .select_from(movement_machine_photos)
+            .join(WorkoutMovement, WorkoutMovement.id == movement_machine_photos.c.movement_id)
+            .join(TrainingWorkout, TrainingWorkout.id == WorkoutMovement.workout_id)
+            .where(
+                movement_machine_photos.c.machine_photo_id.in_([photo.id for photo in photos]),
+                TrainingWorkout.user_id == user_id,
+            )
+            .group_by(movement_machine_photos.c.machine_photo_id)
+        )
+        usage = {photo_id: (count, last_used) for photo_id, count, last_used in rows}
+    machines = []
+    for photo in photos:
+        workout_count, last_used_date = usage.get(photo.id, (0, None))
+        machines.append(
+            MachinePhotoUsageRead(
+                **MachinePhotoRead.model_validate(photo).model_dump(),
+                exercise_name=photo.exercise.name,
+                workout_count=workout_count,
+                last_used_date=last_used_date,
+            )
+        )
+    return machines
+
+
+@router.get("/machine-photos", response_model=list[MachinePhotoUsageRead])
+def list_all_machine_photos(db: DbSession, user: CurrentUser) -> list[MachinePhotoUsageRead]:
+    """Every saved machine, most recently used first, so History can filter by one."""
+    photos = list(
         db.scalars(
             select(MachinePhoto)
-            .where(MachinePhoto.exercise_id == exercise_id, MachinePhoto.user_id == user.id)
+            .where(MachinePhoto.user_id == user.id)
+            .options(selectinload(MachinePhoto.exercise))
             .order_by(MachinePhoto.created_at.desc())
         )
     )
+    machines = machine_photo_usage(db, user.id, photos)
+    # Stable sorts: unused machines stay newest-first after the used ones.
+    machines.sort(key=lambda item: item.last_used_date or date.min, reverse=True)
+    return machines
+
+
+@router.get("/machine-photos/{photo_id}/workouts", response_model=list[TrainingWorkoutRead])
+def list_machine_photo_workouts(
+    photo_id: str, db: DbSession, user: CurrentUser
+) -> list[TrainingWorkout]:
+    """Saved workouts where this machine was pinned, newest first."""
+    if not get_owned(db, MachinePhoto, photo_id, user.id):
+        raise HTTPException(status_code=404, detail="Machine photo was not found.")
+    pinned_workout_ids = (
+        select(WorkoutMovement.workout_id)
+        .join(
+            movement_machine_photos,
+            movement_machine_photos.c.movement_id == WorkoutMovement.id,
+        )
+        .where(movement_machine_photos.c.machine_photo_id == photo_id)
+    )
+    return list(
+        db.scalars(
+            select(TrainingWorkout)
+            .where(TrainingWorkout.user_id == user.id, TrainingWorkout.id.in_(pinned_workout_ids))
+            .options(*workout_options())
+            .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
+        )
+    )
+
+
+@router.get("/exercises/{exercise_id}/machine-photos", response_model=list[MachinePhotoUsageRead])
+def list_machine_photos(
+    exercise_id: str, db: DbSession, user: CurrentUser
+) -> list[MachinePhotoUsageRead]:
+    if not get_owned(db, Exercise, exercise_id, user.id):
+        raise HTTPException(status_code=404, detail="Exercise was not found.")
+    photos = list(
+        db.scalars(
+            select(MachinePhoto)
+            .where(MachinePhoto.exercise_id == exercise_id, MachinePhoto.user_id == user.id)
+            .options(selectinload(MachinePhoto.exercise))
+            .order_by(MachinePhoto.created_at.desc())
+        )
+    )
+    return machine_photo_usage(db, user.id, photos)
 
 
 @router.get(

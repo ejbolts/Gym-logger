@@ -116,6 +116,13 @@ export interface MachinePhoto {
   created_at: string;
 }
 
+/** A saved machine with when, and how often, saved workouts have pinned it. */
+export interface MachinePhotoUsage extends MachinePhoto {
+  exercise_name: string;
+  workout_count: number;
+  last_used_date: string | null;
+}
+
 export interface TrackedSet {
   id: string;
   order_index: number;

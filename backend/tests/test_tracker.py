@@ -869,7 +869,9 @@ def test_machine_photos_are_processed_pinned_and_protected_while_referenced(clie
     assert photo["caption"] == "Hammer Strength lying leg curl"
     assert (photo["width"], photo["height"]) == (1800, 900)
     assert photo["thumbnail_url"].endswith("variant=thumbnail")
-    assert client.get(f"/api/exercises/{exercise['id']}/machine-photos").json() == [photo]
+    assert client.get(f"/api/exercises/{exercise['id']}/machine-photos").json() == [
+        {**photo, "exercise_name": "Seated Leg Curl", "workout_count": 0, "last_used_date": None}
+    ]
     assert client.get(f"/api/exercises/{exercise['id']}/machine-photos/last-used").json() == []
 
     full = client.get(photo["full_url"])
@@ -928,6 +930,97 @@ def test_machine_photos_are_processed_pinned_and_protected_while_referenced(clie
     assert client.delete(f"/api/machine-photos/{second_photo['id']}").status_code == 204
     assert client.delete(f"/api/machine-photos/{photo['id']}").status_code == 204
     assert client.get(photo["full_url"]).status_code == 404
+
+
+def upload_machine_photo(client, exercise_id: str, caption: str, color: str) -> dict:
+    image_buffer = BytesIO()
+    Image.new("RGB", (64, 48), color).save(image_buffer, format="JPEG")
+    response = client.post(
+        f"/api/exercises/{exercise_id}/machine-photos",
+        data={"caption": caption},
+        files={"file": ("machine.jpg", image_buffer.getvalue(), "image/jpeg")},
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+def test_machine_history_finds_the_last_session_on_one_machine_across_gyms(client, other_client):
+    exercises = client.get("/api/exercises").json()
+    leg_press = next(item for item in exercises if item["name"] == "Leg Press")
+    bench = next(item for item in exercises if item["name"] == "Barbell Bench Press")
+    home_gym = upload_machine_photo(client, leg_press["id"], "Home gym Hammer press", "#e86f35")
+    travel_gym = upload_machine_photo(client, leg_press["id"], "Travel gym Cybex press", "#293d6b")
+    unused = upload_machine_photo(client, bench["id"], "Unused bench", "#111111")
+    today = date.today()
+
+    def log(days_ago: int, photo_ids: list[str], weight: float) -> dict:
+        payload = workout_payload(leg_press["id"])
+        payload["workout_date"] = (today - timedelta(days=days_ago)).isoformat()
+        payload["movements"][0]["machine_photo_ids"] = photo_ids
+        payload["movements"][0]["sets"][0]["weight_kg"] = weight
+        response = client.post("/api/workouts", json=payload)
+        assert response.status_code == 201
+        return response.json()
+
+    # A year ago at the home gym, then many leg press sessions elsewhere since.
+    home_last = log(365, [home_gym["id"]], 180)
+    log(400, [home_gym["id"]], 170)
+    travel_sessions = [log(days_ago, [travel_gym["id"]], 140) for days_ago in (200, 90, 30, 1)]
+    log(10, [], 150)
+
+    history = client.get(f"/api/machine-photos/{home_gym['id']}/workouts")
+    assert history.status_code == 200
+    home_workouts = history.json()
+    assert [item["workout_date"] for item in home_workouts] == [
+        (today - timedelta(days=365)).isoformat(),
+        (today - timedelta(days=400)).isoformat(),
+    ]
+    assert home_workouts[0]["id"] == home_last["id"]
+    assert home_workouts[0]["movements"][0]["sets"][0]["weight_kg"] == 180
+    assert home_workouts[0]["movements"][0]["machine_photos"][0]["id"] == home_gym["id"]
+    assert [
+        item["id"] for item in client.get(f"/api/machine-photos/{travel_gym['id']}/workouts").json()
+    ] == [item["id"] for item in reversed(travel_sessions)]
+    assert client.get(f"/api/machine-photos/{unused['id']}/workouts").json() == []
+
+    machines = client.get("/api/machine-photos")
+    assert machines.status_code == 200
+    summary = {
+        item["caption"]: (item["exercise_name"], item["workout_count"], item["last_used_date"])
+        for item in machines.json()
+    }
+    assert summary == {
+        "Travel gym Cybex press": ("Leg Press", 4, (today - timedelta(days=1)).isoformat()),
+        "Home gym Hammer press": ("Leg Press", 2, (today - timedelta(days=365)).isoformat()),
+        "Unused bench": ("Barbell Bench Press", 0, None),
+    }
+    assert [item["caption"] for item in machines.json()] == [
+        "Travel gym Cybex press",
+        "Home gym Hammer press",
+        "Unused bench",
+    ]
+    per_exercise = client.get(f"/api/exercises/{leg_press['id']}/machine-photos").json()
+    assert {item["caption"]: item["workout_count"] for item in per_exercise} == {
+        "Travel gym Cybex press": 4,
+        "Home gym Hammer press": 2,
+    }
+
+    # A workout using both machines counts once for each, and editing it away updates history.
+    both = log(5, [home_gym["id"], travel_gym["id"]], 160)
+    assert (
+        client.get(f"/api/machine-photos/{home_gym['id']}/workouts").json()[0]["id"] == both["id"]
+    )
+    unpinned = workout_payload(leg_press["id"])
+    unpinned["workout_date"] = both["workout_date"]
+    assert client.put(f"/api/workouts/{both['id']}", json=unpinned).status_code == 200
+    assert (
+        client.get(f"/api/machine-photos/{home_gym['id']}/workouts").json()[0]["id"]
+        == (home_last["id"])
+    )
+
+    # Another account cannot read or enumerate these machines.
+    assert other_client.get(f"/api/machine-photos/{home_gym['id']}/workouts").status_code == 404
+    assert other_client.get("/api/machine-photos").json() == []
 
 
 def test_machine_photo_rejects_invalid_images_and_cross_exercise_pins(client):
