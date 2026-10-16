@@ -83,4 +83,4 @@ export function appGuideSteps(videosAllowed: boolean): AppGuideStep[] {
 }
 
 export const PROJECT_URL = 'https://github.com/ejbolts/Gym-video-logger';
-export const CONTRIBUTING_URL = `${PROJECT_URL}/blob/master/CONTRIBUTING.md`;
+export const CONTRIBUTING_URL = `${PROJECT_URL}/blob/main/CONTRIBUTING.md`;

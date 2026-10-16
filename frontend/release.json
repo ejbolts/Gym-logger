@@ -13,7 +13,7 @@
     "Check for updates in Settings is aligned with the other actions and shows a timestamped notification with a three-second countdown bar.",
     "Streaks, the next-workout suggestion, PR badges and set suggestions while logging still account for your full history."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#060",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#060",
   "image": {
     "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/142bb5d3452d49b9965da7b4f9cb7f5b68d35d40/docs/screenshots/releases/0.6.0-machine-history-filter.png",
     "alt": "History filtered by one saved leg press machine, showing it was last used a year ago with the most recent session on it expanded."
