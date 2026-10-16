@@ -1,17 +1,21 @@
 {
-  "version": "0.5.6",
-  "title": "Faster start with long histories",
-  "summary": "Today and History open with your recent months. Load older training by swiping the calendar or choosing Show more.",
+  "version": "0.6.0",
+  "title": "Faster start, machine history and earlier releases",
+  "summary": "Open with your recent training, find the last time you used a machine, and browse what changed in earlier versions.",
   "changes": [
-    "Signing in loads the last three months of workouts instead of your whole log, so Today appears quickly even with years of training.",
-    "After you sign in, the form closes and the Gym Logger logo glides to the centre and fades while Today loads behind it.",
-    "Swipe the training calendar back past its oldest month to load the six months before it. The month you are viewing stays in place.",
-    "Vertical scrolling in History keeps the list in place without loading or revealing more workouts automatically. Choose Show more when you want more; the header still counts every workout you have logged.",
+    "Signing in loads the last three months of workouts instead of your whole log, so Today appears quickly even with years of training. The Gym Logger logo glides to the centre and fades while Today loads.",
+    "Swipe the training calendar back past its oldest month to load the six months before it. In History, choose Show more to load older workouts; vertical scrolling no longer loads more automatically.",
+    "History has a Filter by machine button. Pick a saved machine photo to see only the workouts where you pinned it, when you last used it and how often, including older sessions.",
+    "Open a pinned photo in any saved workout and choose All workouts on this machine. While logging, each saved equipment photo shows when you last used it.",
+    "Editing Home turns the bottom tabs into Cancel, a green tick to save, and Reset layout. Tap a card's X to hide it.",
+    "Progress shows the selected exercise illustration beside the current metric and change.",
+    "Hide this version's changes in What's new, and expand Earlier versions to read previous releases.",
+    "Check for updates in Settings is aligned with the other actions and shows a timestamped notification with a three-second countdown bar.",
     "Streaks, the next-workout suggestion, PR badges and set suggestions while logging still account for your full history."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#056",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/master/docs/RELEASE-NOTES.md#060",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/db8f5390860f414e249fdb07d26b56f1a78a3bb9/docs/screenshots/releases/0.5.6-calendar-older-months.png",
-    "alt": "The Today consistency calendar shows July 2026, loaded on demand after swiping back past the three months shown at startup."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/142bb5d3452d49b9965da7b4f9cb7f5b68d35d40/docs/screenshots/releases/0.6.0-machine-history-filter.png",
+    "alt": "History filtered by one saved leg press machine, showing it was last used a year ago with the most recent session on it expanded."
   }
 }

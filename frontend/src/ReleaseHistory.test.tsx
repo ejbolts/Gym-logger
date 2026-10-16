@@ -81,7 +81,7 @@ it('compacts the current notes and expands earlier versions independently', asyn
   const olderToggle = versionToggle(older.version);
   expect(olderToggle.getAttribute('aria-expanded')).toBe('false');
 
-  await act(async () => button('Show 3 changes').click());
+  await act(async () => button(`Show ${metadata.changes.length} changes`).click());
   expect(current.querySelectorAll('li')).toHaveLength(metadata.changes.length);
   await act(async () => latestToggle.click());
   expect(details.hidden).toBe(true);
