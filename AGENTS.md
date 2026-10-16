@@ -27,20 +27,20 @@ For every application feature, fix, or other user-visible change, keep `frontend
 
 ## Reviewing and merging a PR batch
 
-Before merging a batch into `master`:
+Before merging a batch into `main`:
 
 1. Fetch and inspect the repository state under the Git synchronization instructions. Query the attached GitHub repository for its currently open PRs, including drafts and stacked PRs, rather than relying on an earlier list or only the PR mentioned in chat. Paginate if necessary so the evaluation includes all open PRs.
 2. Review each candidate's purpose, diff, base branch, dependencies, verification evidence, check/review status, mergeability and proposed release metadata. Identify overlapping changes, conflicts and PRs that would overwrite another PR's version, notes or screenshots. Exclude or defer drafts and unready PRs; an open PR is not automatically part of the batch or authorized for merging.
 3. Within the user's authorized merge scope, record the selected PR numbers, merge order, exclusions and shared release version in a batch plan or coordinating PR. Use one minor bump for an application-release batch. A batch consisting entirely of documentation, tests or internal tooling with no application behavior change needs no app version bump.
 4. Reconcile `frontend/release.json`, its GitHub link and `docs/RELEASE-NOTES.md` into one coherent announcement covering the whole batch. Preserve deployed release history and screenshot references. Resolve competing version edits to the selected batch version, rather than accepting successive increments from each PR.
-5. Verify the combined code at a fixed revision before declaring the batch ready. Perform integration at a task boundary and rerun affected checks after any code changes. During merging, re-check the next PR's current head, checks and conflicts as earlier merges can affect it; keep the batch version unchanged. Finish by confirming `master` contains the selected changes and matching release metadata. Merging a batch alone does not authorize deployment or a stable-app restart.
+5. Verify the combined code at a fixed revision before declaring the batch ready. Perform integration at a task boundary and rerun affected checks after any code changes. During merging, re-check the next PR's current head, checks and conflicts as earlier merges can affect it; keep the batch version unchanged. Finish by confirming `main` contains the selected changes and matching release metadata. Merging a batch alone does not authorize deployment or a stable-app restart.
 
 ## Deleting branches after merging
 
-After merging a PR or branch into `master`, delete its head branch on GitHub (and the local branch, when no worktree or other agent is using it), then run `git fetch --prune`.
+After merging a PR or branch into `main`, delete its head branch on GitHub (and the local branch, when no worktree or other agent is using it), then run `git fetch --prune`.
 
-- For stacked PRs, retarget each child PR to `master` (or merge them bottom-up) before merging and deleting its parent. A child merged into a parent branch after the parent has already reached `master` never reaches `master` itself, even though GitHub shows it as merged.
-- Delete a branch only after confirming that its current head reached `master`: it is an ancestor of `master`, or it matches the head of a PR merged into `master` (squash merges). Keep a branch that has commits newer than its merged PR, and report it instead.
+- For stacked PRs, retarget each child PR to `main` (or merge them bottom-up) before merging and deleting its parent. A child merged into a parent branch after the parent has already reached `main` never reaches `main` itself, even though GitHub shows it as merged.
+- Delete a branch only after confirming that its current head reached `main`: it is an ancestor of `main`, or it matches the head of a PR merged into `main` (squash merges). Keep a branch that has commits newer than its merged PR, and report it instead.
 - Keep `pr-media` and `media/*` branches. They host screenshots and recordings referenced by PR descriptions and are never merged.
 
 ## Private Tailscale endpoints

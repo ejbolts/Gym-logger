@@ -11,7 +11,7 @@ Thanks for helping improve Gym Logger. Bug reports, documentation, accessibility
 
 ## Make a focused change
 
-1. Fork the repository if needed, clone it and create a feature branch from current `master`. Contributors with write access can use a branch in this repository. Keep one purpose per pull request.
+1. Fork the repository if needed, clone it and create a feature branch from current `main`. Contributors with write access can use a branch in this repository. Keep one purpose per pull request.
 2. Follow the [local setup instructions](docs/TECHNICAL-REFERENCE.md#first-local-run-mock-youtube) using Python 3.12 and Node.js 20+. Use mock YouTube uploads and a separate sample database, upload directory, VAPID key and session-cookie name. Never develop against real user data or a running stable checkout.
 3. Follow existing React/TypeScript and FastAPI/SQLAlchemy patterns. Label fields, support keyboard navigation and small screens, and respect reduced motion. Preserve account isolation and require authentication on new APIs.
 4. Add regression tests for meaningful behavior changes. For schema changes, include an Alembic migration and test an existing database upgrade; creating fresh tables is not an upgrade test.

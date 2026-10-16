@@ -4,7 +4,7 @@
 # Usage, on the VM:
 #   sudo bash /opt/gym-logger/deploy/setup-ubuntu.sh <domain> <repo-url> [branch]
 #
-#   sudo bash deploy/setup-ubuntu.sh gym.example.com https://github.com/ejbolts/Gym-logger.git master
+#   sudo bash deploy/setup-ubuntu.sh gym.example.com https://github.com/ejbolts/Gym-logger.git main
 #
 # The repo is cloned into /opt/gym-logger when it is not there yet. If you run this script from a
 # checkout that is already in /opt/gym-logger, the repo-url argument is still required; the script
@@ -29,7 +29,7 @@ export NEEDRESTART_MODE=a
 
 DOMAIN="${1:-}"
 REPO_URL="${2:-}"
-BRANCH="${3:-master}"
+BRANCH="${3:-main}"
 
 log() { printf '\n==> %s\n' "$*"; }
 warn() { printf 'WARNING: %s\n' "$*" >&2; }
