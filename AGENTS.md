@@ -25,6 +25,16 @@ For every application feature, fix, or other user-visible change, keep `frontend
 - Documentation, tests and internal tooling changes that do not affect application behavior do not require a version bump.
 - A bare `git pull` does not rebuild the frontend. Follow `deploy/update.sh` and the deployment guide when an application deployment is authorized; updating release metadata does not authorize restarting or updating the stable app.
 
+## GitHub releases and tags
+
+Each deployed application version gets a Git tag and a published GitHub Release, so the repository's **Releases** page records exactly which commit each version shipped from.
+
+- Name the tag `v` plus the `frontend/release.json` version (for example, `v0.6.0`), and use that release's `title` as the GitHub Release title. Publish it as a normal release marked latest, not a pre-release or draft.
+- Create the release as part of an authorized deployment, after the server is updated, on the exact `main` commit that was deployed. That commit must contain the matching `frontend/release.json` version. Merging a PR or batch alone does not authorize tagging or publishing a release, and do not tag pending versions or feature branches.
+- For example: `gh release create v0.6.0 --target <deployed main SHA> --title "<release.json title>" --notes-file <notes> --latest`. Write the notes file outside the repository from that version's section of `docs/RELEASE-NOTES.md`. Change relative screenshot paths to `raw.githubusercontent.com` URLs pinned to the tagged commit, and apply the private URL rules to the notes.
+- Treat published tags as permanent. Never move, delete, force-push or reuse a version tag; a fix after release ships as a new version with its own tag. Correcting a published release's notes text is fine.
+- Keep the `url` in `frontend/release.json` pointing at the version's `docs/RELEASE-NOTES.md` section, since that link must work before the GitHub Release exists.
+
 ## Reviewing and merging a PR batch
 
 Before merging a batch into `master`:
