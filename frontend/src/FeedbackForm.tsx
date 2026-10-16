@@ -96,7 +96,7 @@ export function FeedbackForm({
         </>
       )}
       <small id={`${fieldId}-privacy`}>
-        Sent privately to the app administrators with your username. Administrators read messages in{' '}
+        Sent to the app administrators with your username. Administrators read messages in{' '}
         <strong>Settings → Admin console → App feedback</strong>. Messages are not emailed or posted
         to GitHub. Please leave out passwords and sensitive information.
       </small>
