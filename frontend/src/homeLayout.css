@@ -38,57 +38,12 @@
   border-radius: var(--p-radius);
   background: var(--p-surface);
 }
-.home-layout-toolbar {
-  position: sticky;
-  top: 0.5rem;
-  z-index: 12;
-  margin-bottom: 1rem;
-  border: 1px solid var(--p-line-strong);
-  border-radius: 16px;
-  padding: 0.75rem;
-  background: var(--p-surface);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
-}
-.home-layout-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-.home-layout-actions > b {
-  flex: 1;
-  font-size: 0.875rem;
-  white-space: nowrap;
-}
-.home-layout-actions .pulse-button,
 .home-hidden-options .pulse-button {
   width: auto;
   margin: 0;
 }
-.home-layout-actions .pulse-button {
-  min-height: 2.5rem;
-  border-radius: 12px;
-  padding: 0 0.75rem;
-  font-size: 0.8125rem;
-}
-.home-layout-toolbar > p {
-  margin: 0.625rem 0 0;
-  color: var(--p-muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-.home-layout-options {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.625rem;
-}
-.home-layout-options > .text-link {
-  margin-left: auto;
-  flex-shrink: 0;
-}
 .home-layout-add {
-  flex: 1;
+  margin-bottom: 1rem;
   min-width: 0;
 }
 .home-layout-add summary {
@@ -151,12 +106,13 @@
 .home-card-hide,
 .home-card-resize,
 .home-drag-handle {
+  --home-control-size: 1.875rem;
   position: absolute;
   top: 0.5rem;
   display: grid;
   place-items: center;
-  width: 1.875rem;
-  height: 1.875rem;
+  width: var(--home-control-size);
+  height: var(--home-control-size);
   margin: 0;
   padding: 0;
   border: 1px solid var(--p-line-strong);
@@ -167,8 +123,6 @@
 }
 .home-card-hide {
   left: 0.5rem;
-  font-size: 1.25rem;
-  line-height: 1;
 }
 .home-drag-handle {
   right: 0.5rem;
@@ -180,6 +134,7 @@
   right: 2.625rem;
   color: var(--p-accent-text);
 }
+.home-card-hide .pulse-icon,
 .home-card-resize .pulse-icon {
   width: 1.125rem;
   height: 1.125rem;
@@ -328,7 +283,7 @@
   .home-card-hide,
   .home-card-resize,
   .home-drag-handle {
-    width: 1.375rem;
+    --home-control-size: 1.375rem;
   }
   .home-card-hide {
     left: 0.375rem;

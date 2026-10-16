@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { HomeLayoutSections } from './HomeLayoutSections';
-import { useHomeLayout } from './useHomeLayout';
+import type { useHomeLayout } from './useHomeLayout';
 import type { HomeSectionId } from './homeLayout';
 import { Meter, SparkBars, Sparkline } from './PulseCharts';
 import {
@@ -81,7 +81,7 @@ const RECORD_LABELS: Partial<Record<PersonalRecord['record_type'], string>> = {
 };
 
 export interface TodayScreenProps {
-  active?: boolean;
+  home: ReturnType<typeof useHomeLayout>;
   data: DashboardData | null;
   workouts: TrackedWorkout[];
   measurements: BodyMeasurement[];
@@ -110,7 +110,7 @@ export interface TodayScreenProps {
 }
 
 export function TodayScreen({
-  active = true,
+  home,
   data,
   workouts,
   measurements,
@@ -200,7 +200,6 @@ export function TodayScreen({
       : CATEGORY_LABELS[recommendation.category]
     : null;
 
-  const home = useHomeLayout(active);
   const sections: Record<HomeSectionId, ReactNode> = {
     'next-workout':
       workoutStartedAt === null ? (
@@ -551,10 +550,8 @@ export function TodayScreen({
           home.editing
             ? {
                 onChange: home.change,
-                onSave: () => void home.save(),
-                onCancel: home.cancel,
+                onDraggingChange: home.setDragging,
                 saving: home.saving,
-                error: home.error,
               }
             : undefined
         }
