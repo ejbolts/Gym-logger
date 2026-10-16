@@ -32,7 +32,7 @@ function EditorHarness() {
   home = useHomeLayout();
   return (
     <>
-      <button ref={home.editButton} onClick={home.edit}>
+      <button ref={home.editButton} onClick={home.toggleEditing}>
         Edit Home layout
       </button>
       <HomeLayoutSections
@@ -147,6 +147,20 @@ describe('account Home layout drafts', () => {
     await click('Save layout');
     expect(api.saveHomeLayout).toHaveBeenLastCalledWith(defaultHomeLayout());
     expect(home.layout).toEqual(defaultHomeLayout());
+  });
+
+  it('cancels editing from the Today pencil without saving the draft', async () => {
+    await act(async () => root.render(<EditorHarness />));
+    await act(async () => home.editButton.current!.click());
+    expect(home.editing).toBe(true);
+    await click('Hide Workouts');
+    await act(async () => home.editButton.current!.click());
+    expect(home.editing).toBe(false);
+    expect(home.message).toBe('Changes cancelled.');
+    expect(home.layout).toEqual(saved);
+    expect(api.saveHomeLayout).not.toHaveBeenCalled();
+    expect(container.querySelector('.app-tab-navigation')?.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(home.editButton.current);
   });
 
   it('locks the bottom controls while saving and retains the draft and retry action after failure', async () => {

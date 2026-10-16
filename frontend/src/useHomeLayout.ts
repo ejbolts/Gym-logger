@@ -47,6 +47,23 @@ export function useHomeLayout(active = true) {
     };
   }, [user, attempt]);
 
+  function edit() {
+    setDraft({
+      order: [...layout.order],
+      hidden: [...layout.hidden],
+      widths: { ...layout.widths },
+    });
+    setError(null);
+    setMessage('');
+    setEditing(true);
+  }
+
+  function cancel() {
+    setError(null);
+    setMessage('Changes cancelled.');
+    finish();
+  }
+
   function finish() {
     setEditing(false);
     setDragging(false);
@@ -66,21 +83,10 @@ export function useHomeLayout(active = true) {
     message,
     editButton,
     retry: () => setAttempt((value) => value + 1),
-    edit: () => {
-      setDraft({
-        order: [...layout.order],
-        hidden: [...layout.hidden],
-        widths: { ...layout.widths },
-      });
-      setError(null);
-      setMessage('');
-      setEditing(true);
-    },
-    cancel: () => {
-      setError(null);
-      setMessage('Changes cancelled.');
-      finish();
-    },
+    edit,
+    cancel,
+    // The Today pencil starts editing and, while editing, cancels like the bottom Cancel tab.
+    toggleEditing: () => (editing ? cancel() : edit()),
     change: setDraft,
     reset: () => {
       setDraft(defaultHomeLayout());

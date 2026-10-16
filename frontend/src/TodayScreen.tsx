@@ -488,8 +488,8 @@ export function TodayScreen({
               type="button"
               aria-label="Edit Home layout"
               aria-pressed={home.editing}
-              disabled={!home.loaded || home.editing}
-              onClick={home.edit}
+              disabled={!home.loaded || (home.editing && (home.saving || home.dragging))}
+              onClick={home.toggleEditing}
             >
               <Icon name="edit" />
             </button>

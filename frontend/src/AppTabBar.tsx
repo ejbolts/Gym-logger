@@ -66,7 +66,7 @@ export function AppTabBar({
           <button
             type="button"
             className="app-tab"
-            disabled={busy || !editing}
+            disabled={busy}
             aria-label="Cancel layout changes"
             onClick={homeLayout.cancel}
           >
@@ -76,7 +76,7 @@ export function AppTabBar({
           <button
             type="button"
             className="app-tab app-tab-start app-tab-save"
-            disabled={busy || !editing}
+            disabled={busy}
             aria-label={homeLayout.saving ? 'Saving layout' : 'Save layout'}
             aria-busy={homeLayout.saving}
             onClick={() => void homeLayout.save()}
@@ -89,7 +89,7 @@ export function AppTabBar({
           <button
             type="button"
             className="app-tab"
-            disabled={busy || !editing}
+            disabled={busy}
             aria-label="Reset layout"
             onClick={homeLayout.reset}
           >
