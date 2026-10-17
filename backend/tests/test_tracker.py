@@ -696,8 +696,8 @@ def test_csv_import_and_export_use_supplied_column_format(client):
         "body_measurements_created": 1,
         "body_measurements_updated": 0,
         "warnings": [
-            "Rows without Workout ID are grouped into one session per date. "
-            "Older nine-column files cannot distinguish morning and evening workouts.",
+            "Rows without a Workout ID are grouped into one session per date, so separate "
+            "morning and evening workouts on one date are combined.",
         ],
     }
     imported_exercise = next(

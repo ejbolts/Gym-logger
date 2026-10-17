@@ -37,7 +37,7 @@ Choose kilograms or pounds for weight entry and display.
 
 **Progress** shows per-exercise charts and personal records. A **Weight PR** celebrates a heavier completed working set; a **Volume PR** celebrates more reps in a set at a weight you have used before. You can also follow estimated one-rep max and weekly muscle-group set totals.
 
-Import existing workout set history from CSV, review it before saving, or export your completed sets. Workout CSVs are for set history rather than a full backup of notes, photos, videos and other account data.
+Import existing workout set history from CSV, review it before saving, or export your completed sets. A built-in CSV guide shows the columns and one-row-per-set layout and offers a template; files you make yourself need only date, exercise and reps columns, plus weight for weighted sets. Workout CSVs are for set history rather than a full backup of notes, photos, videos and other account data.
 
 <p>
   <a href="docs/screenshots/readme/progress.png"><img src="docs/screenshots/readme/progress.png" alt="Exercise progress screen with estimated one-rep max, personal records and previous sessions" width="360"></a>
@@ -66,7 +66,6 @@ Video access depends on the administrator's settings. You can use the workout tr
 Connect your own YouTube channel in **Settings** or **Video logger**. Choose your Google account
 and channel, approve access, and confirm the channel shown before uploading. The administrator
 configures Google once for the installation; users do not need API keys or credential files.
-See [YouTube setup](docs/YOUTUBE-SETUP.md) for the administrator's steps.
 
 <p>
   <a href="docs/screenshots/readme/videos.png"><img src="docs/screenshots/readme/videos.png" alt="Video logger connected to a personal YouTube channel, with the Unlisted explanation and set-video upload form" width="360"></a>
@@ -84,7 +83,7 @@ Administrators can manage accounts, registration, video access and private app f
 
 ## Getting started
 
-Sign in or create an account if registration is available. The guided tour introduces the main screens; tap **Start** to log your first workout. In **Settings**, you can replay the guide, find **Add to Home Screen** instructions, adjust training and display preferences, enable phone alerts, and send feedback or feature requests.
+Sign in or create an account if registration is available. The guided tour introduces the main screens, then offers to import your existing workout history from a CSV file; tap **Start** to log your first workout. In **Settings**, you can replay the guide, find **Add to Home Screen** instructions, adjust training and display preferences, enable phone alerts, and send feedback or feature requests.
 
 For more detail:
 

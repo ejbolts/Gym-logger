@@ -30,7 +30,7 @@ export function appGuideSteps(videosAllowed: boolean): AppGuideStep[] {
     {
       title: 'Look back in History',
       description:
-        'Review and edit saved workouts, read your notes and revisit machine photos. You can also import or export workout history with CSV.',
+        'Review and edit saved workouts, read your notes and revisit machine photos. The training calendar shows your consistency over time.',
       target: 'history',
       tab: 'history',
       icon: 'calendar',
