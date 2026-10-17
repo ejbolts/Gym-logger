@@ -1,7 +1,17 @@
 import { useId, useState } from 'react';
 import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
-import type { Release } from './releaseMetadata';
+import { formatReleaseDate, type Release } from './releaseMetadata';
+
+function ReleaseDate({ release }: { release: Release }) {
+  return release.date ? (
+    <time className="release-date" dateTime={release.date}>
+      {formatReleaseDate(release.date)}
+    </time>
+  ) : (
+    <span className="release-date">Date not recorded</span>
+  );
+}
 
 function ReleaseScreenshot({ image }: { image: NonNullable<Release['image']> }) {
   const [failed, setFailed] = useState(false);
@@ -54,7 +64,10 @@ function EarlierRelease({ release }: { release: Release }) {
           onClick={() => setOpen((value) => !value)}
         >
           <span className="release-history-version num">{release.version}</span>
-          <span className="release-history-title">{release.title}</span>
+          <span className="release-history-copy">
+            <span className="release-history-title">{release.title}</span>
+            <ReleaseDate release={release} />
+          </span>
           <span className="release-chevron" aria-hidden="true">
             <Icon name="chevron-down" />
           </span>
@@ -98,6 +111,7 @@ export function ReleaseAnnouncement({
     >
       <div className="release-announcement-body">
         <h3>{release.title}</h3>
+        <ReleaseDate release={release} />
         <p>{release.summary}</p>
         <button
           type="button"

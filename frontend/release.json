@@ -1,5 +1,6 @@
 {
   "version": "0.6.6",
+  "date": "2026-10-17",
   "title": "Import history and undo check-ins",
   "summary": "Import your workout history with a step-by-step CSV guide, and undo a daily body-weight check-in from a five-second popup at the top of the screen.",
   "changes": [
@@ -25,7 +26,8 @@
     "Unfollow uses a red outline and tint to match the delete-button style.",
     "Filter another member’s shared workout history by type, exercise, date range and shared machine photos. Filters search the full shared history, including older workouts, and remain applied when loading more.",
     "Daily check-in adds body-fat percentage with minus, plus and Log or Update controls beneath body weight, separated by a padded dotted line. Log today’s weight first; body-fat saves keep that weight and notes, and Undo restores only body fat. Saved today summaries are green for both measurements.",
-    "In Edit Home, drag a section into an empty space beside another card. Expanded sections automatically shrink to compact width when dropped into a smaller space, and keep that width after saving."
+    "In Edit Home, drag a section into an empty space beside another card. Expanded sections automatically shrink to compact width when dropped into a smaller space, and keep that width after saving. Mixed compact cards fill unusable narrow strips instead of leaving a gap.",
+    "What's new shows a date for each release, including collapsed earlier versions."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

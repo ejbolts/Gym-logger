@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import history from '../release-history.json';
 import metadata from '../release.json';
 import { ReleaseAnnouncement } from './ReleaseAnnouncement';
+import { formatReleaseDate } from './releaseMetadata';
 
 let root: Root;
 let container: HTMLDivElement;
@@ -63,7 +64,15 @@ it('compacts the current notes and expands earlier versions independently', asyn
   const items = document.querySelectorAll('.release-history-item');
   expect(items).toHaveLength(history.length);
   expect([...items].map((item) => item.querySelector('h4')?.textContent)).toEqual(
-    history.map((release) => `${release.version}${release.title}`),
+    history.map(
+      (release) => `${release.version}${release.title}${formatReleaseDate(release.date)}`,
+    ),
+  );
+  expect(
+    document.querySelector('.release-announcement-body > time')?.getAttribute('datetime'),
+  ).toBe(metadata.date);
+  expect([...items].map((item) => item.querySelector('time')?.getAttribute('datetime'))).toEqual(
+    history.map((release) => release.date),
   );
   expect(document.querySelectorAll('.release-history-details:not([hidden])')).toHaveLength(0);
 
@@ -73,6 +82,7 @@ it('compacts the current notes and expands earlier versions independently', asyn
   expect(latestToggle.getAttribute('aria-expanded')).toBe('true');
   const details = document.getElementById(latestToggle.getAttribute('aria-controls')!)!;
   expect(details.hidden).toBe(false);
+  expect(latestToggle.querySelector('time')?.textContent).toBe(formatReleaseDate(latest.date));
   expect(details.textContent).toContain(latest.summary);
   expect(details.querySelectorAll('li')).toHaveLength(latest.changes.length);
   expect(

@@ -9,14 +9,17 @@ export function releaseNotesPlugin(): Plugin {
   return {
     name: 'validate-release-notes',
     buildStart() {
-      if (!parseRelease(releaseMetadata)) {
+      if (!parseRelease(releaseMetadata) || !releaseMetadata.date) {
         this.error(
-          'release.json needs a version, title, summary, changes and an HTTPS GitHub URL.',
+          'release.json needs a version, valid YYYY-MM-DD date, title, summary, changes and an HTTPS GitHub URL.',
         );
       }
-      if (!parseReleaseHistory(releaseHistory, releaseMetadata.version)) {
+      if (
+        !parseReleaseHistory(releaseHistory, releaseMetadata.version) ||
+        releaseHistory.some((release) => !release.date)
+      ) {
         this.error(
-          'release-history.json must list valid earlier releases, newest first, below the current version.',
+          'release-history.json must list dated, valid earlier releases, newest first, below the current version.',
         );
       }
     },

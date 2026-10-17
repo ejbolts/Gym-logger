@@ -2,6 +2,8 @@
 
 ## 0.6.6
 
+17 October 2026
+
 ### Import history and undo check-ins
 
 - New accounts see the app tour first. The next step offers **Import or export**: it opens
@@ -50,6 +52,11 @@
   gap at the bottom, for example **Sets per muscle** next to **Consistency** or **Daily
   check-in** next to **Recent records**.
 - While a workout is live, editing Home no longer shows a placeholder **Next workout** card.
+- Mixed compact cards fill an unusable narrow strip at the end of a row. For example, a
+  compact **Body weight** card fills the space beside half-width **Consistency**, while
+  larger spaces remain available for dropping another section.
+- **What's new** shows a date for the current notes and each earlier version, including
+  collapsed entries. Older dates are taken from the recorded release-metadata dates.
 - In **Edit Home**, drag a section into an empty space beside another card. Expanded cards
   automatically shrink to compact width when dropped into a smaller space. Dotted targets
   highlight spaces that fit the compact card, and its new width stays after saving.
@@ -142,7 +149,18 @@ sample accounts in the isolated verification environment.
 Drag a section into the dotted empty space in Edit Home, then save to keep it beside the existing
 card. Expanded sections shrink to fit the smaller space and retain their compact width.
 
+<img src="screenshots/releases/0.6.6-release-dates.png" alt="What's new with a date under the current release title and under every collapsed earlier version." width="500">
+
+Release-note dates remain visible when a version's changes are folded.
+
+<img src="screenshots/releases/0.6.6-home-row-gap.png" alt="Compact Consistency and Body weight cards fill the same row with no narrow strip on the right, while the row below keeps its usable drop space." width="720">
+
+Mixed compact cards fill unusable single-column strips while preserving spaces large enough
+for another card. Captured with synthetic sample data in the isolated verification environment.
+
 ## 0.6.5
+
+17 October 2026
 
 ### Your videos, your YouTube channel
 
@@ -176,6 +194,8 @@ simulated; the administrator must complete the documented real-channel check aft
 the installation's Google client.
 
 ## 0.6.0
+
+16 October 2026
 
 This release combines PRs #48–#54.
 
@@ -315,6 +335,8 @@ No database migration is required for this release.
 
 ## 0.5.5
 
+15 October 2026
+
 - A persistent top notification announces a new app release without interrupting
   your current screen. Checks run every minute while the app is visible and online,
   and when you return or reconnect. Use the refresh arrow when ready.
@@ -347,6 +369,8 @@ Check manually from Settings. Captures use fictional records and a separate data
 
 ## 0.5.4
 
+15 October 2026
+
 - In **Today > Edit Home**, use the resize button beside a card's drag handle to
   switch between compact and full width. Save widths with the card order and
   visibility across devices. Cancel discards edits; Reset layout restores default
@@ -376,6 +400,8 @@ Arrows show the direction of change, with colours reflecting the active goal.
 Both cut and bulk goals were exercised with the isolated sample account.
 
 ## 0.5.3
+
+13 October 2026
 
 ### User-review corrections before deployment
 
@@ -510,6 +536,8 @@ The full-screen graph in the combined 0.5.3 build, captured on MainPC's isolated
 
 ## 0.3.1
 
+11 October 2026
+
 - The **What's new** pop-up can show a screenshot alongside the release notes. Select it to view the image full size.
 - Screenshots include descriptive text and scale to fit mobile screens. If an image cannot load, the notes, GitHub link and dismissal controls remain available.
 - Release screenshots are stored with the GitHub notes; the announcement uses a direct image URL pinned to the screenshot's commit. Releases without a screenshot continue to work.
@@ -519,6 +547,8 @@ The full-screen graph in the combined 0.5.3 build, captured on MainPC's isolated
 The illustrated announcement in the isolated mobile verification environment, using the [username signup screenshot](screenshots/releases/0.3.0-username-signup.png) as an example.
 
 ## 0.3.0
+
+11 October 2026
 
 - Create accounts and sign in with a **username and password**. Account emails are no longer collected or stored in the active users table.
 - Usernames ignore letter case and use 3–32 ASCII letters, numbers, dots, underscores or hyphens, starting with a letter or number. The separate display name remains available.
@@ -532,6 +562,8 @@ The illustrated announcement in the isolated mobile verification environment, us
 Username-based account creation in v0.3.0, captured with empty fields in the isolated verification environment.
 
 ## 0.2.0
+
+11 October 2026
 
 - A **What's new** pop-up shows the deployed version, a short list of changes and a link to these GitHub notes when you sign in, reopen the app or reconnect after an update.
 - Dismiss a version once per account and browser. Later releases appear automatically; local and production addresses remember dismissal independently. First-time users see the current release too.

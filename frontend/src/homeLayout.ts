@@ -128,6 +128,23 @@ export function homeSectionSpans(ids: HomeSectionId[], widths: HomeSectionWidths
     }
     start = end;
   }
+  // A one-column strip cannot accept any card. Give it to the smallest card in that row,
+  // while retaining larger spaces that can be filled by dragging another section.
+  let rowStart = 0;
+  let used = 0;
+  spans.forEach((span, index) => {
+    used += span;
+    if (index === spans.length - 1 || used + spans[index + 1] > 6) {
+      if (used === 5) {
+        let smallest = rowStart;
+        for (let item = rowStart + 1; item <= index; item++)
+          if (spans[item] < spans[smallest]) smallest = item;
+        spans[smallest]++;
+      }
+      rowStart = index + 1;
+      used = 0;
+    }
+  });
   return spans;
 }
 

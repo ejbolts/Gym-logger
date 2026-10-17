@@ -8,7 +8,12 @@ import {
   rememberRelease,
   watchReleases,
 } from './releaseAnnouncements';
-import { compareVersions, parseRelease, parseReleaseHistory } from './releaseMetadata';
+import {
+  compareVersions,
+  formatReleaseDate,
+  parseRelease,
+  parseReleaseHistory,
+} from './releaseMetadata';
 
 const screenshot = {
   url: 'https://raw.githubusercontent.com/owner/repo/0123456789abcdef0123456789abcdef01234567/docs/screenshots/sample-release.png',
@@ -21,6 +26,14 @@ afterEach(() => {
 });
 
 describe('release announcements', () => {
+  it('validates calendar dates and formats them without timezone shifts', () => {
+    for (const date of ['2026-02-30', '2026-13-01', '17 Oct 2026', '', null, 123])
+      expect(parseRelease({ ...metadata, date })).toBeNull();
+    expect(parseRelease({ ...metadata, date: undefined })).not.toBeNull();
+    expect(parseRelease({ ...metadata, date: '2024-02-29' })).not.toBeNull();
+    expect(formatReleaseDate('2026-10-17')).toBe('17 Oct 2026');
+    expect(history.every((release) => /^\d{4}-\d{2}-\d{2}$/.test(release.date))).toBe(true);
+  });
   it('accepts the shipped notes and rejects incomplete metadata and unsafe URLs', () => {
     expect(parseRelease(metadata)).toEqual(metadata);
     for (const invalid of [

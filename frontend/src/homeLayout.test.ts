@@ -11,6 +11,20 @@ import {
 } from './homeLayout';
 
 describe('Home layout edits', () => {
+  it('fills unusable strips in mixed-size rows without removing usable drop spaces', () => {
+    const widths = {
+      consistency: 'compact',
+      'weekly-bodyweight': 'compact',
+      workouts: 'compact',
+      'cardio-sessions': 'compact',
+    } as const;
+    expect(
+      homeSectionSpans(['consistency', 'weekly-bodyweight', 'workouts', 'cardio-sessions'], widths),
+    ).toEqual([3, 3, 2, 2]);
+    expect(homeSectionSpans(['weekly-bodyweight', 'consistency'], widths)).toEqual([3, 3]);
+    expect(homeSectionSpans(['consistency'], widths)).toEqual([3]);
+    expect(homeSectionSpans(['workouts', 'cardio-sessions'], widths)).toEqual([2, 2]);
+  });
   it('finds empty space beside a compact card before a full row and at the end', () => {
     expect([...homeSectionGaps(['consistency', 'friends', 'zone2'], [3, 6, 3])]).toEqual([
       ['consistency', 3],
