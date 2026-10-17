@@ -45,6 +45,7 @@
   **Group Superset**. **Edit Notes** is removed from the menu; use the note field at the
   bottom of each exercise. **Equipment photo** and **Take photo** show a camera, and the
   **Take photo** button is blue to match the app's accent colour.
+- The **Workout live** card on Today has the same spacing below it as the other cards.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 

@@ -515,6 +515,7 @@ button.pulse-card:hover {
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 0.25rem 1rem;
+  margin-bottom: 0.75rem;
   border-color: rgb(57 135 229 / 35%);
   background: linear-gradient(160deg, #15263a 0%, var(--p-surface) 70%);
 }
