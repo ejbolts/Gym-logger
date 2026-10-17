@@ -1321,7 +1321,7 @@ html[data-reduce-motion] .app-tab-items[aria-hidden] {
 .calendar-panel .calendar-weekdays,
 .calendar-panel .calendar-days {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr)) 2.25rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.125rem;
 }
 
@@ -1330,10 +1330,6 @@ html[data-reduce-motion] .app-tab-items[aria-hidden] {
   font-size: 0.625rem;
   font-weight: 600;
   text-align: center;
-}
-
-.calendar-panel .calendar-week-total-heading {
-  text-align: right !important;
 }
 
 .calendar-panel .calendar-day {

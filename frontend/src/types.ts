@@ -86,6 +86,14 @@ export type WorkoutCategory =
 
 export type WorkoutTypeColors = Record<WorkoutCategory, string>;
 
+export interface WorkoutType {
+  id: string;
+  name: string;
+  color: string;
+  is_custom: boolean;
+  archived: boolean;
+}
+
 export type ExerciseKind = 'strength' | 'cardio';
 
 export type SetType = 'warmup' | 'normal' | 'drop';
@@ -172,6 +180,8 @@ export interface TrackedWorkout {
   name: string;
   workout_date: string;
   category: WorkoutCategory;
+  workout_type_id?: string | null;
+  workout_type?: WorkoutType | null;
   notes: string | null;
   duration_minutes: number | null;
   start_time: string | null;
@@ -215,6 +225,7 @@ export interface WorkoutInput {
   name: string;
   workout_date: string;
   category: WorkoutCategory;
+  workout_type_id?: string | null;
   notes: string | null;
   duration_minutes: number | null;
   start_time: string | null;
@@ -231,12 +242,15 @@ export interface WorkoutInput {
 export interface HeatmapDay {
   workout_date: string;
   categories: WorkoutCategory[];
+  workout_types?: WorkoutType[];
   workout_count: number;
   set_count: number;
   workouts: Array<{
     id: string;
     name: string;
     category: WorkoutCategory;
+    workout_type_id?: string | null;
+    workout_type?: WorkoutType | null;
     duration_minutes: number | null;
     exercises: Array<{
       exercise_name: string;
@@ -736,6 +750,7 @@ export interface SharedWorkoutPage {
 
 export interface SharedWorkoutFilters {
   category: WorkoutCategory | '';
+  workout_type_id?: string;
   exercise_id: string;
   machine_photo_id: string;
   start_date: string;
@@ -743,6 +758,7 @@ export interface SharedWorkoutFilters {
 }
 
 export interface SharedWorkoutFilterOptions {
+  workout_types?: WorkoutType[];
   exercises: { id: string; name: string }[];
   machines: MachinePhoto[];
 }

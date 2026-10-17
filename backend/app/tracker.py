@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from bisect import bisect_right
 from collections import defaultdict
@@ -47,6 +48,7 @@ from .models import (
     WorkoutCategory,
     WorkoutMovement,
     WorkoutSet,
+    WorkoutType,
     movement_machine_photos,
 )
 from .photo_storage import (
@@ -103,6 +105,9 @@ from .tracker_schemas import (
     WorkoutSetRead,
     WorkoutSnapshotRead,
     WorkoutTypeColors,
+    WorkoutTypeCreate,
+    WorkoutTypeRead,
+    WorkoutTypeUpdate,
     Zone2WeekRead,
 )
 from .training_metrics import (
@@ -117,6 +122,16 @@ from .training_metrics import (
     seed_muscle_mappings,
     set_setting,
     start_of_week,
+)
+from .workout_types import (
+    ARCHIVED_KEY,
+    DEFAULT_NAMES,
+    MAX_CUSTOM_TYPES,
+    archived_builtins,
+    assign_workout_type,
+    ensure_unique_name,
+    type_colors,
+    workout_type_catalog,
 )
 
 router = APIRouter(
@@ -443,6 +458,7 @@ def seed_default_exercises(db: Session, user_id: str) -> None:
 
 def workout_options():
     return (
+        selectinload(TrainingWorkout.workout_type),
         selectinload(TrainingWorkout.movements)
         .selectinload(WorkoutMovement.exercise)
         .selectinload(Exercise.muscle_contributions),
@@ -466,6 +482,7 @@ def load_workout(db: Session, user_id: str, workout_id: str) -> TrainingWorkout:
 def replace_workout_contents(
     db: Session, user_id: str, workout: TrainingWorkout, payload: TrainingWorkoutCreate
 ) -> None:
+    assign_workout_type(db, user_id, workout, payload)
     workout.name = payload.name
     workout.workout_date = payload.workout_date
     workout.category = payload.category
@@ -1120,8 +1137,84 @@ def update_workout_type_colors(
     payload: WorkoutTypeColors, db: DbSession, user: CurrentUser
 ) -> WorkoutTypeColors:
     set_setting(db, user.id, WORKOUT_TYPE_COLORS_KEY, payload.model_dump_json())
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     return payload
+
+
+@router.get("/workout-types", response_model=list[WorkoutTypeRead])
+def list_workout_types(db: DbSession, user: CurrentUser) -> list[WorkoutTypeRead]:
+    return workout_type_catalog(db, user.id)
+
+
+@router.post("/workout-types", response_model=WorkoutTypeRead, status_code=201)
+def create_workout_type(
+    payload: WorkoutTypeCreate, db: DbSession, user: CurrentUser
+) -> WorkoutType:
+    ensure_unique_name(db, user.id, payload.name)
+    count = db.scalar(select(func.count(WorkoutType.id)).where(WorkoutType.user_id == user.id)) or 0
+    if count >= MAX_CUSTOM_TYPES:
+        raise HTTPException(422, f"You can save up to {MAX_CUSTOM_TYPES} custom workout types.")
+    item = WorkoutType(user_id=user.id, name=payload.name, color=payload.color)
+    db.add(item)
+    bump_workout_cache_revision(db, user.id)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(409, "A workout type with this name already exists.") from error
+    return item
+
+
+def edit_workout_type(
+    type_id: str, payload: WorkoutTypeUpdate, db: Session, user_id: str
+) -> WorkoutTypeRead:
+    if type_id in DEFAULT_NAMES:
+        if payload.name is not None and payload.name != DEFAULT_NAMES[type_id]:
+            raise HTTPException(422, "Built-in workout type names cannot be changed.")
+        if payload.color is not None:
+            colors = type_colors(db, user_id)
+            updated = WorkoutTypeColors.model_validate(
+                {**colors.model_dump(), type_id: payload.color}
+            )
+            set_setting(db, user_id, WORKOUT_TYPE_COLORS_KEY, updated.model_dump_json())
+        if payload.archived is not None:
+            archived = archived_builtins(db, user_id)
+            if payload.archived:
+                archived.add(type_id)
+            else:
+                archived.discard(type_id)
+            set_setting(db, user_id, ARCHIVED_KEY, json.dumps(sorted(archived)))
+    else:
+        item = get_owned(db, WorkoutType, type_id, user_id)
+        if item is None:
+            raise HTTPException(404, "Workout type was not found.")
+        if payload.name is not None:
+            ensure_unique_name(db, user_id, payload.name, excluding=type_id)
+            item.name = payload.name
+        if payload.color is not None:
+            item.color = payload.color
+        if payload.archived is not None:
+            item.archived = payload.archived
+    bump_workout_cache_revision(db, user_id)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(409, "A workout type with this name already exists.") from error
+    return next(item for item in workout_type_catalog(db, user_id) if item.id == type_id)
+
+
+@router.patch("/workout-types/{type_id}", response_model=WorkoutTypeRead)
+def update_workout_type(
+    type_id: str, payload: WorkoutTypeUpdate, db: DbSession, user: CurrentUser
+) -> WorkoutTypeRead:
+    return edit_workout_type(type_id, payload, db, user.id)
+
+
+@router.delete("/workout-types/{type_id}", status_code=204)
+def remove_workout_type(type_id: str, db: DbSession, user: CurrentUser) -> None:
+    edit_workout_type(type_id, WorkoutTypeUpdate(archived=True), db, user.id)
 
 
 @router.put("/training-preferences", response_model=TrainingPreferencesRead)
@@ -1560,7 +1653,9 @@ def calendar_days(
 ) -> list[HeatmapDay]:
     """Calendar days for a window older than the one the dashboard loaded."""
     workouts = workouts_between(db, user.id, start, end)
-    return build_heatmap(workouts, body_measurements_by_date(db, user.id))
+    return build_heatmap(
+        workouts, body_measurements_by_date(db, user.id), workout_type_catalog(db, user.id)
+    )
 
 
 @router.get("/exercise-history-baselines", response_model=list[ExerciseHistoryBaselineRead])
@@ -1923,10 +2018,44 @@ def body_measurements_by_date(db: Session, user_id: str) -> list[BodyMeasurement
 
 
 def build_heatmap(
-    workouts: list[TrainingWorkout], measurements: list[BodyMeasurement]
+    workouts: list[TrainingWorkout],
+    measurements: list[BodyMeasurement],
+    catalog: list[WorkoutTypeRead] | None = None,
 ) -> list[HeatmapDay]:
     """Calendar days for ``workouts``; ``measurements`` must be sorted by date."""
     measurement_dates = [item.measurement_date for item in measurements]
+    builtin_types = {
+        item.id: item
+        for item in (
+            catalog
+            or [
+                WorkoutTypeRead(
+                    id=key,
+                    name=name,
+                    color=getattr(DEFAULT_WORKOUT_TYPE_COLORS, key),
+                    is_custom=False,
+                    archived=False,
+                )
+                for key, name in DEFAULT_NAMES.items()
+            ]
+        )
+        if not item.is_custom
+    }
+
+    def display_types(items: list[TrainingWorkout]) -> list[WorkoutTypeRead]:
+        distinct: dict[str, WorkoutTypeRead] = {}
+        for item in items:
+            if item.workout_type is not None:
+                custom = WorkoutTypeRead.model_validate(item.workout_type)
+                distinct[custom.id] = custom
+                if any(
+                    movement.exercise.kind == ExerciseKind.CARDIO for movement in item.movements
+                ):
+                    distinct["cardio"] = builtin_types["cardio"]
+            else:
+                for category in display_categories([item]):
+                    distinct[category.value] = builtin_types[category.value]
+        return list(distinct.values())
 
     def bodyweight_on(workout_date: date) -> float | None:
         # Bisect rather than scan: years of daily check-ins made a scan per exercise quadratic.
@@ -1940,6 +2069,7 @@ def build_heatmap(
         HeatmapDay(
             workout_date=workout_date,
             categories=display_categories(items),
+            workout_types=display_types(items),
             workout_count=len(items),
             set_count=sum(len(completed_working_sets(item)) for item in items),
             workouts=[
@@ -1947,6 +2077,12 @@ def build_heatmap(
                     id=item.id,
                     name=item.name,
                     category=item.category,
+                    workout_type_id=item.workout_type_id,
+                    workout_type=(
+                        WorkoutTypeRead.model_validate(item.workout_type)
+                        if item.workout_type is not None
+                        else None
+                    ),
                     duration_minutes=item.duration_minutes,
                     exercises=[
                         CalendarExerciseRead(
@@ -2026,6 +2162,7 @@ def dashboard(
             if calendar_start is None or workout.workout_date >= calendar_start
         ],
         measurements,
+        workout_type_catalog(db, user.id),
     )
 
     weekly_groups: dict[date, list[TrainingWorkout]] = defaultdict(list)

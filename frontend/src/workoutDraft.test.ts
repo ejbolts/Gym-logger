@@ -62,6 +62,19 @@ const draft: ActiveWorkoutDraft = {
 };
 
 describe('active workout draft persistence', () => {
+  it('restores the explicit custom type and rejects a malformed type identifier', () => {
+    const storage = new MemoryStorage();
+    const custom = {
+      ...draft,
+      category: 'other' as const,
+      workoutTypeId: 'type-arms',
+      workoutTypeExplicit: true,
+    };
+    expect(writeActiveWorkoutDraft(custom, storage)).toBe(true);
+    expect(readActiveWorkoutDraft(storage)).toEqual(custom);
+    storage.setItem(ACTIVE_WORKOUT_DRAFT_KEY, JSON.stringify({ ...custom, workoutTypeId: {} }));
+    expect(readActiveWorkoutDraft(storage)).toBeNull();
+  });
   it('recognizes an old draft after its matching completed sets are saved', () => {
     const stored = {
       ...draft,
@@ -141,6 +154,20 @@ describe('active workout draft persistence', () => {
       ],
     };
     expect(savedWorkoutMatchesOldDraft(stored, saved, Date.UTC(2026, 8, 12))).toBe(true);
+    expect(
+      savedWorkoutMatchesOldDraft(
+        { ...stored, workoutTypeId: 'arms' },
+        saved,
+        Date.UTC(2026, 8, 12),
+      ),
+    ).toBe(false);
+    expect(
+      savedWorkoutMatchesOldDraft(
+        { ...stored, workoutTypeId: 'arms' },
+        { ...saved, workout_type_id: 'arms' },
+        Date.UTC(2026, 8, 12),
+      ),
+    ).toBe(true);
     expect(
       savedWorkoutMatchesOldDraft(
         { ...stored, resumingWorkoutId: saved.id, previousDurationMinutes: 72 },
