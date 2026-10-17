@@ -3948,7 +3948,6 @@ function MovementCard({
   const draggingSetKeyRef = useRef<string | null>(null);
   const dragTargetSetKeyRef = useRef<string | null>(null);
   const movementMenuRef = useRef<HTMLDetailsElement>(null);
-  const movementNoteRef = useRef<HTMLInputElement>(null);
   const setGridRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLElement>(null);
   const setNumbers = setNumberLabels(movement.sets);
@@ -4613,18 +4612,6 @@ function MovementCard({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  closeMovementMenu();
-                  window.requestAnimationFrame(() => movementNoteRef.current?.focus());
-                }}
-              >
-                <span aria-hidden="true">
-                  <Icon name="book" />
-                </span>
-                Edit Notes
-              </button>
-              <button
-                type="button"
                 className={supersetLabel ? 'active' : ''}
                 onClick={(event) => {
                   closeMovementMenu();
@@ -4812,7 +4799,6 @@ function MovementCard({
         ＋ Add set
       </button>
       <input
-        ref={movementNoteRef}
         className="movement-note"
         value={movement.notes}
         onChange={(event) => onMovementNotes(event.target.value)}

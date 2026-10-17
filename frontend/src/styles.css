@@ -2294,7 +2294,6 @@ button.metric-card:focus-visible {
 .machine-photo-placeholder {
   display: grid;
   place-items: center;
-  background: rgb(255 99 84 / 9%);
   color: var(--accent);
   font-size: 1rem;
 }
