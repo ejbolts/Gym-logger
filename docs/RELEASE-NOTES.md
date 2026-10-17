@@ -33,6 +33,10 @@
   saved message below the controls.
 - The feedback form keeps only **Please leave out passwords and sensitive information.**
   The machine filter's **Clear** button is now labelled **Close**.
+- Workout types in the **Consistency** calendar legend now switch on and off. Every type is
+  shown at first, each with a tick; tap one to swap its tick for a cross and dim its name.
+  The calendar greys out that type's dots, and the borders of days with only hidden types,
+  while every date stays readable. Tap the type again to show it.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
@@ -45,6 +49,11 @@ account in the isolated verification environment.
 
 The body-weight Undo popup and single saved-today summary, captured with sample data in
 the isolated verification environment.
+
+<img src="screenshots/releases/0.6.6-calendar-type-filter.png" alt="Consistency calendar for October 2026 with Upper body and Push switched off in the legend: their names are dimmed with a cross, their days have grey borders and dots, and Lower body, Pull, Full body and Cardio keep their ticks, colours and green borders." width="390">
+
+The Consistency calendar with Upper body and Push switched off, captured with synthetic
+sample workouts in the isolated verification environment.
 
 ## 0.6.5
 

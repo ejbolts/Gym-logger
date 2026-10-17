@@ -1814,6 +1814,7 @@ const CALENDAR_LOAD_OLDER_SCREENS = 1.5;
 function WorkoutCalendar({
   entries,
   categoryColors,
+  hiddenCategories,
   activeWorkoutDate = null,
   onActiveWorkoutClick,
   onDayClick,
@@ -1821,6 +1822,8 @@ function WorkoutCalendar({
 }: {
   entries: DashboardData['heatmap'];
   categoryColors: WorkoutTypeColors;
+  /** Workout types switched off in the legend; their dots and day borders are greyed out. */
+  hiddenCategories?: ReadonlySet<WorkoutCategory>;
   activeWorkoutDate?: string | null;
   onActiveWorkoutClick?: () => void;
   onDayClick: (workoutDate: string, entry: DashboardData['heatmap'][number] | undefined) => void;
@@ -1975,12 +1978,14 @@ function WorkoutCalendar({
                       const key = localCalendarDate(day);
                       const entry = map.get(key);
                       const inProgress = key === activeWorkoutDate;
-                      const colours =
-                        entry?.categories.map((category) => categoryColors[category]) ?? [];
+                      const categories = entry?.categories ?? [];
+                      const filteredOut =
+                        categories.length > 0 &&
+                        categories.every((category) => hiddenCategories?.has(category));
                       return (
                         <button
                           type="button"
-                          className={`calendar-day ${entry ? 'trained' : ''} ${inProgress ? 'in-progress' : ''} ${key === todayKey ? 'today' : ''} ${key > todayKey ? 'future' : ''}`}
+                          className={`calendar-day ${entry ? 'trained' : ''} ${filteredOut ? 'filtered-out' : ''} ${inProgress ? 'in-progress' : ''} ${key === todayKey ? 'today' : ''} ${key > todayKey ? 'future' : ''}`}
                           key={key}
                           onClick={() => {
                             const handlers = handlersRef.current;
@@ -2009,9 +2014,16 @@ function WorkoutCalendar({
                             {inProgress ? (
                               <i className="calendar-live-dot" />
                             ) : (
-                              colours.map((colour, dotIndex) => (
-                                <i key={dotIndex} style={{ background: colour }} />
-                              ))
+                              categories.map((category, dotIndex) =>
+                                hiddenCategories?.has(category) ? (
+                                  <i key={dotIndex} className="is-off" />
+                                ) : (
+                                  <i
+                                    key={dotIndex}
+                                    style={{ backgroundColor: categoryColors[category] }}
+                                  />
+                                ),
+                              )
                             )}
                           </span>
                         </button>
@@ -2025,7 +2037,7 @@ function WorkoutCalendar({
           </div>
         </article>
       )),
-    [activeWorkoutDate, categoryColors, map, months, todayKey],
+    [activeWorkoutDate, categoryColors, hiddenCategories, map, months, todayKey],
   );
 
   return (
@@ -2081,9 +2093,19 @@ function InteractiveWorkoutCalendar({
 }) {
   const [selectedDay, setSelectedDay] = useState<DashboardData['heatmap'][number] | null>(null);
   const [pendingWorkoutDate, setPendingWorkoutDate] = useState<string | null>(null);
+  // Every type shows by default; tapping one in the legend greys it out in the calendar.
+  const [hiddenCategories, setHiddenCategories] = useState<ReadonlySet<WorkoutCategory>>(
+    () => new Set(),
+  );
   const presentCategories = (Object.keys(categoryNames) as WorkoutCategory[]).filter((category) =>
     entries.some((day) => day.categories.includes(category)),
   );
+  const toggleCategory = (category: WorkoutCategory) =>
+    setHiddenCategories((current) => {
+      const next = new Set(current);
+      if (!next.delete(category)) next.add(category);
+      return next;
+    });
 
   return (
     <>
@@ -2091,6 +2113,7 @@ function InteractiveWorkoutCalendar({
         entries={entries}
         olderHistory={olderHistory}
         categoryColors={categoryColors}
+        hiddenCategories={hiddenCategories}
         activeWorkoutDate={activeWorkoutDate}
         onActiveWorkoutClick={onResumeWorkout}
         onDayClick={(workoutDate, entry) => {
@@ -2100,12 +2123,26 @@ function InteractiveWorkoutCalendar({
       />
       {presentCategories.length > 0 && (
         <ul className="category-legend" aria-label="Workout types">
-          {presentCategories.map((category) => (
-            <li key={category}>
-              <i style={{ background: categoryColors[category] }} aria-hidden="true" />
-              {categoryNames[category]}
-            </li>
-          ))}
+          {presentCategories.map((category) => {
+            const shown = !hiddenCategories.has(category);
+            return (
+              <li key={category}>
+                <button
+                  type="button"
+                  className={shown ? '' : 'is-off'}
+                  aria-pressed={shown}
+                  onClick={() => toggleCategory(category)}
+                >
+                  <i style={{ background: categoryColors[category] }} aria-hidden="true" />
+                  <span className="category-legend-label">{categoryNames[category]}</span>
+                  <span className="category-legend-state" aria-hidden="true">
+                    <Icon name="check" />
+                    <Icon name="close" />
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       {selectedDay && (
