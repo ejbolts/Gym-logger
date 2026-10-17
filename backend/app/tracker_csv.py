@@ -36,8 +36,25 @@ CSV_HEADERS = (
     "Warmup",
 )
 SESSION_HEADERS = ("Workout ID", "Workout name")
+# Exports always write every column; hand-made files need only these.
+REQUIRED_HEADERS = ("Date Lifted", "Exercise", "Reps")
+WEIGHT_HEADERS = ("Weight (kg)", "Weight (lb)")
+# Comma, tab (copied from a spreadsheet) or semicolon (spreadsheets in many locales).
+DELIMITERS = (",", "\t", ";")
 KG_TO_LB = 2.2046226218
 IMPORTED_BODYWEIGHT_NOTE = "Imported from workout CSV."
+# Some apps and spreadsheets add a time of day; the date part is used as written.
+ISO_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})(?:[ T]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?")
+# A decimal comma, such as 82,5. Three digits after a comma read as thousands, so are refused.
+DECIMAL_COMMA = re.compile(r"[+-]?\d+,\d{1,2}")
+
+
+def header_key(name: str) -> str:
+    """Match column names regardless of case and spacing, such as `weight(kg)`."""
+    return re.sub(r"\s+", "", name).casefold()
+
+
+KNOWN_HEADERS = {header_key(header): header for header in (*CSV_HEADERS, *SESSION_HEADERS)}
 
 
 class CsvImportError(ValueError):
@@ -85,10 +102,16 @@ class ImportSummary:
     warnings: list[str]
 
 
+def plural(count: int, noun: str) -> str:
+    return f"{count:,} {noun}{'' if count == 1 else 's'}"
+
+
 def optional_float(value: str | None, field: str, row_number: int) -> float | None:
     clean = (value or "").strip()
     if not clean:
         return None
+    if DECIMAL_COMMA.fullmatch(clean):
+        clean = clean.replace(",", ".")
     try:
         parsed = float(clean)
     except ValueError as error:
@@ -111,22 +134,46 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
     try:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError as error:
-        raise CsvImportError("The file must be UTF-8 encoded.") from error
+        raise CsvImportError(
+            "The file must be UTF-8 encoded. Save it as CSV UTF-8 and try again."
+        ) from error
     if not text.strip():
         raise CsvImportError("The CSV file is empty.")
     first_line = text.splitlines()[0]
-    delimiter = "\t" if first_line.count("\t") > first_line.count(",") else ","
+    delimiter = max(DELIMITERS, key=first_line.count)
     reader = csv.DictReader(io.StringIO(text), delimiter=delimiter, strict=True)
-    supplied = tuple((header or "").strip() for header in (reader.fieldnames or []))
-    if len(set(supplied)) != len(supplied):
-        raise CsvImportError("The CSV contains duplicate column names.")
-    reader.fieldnames = list(supplied)
-    missing = [header for header in CSV_HEADERS if header not in supplied]
+    fieldnames: list[str] = []
+    ignored: list[str] = []
+    for index, supplied in enumerate(reader.fieldnames or []):
+        header = (supplied or "").strip()
+        known = KNOWN_HEADERS.get(header_key(header))
+        if known in fieldnames:
+            raise CsvImportError(f"The CSV contains the {known} column more than once.")
+        if known is None and header:
+            ignored.append(header)
+        # Unknown and blank headers, such as a spreadsheet's empty trailing columns, are skipped.
+        fieldnames.append(known or f"\0ignored-{index}")
+    reader.fieldnames = fieldnames
+    missing = [header for header in REQUIRED_HEADERS if header not in fieldnames]
     if missing:
-        raise CsvImportError(f"Missing required columns: {', '.join(missing)}.")
+        raise CsvImportError(
+            f"Missing required columns: {', '.join(missing)}. The first row must name the "
+            "columns, such as Date Lifted, Exercise, Weight (kg) and Reps."
+        )
 
     rows: list[ParsedRow] = []
     warnings: list[str] = []
+    if ignored:
+        shown = ", ".join(ignored[:8]) + (
+            f" and {len(ignored) - 8} more" if len(ignored) > 8 else ""
+        )
+        warnings.append(f"These columns are not imported: {shown}.")
+    if not any(header in fieldnames for header in WEIGHT_HEADERS):
+        warnings.append(
+            "There is no Weight (kg) or Weight (lb) column, so sets are imported without weights."
+        )
+    converted_weights = 0
+    converted_bodyweights = 0
     legacy_dates: set[date] = set()
     session_dates: dict[str, date] = {}
     session_names: dict[tuple[date, str], str] = {}
@@ -140,12 +187,18 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
             raise CsvImportError(f"Row {row_number}: Exercise is required.")
         if len(exercise_name) > 200:
             raise CsvImportError(f"Row {row_number}: Exercise can be up to 200 characters.")
+        raw_date = (row.get("Date Lifted") or "").strip()
+        match = ISO_DATE.fullmatch(raw_date)
         try:
-            workout_date = date.fromisoformat((row.get("Date Lifted") or "").strip())
-        except ValueError as error:
+            workout_date = date.fromisoformat(match.group(1)) if match else None
+        except ValueError:
+            workout_date = None
+        if workout_date is None:
+            found = f' (found "{raw_date[:40]}")' if raw_date else ""
             raise CsvImportError(
-                f"Row {row_number}: Date Lifted must use YYYY-MM-DD format."
-            ) from error
+                f"Row {row_number}: Date Lifted must use YYYY-MM-DD format, "
+                f"such as 2026-10-17{found}."
+            )
         session_id = (row.get("Workout ID") or "").strip()
         session_name = (row.get("Workout name") or "").strip()
         if len(session_id) > 128 or len(session_name) > 200:
@@ -162,24 +215,24 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
         weight_kg = optional_float(row.get("Weight (kg)"), "Weight (kg)", row_number)
         weight_lb = optional_float(row.get("Weight (lb)"), "Weight (lb)", row_number)
         weight_from_lb = weight_kg is None and weight_lb is not None
-        if weight_kg is None and weight_lb is not None:
+        if weight_from_lb:
             weight_kg = round(weight_lb / KG_TO_LB, 3)
-            warnings.append(f"Row {row_number}: converted Weight (lb) to kilograms.")
+            converted_weights += 1
         if weight_kg is not None and not 0 <= weight_kg <= 10_000:
             raise CsvImportError(f"Row {row_number}: Weight must be between 0 and 10000 kg.")
         bodyweight_kg = optional_float(row.get("Bodyweight (kg)"), "Bodyweight (kg)", row_number)
         bodyweight_lb = optional_float(row.get("Bodyweight (lb)"), "Bodyweight (lb)", row_number)
         bodyweight_from_lb = bodyweight_kg is None and bodyweight_lb is not None
-        if bodyweight_kg is None and bodyweight_lb is not None:
+        if bodyweight_from_lb:
             bodyweight_kg = round(bodyweight_lb / KG_TO_LB, 3)
-            warnings.append(f"Row {row_number}: converted Bodyweight (lb) to kilograms.")
+            converted_bodyweights += 1
         if bodyweight_kg is not None and not 0 < bodyweight_kg <= 500:
             raise CsvImportError(f"Row {row_number}: Bodyweight must be between 0 and 500 kg.")
         percentile = optional_float(row.get("Percentile (%)"), "Percentile (%)", row_number)
         if percentile is not None and not 0 <= percentile <= 100:
             raise CsvImportError(f"Row {row_number}: Percentile (%) must be between 0 and 100.")
         warmup_value = (row.get("Warmup") or "").strip().casefold()
-        if warmup_value not in {"", "0", "1", "false", "true", "no", "yes"}:
+        if warmup_value not in {"", "0", "1", "false", "true", "no", "yes", "n", "y"}:
             raise CsvImportError(f"Row {row_number}: Warmup must be 1/0, true/false, or yes/no.")
         reps = optional_int(row.get("Reps"), "Reps", row_number)
         if reps is not None and not 0 <= reps <= 10_000:
@@ -192,7 +245,7 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
                 reps=reps,
                 bodyweight_kg=bodyweight_kg,
                 percentile=percentile,
-                warmup=warmup_value in {"1", "true", "yes"},
+                warmup=warmup_value in {"1", "true", "yes", "y"},
                 session_id=session_id,
                 session_name=session_name,
                 weight_from_lb=weight_from_lb,
@@ -201,11 +254,19 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
         )
     if not rows:
         raise CsvImportError("The CSV contains no workout rows.")
+    if converted_weights:
+        warnings.append(
+            f"Converted Weight (lb) to kilograms on {plural(converted_weights, 'row')}."
+        )
+    if converted_bodyweights:
+        warnings.append(
+            f"Converted Bodyweight (lb) to kilograms on {plural(converted_bodyweights, 'row')}."
+        )
     if legacy_dates:
         warnings.insert(
             0,
-            "Rows without Workout ID are grouped into one session per date. "
-            "Older nine-column files cannot distinguish morning and evening workouts.",
+            "Rows without a Workout ID are grouped into one session per date, so separate "
+            "morning and evening workouts on one date are combined.",
         )
     return rows, warnings
 

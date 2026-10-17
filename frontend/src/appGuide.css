@@ -130,6 +130,11 @@ body:has(.app-guide[open]) .tracker-content > .cached-tab-panel:not([hidden]) > 
 .app-guide-finish {
   overflow: auto;
 }
+.app-guide-step .import-history-later {
+  margin-top: 0.75rem;
+  color: var(--p-muted);
+  font-size: 0.8rem;
+}
 .guide-contribute {
   margin-top: 1.25rem;
   border-top: 1px solid var(--p-line-strong);

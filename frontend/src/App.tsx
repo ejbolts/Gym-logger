@@ -102,7 +102,15 @@ import { HomeScreenGuide } from './HomeScreenGuide';
 import { useHomeScreenGuide } from './useHomeScreenGuide';
 import { runningAsInstalledApp } from './homeScreenGuideState';
 import { AppGuide } from './AppGuide';
-import { appGuideWaiting, finishAppGuide } from './appGuideState';
+import {
+  appGuideWaiting,
+  finishAppGuide,
+  finishAppTour,
+  importStepWaiting,
+  nextOnboardingPrompt,
+} from './appGuideState';
+import { ImportHistoryPrompt } from './ImportHistoryPrompt';
+import { plural } from './sharedProfileDisplay';
 import { CONTRIBUTING_URL, PROJECT_URL } from './appGuideSteps';
 import { CreateExerciseDialog } from './CreateExerciseDialog';
 import { BackgroundActivityBar } from './BackgroundActivityBar';
@@ -541,6 +549,12 @@ function AppContent() {
   const homeScreenGuide = useHomeScreenGuide(user?.id ?? null, announcement.checked);
   const [guideWaiting, setGuideWaiting] = useState(() => user !== null && appGuideWaiting(user.id));
   const [guideRequested, setGuideRequested] = useState(false);
+  const [importStepPending, setImportStepPending] = useState(
+    () => user !== null && importStepWaiting(user.id),
+  );
+  const [csvGuideOpen, setCsvGuideOpen] = useState(false);
+  // Choosing to import keeps What's new until the person leaves Settings.
+  const [releaseAfterImport, setReleaseAfterImport] = useState(false);
   const guideReturnTab = useRef<AppTab | null>(null);
   const videosAllowed = canUploadVideos(user);
   const isAdmin = user?.is_admin === true;
@@ -886,6 +900,11 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
+    // The CSV guide belongs to Settings; going back or switching screens closes it.
+    if (tab !== 'settings') setCsvGuideOpen(false);
+  }, [tab]);
+
+  useEffect(() => {
     // Navigation only reveals an already-cached screen. Training data is refreshed at startup
     // and by the mutation handlers below, never as a side effect of changing views.
     setVisitedTabs((current) => {
@@ -1007,10 +1026,12 @@ function AppContent() {
     });
     const bodyweightCount = result.body_measurements_created + result.body_measurements_updated;
     setMessage(
-      `Imported ${result.sets_imported} sets across ${result.workouts_created} workouts${
-        result.exercises_created ? ` and added ${result.exercises_created} exercises` : ''
-      }${bodyweightCount ? `; added ${bodyweightCount} body-weight check-ins` : ''}${
-        result.workouts_skipped ? `; skipped ${result.workouts_skipped} identical sessions` : ''
+      `Imported ${plural(result.sets_imported, 'set')} across ${plural(result.workouts_created, 'workout')}${
+        result.exercises_created ? ` and added ${plural(result.exercises_created, 'exercise')}` : ''
+      }${bodyweightCount ? `; added ${plural(bodyweightCount, 'body-weight check-in')}` : ''}${
+        result.workouts_skipped
+          ? `; skipped ${plural(result.workouts_skipped, 'identical session')}`
+          : ''
       }.`,
     );
   }
@@ -1160,6 +1181,14 @@ function AppContent() {
     hasOtherDialog: message !== null || completionRecords.length > 0,
     signingIn,
   });
+  const prompt = canShowPrompts
+    ? nextOnboardingPrompt({
+        tour: guideRequested || (guideWaiting && announcement.checked),
+        importStep: importStepPending,
+        release: announcement.open,
+        releaseHeld: csvGuideOpen || (releaseAfterImport && tab === 'settings'),
+      })
+    : null;
 
   function openSharedProfile(profile: SharedProfileSummary) {
     setSharedProfile((current) => ({
@@ -1188,32 +1217,47 @@ function AppContent() {
           onRefresh={() => void appUpdates.refresh()}
         />
       )}
-      {announcement.open && canShowPrompts && (
+      {prompt === 'release' && (
         <ReleaseAnnouncement
           release={announcement.release}
           history={announcement.history}
           onClose={announcement.dismiss}
         />
       )}
-      {(guideRequested || (guideWaiting && announcement.checked)) &&
-        !announcement.open &&
-        canShowPrompts && (
-          <AppGuide
-            videosAllowed={videosAllowed}
-            onNavigate={setTab}
-            onClose={() => {
-              if (user) finishAppGuide(user.id);
-              setGuideWaiting(false);
-              setGuideRequested(false);
-              homeScreenGuide.dismiss();
-              setTab(guideReturnTab.current ?? 'dashboard');
-              guideReturnTab.current = null;
-            }}
-          />
-        )}
+      {prompt === 'tour' && (
+        <AppGuide
+          videosAllowed={videosAllowed}
+          onNavigate={setTab}
+          onClose={() => {
+            if (user) finishAppTour(user.id);
+            if (guideWaiting) setImportStepPending(true);
+            setGuideWaiting(false);
+            setGuideRequested(false);
+            homeScreenGuide.dismiss();
+            setTab(guideReturnTab.current ?? 'dashboard');
+            guideReturnTab.current = null;
+          }}
+        />
+      )}
+      {prompt === 'import' && (
+        <ImportHistoryPrompt
+          onSkip={() => {
+            if (user) finishAppGuide(user.id);
+            setImportStepPending(false);
+          }}
+          onContinue={() => {
+            if (user) finishAppGuide(user.id);
+            setImportStepPending(false);
+            setReleaseAfterImport(true);
+            setCsvGuideOpen(true);
+            setTab('settings');
+          }}
+        />
+      )}
       {homeScreenGuide.open &&
         !guideRequested &&
         !guideWaiting &&
+        !importStepPending &&
         !announcement.open &&
         canShowPrompts && <HomeScreenGuide onClose={homeScreenGuide.dismiss} />}
       <EdgeSwipeBack onBack={navigateBack} enabled={canNavigateBack} />
@@ -1442,6 +1486,8 @@ function AppContent() {
               bodyTrendPreference={bodyTrendPreference}
               onBodyTrendPreferenceChange={updateBodyTrendPreference}
               onImportWorkouts={importWorkoutCsv}
+              csvGuideOpen={csvGuideOpen}
+              onCsvGuideOpenChange={setCsvGuideOpen}
               onExportWorkouts={exportWorkoutCsv}
               onDeleteSamples={deleteSampleData}
               onDataChange={refreshAfterMutation}
@@ -6136,6 +6182,8 @@ function SettingsScreen({
   bodyTrendPreference,
   onBodyTrendPreferenceChange,
   onImportWorkouts,
+  csvGuideOpen,
+  onCsvGuideOpenChange,
   onExportWorkouts,
   onDeleteSamples,
   onDataChange,
@@ -6169,11 +6217,14 @@ function SettingsScreen({
   bodyTrendPreference: BodyTrendPreference;
   onBodyTrendPreferenceChange: (preference: BodyTrendPreference) => void;
   onImportWorkouts: (file: File) => Promise<void>;
+  csvGuideOpen: boolean;
+  onCsvGuideOpenChange: (open: boolean) => void;
   onExportWorkouts: (range: DateRange) => Promise<void>;
   onDeleteSamples: () => Promise<void>;
   onDataChange: () => Promise<void>;
 }) {
   const bodyCsvInput = useRef<HTMLInputElement>(null);
+  const workoutDataSection = useRef<HTMLElement>(null);
   const [exportingWorkouts, setExportingWorkouts] = useState(false);
   const [workoutExportRange, setWorkoutExportRange] = useState<TimeRange>('all');
   const [bodyExportRange, setBodyExportRange] = useState<TimeRange>('all');
@@ -6202,6 +6253,19 @@ function SettingsScreen({
   useEffect(() => {
     if (!colorsDirty) setColorDraft(workoutTypeColors);
   }, [colorsDirty, workoutTypeColors]);
+
+  useEffect(() => {
+    if (!csvGuideOpen) return;
+    // After opening Settings resets the page scroll, show Workout data behind the guide.
+    const frame = requestAnimationFrame(() => {
+      const section = workoutDataSection.current;
+      const top = section?.getBoundingClientRect().top ?? 0;
+      if (top < 0 || top > window.innerHeight * 0.6) {
+        section?.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [csvGuideOpen]);
 
   useEffect(() => {
     setTrainingPreferences(sharedPreferences.preferences);
@@ -6749,7 +6813,11 @@ function SettingsScreen({
         </div>
       </section>
 
-      <section className="settings-panel panel" aria-labelledby="workout-data-title">
+      <section
+        ref={workoutDataSection}
+        className="settings-panel panel workout-data-panel"
+        aria-labelledby="workout-data-title"
+      >
         <header>
           <div>
             <p className="section-kicker">WORKOUTS</p>
@@ -6759,12 +6827,19 @@ function SettingsScreen({
         <p>
           Import or export completed workout set data for your chosen time frame. All time includes
           all completed sets. CSV does not include RPE, rest, duration, notes, photos, supersets or
-          goals.
+          goals.{' '}
+          <button
+            type="button"
+            className="csv-guide-link"
+            onClick={() => onCsvGuideOpenChange(true)}
+          >
+            CSV format guide
+          </button>
         </p>
         <p>
           For account snapshots, see the{' '}
           <a
-            href={`${PROJECT_URL}/blob/main/README.md#per-account-backups`}
+            href={`${PROJECT_URL}/blob/main/docs/TECHNICAL-REFERENCE.md#per-account-backups`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -6780,7 +6855,11 @@ function SettingsScreen({
           onChange={setWorkoutExportRange}
         />
         <div className="settings-actions">
-          <WorkoutCsvImport onImport={onImportWorkouts} />
+          <WorkoutCsvImport
+            onImport={onImportWorkouts}
+            guideOpen={csvGuideOpen}
+            onGuideOpenChange={onCsvGuideOpenChange}
+          />
           <button type="button" disabled={exportingWorkouts} onClick={() => void exportWorkouts()}>
             {exportingWorkouts ? 'Exporting…' : '↓ Export workout CSV'}
           </button>

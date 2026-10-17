@@ -1,5 +1,39 @@
 # Gym Logger release notes
 
+## 0.6.6
+
+### Bring your training history
+
+- New accounts see the app tour first. The next step offers **Import or export**: it opens
+  **Settings > Workout data** with a CSV guide. **Skip for now** shows What's new instead;
+  after choosing to import, What's new appears once you leave Settings.
+- The three-page CSV guide covers what is imported (and what is not), the columns and
+  one-row-per-set layout, and common spreadsheet pitfalls. **Download template CSV** saves
+  an example in your weight unit, and **Choose CSV file** opens the file picker. Reopen it
+  from the **CSV format guide** link in Workout data, or from the link under a failed import.
+- Files you make yourself need only `Date Lifted`, `Exercise` and `Reps` columns, plus
+  `Weight (kg)` or `Weight (lb)` for weighted sets. `Warmup`, `Workout ID`, `Workout name`,
+  `Bodyweight (kg)`/`Bodyweight (lb)` and `Percentile (%)` remain optional, and exports
+  still include every column.
+- Column names match regardless of capitalisation and spacing. Semicolon-separated files,
+  decimal commas with one or two decimal places (`82,5`), dates followed by a time of day
+  and Y/N warmups are accepted. Other columns, such as RPE or notes, are listed in the
+  review as not imported rather than rejecting the file.
+- Errors are clearer: an unreadable date shows the value found, a non-UTF-8 file explains
+  how to save as CSV UTF-8, and a missing header row names the expected columns.
+- Pound-to-kilogram conversions are summarised in one warning instead of one per row.
+  Import confirmations use singular wording where needed, and the account backup
+  instructions link in Workout data opens the technical reference.
+- Exports from other apps, such as Strong or Hevy, are not converted automatically; rename
+  their columns to the layout shown in the guide first.
+
+The deployed 0.6.5 announcement is preserved in Earlier versions.
+
+<img src="screenshots/releases/0.6.6-import-history-guide.png" alt="Three phone screens: the Your workout history step after the tour with Skip for now and Import or export, the CSV guide's Shape your file page with required columns, example rows and Download template CSV, and the Before you choose a file page with spreadsheet tips and Choose CSV file." width="720">
+
+The import step after the tour, then pages 2 and 3 of the CSV guide, recorded with a sample
+account in the isolated verification environment.
+
 ## 0.6.5
 
 ### Your videos, your YouTube channel

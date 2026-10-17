@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { api } from './api';
 import { PopupDialog } from './PopupDialog';
+import { WorkoutCsvGuide } from './WorkoutCsvGuide';
 import type { CsvImportPreview } from './types';
 
 export function WorkoutImportReview({
@@ -101,7 +102,16 @@ export function WorkoutImportReview({
   );
 }
 
-export function WorkoutCsvImport({ onImport }: { onImport: (file: File) => Promise<void> }) {
+export function WorkoutCsvImport({
+  onImport,
+  guideOpen = false,
+  onGuideOpenChange,
+}: {
+  onImport: (file: File) => Promise<void>;
+  /** The CSV guide's recommendations, opened from onboarding or Settings. */
+  guideOpen?: boolean;
+  onGuideOpenChange?: (open: boolean) => void;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const [review, setReview] = useState<{ file: File; preview: CsvImportPreview } | null>(null);
   const [previewing, setPreviewing] = useState(false);
@@ -162,6 +172,20 @@ export function WorkoutCsvImport({ onImport }: { onImport: (file: File) => Promi
         <p role="alert" className="inline-error">
           {error}
         </p>
+      )}
+      {error && !review && onGuideOpenChange && (
+        <button type="button" className="csv-guide-link" onClick={() => onGuideOpenChange(true)}>
+          See what the CSV should look like
+        </button>
+      )}
+      {guideOpen && onGuideOpenChange && (
+        <WorkoutCsvGuide
+          onClose={() => onGuideOpenChange(false)}
+          onFileSelected={(file) => {
+            onGuideOpenChange(false);
+            void selectFile(file);
+          }}
+        />
       )}
       {review && (
         <WorkoutImportReview
