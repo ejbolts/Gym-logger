@@ -97,6 +97,8 @@ class SharedProfileSummary(BaseModel):
     # Your follow of them, and whether they follow you.
     follow_status: FollowStatus
     follows_you: bool
+    following_since: datetime | None = None
+    follows_you_since: datetime | None = None
     # A friends-only profile you do not follow shows only its name and photo.
     can_view: bool
     workout_count: int | None = None
@@ -265,7 +267,7 @@ def profile_summary(
     member: User,
     sharing: ProfileSharing,
     follow: ProfileFollow | None,
-    follows_you: bool,
+    follower: ProfileFollow | None,
     stats: tuple[int, int, date | None] | None,
 ) -> SharedProfileSummary:
     viewable = can_view(viewer, member, sharing, follow)
@@ -278,7 +280,17 @@ def profile_summary(
         visibility=sharing.visibility,
         is_you=member.id == viewer.id,
         follow_status=follow.status if follow else "none",
-        follows_you=follows_you,
+        follows_you=follower is not None and follower.status == ACCEPTED,
+        following_since=(
+            as_utc(follow.accepted_at or follow.created_at)
+            if follow is not None and follow.status == ACCEPTED
+            else None
+        ),
+        follows_you_since=(
+            as_utc(follower.accepted_at or follower.created_at)
+            if follower is not None and follower.status == ACCEPTED
+            else None
+        ),
         can_view=viewable,
         workout_count=count if viewable else None,
         recent_workout_count=recent if viewable else None,
@@ -429,13 +441,14 @@ def list_shared_profiles(user: CurrentUser, db: Db) -> list[SharedProfileSummary
         follow.followee_id: follow
         for follow in db.scalars(select(ProfileFollow).where(ProfileFollow.follower_id == user.id))
     }
-    followers = set(
-        db.scalars(
-            select(ProfileFollow.follower_id).where(
+    followers = {
+        follow.follower_id: follow
+        for follow in db.scalars(
+            select(ProfileFollow).where(
                 ProfileFollow.followee_id == user.id, ProfileFollow.status == ACCEPTED
             )
         )
-    )
+    }
     viewable_ids = [
         member.id
         for member, sharing in rows
@@ -448,7 +461,7 @@ def list_shared_profiles(user: CurrentUser, db: Db) -> list[SharedProfileSummary
             member,
             sharing,
             following.get(member.id),
-            member.id in followers,
+            followers.get(member.id),
             stats.get(member.id),
         )
         for member, sharing in rows
@@ -472,15 +485,13 @@ def list_shared_profiles(user: CurrentUser, db: Db) -> list[SharedProfileSummary
 def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfileRead:
     member, sharing = visible_member(db, user, user_id)
     follow = find_follow(db, user.id, member.id)
-    follows_you = (theirs := find_follow(db, member.id, user.id)) is not None and (
-        theirs.status == ACCEPTED
-    )
+    follower = find_follow(db, member.id, user.id)
     summary = profile_summary(
         user,
         member,
         sharing,
         follow,
-        follows_you,
+        follower,
         workout_stats(db, [member.id]).get(member.id),
     )
     if not summary.can_view:

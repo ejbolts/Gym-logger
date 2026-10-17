@@ -661,6 +661,10 @@ export interface SharedProfileSummary {
   /** Your follow of this member. */
   follow_status: FollowStatus;
   follows_you: boolean;
+  /** When you began following this member; pending requests have no start date. */
+  following_since?: string | null;
+  /** When this member began following you. */
+  follows_you_since?: string | null;
   /** False for a friends-only profile you do not follow: only its name and photo are shown. */
   can_view: boolean;
   workout_count: number | null;

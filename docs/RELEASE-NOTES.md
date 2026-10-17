@@ -58,8 +58,8 @@
 - A new **Friends** section on Profile replaces the separate shared profiles screen. It
   lists follow requests to approve or decline, who you follow, your followers and other
   members to follow. Tap anyone to open their profile.
-- On Profile, **Profile sharing** and **Friends** start open. **What you share**,
-  **Name & username** and **Change password** start folded. Tap any heading to open or close
+- On Profile, **Profile sharing** and **Friends** start open. **What you share** and
+  **Change password** start folded. Tap any heading to open or close
   it; sharing status and waiting request counts remain visible when folded.
 - A numbered badge above your profile picture on **Today** shows waiting friend requests.
   It refreshes when you return to Today or refocus the app, including after you handle a request.
@@ -67,6 +67,12 @@
   most recently active first, with workout names, dates, exercises and completed sets.
   Tap a friend to open their profile, or **See all** to manage friends on Profile.
   Move, resize or hide the card with **Edit Home**.
+- Profiles label signup dates as **Joined**. **Following since [date]** and **Follows you
+  since [date]** show when each relationship began, separately from when someone joined.
+  Pending requests are highlighted with a blue dotted outline.
+- Profile starts in viewing mode with an **Edit profile** button. Editing reveals the name
+  and username fields plus a pencil over a slightly dimmed avatar. Tap it to choose a photo;
+  preview or remove the photo, then **Save profile** or **Cancel**. Drafts wait for Save.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
@@ -90,9 +96,19 @@ sample workouts in the isolated verification environment.
 The Friends card moved to the top of a sample dashboard, with one waiting friend request.
 Captured with synthetic accounts and workouts in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-profile-sharing-friends-open.png" alt="Profile sharing and Friends open by default, showing friends-only visibility, one waiting request and the Following and Followers lists." width="390">
+<img src="screenshots/releases/0.6.6-profile-view.png" alt="Profile in viewing mode with Joined, an Edit profile button, and a blue dotted box around a waiting follow request." width="390">
 
-Profile sharing and Friends open by default. The nested What you share options remain folded.
+Viewing mode keeps the avatar clear and shows Edit profile. Sharing is folded here to keep the
+highlighted request and relationship dates in view; sharing and Friends still start open.
+
+<img src="screenshots/releases/0.6.6-profile-edit.png" alt="Profile editing with a pencil over the dimmed avatar, name and username fields, and Cancel and Save profile buttons." width="390">
+
+Editing mode previews a draft photo and name before Save profile. Cancel discards the drafts.
+
+<img src="screenshots/releases/0.6.6-shared-profile-dates.png" alt="Alex's shared profile showing Following since 9 Oct 2026, Follows you since 6 Oct 2026 and Joined October 2026." width="390">
+
+Exact dates in each direction are separate from when the account joined. All profile screenshots
+use synthetic sample accounts in the isolated verification environment.
 
 ## 0.6.5
 

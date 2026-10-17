@@ -17,9 +17,11 @@
     "On Home, a card beside a taller one centres its content instead of leaving a gap at the bottom, and editing Home during a live workout no longer shows a placeholder Next workout card.",
     "Profile sharing has one Make my profile private, friends only or public button under the options, and changes only when you press it. The saved message is a five-second popup.",
     "A new Friends section on Profile shows follow requests, who you follow, your followers and people to find; tap anyone to open their profile.",
-    "Profile sharing and Friends start open on Profile. What you share, Name & username and Change password stay folded until you open them.",
+    "Profile sharing and Friends start open on Profile. What you share and Change password stay folded until you open them.",
     "Today shows a numbered badge on your profile picture for waiting friend requests. It refreshes when you return to Today or refocus the app.",
-    "A new Friends card on Today shows the latest workout from up to five friends you follow, with workout names, dates, exercise and completed-set counts. Tap a friend to open their profile; move or hide the card with Edit Home."
+    "A new Friends card on Today shows the latest workout from up to five friends you follow, with workout names, dates, exercise and completed-set counts. Tap a friend to open their profile; move or hide the card with Edit Home.",
+    "Profiles label signup dates as Joined and show the exact date you followed someone or they followed you. Pending follow requests stand out in a blue dotted box.",
+    "Profile opens in viewing mode. Edit profile reveals name and username fields plus a pencil over a slightly dimmed profile photo. Preview a new photo or remove it, then Save profile or Cancel; changes wait for Save."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

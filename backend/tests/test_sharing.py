@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from io import BytesIO
 
 from conftest import TEST_PASSWORD, register_user
@@ -169,6 +169,42 @@ def test_public_profiles_are_open_to_sharing_members_and_follows_are_instant(cli
     assert [item["display_name"] for item in followers["followers"]] == ["Other"]
     assert followers["requests"] == []
     assert profile(client, other_client).json()["follows_you"] is True
+
+
+def test_follow_dates_describe_each_direction_and_exclude_pending_requests(client, other_client):
+    share(client, "public")
+    share(other_client, "followers")
+    client.post(f"/api/sharing/follows/{other_client.user['id']}")
+    other_client.post(f"/api/sharing/follows/{client.user['id']}")
+    started = datetime(2026, 10, 6, 12, tzinfo=UTC)
+    with SessionLocal() as db:
+        follow = db.get(ProfileFollow, (other_client.user["id"], client.user["id"]))
+        follow.created_at = datetime(2026, 10, 1, 12, tzinfo=UTC)
+        follow.accepted_at = started
+        db.commit()
+    expected = started.isoformat().replace("+00:00", "Z")
+    detail = profile(client, other_client).json()
+    assert detail["follow_status"] == "pending"
+    assert detail["following_since"] is None
+    assert detail["follows_you_since"] == expected
+    listed = next(
+        item
+        for item in client.get("/api/sharing/profiles").json()
+        if item["id"] == other_client.user["id"]
+    )
+    assert listed["follows_you_since"] == expected
+    assert listed["following_since"] is None
+    reverse = profile(other_client, client).json()
+    assert reverse["following_since"] == expected
+    assert reverse["follows_you_since"] is None
+    # Approval starts the relationship now, rather than on the request or signup date.
+    other_client.post(f"/api/sharing/followers/{client.user['id']}")
+    accepted = profile(client, other_client).json()["following_since"]
+    connections = other_client.get("/api/sharing/followers").json()
+    assert accepted == connections["followers"][0]["since"]
+    assert profile(other_client, client).json()["follows_you_since"] == accepted
+    other_client.delete(f"/api/sharing/follows/{client.user['id']}")
+    assert profile(client, other_client).json()["follows_you_since"] is None
 
 
 def test_friends_only_profiles_need_an_approved_follow_request(client, other_client):

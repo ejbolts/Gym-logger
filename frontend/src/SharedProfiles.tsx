@@ -11,6 +11,7 @@ import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
 import {
   followActionLabel,
+  followSinceLabel,
   plural,
   SHARED_WORKOUT_PAGE_SIZE,
   VISIBILITY_LABELS,
@@ -157,9 +158,11 @@ function StatusChips({ profile }: { profile: SharedProfileSummary }) {
       <em className={`visibility-${profile.visibility}`}>
         {VISIBILITY_LABELS[profile.visibility]}
       </em>
-      {profile.follow_status === 'accepted' && <em>Following</em>}
+      {profile.follow_status === 'accepted' && (
+        <em>{followSinceLabel('Following', profile.following_since)}</em>
+      )}
       {profile.follow_status === 'pending' && <em>Requested</em>}
-      {profile.follows_you && <em>Follows you</em>}
+      {profile.follows_you && <em>{followSinceLabel('Follows you', profile.follows_you_since)}</em>}
     </span>
   );
 }
@@ -200,15 +203,17 @@ function FriendGroup({
   title,
   count,
   emptyText,
+  highlighted = false,
   children,
 }: {
   title: string;
   count?: number;
   emptyText: string;
+  highlighted?: boolean;
   children: ReactNode[];
 }) {
   return (
-    <div className="friend-group">
+    <div className={`friend-group${highlighted ? ' friend-requests' : ''}`}>
       <h3>
         {title}
         {count !== undefined && <span>{count}</span>}
@@ -281,18 +286,12 @@ export function FriendsPanel({
     try {
       if (action === 'approve') await api.sharing.approveFollower(person.id);
       else await api.sharing.removeFollower(person.id);
-      setConnections((current) =>
-        current
-          ? {
-              requests: current.requests.filter((item) => item.id !== person.id),
-              followers:
-                action === 'approve'
-                  ? [person, ...current.followers]
-                  : current.followers.filter((item) => item.id !== person.id),
-            }
-          : current,
-      );
-      updateProfile(person.id, { follows_you: action === 'approve' });
+      const next = await api.sharing.connections();
+      setConnections(next);
+      updateProfile(person.id, {
+        follows_you: action === 'approve',
+        follows_you_since: next.followers.find((item) => item.id === person.id)?.since ?? null,
+      });
     } catch (reason) {
       setActionError(authErrorMessage(reason));
     } finally {
@@ -352,7 +351,12 @@ export function FriendsPanel({
             </p>
           )}
           {connections && connections.requests.length > 0 && (
-            <FriendGroup title="Follow requests" count={connections.requests.length} emptyText="">
+            <FriendGroup
+              title="Follow requests"
+              count={connections.requests.length}
+              emptyText=""
+              highlighted
+            >
               {connections.requests.map((person) => (
                 <FriendRow
                   key={person.id}
@@ -394,7 +398,14 @@ export function FriendsPanel({
               <FriendRow
                 key={profile.id}
                 person={profile}
-                detail={workoutActivitySummary(profile)}
+                detail={[
+                  profile.follow_status === 'accepted'
+                    ? followSinceLabel('Following', profile.following_since)
+                    : null,
+                  workoutActivitySummary(profile),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
                 onOpen={() => onOpenProfile(profile)}
               />
             ))}
@@ -408,7 +419,7 @@ export function FriendsPanel({
               <FriendRow
                 key={person.id}
                 person={person}
-                detail={`Following since ${longDate(person.since.slice(0, 10))}`}
+                detail={followSinceLabel('Follows you', person.since)}
                 onOpen={openFor(person.id)}
                 actions={
                   <button
@@ -436,7 +447,11 @@ export function FriendsPanel({
               <FriendRow
                 key={profile.id}
                 person={profile}
-                detail={profile.follows_you ? 'Follows you' : VISIBILITY_LABELS[profile.visibility]}
+                detail={
+                  profile.follows_you
+                    ? followSinceLabel('Follows you', profile.follows_you_since)
+                    : VISIBILITY_LABELS[profile.visibility]
+                }
                 onOpen={() => onOpenProfile(profile)}
                 actions={
                   <FollowButton
@@ -731,9 +746,8 @@ export function SharedProfileScreen({
   function followChanged(status: FollowStatus) {
     if (!profile) return;
     // Gaining or losing access to a friends-only profile changes what it shows.
-    const access = profile.visibility === 'public' || status === 'accepted';
-    if (access !== profile.can_view) setAttempt((count) => count + 1);
-    else setProfile({ ...profile, follow_status: status });
+    setProfile({ ...profile, follow_status: status, following_since: null });
+    setAttempt((count) => count + 1);
   }
 
   if (state === 'locked') {
@@ -789,7 +803,7 @@ export function SharedProfileScreen({
           <div className="profile-summary-copy">
             <strong>{profile.display_name}</strong>
             <StatusChips profile={profile} />
-            {memberSince && <small>Member since {memberSince}</small>}
+            {memberSince && <small>Joined {memberSince}</small>}
           </div>
         </div>
         {profile.can_view && (

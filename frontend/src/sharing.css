@@ -431,6 +431,13 @@
   margin: 0.5rem 0 0;
 }
 
+.friend-group.friend-requests {
+  border: 2px dotted var(--p-accent);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: rgb(57 135 229 / 4%);
+}
+
 .friend-open {
   min-width: 0;
   flex: 1;
