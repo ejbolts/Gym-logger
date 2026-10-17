@@ -8,30 +8,17 @@ Gym Logger is a mobile-first app for recording workouts and following your progr
 
 Use it in your browser or add it to your phone's Home Screen for an app-like experience.
 
-## App preview
-
-<table>
-  <tr>
-    <th width="25%">Today</th>
-    <th width="25%">Body</th>
-    <th width="25%">Progress</th>
-    <th width="25%">Videos</th>
-  </tr>
-  <tr>
-    <td valign="top"><a href="docs/screenshots/readme/today.png"><img src="docs/screenshots/readme/today.png" alt="Today dashboard with the next workout, activity calendar, cardio goal and body-weight trend" width="220"></a></td>
-    <td valign="top"><a href="docs/screenshots/readme/body.png"><img src="docs/screenshots/readme/body.png" alt="Body screen with a weight goal, trend chart and daily check-in history" width="220"></a></td>
-    <td valign="top"><a href="docs/screenshots/readme/progress.png"><img src="docs/screenshots/readme/progress.png" alt="Exercise progress screen with estimated one-rep max, personal records and previous sessions" width="220"></a></td>
-    <td valign="top"><a href="docs/screenshots/readme/videos.png"><img src="docs/screenshots/readme/videos.png" alt="Video logger connected to a personal YouTube channel, with the Unlisted explanation and set-video upload form" width="220"></a></td>
-  </tr>
-</table>
-
-Your dashboard, body trends, strength progress and workout videos. Select a screenshot to view it full size.
-
 ## Your training at a glance
 
 **Today** brings together your weekly activity, training calendar, muscle-group set totals, cardio goal, body-weight trend and recent personal records. It also suggests a next workout based on previous sessions and lets you resume one already in progress.
 
 Customise the dashboard by rearranging cards, hiding sections you do not need and restoring them later. Your layout is saved to your account.
+
+<p>
+  <a href="docs/screenshots/readme/today.png"><img src="docs/screenshots/readme/today.png" alt="Today dashboard with the next workout, activity calendar, cardio goal and body-weight trend" width="360"></a>
+</p>
+
+*Today: your next workout and training dashboard. Select the screenshot to view it full size.*
 
 ## Log strength workouts
 
@@ -52,11 +39,23 @@ Choose kilograms or pounds for weight entry and display.
 
 Import existing workout set history from CSV, review it before saving, or export your completed sets. Workout CSVs are for set history rather than a full backup of notes, photos, videos and other account data.
 
+<p>
+  <a href="docs/screenshots/readme/progress.png"><img src="docs/screenshots/readme/progress.png" alt="Exercise progress screen with estimated one-rep max, personal records and previous sessions" width="360"></a>
+</p>
+
+*Progress: exercise trends, personal records and previous sessions. Select the screenshot to view it full size.*
+
 ## Track cardio and body measurements
 
 **Cardio** records sessions on their own or alongside a workout. Add duration and optional machine or watch metrics such as distance, calories, average heart rate, speed, incline and cycling power. Compare activity across date ranges and work towards a weekly Zone 2 target.
 
 **Body** tracks body weight and optional body-fat measurements, with trends and a weight goal to help you follow changes over time.
+
+<p>
+  <a href="docs/screenshots/readme/body.png"><img src="docs/screenshots/readme/body.png" alt="Body screen with a weight goal, trend chart and daily check-in history" width="360"></a>
+</p>
+
+*Body: weight trends, goals and daily check-ins. Select the screenshot to view it full size.*
 
 ## Keep workout videos together
 
@@ -68,6 +67,12 @@ Connect your own YouTube channel in **Settings** or **Video logger**. Choose you
 and channel, approve access, and confirm the channel shown before uploading. The administrator
 configures Google once for the installation; users do not need API keys or credential files.
 See [YouTube setup](docs/YOUTUBE-SETUP.md) for the administrator's steps.
+
+<p>
+  <a href="docs/screenshots/readme/videos.png"><img src="docs/screenshots/readme/videos.png" alt="Video logger connected to a personal YouTube channel, with the Unlisted explanation and set-video upload form" width="360"></a>
+</p>
+
+*Videos: connect your channel and upload workout clips as Unlisted videos. Select the screenshot to view it full size.*
 
 ## Your account and sharing
 
