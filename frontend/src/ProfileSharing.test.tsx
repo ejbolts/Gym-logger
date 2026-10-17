@@ -41,7 +41,7 @@ afterEach(async () => {
 });
 
 async function render() {
-  await act(async () => root.render(<ProfileSharingPanel onOpenSharedProfiles={vi.fn()} />));
+  await act(async () => root.render(<ProfileSharingPanel />));
 }
 
 function radio(value: string) {
@@ -64,15 +64,17 @@ describe('profile sharing visibility', () => {
     expect(api.sharing.updateChoices).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ visibility: 'public' }),
     );
-    expect(button('Make my profile public')).toBeUndefined();
+    expect(button('Make my profile public')!.disabled).toBe(true);
   });
 
-  it('asks before making a shared profile private, and reselecting cancels the change', async () => {
+  it('keeps one confirm button under the options and reselecting cancels the change', async () => {
     await render();
+    expect(button('Make my profile friends only')!.disabled).toBe(true);
     await act(async () => radio('private').click());
-    expect(button('Make my profile private')).toBeDefined();
+    expect(button('Make my profile private')!.disabled).toBe(false);
 
     await act(async () => radio('followers').click());
+    expect(button('Make my profile friends only')!.disabled).toBe(true);
     expect(button('Make my profile private')).toBeUndefined();
     expect(api.sharing.updateChoices).not.toHaveBeenCalled();
   });

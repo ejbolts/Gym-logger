@@ -215,11 +215,7 @@ import {
 import { VideoUpload } from './VideoUpload';
 import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
-import {
-  SharedProfileScreen,
-  SharedProfilesScreen,
-  type SharedWorkoutListProps,
-} from './SharedProfiles';
+import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -565,8 +561,8 @@ function AppContent() {
     const initialTab = initialHistoryState
       ? initialHistoryState.tab
       : appTabFromHash(window.location.hash);
-    // Which shared profile was open is not kept across a reload, so start from the list.
-    return initialTab === 'shared-profile' ? 'shared' : initialTab;
+    // Which shared profile was open is not kept across a reload, so start from Friends.
+    return initialTab === 'shared-profile' ? 'profile' : initialTab;
   });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const home = useHomeLayout(tab === 'dashboard');
@@ -651,10 +647,10 @@ function AppContent() {
     setTabState('dashboard');
   }, [tab, videosAllowed]);
   useEffect(() => {
-    // A reloaded #shared-profile link has no profile to show, so it opens the list instead.
+    // A reloaded #shared-profile link has no profile to show, so it opens Friends instead.
     if (tab !== 'shared-profile' || sharedProfile) return;
     navigationActionRef.current = 'replace';
-    setTabState('shared');
+    setTabState('profile');
   }, [tab, sharedProfile]);
   useEffect(() => {
     // Only administrators can open the admin console, even from an old #admin link.
@@ -1167,13 +1163,11 @@ function AppContent() {
         ? { title: 'Videos', subtitle: 'Workout clips • uploads' }
         : tab === 'profile'
           ? { title: 'Profile', subtitle: user ? user.display_name : 'Account • security' }
-          : tab === 'shared'
-            ? { title: 'Shared profiles', subtitle: 'Members sharing their training' }
-            : tab === 'shared-profile' && sharedProfile
-              ? { title: sharedProfile.name, subtitle: 'Shared profile' }
-              : tab === 'admin' && isAdmin
-                ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
-                : null;
+          : tab === 'shared-profile' && sharedProfile
+            ? { title: sharedProfile.name, subtitle: 'Shared profile' }
+            : tab === 'admin' && isAdmin
+              ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
+              : null;
   const activeMainTab = mainTabFor(tab);
   const showTabBar = tab !== 'log';
   // The home screen guide follows the release announcement, behind the same interruptions.
@@ -1293,7 +1287,6 @@ function AppContent() {
           tab !== 'dashboard' &&
           tab !== 'videos' &&
           tab !== 'profile' &&
-          tab !== 'shared' &&
           tab !== 'shared-profile' &&
           tab !== 'admin' && <TodaySkeleton />}
         {(tab === 'dashboard' || visitedTabs.has('dashboard')) && (
@@ -1523,16 +1516,7 @@ function AppContent() {
         )}
         {user && (tab === 'profile' || visitedTabs.has('profile')) && (
           <CachedTabPanel active={tab === 'profile'}>
-            <ProfileScreen onOpenSharedProfiles={() => setTab('shared')} />
-          </CachedTabPanel>
-        )}
-        {user && (tab === 'shared' || visitedTabs.has('shared')) && (
-          <CachedTabPanel active={tab === 'shared'}>
-            <SharedProfilesScreen
-              active={tab === 'shared'}
-              onOpenProfile={openSharedProfile}
-              onChooseSharing={() => setTab('profile')}
-            />
+            <ProfileScreen active={tab === 'profile'} onOpenProfile={openSharedProfile} />
           </CachedTabPanel>
         )}
         {user &&

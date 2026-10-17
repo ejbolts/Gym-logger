@@ -8,7 +8,6 @@ export const APP_TABS = [
   'videos',
   'settings',
   'profile',
-  'shared',
   'shared-profile',
   'admin',
 ] as const;
@@ -44,6 +43,8 @@ export function isAppHistoryState(value: unknown): value is AppHistoryState {
 
 export function appTabFromHash(hash: string): AppTab {
   const requested = hash.replace(/^#/, '');
+  // The shared profiles list moved into Profile's Friends section.
+  if (requested === 'shared') return 'profile';
   return isAppTab(requested) ? requested : 'dashboard';
 }
 

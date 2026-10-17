@@ -58,7 +58,7 @@ const VISIBILITY_SAVED: Record<ProfileVisibility, string> = {
 
 const VISIBILITY_CONFIRM: Record<ProfileVisibility, string> = {
   private: 'Make my profile private',
-  followers: 'Share with friends',
+  followers: 'Make my profile friends only',
   public: 'Make my profile public',
 };
 
@@ -89,11 +89,7 @@ function Spinner() {
 }
 
 /** Profile's sharing section: who can see the profile, and what it shares. */
-export function ProfileSharingPanel({
-  onOpenSharedProfiles,
-}: {
-  onOpenSharedProfiles: () => void;
-}) {
+export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
   const [saved, setSaved] = useState<SharingSettings | null>(null);
   const [draft, setDraft] = useState<SharingChoices>(PRIVATE_DEFAULTS);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -139,6 +135,7 @@ export function ProfileSharingPanel({
       setSaved(stored);
       setDraft(choicesFrom(stored));
       setStatus({ message, id: Date.now() });
+      onSaved?.();
     } catch (reason) {
       setDraft(saved ? choicesFrom(saved) : PRIVATE_DEFAULTS);
       setError(authErrorMessage(reason));
@@ -164,8 +161,6 @@ export function ProfileSharingPanel({
       setStatus(null);
     }
   }
-
-  const requests = saved?.pending_requests ?? 0;
 
   return (
     <section
@@ -231,6 +226,15 @@ export function ProfileSharingPanel({
               </label>
             ))}
           </fieldset>
+          <button
+            type="button"
+            className="profile-primary sharing-start"
+            disabled={saving || !visibilityPending}
+            onClick={() => void save(draft, VISIBILITY_SAVED[draft.visibility])}
+          >
+            {saving && <Spinner />}
+            <span>{VISIBILITY_CONFIRM[draft.visibility]}</span>
+          </button>
           <div className="sharing-options" role="group" aria-label="What to share">
             <p className="sharing-group-title">What you share</p>
             {ALWAYS_SHARED.map((item) => (
@@ -301,35 +305,6 @@ export function ProfileSharingPanel({
             <p className="inline-error" role="alert">
               {error}
             </p>
-          )}
-          {visibilityPending && (
-            <button
-              type="button"
-              className="profile-primary sharing-start"
-              disabled={saving}
-              onClick={() => void save(draft, VISIBILITY_SAVED[draft.visibility])}
-            >
-              {saving && <Spinner />}
-              <span>{VISIBILITY_CONFIRM[draft.visibility]}</span>
-            </button>
-          )}
-          {(sharing || requests > 0) && (
-            <div className="sharing-actions">
-              {requests > 0 && (
-                <button type="button" className="profile-primary" onClick={onOpenSharedProfiles}>
-                  Review {requests} follow {requests === 1 ? 'request' : 'requests'}
-                </button>
-              )}
-              {sharing && (
-                <button
-                  type="button"
-                  className={requests > 0 ? 'profile-secondary' : 'profile-primary'}
-                  onClick={onOpenSharedProfiles}
-                >
-                  View shared profiles
-                </button>
-              )}
-            </div>
           )}
         </>
       )}

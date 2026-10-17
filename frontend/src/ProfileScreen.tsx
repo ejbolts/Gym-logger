@@ -11,7 +11,8 @@ import { optimisePhoto } from './photoOptimise';
 import { ProfileAvatar } from './ProfileAvatar';
 import { formatMemberSince } from './profileDisplay';
 import { ProfileSharingPanel } from './ProfileSharing';
-import type { User } from './types';
+import { FriendsPanel } from './SharedProfiles';
+import type { SharedProfileSummary, User } from './types';
 import { useUserSession } from './userContext';
 
 function Spinner() {
@@ -471,8 +472,15 @@ function DangerZone() {
   );
 }
 
-export function ProfileScreen({ onOpenSharedProfiles }: { onOpenSharedProfiles: () => void }) {
+export function ProfileScreen({
+  active,
+  onOpenProfile,
+}: {
+  active: boolean;
+  onOpenProfile: (profile: SharedProfileSummary) => void;
+}) {
   const { user, updateUser } = useUserSession();
+  const [sharingVersion, setSharingVersion] = useState(0);
   if (!user) return null;
   const memberSince = formatMemberSince(user.created_at);
 
@@ -492,7 +500,8 @@ export function ProfileScreen({ onOpenSharedProfiles }: { onOpenSharedProfiles: 
         </div>
         <PhotoControls user={user} onSaved={updateUser} />
       </section>
-      <ProfileSharingPanel onOpenSharedProfiles={onOpenSharedProfiles} />
+      <ProfileSharingPanel onSaved={() => setSharingVersion((version) => version + 1)} />
+      <FriendsPanel active={active} refreshKey={sharingVersion} onOpenProfile={onOpenProfile} />
       <DetailsForm user={user} onSaved={updateUser} />
       <PasswordForm />
       <SessionPanel />
