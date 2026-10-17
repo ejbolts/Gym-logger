@@ -651,7 +651,8 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [backgroundActivities, setBackgroundActivities] = useState<BackgroundActivity[]>([]);
-  useActiveWorkoutReminder(activeWorkoutStartedAt);
+  const [workoutSaving, setWorkoutSaving] = useState(false);
+  useActiveWorkoutReminder(workoutSaving ? null : activeWorkoutStartedAt);
   useEffect(() => {
     // Accounts without upload access never reach the video screen, even from an old #videos link.
     if (tab !== 'videos' || videosAllowed) return;
@@ -977,15 +978,26 @@ function AppContent() {
   async function saveWorkout(payload: WorkoutInput) {
     const wasEditing = editingWorkout !== null;
     const resumedId = resumingWorkoutId;
-    const saved = await withBackgroundActivity(
-      wasEditing || resumedId ? 'Saving workout changes…' : 'Saving workout…',
-      () =>
-        editingWorkout
-          ? api.updateWorkout(editingWorkout.id, payload)
-          : resumedId
-            ? api.updateWorkout(resumedId, payload)
-            : api.createWorkout(payload),
-    );
+    setWorkoutSaving(true);
+    // Keep the logger and its recovery draft mounted until the server confirms the save.
+    if (!wasEditing) setTab('dashboard', { replace: true });
+    let saved: TrackedWorkout;
+    try {
+      saved = await withBackgroundActivity(
+        wasEditing || resumedId ? 'Saving workout changes…' : 'Saving workout…',
+        () =>
+          editingWorkout
+            ? api.updateWorkout(editingWorkout.id, payload)
+            : resumedId
+              ? api.updateWorkout(resumedId, payload)
+              : api.createWorkout(payload),
+      );
+    } catch (error) {
+      if (!wasEditing) setTab('log', { replace: true });
+      throw error;
+    } finally {
+      setWorkoutSaving(false);
+    }
 
     setWorkouts((current) => upsertWorkoutByRecency(current, saved));
     if (!wasEditing) {
@@ -993,7 +1005,7 @@ function AppContent() {
       setActiveWorkoutStartedAt(null);
       setResumingWorkoutId(null);
     }
-    setTab(wasEditing || resumedId ? 'history' : 'dashboard', { replace: true });
+    if (wasEditing) setTab('history', { replace: true });
     setEditingWorkout(null);
 
     if (!wasEditing) {
@@ -1013,6 +1025,7 @@ function AppContent() {
   }
 
   async function deleteWorkout(workout: TrackedWorkout) {
+    if (workoutSaving) return;
     try {
       await withBackgroundActivity('Deleting workout…', async () => {
         await api.deleteWorkout(workout.id);
@@ -1082,6 +1095,7 @@ function AppContent() {
     replaceActiveWorkout = false,
     template: SessionTemplate | null = null,
   ) {
+    if (workoutSaving) return;
     if (replaceActiveWorkout) clearActiveWorkoutDraft();
     const storedDraft = replaceActiveWorkout ? null : readActiveWorkoutDraft();
     setWorkoutTemplate(storedDraft || activeWorkoutStartedAt !== null ? null : template);
@@ -1095,13 +1109,14 @@ function AppContent() {
   }
 
   function editWorkout(workout: TrackedWorkout) {
+    if (workoutSaving) return;
     setEditingWorkout(workout);
     setWorkoutStartDate(workout.workout_date);
     setTab('log');
   }
 
   function resumeWorkout(workout: TrackedWorkout) {
-    if (activeWorkoutStartedAt !== null) return;
+    if (workoutSaving || activeWorkoutStartedAt !== null) return;
     clearActiveWorkoutDraft();
     setEditingWorkout(null);
     setResumingWorkoutId(workout.id);
@@ -1320,6 +1335,7 @@ function AppContent() {
                   personalRecords={personalRecords}
                   categoryColors={workoutTypeColors}
                   workoutStartedAt={activeWorkoutStartedAt}
+                  workoutSaving={workoutSaving}
                   todayBodyweight={todayMeasurement?.weight_kg ?? null}
                   todayBodyFat={todayMeasurement?.body_fat_pct ?? null}
                   onSaveBodyFat={(bodyFat) =>
@@ -1430,6 +1446,7 @@ function AppContent() {
                     activeStartedAt={activeWorkoutStartedAt}
                     onClose={navigateBack}
                     onDelete={() => {
+                      if (workoutSaving) return;
                       if (editingWorkout) {
                         void deleteWorkout(editingWorkout);
                         setTab('history');
@@ -1602,6 +1619,7 @@ function AppContent() {
             homeLayout={home}
             active={activeMainTab}
             workoutStartedAt={activeWorkoutStartedAt}
+            workoutSaving={workoutSaving}
             onSelect={(nextTab) => {
               if (nextTab === 'history' || nextTab === 'progress') openHistorySection(nextTab);
               else setTab(nextTab);
@@ -3167,7 +3185,7 @@ function WorkoutLogger({
   );
 
   return (
-    <section className="logger-screen content-page">
+    <section className="logger-screen content-page" inert={saving}>
       {prToastEntries.length > 0 && (
         <PrToast key={`pr-toast-${prToastId}`} entries={prToastEntries} onClose={closePrToast} />
       )}

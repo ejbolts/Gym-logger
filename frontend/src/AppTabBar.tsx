@@ -13,17 +13,19 @@ const TABS: Array<{ tab: MainTab; label: string; icon: IconName }> = [
 export function AppTabBar({
   active,
   workoutStartedAt,
+  workoutSaving = false,
   onSelect,
   onStart,
   homeLayout,
 }: {
   active: MainTab | null;
   workoutStartedAt: number | null;
+  workoutSaving?: boolean;
   onSelect: (tab: MainTab) => void;
   onStart: () => void;
   homeLayout?: ReturnType<typeof useHomeLayout>;
 }) {
-  const live = workoutStartedAt !== null;
+  const live = workoutStartedAt !== null && !workoutSaving;
   const editing = Boolean(homeLayout?.editing);
   const busy = Boolean(homeLayout?.saving || homeLayout?.dragging);
   const renderTab = ({ tab, label, icon }: (typeof TABS)[number]) => (
@@ -51,13 +53,28 @@ export function AppTabBar({
           type="button"
           className={`app-tab app-tab-start ${live ? 'live' : ''}`}
           data-guide-target="start"
-          aria-label={live ? 'Resume active workout' : 'Start workout'}
+          aria-label={
+            workoutSaving ? 'Saving workout' : live ? 'Resume active workout' : 'Start workout'
+          }
+          disabled={workoutSaving}
           onClick={onStart}
         >
           <span className="app-tab-start-bubble">
-            {live ? <i className="live-dot" aria-hidden="true" /> : <Icon name="plus" />}
+            {live ? (
+              <i className="live-dot" aria-hidden="true" />
+            ) : (
+              <Icon name={workoutSaving ? 'check' : 'plus'} />
+            )}
           </span>
-          <span>{live ? <LiveElapsed startedAt={workoutStartedAt} /> : 'Start'}</span>
+          <span>
+            {workoutSaving ? (
+              'Saving'
+            ) : live ? (
+              <LiveElapsed startedAt={workoutStartedAt} />
+            ) : (
+              'Start'
+            )}
+          </span>
         </button>
         {TABS.slice(2).map(renderTab)}
       </div>

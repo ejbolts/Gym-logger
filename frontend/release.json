@@ -4,6 +4,7 @@
   "title": "Friends, profiles and a more personal Home",
   "summary": "Follow friends and see their latest workouts, edit your profile and sharing in one place, arrange Home your way, and import workout history with a guided CSV flow.",
   "changes": [
+    "Finishing a new or resumed workout returns to Today immediately while the saving popup sends it to the server in the background. If saving fails, the workout reopens with your entries intact so you can retry.",
     "New accounts see the tour first. Next, Import or export opens Workout data in Settings with a CSV guide; Skip for now shows What's new.",
     "The three-page CSV guide explains what is imported, the columns and one-row-per-set layout, and common spreadsheet pitfalls. Download a template in your weight unit, then choose your file from the guide.",
     "Your own spreadsheets need only Date Lifted, Exercise and Reps columns, with Weight (kg) or Weight (lb) for weighted sets. Column names can use any capitalisation or spacing.",
