@@ -1,8 +1,31 @@
-# Gym-logger
+<p align="center">
+  <img src="frontend/public/icon-512.png" alt="Gym Logger app icon: a training journal with a dumbbell" width="96" height="96">
+</p>
+
+<h1 align="center">Gym Logger</h1>
 
 Gym Logger is a mobile-first app for recording workouts and following your progress. Keep strength training, cardio, body measurements and optional workout videos together in one place, with your own account and private training history.
 
 Use it in your browser or add it to your phone's Home Screen for an app-like experience.
+
+## App preview
+
+<table>
+  <tr>
+    <th width="25%">Today</th>
+    <th width="25%">Body</th>
+    <th width="25%">Progress</th>
+    <th width="25%">Videos</th>
+  </tr>
+  <tr>
+    <td valign="top"><a href="docs/screenshots/readme/today.png"><img src="docs/screenshots/readme/today.png" alt="Today dashboard with the next workout, activity calendar, cardio goal and body-weight trend" width="220"></a></td>
+    <td valign="top"><a href="docs/screenshots/readme/body.png"><img src="docs/screenshots/readme/body.png" alt="Body screen with a weight goal, trend chart and daily check-in history" width="220"></a></td>
+    <td valign="top"><a href="docs/screenshots/readme/progress.png"><img src="docs/screenshots/readme/progress.png" alt="Exercise progress screen with estimated one-rep max, personal records and previous sessions" width="220"></a></td>
+    <td valign="top"><a href="docs/screenshots/readme/videos.png"><img src="docs/screenshots/readme/videos.png" alt="Video logger connected to a personal YouTube channel, with the Unlisted explanation and set-video upload form" width="220"></a></td>
+  </tr>
+</table>
+
+Your dashboard, body trends, strength progress and workout videos. Select a screenshot to view it full size.
 
 ## Your training at a glance
 
