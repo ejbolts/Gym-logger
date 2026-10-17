@@ -1,8 +1,8 @@
 {
-  "version": "0.6.6",
+  "version": "0.7.0",
   "date": "2026-10-17",
-  "title": "Import history and undo check-ins",
-  "summary": "Import your workout history with a step-by-step CSV guide, and undo a daily body-weight check-in from a five-second popup at the top of the screen.",
+  "title": "Friends, profiles and a more personal Home",
+  "summary": "Follow friends and see their latest workouts, edit your profile and sharing in one place, arrange Home your way, and import workout history with a guided CSV flow.",
   "changes": [
     "New accounts see the tour first. Next, Import or export opens Workout data in Settings with a CSV guide; Skip for now shows What's new.",
     "The three-page CSV guide explains what is imported, the columns and one-row-per-set layout, and common spreadsheet pitfalls. Download a template in your weight unit, then choose your file from the guide.",
@@ -36,7 +36,7 @@
     "The compact Friends card keeps its list below the heading and shows multiple followed friends with their latest workouts; the sample preview includes Jordan and Alex.",
     "Copy UUID shows a temporary popup at the top of the screen with a five-second countdown and dismiss button, instead of leaving a message under the UUID."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#070",
   "image": {
     "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/ae5b5635b75c8833251dc3937cd330fd1fc76b4d/docs/screenshots/releases/0.6.6-import-history-guide.png",
     "alt": "Three phone screens: the Your workout history step after the tour, the CSV guide's Shape your file page with example rows and a template download, and the Before you choose a file page with spreadsheet tips."

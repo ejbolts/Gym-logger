@@ -1,10 +1,10 @@
 # Gym Logger release notes
 
-## 0.6.6
+## 0.7.0
 
 17 October 2026
 
-### Import history and undo check-ins
+### Friends, profiles and a more personal Home
 
 - New accounts see the app tour first. The next step offers **Import or export**: it opens
   **Settings > Workout data** with a CSV guide. **Skip for now** shows What's new instead;
@@ -125,95 +125,95 @@
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
-<img src="screenshots/releases/0.6.6-import-history-guide.png" alt="Three phone screens: the Your workout history step after the tour with Skip for now and Import or export, the CSV guide's Shape your file page with required columns, example rows and Download template CSV, and the Before you choose a file page with spreadsheet tips and Choose CSV file." width="720">
+<img src="screenshots/releases/0.7.0-import-history-guide.png" alt="Three phone screens: the Your workout history step after the tour with Skip for now and Import or export, the CSV guide's Shape your file page with required columns, example rows and Download template CSV, and the Before you choose a file page with spreadsheet tips and Choose CSV file." width="720">
 
 The import step after the tour, then pages 2 and 3 of the CSV guide, recorded with a sample
 account in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-check-in-undo.png" alt="Daily check-in showing Saved today and 84.5 kg once in the header, with an Undo popup and countdown bar at the top of the phone screen." width="390">
+<img src="screenshots/releases/0.7.0-check-in-undo.png" alt="Daily check-in showing Saved today and 84.5 kg once in the header, with an Undo popup and countdown bar at the top of the phone screen." width="390">
 
 The body-weight Undo popup and single saved-today summary, captured with sample data in
 the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-calendar-type-filter.png" alt="Consistency calendar for October 2026 with Upper body and Push switched off in the legend: their names are dimmed with a cross, their days have grey borders and dots, and Lower body, Pull, Full body and Cardio keep their ticks, colours and green borders." width="390">
+<img src="screenshots/releases/0.7.0-calendar-type-filter.png" alt="Consistency calendar for October 2026 with Upper body and Push switched off in the legend: their names are dimmed with a cross, their days have grey borders and dots, and Lower body, Pull, Full body and Cardio keep their ticks, colours and green borders." width="390">
 
 The Consistency calendar with Upper body and Push switched off, captured with synthetic
 sample workouts in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-today-friends-badge.png" alt="Today with a one-request badge on the profile avatar and the Friends card showing Jordan and Alex's latest workouts, dates and completed set totals." width="390">
+<img src="screenshots/releases/0.7.0-today-friends-badge.png" alt="Today with a one-request badge on the profile avatar and the Friends card showing Jordan and Alex's latest workouts, dates and completed set totals." width="390">
 
 The Friends card moved to the top of a sample dashboard, with one waiting friend request.
 Captured with synthetic accounts and workouts in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-profile-view.png" alt="Profile in viewing mode with Joined, an Edit profile button, and a blue dotted box around a waiting follow request." width="390">
+<img src="screenshots/releases/0.7.0-profile-view.png" alt="Profile in viewing mode with Joined, an Edit profile button, and a blue dotted box around a waiting follow request." width="390">
 
 Viewing mode keeps the avatar clear and shows Edit profile. Sharing is folded here to keep the
 highlighted request and relationship dates in view; sharing and Friends still start open.
 
-<img src="screenshots/releases/0.6.6-profile-edit.png" alt="Profile editing with a pencil over the dimmed avatar, name and username fields, and Cancel and Save profile buttons." width="390">
+<img src="screenshots/releases/0.7.0-profile-edit.png" alt="Profile editing with a pencil over the dimmed avatar, name and username fields, and Cancel and Save profile buttons." width="390">
 
 Editing mode keeps Remove photo on the left and has no blue outline on the card or avatar.
 Photo and name drafts wait for Save profile; Cancel discards them.
 
-<img src="screenshots/releases/0.6.6-people-search-uuid.png" alt="Profile showing the full Account UUID with Copy UUID, and Search people finding Alex Sample by account name." width="430">
+<img src="screenshots/releases/0.7.0-people-search-uuid.png" alt="Profile showing the full Account UUID with Copy UUID, and Search people finding Alex Sample by account name." width="430">
 
 Copy the account UUID from a profile and share it for an exact lookup, or search by display
 name or username. Only shared accounts appear. Captured with synthetic sample accounts;
 Profile sharing is folded here to keep the account UUID and search result together.
 
-<img src="screenshots/releases/0.6.6-uuid-copy-popup.png" alt="Profile with a temporary UUID copied popup and countdown at the top, with no persistent message beneath the account UUID." width="430">
+<img src="screenshots/releases/0.7.0-uuid-copy-popup.png" alt="Profile with a temporary UUID copied popup and countdown at the top, with no persistent message beneath the account UUID." width="430">
 
 UUID copying uses the same temporary notification style as other saved actions, on both
 your own profile and shared profiles. Captured with a synthetic sample account.
 
-<img src="screenshots/releases/0.6.6-settings-search-themes.png" alt="Settings with a username search result that links to Profile, and the five selectable accent colours with Plum selected." width="430">
+<img src="screenshots/releases/0.7.0-settings-search-themes.png" alt="Settings with a username search result that links to Profile, and the five selectable accent colours with Plum selected." width="430">
 
 Search across Settings and Profile from either page, and choose a colour for this device.
 
-<img src="screenshots/releases/0.6.6-today-multiple-friends.png" alt="Compact Friends card next to Daily check-in, showing Jordan and Alex's latest workouts above Sets per muscle without an RPE logging summary." width="430">
+<img src="screenshots/releases/0.7.0-today-multiple-friends.png" alt="Compact Friends card next to Daily check-in, showing Jordan and Alex's latest workouts above Sets per muscle without an RPE logging summary." width="430">
 
 Multiple sample friends in the compact card, with their latest workouts and completed sets.
 
-<img src="screenshots/releases/0.6.6-exercise-picker-wrap.png" alt="Narrow exercise picker with two exercises selected, a wrapped Add selected exercises label and an Add super set action without parentheses." width="375">
+<img src="screenshots/releases/0.7.0-exercise-picker-wrap.png" alt="Narrow exercise picker with two exercises selected, a wrapped Add selected exercises label and an Add super set action without parentheses." width="375">
 
 Exercise-picker actions wrap at phone width while keeping the selected count visible.
 
-<img src="screenshots/releases/0.6.6-shared-workout-images.png" alt="Another member viewing Alex's shared profile with an expanded workout and example images pinned to Back Extension Machine and Back Squat." width="720">
+<img src="screenshots/releases/0.7.0-shared-workout-images.png" alt="Another member viewing Alex's shared profile with an expanded workout and example images pinned to Back Extension Machine and Back Squat." width="720">
 
 Example of a member viewing someone else's workout with pinned exercise images. The owner
 enabled **Machine photos** under **What you share**. These synthetic sample images illustrate
 the existing sharing behavior; photos remain hidden when that option is off.
 
-<img src="screenshots/releases/0.6.6-shared-workout-filters.png" alt="Alex's shared profile with exact follow dates, a red Unfollow button, and workout type, exercise, machine and date filters showing one matching workout." width="390">
+<img src="screenshots/releases/0.7.0-shared-workout-filters.png" alt="Alex's shared profile with exact follow dates, a red Unfollow button, and workout type, exercise, machine and date filters showing one matching workout." width="390">
 
 Shared history filters find matching workouts across the member's full shared history. The red
 Unfollow button and exact relationship dates remain above the results.
 
-<img src="screenshots/releases/0.6.6-daily-check-in-body-fat.png" alt="Daily check-in with separate Body weight and Body fat headings, minus and plus controls, a padded dotted divider, and green Saved today summaries for both measurements." width="390">
+<img src="screenshots/releases/0.7.0-daily-check-in-body-fat.png" alt="Daily check-in with separate Body weight and Body fat headings, minus and plus controls, a padded dotted divider, and green Saved today summaries for both measurements." width="390">
 
 Body weight and body fat have separate controls and saved states. All screenshots use synthetic
 sample accounts in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-home-space-drop.png" alt="Previously expanded Friends card shrunk into the half-row beside Bodyweight trend, with green Saved today summaries above." width="720">
+<img src="screenshots/releases/0.7.0-home-space-drop.png" alt="Previously expanded Friends card shrunk into the half-row beside Bodyweight trend, with green Saved today summaries above." width="720">
 
 Drag a section into the dotted empty space in Edit Home, then save to keep it beside the existing
 card. Expanded sections shrink to fit the smaller space and retain their compact width.
 
-<img src="screenshots/releases/0.6.6-release-dates.png" alt="What's new with a date under the current release title and under every collapsed earlier version." width="500">
+<img src="screenshots/releases/0.7.0-release-dates.png" alt="What's new with a date under the current release title and under every collapsed earlier version." width="500">
 
 Release-note dates remain visible when a version's changes are folded.
 
-<img src="screenshots/releases/0.6.6-home-row-gap.png" alt="Compact Consistency and Body weight cards fill the same row with no narrow strip on the right, while the row below keeps its usable drop space." width="720">
+<img src="screenshots/releases/0.7.0-home-row-gap.png" alt="Compact Consistency and Body weight cards fill the same row with no narrow strip on the right, while the row below keeps its usable drop space." width="720">
 
 Mixed compact cards fill unusable single-column strips while preserving spaces large enough
 for another card. Captured with synthetic sample data in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-home-section-picker.png" alt="Add a section here picker showing only Friends, the one section not already on this sample Home layout." width="720">
+<img src="screenshots/releases/0.7.0-home-section-picker.png" alt="Add a section here picker showing only Friends, the one section not already on this sample Home layout." width="720">
 
 Tap an empty space's plus to add a missing section in that position. This sample layout
 already has every available section except Friends, so only Friends appears.
 
-<img src="screenshots/releases/0.6.6-home-section-saved.png" alt="Friends added as the third card beside Workouts and Cardio sessions, after the top pencil saved the layout." width="720">
+<img src="screenshots/releases/0.7.0-home-section-saved.png" alt="Friends added as the third card beside Workouts and Cardio sessions, after the top pencil saved the layout." width="720">
 
 The chosen card fills the tapped third-width space. The top pencil saves the current layout;
 the bottom Cancel action still discards unsaved edits. These examples use synthetic accounts.
