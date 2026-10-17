@@ -29,7 +29,8 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
     id: 'appearance',
     title: 'App theme',
     page: 'settings',
-    keywords: 'appearance colour color palette accent blue green purple plum emerald amber coral',
+    keywords:
+      'appearance light dark mode colour color palette accent blue green purple plum emerald amber coral',
     selector: '#colour-theme-title',
   },
   {

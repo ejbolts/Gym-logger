@@ -1,9 +1,18 @@
 import { useState, type CSSProperties } from 'react';
-import { COLOUR_THEMES, colourThemePreference, saveColourTheme } from './colourThemes';
+import {
+  COLOUR_MODES,
+  COLOUR_THEMES,
+  colourModePreference,
+  colourThemePreference,
+  saveColourMode,
+  saveColourTheme,
+} from './colourThemes';
+import { Icon } from './Icon';
 import './colourThemes.css';
 
 export function ColourThemePanel() {
   const [selected, setSelected] = useState(colourThemePreference);
+  const [mode, setMode] = useState(colourModePreference);
   const [status, setStatus] = useState('');
   return (
     <section
@@ -16,9 +25,32 @@ export function ColourThemePanel() {
           <h2 id="colour-theme-title">App theme</h2>
         </div>
       </header>
-      <p>Choose an accent colour. Your choice stays on this device.</p>
+      <p>Choose light or dark mode and an accent colour. Your choices stay on this device.</p>
+      <fieldset className="colour-mode-options">
+        <legend className="sr-only">Mode</legend>
+        {COLOUR_MODES.map((option) => (
+          <label key={option.id} className={mode === option.id ? 'is-selected' : ''}>
+            <input
+              type="radio"
+              name="colour-mode"
+              value={option.id}
+              checked={mode === option.id}
+              onChange={() => {
+                setMode(option.id);
+                setStatus(
+                  saveColourMode(option.id)
+                    ? `${option.name} mode saved on this device.`
+                    : `${option.name} mode applied for this visit.`,
+                );
+              }}
+            />
+            <Icon name={option.icon} />
+            <strong>{option.name}</strong>
+          </label>
+        ))}
+      </fieldset>
       <fieldset className="colour-theme-options">
-        <legend className="sr-only">App theme</legend>
+        <legend className="sr-only">Accent colour</legend>
         {COLOUR_THEMES.map((theme) => (
           <label key={theme.id} className={selected === theme.id ? 'is-selected' : ''}>
             <input
