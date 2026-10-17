@@ -2299,6 +2299,11 @@ button.metric-card:focus-visible {
   font-size: 1rem;
 }
 
+.machine-photo-placeholder > .pulse-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 .machine-photo-summary-copy {
   min-width: 0;
 }
@@ -2380,6 +2385,12 @@ button.metric-card:focus-visible {
 .machine-photo-actions label span {
   color: var(--accent);
   font-size: 0.9rem;
+}
+
+.machine-photo-actions label span > .pulse-icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
 }
 
 .machine-photo-rail,

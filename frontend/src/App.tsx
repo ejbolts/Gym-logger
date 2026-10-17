@@ -5080,7 +5080,7 @@ function MachinePhotoChooser({
           <img src={primaryPinnedPhoto.thumbnail_url} alt="" loading="lazy" />
         ) : (
           <span className="machine-photo-placeholder" aria-hidden="true">
-            ⌁
+            <Icon name="camera" />
           </span>
         )}
         <span className="machine-photo-summary-copy">
@@ -5096,7 +5096,9 @@ function MachinePhotoChooser({
         <p>Take, choose, or pin equipment photos for every set in this exercise.</p>
         <div className="machine-photo-actions">
           <label>
-            <span aria-hidden="true">⌁</span>
+            <span aria-hidden="true">
+              <Icon name="camera" />
+            </span>
             Take photo
             <input
               className="sr-only"
