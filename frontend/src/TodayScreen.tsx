@@ -107,7 +107,11 @@ export interface TodayScreenProps {
   /** Shown on the profile button so the signed-in account is visible at a glance. */
   profileLabel?: string;
   profilePhotoUrl?: string | null;
+  /** Follow requests waiting for approval, shown as a count on the profile button. */
+  followRequests?: number;
   calendar?: ReactNode;
+  /** The Friends card; omitted outside the signed-in app. */
+  friendsActivity?: ReactNode;
   today?: string;
 }
 
@@ -133,7 +137,9 @@ export function TodayScreen({
   onOpenProfile,
   profileLabel,
   profilePhotoUrl,
+  followRequests = 0,
   calendar,
+  friendsActivity,
   today = localDate(),
 }: TodayScreenProps) {
   const weightUnit = useWeightUnit();
@@ -470,6 +476,7 @@ export function TodayScreen({
         )}
       </section>
     ),
+    friends: friendsActivity ?? null,
   };
 
   return (
@@ -500,8 +507,17 @@ export function TodayScreen({
                 className="icon-button-pulse profile-button"
                 type="button"
                 onClick={onOpenProfile}
-                aria-label={profileLabel ? `Profile: ${profileLabel}` : 'Profile'}
+                aria-label={`${profileLabel ? `Profile: ${profileLabel}` : 'Profile'}${
+                  followRequests > 0
+                    ? `, ${followRequests} follow ${followRequests === 1 ? 'request' : 'requests'}`
+                    : ''
+                }`}
               >
+                {followRequests > 0 && (
+                  <span className="profile-request-badge" aria-hidden="true">
+                    {followRequests > 9 ? '9+' : followRequests}
+                  </span>
+                )}
                 {profileLabel ? (
                   <ProfileAvatar
                     className="profile-button-initial"

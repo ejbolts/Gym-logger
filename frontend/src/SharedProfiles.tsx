@@ -314,6 +314,7 @@ export function FriendsPanel({
       className="settings-panel panel sharing-connections friends-panel"
       kicker="SOCIAL"
       title="Friends"
+      defaultExpanded
       badge={
         requestCount > 0 && (
           <span className="sharing-state is-on">

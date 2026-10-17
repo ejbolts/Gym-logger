@@ -216,6 +216,8 @@ import { VideoUpload } from './VideoUpload';
 import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
 import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
+import { FriendsActivityCard } from './FriendsActivity';
+import { useFollowRequestCount } from './friendsActivityData';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -566,6 +568,7 @@ function AppContent() {
   });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const home = useHomeLayout(tab === 'dashboard');
+  const followRequests = useFollowRequestCount(tab === 'dashboard', Boolean(user));
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
   const currentTabRef = useRef(tab);
@@ -1331,6 +1334,16 @@ function AppContent() {
                 onOpenProfile={user ? () => setTab('profile') : undefined}
                 profileLabel={user?.display_name}
                 profilePhotoUrl={user?.profile_photo_url}
+                followRequests={followRequests}
+                friendsActivity={
+                  user ? (
+                    <FriendsActivityCard
+                      active={tab === 'dashboard'}
+                      onOpenFriend={openSharedProfile}
+                      onOpenFriends={() => setTab('profile')}
+                    />
+                  ) : undefined
+                }
                 calendar={
                   <InteractiveWorkoutCalendar
                     entries={dashboard?.heatmap ?? []}

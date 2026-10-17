@@ -58,10 +58,15 @@
 - A new **Friends** section on Profile replaces the separate shared profiles screen. It
   lists follow requests to approve or decline, who you follow, your followers and other
   members to follow. Tap anyone to open their profile.
-- On Profile, **Profile sharing**, **What you share**, **Friends**, **Name & username** and
-  **Change password** start folded to their headings. Tap a heading to slide the section open,
-  and again to close it. Your sharing setting and any waiting follow requests stay visible on
-  the folded headings.
+- On Profile, **Profile sharing** and **Friends** start open. **What you share**,
+  **Name & username** and **Change password** start folded. Tap any heading to open or close
+  it; sharing status and waiting request counts remain visible when folded.
+- A numbered badge above your profile picture on **Today** shows waiting friend requests.
+  It refreshes when you return to Today or refocus the app, including after you handle a request.
+- Today's **Friends** card shows the latest workout from up to five friends you follow,
+  most recently active first, with workout names, dates, exercises and completed sets.
+  Tap a friend to open their profile, or **See all** to manage friends on Profile.
+  Move, resize or hide the card with **Edit Home**.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
@@ -79,6 +84,15 @@ the isolated verification environment.
 
 The Consistency calendar with Upper body and Push switched off, captured with synthetic
 sample workouts in the isolated verification environment.
+
+<img src="screenshots/releases/0.6.6-today-friends-badge.png" alt="Today with a one-request badge on the profile avatar and the Friends card showing Jordan and Alex's latest workouts, dates and completed set totals." width="390">
+
+The Friends card moved to the top of a sample dashboard, with one waiting friend request.
+Captured with synthetic accounts and workouts in the isolated verification environment.
+
+<img src="screenshots/releases/0.6.6-profile-sharing-friends-open.png" alt="Profile sharing and Friends open by default, showing friends-only visibility, one waiting request and the Following and Followers lists." width="390">
+
+Profile sharing and Friends open by default. The nested What you share options remain folded.
 
 ## 0.6.5
 

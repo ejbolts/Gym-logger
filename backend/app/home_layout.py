@@ -22,16 +22,19 @@ HomeSection = Literal[
     "bodyweight-trend",
     "daily-check-in",
     "records",
+    "friends",
 ]
 SECTION_IDS = list(get_args(HomeSection))
 LAYOUT_KEY = "home_layout"
 
 
 class HomeLayout(BaseModel):
-    order: list[HomeSection] = Field(default_factory=lambda: SECTION_IDS.copy(), max_length=10)
-    hidden: list[HomeSection] = Field(default_factory=list, max_length=10)
+    order: list[HomeSection] = Field(
+        default_factory=lambda: SECTION_IDS.copy(), max_length=len(SECTION_IDS)
+    )
+    hidden: list[HomeSection] = Field(default_factory=list, max_length=len(SECTION_IDS))
     widths: dict[HomeSection, Literal["compact", "full"]] = Field(
-        default_factory=dict, max_length=10
+        default_factory=dict, max_length=len(SECTION_IDS)
     )
 
     @model_validator(mode="after")

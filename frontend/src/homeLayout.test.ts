@@ -27,7 +27,7 @@ describe('Home layout edits', () => {
     expect(new Set(reordered.order).size).toBe(HOME_SECTIONS.length);
     expect(reordered.hidden).toEqual(['records']);
     expect(saved.order[0]).toBe('next-workout');
-    expect(moveHomeSection(reordered, 'consistency', 'records').order.at(-1)).toBe('consistency');
+    expect(moveHomeSection(reordered, 'consistency', 'friends').order.at(-1)).toBe('consistency');
     expect(moveHomeSection(saved, 'records', 'records')).toBe(saved);
   });
 

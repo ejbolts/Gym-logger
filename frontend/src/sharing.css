@@ -460,3 +460,20 @@
 .friends-panel > .inline-error {
   margin: 0.5rem 0 0;
 }
+
+/* Today's Friends card */
+
+.friend-activity-list .shared-profile-avatar.small {
+  font-size: 0.875rem;
+}
+
+.friend-activity-list .record-copy {
+  overflow-wrap: anywhere;
+}
+
+.friend-activity-meta {
+  flex-shrink: 0;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}

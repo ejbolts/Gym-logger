@@ -168,6 +168,7 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
       className="settings-panel panel profile-sharing"
       kicker="SHARING"
       title="Profile sharing"
+      defaultExpanded
       badge={
         saved && (
           <span className={`sharing-state ${sharing ? 'is-on' : ''}`}>
