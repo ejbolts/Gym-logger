@@ -26,6 +26,7 @@ from .models import (
 from .notifications import send_push_notification
 from .storage import inspect_media, original_clip_path
 from .youtube import YouTubeUploader, YouTubeUploadError, make_uploader
+from .youtube_connections import YouTubeConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +239,7 @@ class SessionProcessor:
     ):
         self.session_factory = session_factory
         self.settings = settings
-        self.uploader = uploader or make_uploader(settings)
+        self.uploader = uploader
         self._queue: asyncio.Queue[str] = asyncio.Queue()
         self._enqueued: set[str] = set()
         self._worker: asyncio.Task[None] | None = None
@@ -329,6 +330,7 @@ class SessionProcessor:
                 session = self._load_session(db, session_id)
                 if not session or session.status == SessionStatus.CANCELLED:
                     return
+                uploader = self._uploader_for(session)
                 clips = validate_batch_ready(session)
                 session.status = SessionStatus.NORMALIZING
                 session.processing_error = None
@@ -364,7 +366,7 @@ class SessionProcessor:
                 description = self.settings.youtube_description_template.format(
                     notes=session.notes or "", chapters=chapters
                 ).strip()
-                upload = self.uploader.upload(output_path, title, description)
+                upload = uploader.upload(output_path, title, description)
                 session.youtube_video_id = upload.video_id
                 session.youtube_url = upload.url
                 db.query(Timestamp).filter(Timestamp.session_id == session.id).delete()
@@ -380,9 +382,7 @@ class SessionProcessor:
                         )
                     )
                 session.status = (
-                    SessionStatus.COMPLETE
-                    if self.uploader.is_mock
-                    else SessionStatus.YOUTUBE_PROCESSING
+                    SessionStatus.COMPLETE if uploader.is_mock else SessionStatus.YOUTUBE_PROCESSING
                 )
                 session.processing_error = None
                 db.flush()
@@ -390,12 +390,20 @@ class SessionProcessor:
                     link_session_videos_to_workout(db, session)
                 db.commit()
                 self._cleanup_after_upload(session_dir)
-                if self.uploader.is_mock:
+                if uploader.is_mock:
                     self._cleanup_after_youtube_success(session.id, clips)
                 logger.info("Session upload complete", extra={"session_id": session.id})
         except Exception as error:
             logger.exception("Session processing failed", extra={"session_id": session_id})
             self._mark_failed(session_id, str(error))
+
+    def _uploader_for(self, session: WorkoutSession) -> YouTubeUploader:
+        return self.uploader or make_uploader(
+            self.settings,
+            session_factory=self.session_factory,
+            user_id=session.user_id,
+            channel_id=session.youtube_channel_id,
+        )
 
     def _load_session(self, db: Session, session_id: str) -> WorkoutSession | None:
         return db.scalar(
@@ -428,14 +436,17 @@ class SessionProcessor:
                 return
             status: str | None = None
             try:
-                status = self.uploader.processing_status(session.youtube_video_id)
+                status = self._uploader_for(session).processing_status(session.youtube_video_id)
             except YouTubeUploadError as error:
                 message = str(error)
-                if "insufficient authentication scopes" in message.lower():
+                if (
+                    isinstance(error, YouTubeConnectionError)
+                    or "insufficient authentication scopes" in message.lower()
+                ):
                     session.status = SessionStatus.FAILED
                     session.processing_error = (
                         "YouTube permissions need updating before this upload can be checked. "
-                        "Run `python -m app.oauth_setup`, approve the new permission, then choose "
+                        "Reconnect your channel in Video logger, then choose "
                         "Check YouTube again."
                     )
                     db.commit()

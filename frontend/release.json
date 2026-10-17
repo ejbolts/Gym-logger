@@ -1,21 +1,18 @@
 {
-  "version": "0.6.0",
-  "title": "Faster start, machine history and earlier releases",
-  "summary": "Open with your recent training, find the last time you used a machine, and browse what changed in earlier versions.",
+  "version": "0.6.5",
+  "title": "Your videos, your YouTube channel",
+  "summary": "Connect your own YouTube channel in the app and upload workout videos without API keys or credential files.",
   "changes": [
-    "Signing in loads the last three months of workouts instead of your whole log, so Today appears quickly even with years of training. The Gym Logger logo glides to the centre and fades while Today loads.",
-    "Swipe the training calendar back past its oldest month to load the six months before it. In History, choose Show more to load older workouts; vertical scrolling no longer loads more automatically.",
-    "History has a Filter by machine button. Pick a saved machine photo to see only the workouts where you pinned it, when you last used it and how often, including older sessions.",
-    "Open a pinned photo in any saved workout and choose All workouts on this machine. While logging, each saved equipment photo shows when you last used it.",
-    "Editing Home fades the bottom tabs into Cancel, a green tick to save, and Reset layout. Tap a card's X to hide it, or the highlighted pencil again to cancel.",
-    "Progress shows the selected exercise illustration beside the current metric and change.",
-    "Hide this version's changes in What's new, and expand Earlier versions to read previous releases.",
-    "Check for updates in Settings is aligned with the other actions and shows a timestamped notification with a three-second countdown bar.",
-    "Streaks, the next-workout suggestion, PR badges and set suggestions while logging still account for your full history."
+    "Connect YouTube from Settings or Video logger, choose your Google account and channel, and confirm the selected channel before uploading.",
+    "Each account has its own encrypted YouTube connection. New video batches stay tied to the channel selected when they were created.",
+    "Reconnect when Google access expires or is revoked, and disconnect without deleting videos from your channel.",
+    "New uploads default to YouTube Unlisted. A highlighted explanation says they are not listed on your channel's Videos tab, and anyone with the link can watch and share them. Existing server overrides are described accurately.",
+    "The video toolbar has only New upload. Configure Phone alerts in Settings; the separate video History and Enable alerts buttons have been removed.",
+    "Administrators configure one Google Web application client for the installation. Existing video links are kept; older unfinished shared-channel batches must be uploaded again."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#060",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#065",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/142bb5d3452d49b9965da7b4f9cb7f5b68d35d40/docs/screenshots/releases/0.6.0-machine-history-filter.png",
-    "alt": "History filtered by one saved leg press machine, showing it was last used a year ago with the most recent session on it expanded."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/7a81e85345596db6275078b5e89bbca1823ac401/docs/screenshots/releases/0.6.5-youtube-channel.png",
+    "alt": "Video logger connected to a sample user's own YouTube channel, with a highlighted Unlisted upload and link-sharing explanation and only New upload in the toolbar."
   }
 }

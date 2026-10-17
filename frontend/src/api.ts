@@ -49,6 +49,7 @@ import type {
   WorkoutSession,
   TrainingPreferences,
   WorkoutTypeColors,
+  YouTubeConnection,
 } from './types';
 import { cachedWorkoutsForRevision, readWorkoutCache, writeWorkoutCache } from './workoutCache';
 import { dateRangeQuery, type DateRange } from './dateRanges';
@@ -137,6 +138,11 @@ async function listOlderHistory(
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
 export const api = {
+  youtube: {
+    connection: () => request<YouTubeConnection>('/api/youtube/connection'),
+    connect: () => request<{ url: string }>('/api/youtube/connect', { method: 'POST' }),
+    disconnect: () => request<YouTubeConnection>('/api/youtube/connection', { method: 'DELETE' }),
+  },
   auth: {
     config: () =>
       request<AuthConfig>('/api/auth/config', undefined, { signalExpiredSession: false }),

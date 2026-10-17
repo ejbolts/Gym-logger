@@ -72,6 +72,8 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "app_feedback": None,
     # Follows are relationships with other accounts, which a snapshot does not contain.
     "profile_follows": None,
+    "youtube_connections": None,
+    "youtube_oauth_states": None,
 }
 
 

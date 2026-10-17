@@ -1,5 +1,38 @@
 # Gym Logger release notes
 
+## 0.6.5
+
+### Your videos, your YouTube channel
+
+- Connect your own channel from Settings or Video logger: choose your Google account and
+  YouTube channel, approve access, and confirm the channel displayed in the app. Users do
+  not need API keys, credential downloads or terminal commands.
+- Each account has a separate encrypted connection. Video batches stay tied to their original
+  channel; the old shared server token is never used as a fallback.
+- Reconnect expired or revoked access and disconnect without deleting videos from YouTube.
+  Changing channels and disconnecting are protected while a video is processing.
+- New uploads default to YouTube Unlisted. A highlighted explanation says videos are not
+  listed on your channel's Videos tab, and anyone with the link can watch and share them.
+  Existing server overrides are described accurately; the app's profile-sharing settings do
+  not control YouTube access.
+- The video toolbar has only New upload. Phone alerts remain in Settings; the separate
+  video History and Enable alerts buttons have been removed.
+- Existing video links remain. Older unfinished batches without a personal channel binding
+  must be started again. Phone uploads still require the app to remain open.
+- The video screen leaves room below the final upload action so the bottom navigation does
+  not cover it on a phone.
+- Administrators configure one Google Web application OAuth client and persistent encryption
+  key. See [YouTube setup](YOUTUBE-SETUP.md) for Google configuration, production consent,
+  migration and first real-upload checks. Migration: `0034_youtube_connections`.
+
+The deployed 0.6.0 announcement is preserved in Earlier versions.
+
+<img src="screenshots/releases/0.6.5-youtube-channel.png" alt="Video logger showing a connected sample YouTube channel, a highlighted Unlisted upload and link-sharing explanation, and a simplified toolbar with only New upload." width="420">
+
+A connected sample channel in the isolated verification environment. Google responses were
+simulated; the administrator must complete the documented real-channel check after configuring
+the installation's Google client.
+
 ## 0.6.0
 
 This release combines PRs #48–#54.

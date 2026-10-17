@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import NoReturn, Protocol
 
 from .config import Settings
 
@@ -53,6 +53,9 @@ class GoogleYouTubeUploader:
     def __init__(self, settings: Settings):
         self.settings = settings
 
+    def _raise_api_error(self, error: Exception) -> NoReturn:
+        raise YouTubeUploadError(str(error)) from error
+
     def _youtube_client(self):
         try:
             from google.auth.transport.requests import Request
@@ -77,7 +80,7 @@ class GoogleYouTubeUploader:
         except YouTubeUploadError:
             raise
         except Exception as error:  # Google client exposes several transport-specific exceptions.
-            raise YouTubeUploadError(str(error)) from error
+            self._raise_api_error(error)
 
     def upload(self, video_path: Path, title: str, description: str) -> UploadResult:
         try:
@@ -106,7 +109,7 @@ class GoogleYouTubeUploader:
         except YouTubeUploadError:
             raise
         except Exception as error:  # Google client exposes several transport-specific exceptions.
-            raise YouTubeUploadError(str(error)) from error
+            self._raise_api_error(error)
 
     def processing_status(self, video_id: str) -> str:
         try:
@@ -123,8 +126,21 @@ class GoogleYouTubeUploader:
         except YouTubeUploadError:
             raise
         except Exception as error:  # Google client exposes several transport-specific exceptions.
-            raise YouTubeUploadError(str(error)) from error
+            self._raise_api_error(error)
 
 
-def make_uploader(settings: Settings) -> YouTubeUploader:
-    return MockYouTubeUploader() if settings.youtube_mock_mode else GoogleYouTubeUploader(settings)
+def make_uploader(
+    settings: Settings,
+    *,
+    session_factory=None,
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> YouTubeUploader:
+    if settings.youtube_mock_mode:
+        return MockYouTubeUploader()
+    # Imported lazily because the connection layer builds on this uploader interface.
+    from .youtube_connections import ConnectedYouTubeUploader
+
+    if session_factory is None:
+        raise YouTubeUploadError("A personal YouTube connection is required.")
+    return ConnectedYouTubeUploader(settings, session_factory, user_id, channel_id)

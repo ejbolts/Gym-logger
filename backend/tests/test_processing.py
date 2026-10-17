@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
 from conftest import make_user
 
 from app.config import Settings, get_settings
@@ -26,7 +27,7 @@ from app.processing import (
     link_session_videos_to_workout,
     make_timestamps,
 )
-from app.youtube import MockYouTubeUploader, YouTubeUploadError
+from app.youtube import GoogleYouTubeUploader, MockYouTubeUploader, YouTubeUploadError
 
 
 def make_clip(order: int, duration: int, label: str | None) -> Clip:
@@ -118,12 +119,43 @@ def test_completed_video_timestamp_is_added_to_matching_exercise_notes():
         )
 
 
-def test_mock_youtube_uploader_returns_unlisted_style_link(tmp_path: Path):
+def test_mock_youtube_uploader_returns_a_deterministic_link(tmp_path: Path):
     video = tmp_path / "combined.mp4"
     video.write_bytes(b"test")
     result = MockYouTubeUploader().upload(video, "title", "description")
     assert result.video_id.startswith("mock-")
     assert result.url == f"https://youtu.be/{result.video_id}"
+
+
+@pytest.mark.parametrize(
+    "override, expected", [(None, "unlisted"), ("private", "private"), ("public", "public")]
+)
+def test_youtube_uploads_are_unlisted_by_default_and_honor_explicit_overrides(
+    tmp_path, monkeypatch, override, expected
+):
+    from unittest.mock import Mock
+
+    monkeypatch.delenv("GYM_YOUTUBE_PRIVACY_STATUS", raising=False)
+    settings = Settings(
+        _env_file=None,
+        data_dir=tmp_path,
+        database_path=tmp_path / "sample.db",
+        **({"youtube_privacy_status": override} if override else {}),
+    )
+    uploader = GoogleYouTubeUploader(settings)
+    youtube = Mock()
+    youtube.videos.return_value.insert.return_value.next_chunk.return_value = (
+        None,
+        {"id": "sample-video"},
+    )
+    monkeypatch.setattr(uploader, "_youtube_client", lambda: youtube)
+    video = tmp_path / "sample.mp4"
+    video.write_bytes(b"synthetic video bytes")
+    uploader.upload(video, "Sample workout", "")
+    assert (
+        youtube.videos.return_value.insert.call_args.kwargs["body"]["status"]["privacyStatus"]
+        == expected
+    )
 
 
 def test_ffmpeg_failure_marks_session_failed(monkeypatch, tmp_path: Path):
@@ -298,4 +330,4 @@ def test_missing_youtube_processing_scope_becomes_actionable_failure(monkeypatch
     with SessionLocal() as db:
         failed = db.get(WorkoutSession, session_id)
         assert failed and failed.status == SessionStatus.FAILED
-        assert "Run `python -m app.oauth_setup`" in (failed.processing_error or "")
+        assert "Reconnect your channel in Video logger" in (failed.processing_error or "")

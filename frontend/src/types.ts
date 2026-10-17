@@ -56,6 +56,16 @@ export interface Health {
   youtube_mock_mode: boolean;
 }
 
+export interface YouTubeConnection {
+  status: 'mock' | 'unavailable' | 'not_connected' | 'connected' | 'reconnect_required';
+  channel_id: string | null;
+  channel_title: string | null;
+  channel_url: string | null;
+  can_disconnect: boolean;
+  message: string;
+  privacy_status: 'unlisted' | 'private' | 'public';
+}
+
 export interface PushConfig {
   enabled: boolean;
   public_key: string | null;

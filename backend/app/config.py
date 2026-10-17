@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     ffprobe_path: str = "ffprobe"
     youtube_client_secret_path: Path = Path("secrets/youtube-client-secret.json")
     youtube_token_path: Path = Path("secrets/youtube-token.json")
+    youtube_web_client_secret_path: Path = Path("secrets/youtube-web-client-secret.json")
+    youtube_credentials_key_path: Path = Path("secrets/youtube-credentials.key")
+    youtube_redirect_uri: str | None = None
     youtube_privacy_status: str = "unlisted"
     youtube_mock_mode: bool = True
     youtube_title_template: str = "{session_name} — {workout_date}"

@@ -68,6 +68,8 @@ from .storage import (
 from .tracker import router as tracker_router
 from .tracker import seed_default_exercises, sync_all_workout_cardio_sessions
 from .training_metrics import rebuild_personal_records
+from .youtube_connections import OAuthAccessLogFilter, YouTubeConnectionError, require_connection
+from .youtube_connections import router as youtube_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -95,6 +97,17 @@ def can_accept_uploads(session: WorkoutSession) -> bool:
     }
 
 
+def check_youtube_connection(db: Session, settings: Settings, session: WorkoutSession) -> None:
+    try:
+        require_connection(db, settings, session.user_id, session.youtube_channel_id)
+        if not settings.youtube_mock_mode and not session.youtube_channel_id:
+            raise YouTubeConnectionError(
+                "This older batch has no personal channel connection. Start a new upload."
+            )
+    except YouTubeConnectionError as error:
+        raise api_error(409, "youtube_connection_required", str(error)) from error
+
+
 def owns_subscription(db: Session, user_id: str, endpoint: str) -> bool:
     return (
         db.scalar(
@@ -108,6 +121,9 @@ def owns_subscription(db: Session, user_id: str, endpoint: str) -> bool:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    access_logger = logging.getLogger("uvicorn.access")
+    if not any(isinstance(item, OAuthAccessLogFilter) for item in access_logger.filters):
+        access_logger.addFilter(OAuthAccessLogFilter())
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -295,7 +311,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def create_session(
         payload: SessionCreate, user: CurrentUser, db: Session = Depends(get_db)
     ) -> WorkoutSession:
-        session = WorkoutSession(user_id=user.id, **payload.model_dump())
+        try:
+            connection = require_connection(db, settings, user.id)
+        except YouTubeConnectionError as error:
+            raise api_error(409, "youtube_connection_required", str(error)) from error
+        session = WorkoutSession(
+            user_id=user.id,
+            youtube_channel_id=connection.channel_id if connection else None,
+            **payload.model_dump(),
+        )
         db.add(session)
         db.commit()
         db.refresh(session)
@@ -521,6 +545,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_id: str, user: CurrentUser, db: Session = Depends(get_db)
     ) -> WorkoutSession:
         session = load_session(db, user.id, session_id)
+        check_youtube_connection(db, settings, session)
         if session.status in {
             SessionStatus.QUEUED,
             SessionStatus.NORMALIZING,
@@ -550,6 +575,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_id: str, user: CurrentUser, db: Session = Depends(get_db)
     ) -> WorkoutSession:
         session = load_session(db, user.id, session_id)
+        check_youtube_connection(db, settings, session)
         if session.status != SessionStatus.FAILED:
             raise api_error(409, "not_failed", "Only failed sessions can be retried.")
         try:
@@ -571,6 +597,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_id: str, user: CurrentUser, db: Session = Depends(get_db)
     ) -> WorkoutSession:
         session = load_session(db, user.id, session_id)
+        check_youtube_connection(db, settings, session)
         if session.status != SessionStatus.FAILED or not session.youtube_video_id:
             raise api_error(
                 409,
@@ -606,6 +633,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(video)
     app.include_router(tracker_router)
     app.include_router(home_layout_router)
+    app.include_router(youtube_router)
 
     frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
     if frontend_dist.is_dir():

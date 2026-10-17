@@ -6645,7 +6645,7 @@ body,
 .video-content .video-module {
   width: min(100%, 1040px);
   margin: 0 auto;
-  padding: 0.8rem 1rem 1.5rem;
+  padding: 0.8rem 1rem calc(6.5rem + env(safe-area-inset-bottom));
   color: var(--ink);
 }
 
@@ -6935,7 +6935,7 @@ body,
 
 @media (max-width: 540px) {
   .video-content .video-module {
-    padding: 0.7rem 0.85rem 1.25rem;
+    padding: 0.7rem 0.85rem calc(6.5rem + env(safe-area-inset-bottom));
   }
 
   .video-content .video-toolbar {

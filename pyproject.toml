@@ -19,6 +19,7 @@ dependencies = [
   "onnxruntime>=1.20,<2",
   "google-api-python-client>=2.150,<3",
   "google-auth-oauthlib>=1.2,<2",
+  "requests>=2.32,<3",
   "cryptography>=42,<50",
   "pywebpush>=2.0,<3",
   "alembic>=1.14,<2",

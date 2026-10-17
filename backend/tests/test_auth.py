@@ -803,6 +803,8 @@ ACCOUNT_TABLES = {
     "account_backups",
     "app_feedback",
     "profile_sharing",
+    "youtube_connections",
+    "youtube_oauth_states",
 }
 
 

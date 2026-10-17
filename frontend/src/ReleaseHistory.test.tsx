@@ -75,7 +75,9 @@ it('compacts the current notes and expands earlier versions independently', asyn
   expect(details.hidden).toBe(false);
   expect(details.textContent).toContain(latest.summary);
   expect(details.querySelectorAll('li')).toHaveLength(latest.changes.length);
-  expect(details.querySelector('a')?.getAttribute('href')).toBe(latest.url);
+  expect(
+    [...details.querySelectorAll('a')].some((link) => link.getAttribute('href') === latest.url),
+  ).toBe(true);
   expect(details.textContent).toContain(`Read ${latest.version} notes on GitHub`);
 
   const olderToggle = versionToggle(older.version);
