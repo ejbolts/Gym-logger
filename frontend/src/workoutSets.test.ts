@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Exercise, TrackedSet, TrackedWorkout, WorkoutSetInput } from './types';
 import {
+  completeRemainingSets,
   createWorkoutSet,
   createSuggestedWorkoutSet,
   isCompletedWorkingSet,
@@ -332,5 +333,40 @@ describe('next set suggestion after logging a set', () => {
     const sets = [suggested, logged];
 
     expect(suggestNextSetFromLoggedSet('strength', sets, 1)).toBe(sets);
+  });
+});
+
+describe('completeRemainingSets', () => {
+  const strengthSet = (update: Partial<WorkoutSetInput & { fromPrevious?: boolean }>) => ({
+    ...createWorkoutSet('strength', undefined, false),
+    ...update,
+  });
+
+  it('logs unticked sets with values, including suggestions, and leaves blank sets alone', () => {
+    const sets = [
+      strengthSet({ weight_kg: 60, reps: 10, completed: true }),
+      strengthSet({ weight_kg: 62.5, reps: 8, fromPrevious: true }),
+      strengthSet({ weight_kg: 62.5, reps: 8 }),
+      strengthSet({}),
+    ];
+
+    const result = completeRemainingSets('strength', sets);
+
+    expect(result.map((item) => item.completed)).toEqual([true, true, true, false]);
+    expect(result[1]).toMatchObject({ weight_kg: 62.5, reps: 8, fromPrevious: false });
+    expect(result[0]).toBe(sets[0]);
+    expect(result[3]).toBe(sets[3]);
+  });
+
+  it('logs cardio sets that have a recorded metric', () => {
+    const sets = [
+      { ...createWorkoutSet('cardio'), duration_seconds: 600 },
+      createWorkoutSet('cardio'),
+    ];
+
+    expect(completeRemainingSets('cardio', sets).map((item) => item.completed)).toEqual([
+      true,
+      false,
+    ]);
   });
 });

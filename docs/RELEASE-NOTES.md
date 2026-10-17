@@ -37,6 +37,10 @@
   shown at first, each with a tick; tap one to swap its tick for a cross and dim its name.
   The calendar greys out that type's dots, and the borders of days with only hidden types,
   while every date stays readable. Tap the type again to show it.
+- Ticking an exercise as finished also ticks its remaining sets, including suggestions from
+  your last workout, with the weight and reps shown. A finished exercise no longer reads
+  **0 completed working sets**. Blank sets stay unticked, and unticking the exercise leaves
+  its logged sets as they are.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 

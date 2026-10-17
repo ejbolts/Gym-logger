@@ -230,6 +230,7 @@ import {
   writeActiveWorkoutDraft,
 } from './workoutDraft';
 import {
+  completeRemainingSets,
   createSuggestedWorkoutSet,
   createWorkoutSet,
   DEFAULT_REST_SECONDS,
@@ -3389,7 +3390,17 @@ function WorkoutLogger({
             onExerciseHistory={() => onExerciseHistory(movement.exercise.id)}
             onExerciseComplete={(isComplete) =>
               setMovements((current) =>
-                current.map((item) => (item.key === movement.key ? { ...item, isComplete } : item)),
+                current.map((item) =>
+                  item.key === movement.key
+                    ? {
+                        ...item,
+                        isComplete,
+                        sets: isComplete
+                          ? completeRemainingSets(item.exercise.kind, item.sets)
+                          : item.sets,
+                      }
+                    : item,
+                ),
               )
             }
             onUpdateSet={(setKey, update) => updateSet(movement.key, setKey, update)}
