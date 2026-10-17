@@ -38,9 +38,7 @@ export function HomeLayoutSections({
   sections: Record<HomeSectionId, ReactNode>;
   edit?: HomeEditActions;
 }) {
-  const visible = layout.order.filter(
-    (id) => !layout.hidden.includes(id) && (edit || sections[id] != null),
-  );
+  const visible = layout.order.filter((id) => !layout.hidden.includes(id) && sections[id] != null);
   const hidden = layout.order.filter((id) => layout.hidden.includes(id));
   const spans = homeSectionSpans(visible, layout.widths);
   const [dragging, setDragging] = useState<HomeSectionId | null>(null);
@@ -144,12 +142,7 @@ export function HomeLayoutSections({
           >
             <div className="home-edit-card">
               <div className="home-section-content" inert={Boolean(edit)}>
-                {sections[id] ?? (
-                  <section className="pulse-card home-unavailable">
-                    <h2>{titleFor(id)}</h2>
-                    <p>Your active workout stays above the cards.</p>
-                  </section>
-                )}
+                {sections[id]}
               </div>
               {edit && (
                 <>

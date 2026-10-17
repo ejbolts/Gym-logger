@@ -31,6 +31,17 @@
   height: 100%;
   margin: 0;
 }
+/* A card stretched to match a taller neighbour centres its body below the header. */
+.home-section-content > .pulse-card:has(> .pulse-card-header) {
+  display: flex;
+  flex-direction: column;
+}
+.home-section-content > .pulse-card:has(> .pulse-card-header) > .pulse-card-header + * {
+  margin-top: auto;
+}
+.home-section-content > .pulse-card:has(> .pulse-card-header) > :last-child {
+  margin-bottom: auto;
+}
 .home-section-stat .pulse-kpi {
   width: 100%;
   height: 100%;
@@ -178,14 +189,6 @@
   border: 2px solid var(--p-accent);
   border-radius: calc(var(--p-radius) + 3px);
   pointer-events: none;
-}
-.home-unavailable h2 {
-  margin: 0;
-  font-size: 0.9375rem;
-}
-.home-unavailable p {
-  color: var(--p-muted);
-  font-size: 0.8125rem;
 }
 
 /* Center the value and unit as one line, independent of legacy form input rules. */
