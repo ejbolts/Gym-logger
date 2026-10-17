@@ -41,6 +41,8 @@
   your last workout, with the weight and reps shown. A finished exercise no longer reads
   **0 completed working sets**. Blank sets stay unticked, and unticking the exercise leaves
   its logged sets as they are.
+- The exercise menu uses clearer icons: a clock for **Recent History**, a book for
+  **Edit Notes** and a link for **Group Superset**.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 

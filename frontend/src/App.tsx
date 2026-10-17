@@ -4606,7 +4606,9 @@ function MovementCard({
                   closeMovementMenu();
                 }}
               >
-                <span aria-hidden="true">▰</span>
+                <span aria-hidden="true">
+                  <Icon name="history" />
+                </span>
                 {historyOpen ? 'Hide Recent History' : 'Recent History'}
               </button>
               <button
@@ -4616,7 +4618,9 @@ function MovementCard({
                   window.requestAnimationFrame(() => movementNoteRef.current?.focus());
                 }}
               >
-                <span aria-hidden="true">✎</span>
+                <span aria-hidden="true">
+                  <Icon name="book" />
+                </span>
                 Edit Notes
               </button>
               <button
@@ -4628,7 +4632,9 @@ function MovementCard({
                 }}
                 aria-haspopup="dialog"
               >
-                <span aria-hidden="true">▰</span>
+                <span aria-hidden="true">
+                  <Icon name="link" />
+                </span>
                 {supersetLabel ? 'Edit Group' : 'Group Superset'}
               </button>
               <button

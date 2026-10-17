@@ -7676,6 +7676,13 @@ body,
   text-align: center;
 }
 
+.movement-overflow-menu button > span > .pulse-icon {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0 auto;
+}
+
 .movement-overflow-menu button.active,
 .movement-overflow-menu button.active > span {
   color: var(--accent-dark);
