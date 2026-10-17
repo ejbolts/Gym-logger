@@ -3454,7 +3454,8 @@ html.edge-swipe-ready .edge-swipe-indicator {
   font-weight: 650;
 }
 
-.bodyweight-undo-toast {
+.bodyweight-undo-toast,
+.top-toast {
   top: max(1rem, env(safe-area-inset-top));
   bottom: auto;
   z-index: 120;

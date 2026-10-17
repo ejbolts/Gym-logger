@@ -14,7 +14,8 @@
     "Tap a workout type in the Consistency calendar's legend to switch it off. Its tick becomes a cross, the name dims, and that type's dots and day borders turn grey while the dates stay readable; tap again to show it.",
     "Ticking an exercise as finished now also ticks its remaining sets with their shown weight and reps, so a finished exercise no longer reads 0 completed working sets. Blank sets are left unticked.",
     "The exercise menu shows a clock for Recent History and a link for Group Superset, and drops Edit Notes because the note field sits at the bottom of each exercise. Equipment photos show a camera icon, and the Take photo button is blue. The Workout live card on Today is spaced like the other cards.",
-    "On Home, a card beside a taller one centres its content instead of leaving a gap at the bottom, and editing Home during a live workout no longer shows a placeholder Next workout card."
+    "On Home, a card beside a taller one centres its content instead of leaving a gap at the bottom, and editing Home during a live workout no longer shows a placeholder Next workout card.",
+    "Profile sharing changes who can see your profile only when you press the confirm button, such as Make my profile public, and the saved message is a five-second popup at the top of the screen."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

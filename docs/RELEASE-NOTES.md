@@ -50,6 +50,11 @@
   gap at the bottom, for example **Sets per muscle** next to **Consistency** or **Daily
   check-in** next to **Recent records**.
 - While a workout is live, editing Home no longer shows a placeholder **Next workout** card.
+- Profile sharing only changes who can see your profile when you press its confirm button:
+  **Share with friends**, **Make my profile public** or **Make my profile private**. Choosing
+  a different option no longer saves on its own, and choosing your current option again
+  cancels the change. The saved message appears as a five-second popup at the top of the
+  screen with a countdown bar.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
