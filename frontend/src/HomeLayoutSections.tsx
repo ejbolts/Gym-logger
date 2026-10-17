@@ -42,7 +42,7 @@ export function HomeLayoutSections({
   edit?: HomeEditActions;
 }) {
   const visible = layout.order.filter((id) => !layout.hidden.includes(id) && sections[id] != null);
-  const hidden = layout.order.filter((id) => layout.hidden.includes(id));
+  const hidden = layout.order.filter((id) => layout.hidden.includes(id) && sections[id] != null);
   const spans = homeSectionSpans(visible, layout.widths);
   const gaps = homeSectionGaps(visible, spans);
   const [dragging, setDragging] = useState<HomeSectionId | null>(null);
@@ -290,7 +290,7 @@ export function HomeLayoutSections({
               <button
                 type="button"
                 disabled={busy}
-                aria-label={`Add or move a section after ${titleFor(id)}`}
+                aria-label={`Add a section after ${titleFor(id)}`}
                 onClick={() => setAddingTo({ after: id, span: gaps.get(id)! })}
                 data-home-drop-after={id}
                 data-home-drop-span={gaps.get(id)}
@@ -319,36 +319,35 @@ export function HomeLayoutSections({
           onClose={() => setAddingTo(null)}
         >
           <div className="home-section-options">
-            <p>Choose a hidden section to add, or move one already on Home.</p>
-            {[...hidden, ...visible]
-              .filter((id) => id !== addingTo.after && sections[id] != null)
-              .map((id) => {
-                const section = HOME_SECTIONS.find((item) => item.id === id)!;
-                const isHidden = layout.hidden.includes(id);
-                return (
-                  <button
-                    type="button"
-                    className="home-section-choice"
-                    key={id}
-                    disabled={busy}
-                    aria-label={`${isHidden ? 'Add' : 'Move'} ${section.title} here`}
-                    onClick={() => {
-                      edit.onChange(fillHomeSectionGap(layout, id, addingTo.after, addingTo.span));
-                      setAnnouncement(
-                        `${section.title} ${isHidden ? 'added' : 'moved'} after ${titleFor(addingTo.after)}.`,
-                      );
-                      setAddingTo(null);
-                    }}
-                  >
-                    <Icon name={section.icon} />
-                    <span>
-                      <strong>{section.title}</strong>
-                      <small>{section.description}</small>
-                    </span>
-                    <b>{isHidden ? 'Add' : 'Move'}</b>
-                  </button>
-                );
-              })}
+            <p>
+              {hidden.length
+                ? 'Choose a section to add to this space.'
+                : 'All available sections are already on Home.'}
+            </p>
+            {hidden.map((id) => {
+              const section = HOME_SECTIONS.find((item) => item.id === id)!;
+              return (
+                <button
+                  type="button"
+                  className="home-section-choice"
+                  key={id}
+                  disabled={busy}
+                  aria-label={`Add ${section.title} here`}
+                  onClick={() => {
+                    edit.onChange(fillHomeSectionGap(layout, id, addingTo.after, addingTo.span));
+                    setAnnouncement(`${section.title} added after ${titleFor(addingTo.after)}.`);
+                    setAddingTo(null);
+                  }}
+                >
+                  <Icon name={section.icon} />
+                  <span>
+                    <strong>{section.title}</strong>
+                    <small>{section.description}</small>
+                  </span>
+                  <b>Add</b>
+                </button>
+              );
+            })}
           </div>
         </PopupDialog>
       )}

@@ -60,9 +60,10 @@
 - In **Edit Home**, drag a section into an empty space beside another card. Expanded cards
   automatically shrink to compact width when dropped into a smaller space. Dotted targets
   highlight spaces that fit the compact card, and its new width stays after saving.
-- Empty spaces now show a plus: tap one to choose a hidden section to add or move an existing
-  section there. Sections fit the chosen space, including a third-width slot. Dragging into
-  those spaces still works. Tap the top pencil again to **save** the layout; the bottom
+- Empty spaces now show a plus: tap one to choose a section that is not already on Home.
+  Only hidden sections appear; when all available sections are added, the picker explains
+  that there are none left to add. Sections fit the chosen space, including a third-width
+  slot. Dragging into those spaces still works. Tap the top pencil again to **save** the layout; the bottom
   **Cancel** button discards changes. A failed save retains the draft for retry.
 - Profile sharing has one button under the three options: **Make my profile private**,
   **Make my profile friends only** or **Make my profile public**, matching your choice. It
@@ -207,10 +208,10 @@ Release-note dates remain visible when a version's changes are folded.
 Mixed compact cards fill unusable single-column strips while preserving spaces large enough
 for another card. Captured with synthetic sample data in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-home-section-picker.png" alt="Add a section here picker with hidden cards to add and existing cards to move into the tapped space." width="720">
+<img src="screenshots/releases/0.6.6-home-section-picker.png" alt="Add a section here picker showing only Friends, the one section not already on this sample Home layout." width="720">
 
-Tap an empty space's plus to choose a section for that position. Hidden sections show **Add**;
-sections already on Home show **Move**.
+Tap an empty space's plus to add a missing section in that position. This sample layout
+already has every available section except Friends, so only Friends appears.
 
 <img src="screenshots/releases/0.6.6-home-section-saved.png" alt="Friends added as the third card beside Workouts and Cardio sessions, after the top pencil saved the layout." width="720">
 

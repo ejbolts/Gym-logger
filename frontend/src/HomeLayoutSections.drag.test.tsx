@@ -153,6 +153,9 @@ describe('Home empty-space dragging', () => {
         .click(),
     );
     expect(document.querySelector('.home-section-picker')).not.toBeNull();
+    expect(document.querySelectorAll('.home-section-picker .home-section-choice')).toHaveLength(1);
+    expect(document.querySelector('.home-section-picker')!.textContent).not.toContain('Move');
+    expect(document.querySelector('[aria-label="Add Workouts here"]')).toBeNull();
     await act(async () =>
       document.querySelector<HTMLButtonElement>('[aria-label="Add Friends here"]')!.click(),
     );
@@ -164,23 +167,18 @@ describe('Home empty-space dragging', () => {
     expect(container.querySelectorAll('[data-home-section="friends"]')).toHaveLength(1);
     expect(document.querySelector('.home-section-picker')).toBeNull();
   });
-  it('moves an existing section from the chooser and closes it without edits when cancelled', async () => {
+  it('shows an empty state when all sections are added and closes without changing the draft', async () => {
     const gap = container.querySelector<HTMLButtonElement>('[data-home-drop-after="consistency"]')!;
     await act(async () => gap.click());
+    expect(document.querySelectorAll('.home-section-picker .home-section-choice')).toHaveLength(0);
+    expect(document.querySelector('.home-section-picker')!.textContent).toContain(
+      'All available sections are already on Home.',
+    );
     await act(async () =>
       document.querySelector<HTMLButtonElement>('[aria-label="Close Add a section here"]')!.click(),
     );
     expect(changed).not.toHaveBeenCalled();
-    await act(async () => gap.click());
-    await act(async () =>
-      document.querySelector<HTMLButtonElement>('[aria-label="Move Zone 2 cardio here"]')!.click(),
-    );
-    expect(changed.mock.lastCall![0].order).toEqual([
-      'consistency',
-      'zone2',
-      'friends',
-      'bodyweight-trend',
-    ]);
+    expect(document.querySelector('.home-section-picker')).toBeNull();
   });
   it('cancels a highlighted drop without changing the draft', async () => {
     const handle = await begin('friends');
