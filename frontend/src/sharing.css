@@ -459,6 +459,76 @@
 
 /* Friends */
 
+.profile-account-id {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--p-line);
+}
+.profile-account-id-label {
+  display: block;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+.profile-account-id-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.profile-account-id-row code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--p-ink-2);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  user-select: text;
+}
+.profile-account-id-row button {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+.profile-account-id-status {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--p-accent-text);
+  font-size: 0.75rem;
+}
+.profile-account-id-status:empty {
+  display: none;
+}
+.people-search-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+  margin-top: 0.75rem;
+}
+.people-search-form input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.people-search-form .profile-primary {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.people-search-form .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+.people-search-summary {
+  overflow-wrap: anywhere;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  margin: 0.75rem 0 0;
+}
+
 .friends-panel > header + * {
   margin-top: 0.9rem;
 }

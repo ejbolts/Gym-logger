@@ -6,14 +6,15 @@ accounts that share their own profile can see or follow others. A shared profile
 its workouts and profile photo; notes, cardio, body weight, goals and machine photos are optional.
 
 Private, disabled and missing profiles all answer "not found". A friends-only profile shows only
-its name and photo until its owner approves a follow request. Usernames, videos and sample data
-are never shared.
+its name and photo until its owner approves a follow request. Usernames can be searched but are
+not returned in shared profiles. Videos and sample data are never shared.
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from typing import Annotated, Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import FileResponse
@@ -447,13 +448,34 @@ def update_sharing(payload: SharingChoices, user: CurrentUser, db: Db) -> Sharin
 
 
 @sharing_router.get("/profiles", response_model=list[SharedProfileSummary])
-def list_shared_profiles(user: CurrentUser, db: Db) -> list[SharedProfileSummary]:
+def list_shared_profiles(
+    user: CurrentUser, db: Db, q: str | None = Query(default=None, max_length=100)
+) -> list[SharedProfileSummary]:
     require_sharing(db, user)
-    rows = db.execute(
+    query = (
         select(User, ProfileSharing)
         .join(ProfileSharing, ProfileSharing.user_id == User.id)
         .where(ProfileSharing.visibility != PRIVATE, User.disabled_at.is_(None))
-    ).all()
+    )
+    if q is not None:
+        term = q.strip()
+        if not term:
+            return []
+        try:
+            account_id = str(UUID(term))
+        except ValueError:
+            account_id = None
+    rows = db.execute(query).all()
+    if q is not None:
+        # Casefold handles Unicode display names, unlike SQLite's ASCII-only lower().
+        folded = term.casefold()
+        rows = [
+            (member, sharing)
+            for member, sharing in rows
+            if member.id == account_id
+            or folded in member.display_name.casefold()
+            or folded in member.username.casefold()
+        ]
     following = {
         follow.followee_id: follow
         for follow in db.scalars(select(ProfileFollow).where(ProfileFollow.follower_id == user.id))

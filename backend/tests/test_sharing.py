@@ -8,7 +8,7 @@ from sqlalchemy import func, select, update
 from test_auth import named, upload_photo
 
 from app.database import SessionLocal
-from app.models import ProfileFollow, ProfileSharing, TrainingWorkout
+from app.models import ProfileFollow, ProfileSharing, TrainingWorkout, User
 
 NOTHING_EXTRA = {
     "share_notes": False,
@@ -132,6 +132,54 @@ def test_sharing_starts_private_and_keeps_choices(client):
     assert private["visibility"] == "private" and private["share_goals"] is True
     assert client.put("/api/sharing", json={"visibility": "everyone"}).status_code == 422
     assert client.get("/api/sharing").headers["cache-control"] == "no-store"
+
+
+def test_people_search_matches_names_and_exact_uuid_without_wildcards(client, other_client):
+    share(client)
+    share(other_client)
+    target_id = other_client.user["id"]
+    with SessionLocal() as db:
+        db.execute(
+            update(User)
+            .where(User.id == target_id)
+            .values(display_name="Case_100% Lifter Élodie", username="tagged.user")
+        )
+        db.commit()
+    for term in (
+        "  case_100%  ",
+        "LIFTER",
+        "élodie",
+        "TAGGED.",
+        "%",
+        "_",
+        target_id.upper(),
+        target_id.replace("-", ""),
+    ):
+        response = client.get("/api/sharing/profiles", params={"q": term})
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()] == [target_id]
+        assert "username" not in response.json()[0]
+    for term in ("not-a-uuid", target_id[:8], "  "):
+        assert client.get("/api/sharing/profiles", params={"q": term}).json() == []
+    assert len(client.get("/api/sharing/profiles").json()) == 2
+    assert client.get("/api/sharing/profiles", params={"q": "x" * 101}).status_code == 422
+
+
+def test_people_search_keeps_profile_permissions(client, other_client):
+    share(client)
+    target_id = other_client.user["id"]
+    terms = (target_id, other_client.user["username"], other_client.user["display_name"])
+    for term in terms:
+        assert client.get("/api/sharing/profiles", params={"q": term}).json() == []
+    share(other_client, "followers")
+    [found] = client.get("/api/sharing/profiles", params={"q": target_id}).json()
+    assert found["can_view"] is False and found["workout_count"] is None
+    assert found["shares"] is None and "username" not in found
+    assert client.patch(f"/api/admin/users/{target_id}", json={"disabled": True}).is_success
+    for term in terms:
+        assert client.get("/api/sharing/profiles", params={"q": term}).json() == []
+    share(client, "private")
+    assert client.get("/api/sharing/profiles", params={"q": target_id}).status_code == 403
 
 
 def test_private_members_neither_see_others_nor_appear(client, other_client):

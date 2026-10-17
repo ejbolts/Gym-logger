@@ -280,7 +280,7 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
             ))}
           </CollapsibleSection>
           <small className="sharing-never">
-            Never shared: your username, videos and sample data.
+            Shared accounts can be found by username. Your videos and sample data are never shared.
           </small>
           {status &&
             createPortal(

@@ -203,7 +203,10 @@ export const api = {
         headers: jsonHeaders,
         body: JSON.stringify(choices),
       }),
-    profiles: () => request<SharedProfileSummary[]>('/api/sharing/profiles'),
+    profiles: (query?: string) =>
+      request<SharedProfileSummary[]>(
+        `/api/sharing/profiles${query === undefined ? '' : `?q=${encodeURIComponent(query.trim())}`}`,
+      ),
     profile: (userId: string) =>
       request<SharedProfile>(`/api/sharing/profiles/${encodeURIComponent(userId)}`),
     workoutFilters: (userId: string) =>

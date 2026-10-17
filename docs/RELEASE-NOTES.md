@@ -70,8 +70,13 @@
   your current option again cancels the change. The saved message appears as a
   five-second popup at the top of the screen with a countdown bar.
 - A new **Friends** section on Profile replaces the separate shared profiles screen. It
-  lists follow requests to approve or decline, who you follow, your followers and other
-  members to follow. Tap anyone to open their profile.
+  lists follow requests to approve or decline, who you follow, your followers and a search
+  for other members. Tap anyone to open their profile.
+- **Search people** replaces the unfiltered Find people list. Search shared accounts by
+  display name, username or full account UUID, then open a result or follow/request it.
+  Your profile and shared profiles display **Account UUID** with **Copy UUID**. Names match
+  without case sensitivity, including accented names. Private and disabled accounts remain
+  hidden; friends-only workouts still require approval.
 - On Profile, **Profile sharing** and **Friends** start open. **What you share** and
   **Change password** start folded. Tap any heading to open or close
   it; sharing status and waiting request counts remain visible when folded.
@@ -131,6 +136,12 @@ highlighted request and relationship dates in view; sharing and Friends still st
 
 Editing mode keeps Remove photo on the left and has no blue outline on the card or avatar.
 Photo and name drafts wait for Save profile; Cancel discards them.
+
+<img src="screenshots/releases/0.6.6-people-search-uuid.png" alt="Profile showing the full Account UUID with Copy UUID, and Search people finding Alex Sample by account name." width="430">
+
+Copy the account UUID from a profile and share it for an exact lookup, or search by display
+name or username. Only shared accounts appear. Captured with synthetic sample accounts;
+Profile sharing is folded here to keep the account UUID and search result together.
 
 <img src="screenshots/releases/0.6.6-shared-workout-images.png" alt="Another member viewing Alex's shared profile with an expanded workout and example images pinned to Back Extension Machine and Back Squat." width="720">
 

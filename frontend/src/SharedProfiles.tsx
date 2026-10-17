@@ -1,12 +1,13 @@
 import { useWeightUnit } from './trainingPreferencesContext';
 import { formatWeight, weightFromKg, type WeightUnit } from './weightUnits';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, ApiError } from './api';
 import { authErrorMessage } from './authForm';
 import { clipBodyWeightGoalPath } from './bodyTrend';
 import { CollapsibleSection } from './CollapsibleSection';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
+import { ProfileAccountId } from './ProfileAccountId';
 import { SharedWorkoutFilters } from './SharedWorkoutFilters';
 import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
@@ -237,7 +238,136 @@ function FriendGroup({
   );
 }
 
-/** Profile's Friends section: follow requests, who you follow, your followers and people to find. */
+export function PeopleSearch({
+  active,
+  refreshKey,
+  onOpenProfile,
+  onFollowChanged,
+}: {
+  active: boolean;
+  refreshKey: string;
+  onOpenProfile: (profile: SharedProfileSummary) => void;
+  onFollowChanged: () => void;
+}) {
+  const id = useId();
+  const [input, setInput] = useState('');
+  const [submitted, setSubmitted] = useState({ term: '', serial: 0 });
+  const [results, setResults] = useState<SharedProfileSummary[]>([]);
+  const [state, setState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!active || !submitted.term) return;
+    let cancelled = false;
+    setState('loading');
+    setError(null);
+    api.sharing
+      .profiles(submitted.term)
+      .then((profiles) => {
+        if (cancelled) return;
+        setResults(profiles.filter((profile) => !profile.is_you));
+        setState('ready');
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setError(authErrorMessage(reason));
+        setState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, submitted, refreshKey]);
+  return (
+    <div className="friend-group people-search">
+      <h3>Search people</h3>
+      <form
+        className="people-search-form"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (input.trim())
+            setSubmitted((current) => ({ term: input.trim(), serial: current.serial + 1 }));
+        }}
+      >
+        <label className="sr-only" htmlFor={id}>
+          Account name or UUID
+        </label>
+        <input
+          id={id}
+          type="search"
+          value={input}
+          maxLength={100}
+          autoComplete="off"
+          placeholder="Account name or UUID"
+          onChange={(event) => {
+            const next = event.target.value;
+            setInput(next);
+            if (!next.trim()) {
+              setSubmitted((current) => ({ term: '', serial: current.serial + 1 }));
+              setResults([]);
+              setState('idle');
+              setError(null);
+            }
+          }}
+        />
+        <button
+          type="submit"
+          className="profile-primary"
+          disabled={!input.trim() || (state === 'loading' && input.trim() === submitted.term)}
+          aria-busy={state === 'loading'}
+        >
+          <Icon name="search" /> Search
+        </button>
+      </form>
+      <p className="shared-card-empty">
+        Search by display name, username or full UUID. Only shared profiles appear.
+      </p>
+      {state === 'loading' && (
+        <p className="sharing-loading" role="status">
+          Searching…
+        </p>
+      )}
+      {state === 'error' && (
+        <div className="sharing-load-error">
+          <p className="inline-error" role="alert">
+            {error ?? 'Could not search people.'}
+          </p>
+          <button
+            type="button"
+            className="profile-secondary"
+            onClick={() => setSubmitted((current) => ({ ...current, serial: current.serial + 1 }))}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      {state === 'ready' && (
+        <>
+          <p className="people-search-summary" role="status">
+            {results.length} {results.length === 1 ? 'account' : 'accounts'} found for “
+            {submitted.term}”.
+          </p>
+          {results.length === 0 ? (
+            <p className="shared-card-empty">No shared accounts found. Check the name or UUID.</p>
+          ) : (
+            <ul>
+              {results.map((profile) => (
+                <FriendRow
+                  key={profile.id}
+                  person={profile}
+                  detail={VISIBILITY_LABELS[profile.visibility]}
+                  onOpen={() => onOpenProfile(profile)}
+                  actions={<FollowButton compact profile={profile} onChange={onFollowChanged} />}
+                />
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Profile's Friends section: requests, follows, followers and account search. */
 export function FriendsPanel({
   active,
   refreshKey,
@@ -311,7 +441,6 @@ export function FriendsPanel({
 
   const others = profiles?.filter((profile) => !profile.is_you) ?? [];
   const following = others.filter((profile) => profile.follow_status !== 'none');
-  const discover = others.filter((profile) => profile.follow_status === 'none');
   const openFor = (id: string) => {
     const profile = others.find((item) => item.id === id);
     return profile ? () => onOpenProfile(profile) : undefined;
@@ -445,39 +574,12 @@ export function FriendsPanel({
               />
             ))}
           </FriendGroup>
-          <FriendGroup
-            title="Find people"
-            emptyText={
-              others.length === 0
-                ? 'No one else is sharing yet. Members appear here as soon as they share.'
-                : 'You follow everyone who shares.'
-            }
-          >
-            {discover.map((profile) => (
-              <FriendRow
-                key={profile.id}
-                person={profile}
-                detail={
-                  profile.follows_you
-                    ? followSinceLabel('Follows you', profile.follows_you_since)
-                    : VISIBILITY_LABELS[profile.visibility]
-                }
-                onOpen={() => onOpenProfile(profile)}
-                actions={
-                  <FollowButton
-                    compact
-                    profile={profile}
-                    onChange={(status) =>
-                      updateProfile(profile.id, {
-                        follow_status: status,
-                        can_view: profile.can_view || status === 'accepted',
-                      })
-                    }
-                  />
-                }
-              />
-            ))}
-          </FriendGroup>
+          <PeopleSearch
+            active={active}
+            refreshKey={`${refreshKey}:${attempt}`}
+            onOpenProfile={onOpenProfile}
+            onFollowChanged={() => setAttempt((count) => count + 1)}
+          />
         </>
       )}
     </CollapsibleSection>
@@ -861,6 +963,7 @@ export function SharedProfileScreen({
             {memberSince && <small>Joined {memberSince}</small>}
           </div>
         </div>
+        <ProfileAccountId accountId={profile.id} />
         {profile.can_view && (
           <dl className="shared-stat-row">
             <div>

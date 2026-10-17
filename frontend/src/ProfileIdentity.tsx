@@ -4,6 +4,7 @@ import { authErrorMessage, USERNAME_HINT, validateUsername } from './authForm';
 import { Icon } from './Icon';
 import { optimisePhoto } from './photoOptimise';
 import { ProfileAvatar } from './ProfileAvatar';
+import { ProfileAccountId } from './ProfileAccountId';
 import { formatMemberSince } from './profileDisplay';
 import type { User } from './types';
 
@@ -158,6 +159,7 @@ export function ProfileIdentity({ user, onSaved }: { user: User; onSaved: (user:
           </button>
         )}
       </div>
+      <ProfileAccountId accountId={user.id} />
       {editing && (
         <>
           <input
