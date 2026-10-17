@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from './api';
 import { authErrorMessage } from './authForm';
+import { CollapsibleSection } from './CollapsibleSection';
 import { Icon } from './Icon';
 import { VISIBILITY_LABELS } from './sharedProfileDisplay';
 import type { ProfileVisibility, SharingChoices, SharingSettings } from './types';
@@ -235,8 +236,12 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
             {saving && <Spinner />}
             <span>{VISIBILITY_CONFIRM[draft.visibility]}</span>
           </button>
-          <div className="sharing-options" role="group" aria-label="What to share">
-            <p className="sharing-group-title">What you share</p>
+          <CollapsibleSection
+            className="sharing-options"
+            title="What you share"
+            headingLevel={3}
+            headingClassName="sharing-group-title"
+          >
             {ALWAYS_SHARED.map((item) => (
               <div className="notification-setting-row" key={item.label}>
                 <div>
@@ -276,7 +281,7 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
                 </button>
               </div>
             ))}
-          </div>
+          </CollapsibleSection>
           <small className="sharing-never">
             Never shared: your username, videos and sample data.
           </small>

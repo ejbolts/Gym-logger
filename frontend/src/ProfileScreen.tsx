@@ -8,6 +8,7 @@ import {
   validateNewPassword,
 } from './authForm';
 import { optimisePhoto } from './photoOptimise';
+import { CollapsibleSection } from './CollapsibleSection';
 import { ProfileAvatar } from './ProfileAvatar';
 import { formatMemberSince } from './profileDisplay';
 import { ProfileSharingPanel } from './ProfileSharing';
@@ -183,13 +184,7 @@ function DetailsForm({ user, onSaved }: { user: User; onSaved: (user: User) => v
   }
 
   return (
-    <section className="settings-panel panel" aria-labelledby={`${id}-title`}>
-      <header>
-        <div>
-          <p className="section-kicker">DETAILS</p>
-          <h2 id={`${id}-title`}>Name &amp; username</h2>
-        </div>
-      </header>
+    <CollapsibleSection className="settings-panel panel" kicker="DETAILS" title="Name & username">
       <form className="profile-form" noValidate onSubmit={(event) => void save(event)}>
         <Field id={`${id}-name`} label="Name">
           <input
@@ -229,7 +224,7 @@ function DetailsForm({ user, onSaved }: { user: User; onSaved: (user: User) => v
           <span>{saving ? 'Saving…' : 'Save changes'}</span>
         </button>
       </form>
-    </section>
+    </CollapsibleSection>
   );
 }
 
@@ -279,13 +274,7 @@ function PasswordForm() {
   }
 
   return (
-    <section className="settings-panel panel" aria-labelledby={`${id}-title`}>
-      <header>
-        <div>
-          <p className="section-kicker">SECURITY</p>
-          <h2 id={`${id}-title`}>Change password</h2>
-        </div>
-      </header>
+    <CollapsibleSection className="settings-panel panel" kicker="SECURITY" title="Change password">
       <form className="profile-form" noValidate onSubmit={(event) => void save(event)}>
         <Field id={`${id}-current`} label="Current password">
           <input
@@ -332,7 +321,7 @@ function PasswordForm() {
           <span>{saving ? 'Updating…' : 'Update password'}</span>
         </button>
       </form>
-    </section>
+    </CollapsibleSection>
   );
 }
 
