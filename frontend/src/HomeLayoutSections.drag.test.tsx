@@ -12,10 +12,10 @@ const changed = vi.fn();
 const initial: HomeLayout = {
   order: ['consistency', 'friends', 'zone2', 'bodyweight-trend'],
   hidden: [],
-  widths: { consistency: 'compact' },
+  widths: { consistency: 'compact', friends: 'full' },
 };
-function Harness() {
-  const [layout, setLayout] = useState(initial);
+function Harness({ initialLayout = initial }: { initialLayout?: HomeLayout }) {
+  const [layout, setLayout] = useState(initialLayout);
   return (
     <HomeLayoutSections
       layout={layout}
@@ -82,23 +82,51 @@ describe('Home empty-space dragging', () => {
     expect(changed.mock.lastCall![0]).toEqual({
       ...initial,
       order: ['consistency', 'zone2', 'friends', 'bodyweight-trend'],
-      widths: { consistency: 'compact', zone2: 'compact' },
+      widths: { ...initial.widths, zone2: 'compact' },
     });
     expect(container.querySelector('[data-home-drop-after="consistency"]')).toBeNull();
     expect(
       container.querySelector('[data-home-section="zone2"]')!.getAttribute('data-home-span'),
     ).toBe('3');
   });
-  it('does not offer a half-row to a full-width card', async () => {
+  it('shrinks an explicitly expanded card when dropped into a half-row', async () => {
     const handle = await begin('friends');
     pointTarget = container.querySelector('[data-home-drop-after="consistency"]');
+    await pointer(handle, 'pointermove');
+    expect(pointTarget!.classList.contains('is-drop-target')).toBe(true);
+    await pointer(handle, 'pointerup');
+    expect(changed.mock.lastCall![0]).toEqual({
+      ...initial,
+      widths: { consistency: 'compact', friends: 'compact' },
+    });
+    expect(
+      container.querySelector('[data-home-section="friends"]')!.getAttribute('data-home-span'),
+    ).toBe('3');
+    expect(container.querySelector('[data-home-drop-after="consistency"]')).toBeNull();
+  });
+  it('rejects space too narrow for the card even at its compact width', async () => {
+    await act(async () =>
+      root.render(
+        <Harness
+          key="narrow"
+          initialLayout={{
+            order: ['workouts', 'cardio-sessions', 'friends'],
+            hidden: [],
+            widths: { workouts: 'compact', 'cardio-sessions': 'compact', friends: 'full' },
+          }}
+        />,
+      ),
+    );
+    const handle = await begin('friends');
+    pointTarget = container.querySelector('[data-home-drop-after="cardio-sessions"]');
+    expect(pointTarget!.getAttribute('data-home-drop-span')).toBe('2');
     await pointer(handle, 'pointermove');
     expect(pointTarget!.classList.contains('is-drop-target')).toBe(false);
     await pointer(handle, 'pointerup');
     expect(changed).not.toHaveBeenCalled();
   });
   it('cancels a highlighted drop without changing the draft', async () => {
-    const handle = await begin('zone2');
+    const handle = await begin('friends');
     pointTarget = container.querySelector('[data-home-drop-after="consistency"]');
     await pointer(handle, 'pointermove');
     await act(async () => {

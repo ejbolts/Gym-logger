@@ -76,7 +76,8 @@ export function HomeLayoutSections({
       ?.closest<HTMLElement>('[data-home-section], [data-home-drop-after]');
     const after = target?.dataset.homeDropAfter as HomeSectionId | undefined;
     const card = target?.dataset.homeSection as HomeSectionId | undefined;
-    const fits = Number(drag.card.dataset.homeSpan) <= Number(target?.dataset.homeDropSpan);
+    const compactSpan = homeSectionSpans([drag.id], { [drag.id]: 'compact' })[0];
+    const fits = compactSpan <= Number(target?.dataset.homeDropSpan);
     drag.target = after
       ? fits && after !== drag.id
         ? { id: after, empty: true }
@@ -284,7 +285,7 @@ export function HomeLayoutSections({
                 className={`home-drop-space${over === `space:${id}` ? ' is-drop-target' : ''}`}
                 aria-hidden="true"
               >
-                <span>Drop a compact section here</span>
+                <span>Drop a section here</span>
               </div>
             )}
           </Fragment>

@@ -25,7 +25,7 @@
     "Unfollow uses a red outline and tint to match the delete-button style.",
     "Filter another member’s shared workout history by type, exercise, date range and shared machine photos. Filters search the full shared history, including older workouts, and remain applied when loading more.",
     "Daily check-in adds body-fat percentage with minus, plus and Log or Update controls beneath body weight, separated by a padded dotted line. Log today’s weight first; body-fat saves keep that weight and notes, and Undo restores only body fat. Saved today summaries are green for both measurements.",
-    "In Edit Home, drag a compact section into an empty space beside another card. A dotted drop target highlights spaces that fit; the card stays compact after saving."
+    "In Edit Home, drag a section into an empty space beside another card. Expanded sections automatically shrink to compact width when dropped into a smaller space, and keep that width after saving."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

@@ -50,8 +50,9 @@
   gap at the bottom, for example **Sets per muscle** next to **Consistency** or **Daily
   check-in** next to **Recent records**.
 - While a workout is live, editing Home no longer shows a placeholder **Next workout** card.
-- In **Edit Home**, drag a compact section into an empty space beside another card.
-  Dotted drop targets highlight spaces that fit, and the moved card stays compact after saving.
+- In **Edit Home**, drag a section into an empty space beside another card. Expanded cards
+  automatically shrink to compact width when dropped into a smaller space. Dotted targets
+  highlight spaces that fit the compact card, and its new width stays after saving.
 - Profile sharing has one button under the three options: **Make my profile private**,
   **Make my profile friends only** or **Make my profile public**, matching your choice. It
   only becomes available when the choice differs from your current setting, and choosing
@@ -136,10 +137,10 @@ Unfollow button and exact relationship dates remain above the results.
 Body weight and body fat have separate controls and saved states. All screenshots use synthetic
 sample accounts in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-home-space-drop.png" alt="Zone 2 cardio moved into the space beside compact Consistency, with green Saved today summaries on the Daily check-in below." width="720">
+<img src="screenshots/releases/0.6.6-home-space-drop.png" alt="Previously expanded Friends card shrunk into the half-row beside Bodyweight trend, with green Saved today summaries above." width="720">
 
-Drag a compact section into the dotted empty space in Edit Home, then save to keep it beside
-the existing card. The moved section retains its compact width.
+Drag a section into the dotted empty space in Edit Home, then save to keep it beside the existing
+card. Expanded sections shrink to fit the smaller space and retain their compact width.
 
 ## 0.6.5
 
