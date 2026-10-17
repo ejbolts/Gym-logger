@@ -11,6 +11,25 @@ import {
 } from './homeLayout';
 
 describe('Home layout edits', () => {
+  it('unhides and fits a section to a third-width gap while retaining other preferences', () => {
+    const saved = {
+      ...defaultHomeLayout(),
+      hidden: ['friends' as const],
+      widths: {
+        friends: 'full' as const,
+        workouts: 'compact' as const,
+        'cardio-sessions': 'compact' as const,
+      },
+    };
+    const added = fillHomeSectionGap(saved, 'friends', 'cardio-sessions', 2);
+    expect(added.hidden).toEqual([]);
+    expect(added.widths?.friends).toBe('third');
+    expect(homeSectionSpans(['workouts', 'cardio-sessions', 'friends'], added.widths)).toEqual([
+      2, 2, 2,
+    ]);
+    expect(saved.hidden).toEqual(['friends']);
+    expect(saved.widths.friends).toBe('full');
+  });
   it('fills unusable strips in mixed-size rows without removing usable drop spaces', () => {
     const widths = {
       consistency: 'compact',

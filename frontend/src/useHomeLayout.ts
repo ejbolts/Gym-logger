@@ -16,6 +16,15 @@ export function useHomeLayout(active = true) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const editButton = useRef<HTMLButtonElement>(null);
+  const focusAfterEdit = useRef(false);
+
+  useEffect(() => {
+    if (editing) focusAfterEdit.current = true;
+    else if (!saving && focusAfterEdit.current) {
+      editButton.current?.focus();
+      focusAfterEdit.current = false;
+    }
+  }, [editing, saving]);
 
   useEffect(() => {
     if (active) return;
@@ -67,7 +76,24 @@ export function useHomeLayout(active = true) {
   function finish() {
     setEditing(false);
     setDragging(false);
-    requestAnimationFrame(() => editButton.current?.focus());
+  }
+
+  async function save() {
+    if (saving || dragging) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const saved = await api.saveHomeLayout(draft);
+      setLayout(saved);
+      setMessage('Home layout saved.');
+      finish();
+    } catch {
+      setError(
+        'Could not save your layout. Your changes are still here. Use the pencil or green tick to try again.',
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return {
@@ -85,29 +111,18 @@ export function useHomeLayout(active = true) {
     retry: () => setAttempt((value) => value + 1),
     edit,
     cancel,
-    // The Today pencil starts editing and, while editing, cancels like the bottom Cancel tab.
-    toggleEditing: () => (editing ? cancel() : edit()),
+    // The Today pencil saves the draft when tapped again. Cancel remains in the bottom bar.
+    toggleEditing: () => {
+      if (saving || dragging) return;
+      if (editing) void save();
+      else edit();
+    },
     change: setDraft,
     reset: () => {
       setDraft(defaultHomeLayout());
       setError(null);
       setMessage('Default layout restored. Tap the green tick to keep it.');
     },
-    save: async () => {
-      setSaving(true);
-      setError(null);
-      try {
-        const saved = await api.saveHomeLayout(draft);
-        setLayout(saved);
-        setMessage('Home layout saved.');
-        finish();
-      } catch {
-        setError(
-          'Could not save your layout. Your changes are still here. Tap the green tick to try again.',
-        );
-      } finally {
-        setSaving(false);
-      }
-    },
+    save,
   };
 }

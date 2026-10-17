@@ -33,7 +33,7 @@ class HomeLayout(BaseModel):
         default_factory=lambda: SECTION_IDS.copy(), max_length=len(SECTION_IDS)
     )
     hidden: list[HomeSection] = Field(default_factory=list, max_length=len(SECTION_IDS))
-    widths: dict[HomeSection, Literal["compact", "full"]] = Field(
+    widths: dict[HomeSection, Literal["compact", "full", "third"]] = Field(
         default_factory=dict, max_length=len(SECTION_IDS)
     )
 

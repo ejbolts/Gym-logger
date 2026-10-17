@@ -504,7 +504,9 @@ export function TodayScreen({
               ref={home.editButton}
               className="icon-button-pulse"
               type="button"
-              aria-label="Edit Home layout"
+              aria-label={home.editing ? 'Save Home layout' : 'Edit Home layout'}
+              title={home.editing ? 'Save Home layout' : 'Edit Home layout'}
+              aria-busy={home.saving}
               aria-pressed={home.editing}
               disabled={!home.loaded || (home.editing && (home.saving || home.dragging))}
               onClick={home.toggleEditing}

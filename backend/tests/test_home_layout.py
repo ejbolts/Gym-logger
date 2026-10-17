@@ -9,7 +9,7 @@ def test_layout_defaults_and_round_trip_are_account_scoped(client, other_client)
     layout = {
         "order": list(reversed(SECTION_IDS)),
         "hidden": ["consistency", "workouts"],
-        "widths": {"daily-check-in": "compact", "workouts": "full"},
+        "widths": {"daily-check-in": "compact", "workouts": "full", "friends": "third"},
     }
     response = client.put("/api/home-layout", json=layout)
     assert response.status_code == 200

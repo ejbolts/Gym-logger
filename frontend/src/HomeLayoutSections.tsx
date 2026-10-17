@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
+import { PopupDialog } from './PopupDialog';
 import {
   HOME_SECTIONS,
   fillHomeSectionGap,
@@ -47,6 +48,7 @@ export function HomeLayoutSections({
   const [dragging, setDragging] = useState<HomeSectionId | null>(null);
   const [over, setOver] = useState<HomeSectionId | `space:${HomeSectionId}` | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [addingTo, setAddingTo] = useState<{ after: HomeSectionId; span: number } | null>(null);
   const dragRef = useRef<CardDrag | null>(null);
   const titleFor = (id: HomeSectionId) => HOME_SECTIONS.find((section) => section.id === id)!.title;
 
@@ -76,7 +78,7 @@ export function HomeLayoutSections({
       ?.closest<HTMLElement>('[data-home-section], [data-home-drop-after]');
     const after = target?.dataset.homeDropAfter as HomeSectionId | undefined;
     const card = target?.dataset.homeSection as HomeSectionId | undefined;
-    const compactSpan = homeSectionSpans([drag.id], { [drag.id]: 'compact' })[0];
+    const compactSpan = homeSectionSpans([drag.id], { [drag.id]: 'third' })[0];
     const fits = compactSpan <= Number(target?.dataset.homeDropSpan);
     drag.target = after
       ? fits && after !== drag.id
@@ -261,7 +263,14 @@ export function HomeLayoutSections({
                       onPointerUp={() => {
                         const drag = dragRef.current;
                         if (drag?.target?.empty && edit && !edit.saving) {
-                          edit.onChange(fillHomeSectionGap(layout, drag.id, drag.target.id));
+                          edit.onChange(
+                            fillHomeSectionGap(
+                              layout,
+                              drag.id,
+                              drag.target.id,
+                              gaps.get(drag.target.id),
+                            ),
+                          );
                           setAnnouncement(
                             `${titleFor(drag.id)} moved into the space after ${titleFor(drag.target.id)}.`,
                           );
@@ -278,15 +287,20 @@ export function HomeLayoutSections({
               </div>
             </div>
             {edit && gaps.has(id) && (
-              <div
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={`Add or move a section after ${titleFor(id)}`}
+                onClick={() => setAddingTo({ after: id, span: gaps.get(id)! })}
                 data-home-drop-after={id}
                 data-home-drop-span={gaps.get(id)}
                 style={{ gridColumn: `span ${gaps.get(id)}` }}
                 className={`home-drop-space${over === `space:${id}` ? ' is-drop-target' : ''}`}
-                aria-hidden="true"
               >
-                <span>Drop a section here</span>
-              </div>
+                <Icon name="plus" />
+                <span>Add a section</span>
+                <small>or drag one here</small>
+              </button>
             )}
           </Fragment>
         ))}
@@ -298,12 +312,52 @@ export function HomeLayoutSections({
           </p>
         )}
       </div>
+      {edit && addingTo && (
+        <PopupDialog
+          title="Add a section here"
+          className="home-section-picker"
+          onClose={() => setAddingTo(null)}
+        >
+          <div className="home-section-options">
+            <p>Choose a hidden section to add, or move one already on Home.</p>
+            {[...hidden, ...visible]
+              .filter((id) => id !== addingTo.after && sections[id] != null)
+              .map((id) => {
+                const section = HOME_SECTIONS.find((item) => item.id === id)!;
+                const isHidden = layout.hidden.includes(id);
+                return (
+                  <button
+                    type="button"
+                    className="home-section-choice"
+                    key={id}
+                    disabled={busy}
+                    aria-label={`${isHidden ? 'Add' : 'Move'} ${section.title} here`}
+                    onClick={() => {
+                      edit.onChange(fillHomeSectionGap(layout, id, addingTo.after, addingTo.span));
+                      setAnnouncement(
+                        `${section.title} ${isHidden ? 'added' : 'moved'} after ${titleFor(addingTo.after)}.`,
+                      );
+                      setAddingTo(null);
+                    }}
+                  >
+                    <Icon name={section.icon} />
+                    <span>
+                      <strong>{section.title}</strong>
+                      <small>{section.description}</small>
+                    </span>
+                    <b>{isHidden ? 'Add' : 'Move'}</b>
+                  </button>
+                );
+              })}
+          </div>
+        </PopupDialog>
+      )}
       {edit && (
         <>
           <span id="home-drag-help" className="sr-only">
-            Drag to another card or an empty space that fits, or use the arrow keys to move it.
-            Escape cancels a drag. Use the width button to resize, X to hide, and the green tick
-            below to save.
+            Drag to another card or empty space, or use the arrow keys to move it. Tap an empty
+            space to choose a section. Escape cancels a drag. Use the width button to resize, X to
+            hide, and the pencil or green tick to save. Cancel below discards changes.
           </span>
           <span className="sr-only" role="status" aria-live="polite">
             {announcement}

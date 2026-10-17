@@ -32,7 +32,11 @@ function EditorHarness() {
   home = useHomeLayout();
   return (
     <>
-      <button ref={home.editButton} onClick={home.toggleEditing}>
+      <button
+        ref={home.editButton}
+        onClick={home.toggleEditing}
+        disabled={home.saving || home.dragging}
+      >
         Edit Home layout
       </button>
       <HomeLayoutSections
@@ -149,16 +153,16 @@ describe('account Home layout drafts', () => {
     expect(home.layout).toEqual(defaultHomeLayout());
   });
 
-  it('cancels editing from the Today pencil without saving the draft', async () => {
+  it('saves editing from the Today pencil instead of cancelling the draft', async () => {
     await act(async () => root.render(<EditorHarness />));
     await act(async () => home.editButton.current!.click());
     expect(home.editing).toBe(true);
     await click('Hide Workouts');
     await act(async () => home.editButton.current!.click());
     expect(home.editing).toBe(false);
-    expect(home.message).toBe('Changes cancelled.');
-    expect(home.layout).toEqual(saved);
-    expect(api.saveHomeLayout).not.toHaveBeenCalled();
+    expect(home.message).toBe('Home layout saved.');
+    expect(home.layout).toEqual({ ...saved, hidden: ['workouts'] });
+    expect(api.saveHomeLayout).toHaveBeenCalledWith({ ...saved, hidden: ['workouts'] });
     expect(container.querySelector('.app-tab-navigation')?.hasAttribute('inert')).toBe(false);
     expect(document.activeElement).toBe(home.editButton.current);
   });
@@ -174,7 +178,8 @@ describe('account Home layout drafts', () => {
     await act(async () => root.render(<EditorHarness />));
     await act(async () => home.editButton.current!.click());
     await click('Hide Workouts');
-    await click('Save layout');
+    await act(async () => home.editButton.current!.click());
+    expect(home.editButton.current!.disabled).toBe(true);
     expect(
       [...container.querySelectorAll<HTMLButtonElement>('.app-tab-layout button')].every(
         (button) => button.disabled,
@@ -184,9 +189,9 @@ describe('account Home layout drafts', () => {
     expect(home.editing).toBe(true);
     expect(home.draft.hidden).toEqual(['workouts']);
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
-      'Tap the green tick to try again',
+      'Use the pencil or green tick to try again',
     );
-    await click('Save layout');
+    await act(async () => home.editButton.current!.click());
     expect(home.editing).toBe(false);
     expect(home.layout.hidden).toEqual(['workouts']);
   });

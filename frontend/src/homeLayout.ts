@@ -87,7 +87,7 @@ export const HOME_SECTIONS = [
 }>;
 
 export type HomeSectionId = (typeof HOME_SECTIONS)[number]['id'];
-export type HomeSectionWidth = 'compact' | 'full';
+export type HomeSectionWidth = 'compact' | 'full' | 'third';
 export type HomeSectionWidths = Partial<Record<HomeSectionId, HomeSectionWidth>>;
 export interface HomeLayout {
   order: HomeSectionId[];
@@ -105,11 +105,13 @@ export function homeSectionSpans(ids: HomeSectionId[], widths: HomeSectionWidths
   const spans: number[] = [];
   const sizeFor = (id: HomeSectionId) => {
     const size = HOME_SECTIONS.find((section) => section.id === id)!.size;
-    return widths[id] === 'full'
-      ? 'full'
-      : widths[id] === 'compact' && size === 'full'
-        ? 'half'
-        : size;
+    return widths[id] === 'third'
+      ? 'stat'
+      : widths[id] === 'full'
+        ? 'full'
+        : widths[id] === 'compact' && size === 'full'
+          ? 'half'
+          : size;
   };
   for (let start = 0; start < ids.length;) {
     const size = sizeFor(ids[start]);
@@ -120,11 +122,13 @@ export function homeSectionSpans(ids: HomeSectionId[], widths: HomeSectionWidths
       const count = Math.min(perRow, end - row);
       const compactCount = ids
         .slice(row, row + count)
-        .filter((id) => widths[id] === 'compact').length;
+        .filter((id) => widths[id] === 'compact' || widths[id] === 'third').length;
       const compactSpan = 6 / perRow;
       const adaptiveSpan = (6 - compactCount * compactSpan) / (count - compactCount || 1);
       for (let item = 0; item < count; item++)
-        spans.push(widths[ids[row + item]] === 'compact' ? compactSpan : adaptiveSpan);
+        spans.push(
+          ['compact', 'third'].includes(widths[ids[row + item]] ?? '') ? compactSpan : adaptiveSpan,
+        );
     }
     start = end;
   }
@@ -168,12 +172,19 @@ export function fillHomeSectionGap(
   layout: HomeLayout,
   source: HomeSectionId,
   after: HomeSectionId,
+  span = 3,
 ): HomeLayout {
   if (source === after || !layout.order.includes(source) || !layout.order.includes(after))
     return layout;
   const order = layout.order.filter((id) => id !== source);
   order.splice(order.indexOf(after) + 1, 0, source);
-  return { ...layout, order, widths: { ...layout.widths, [source]: 'compact' } };
+  const compactSpan = homeSectionSpans([source], { [source]: 'compact' })[0];
+  return {
+    ...layout,
+    order,
+    hidden: layout.hidden.filter((id) => id !== source),
+    widths: { ...layout.widths, [source]: span === 2 && compactSpan > 2 ? 'third' : 'compact' },
+  };
 }
 
 /** Explicit compact widths stay compact even when a card has no neighbour. */

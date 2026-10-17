@@ -52,6 +52,12 @@ async function begin(id: HomeSectionId) {
   return handle;
 }
 beforeEach(async () => {
+  HTMLDialogElement.prototype.showModal ??= function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close ??= function () {
+    this.open = false;
+  };
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('requestAnimationFrame', () => 1);
   vi.stubGlobal('cancelAnimationFrame', vi.fn());
@@ -104,7 +110,7 @@ describe('Home empty-space dragging', () => {
     ).toBe('3');
     expect(container.querySelector('[data-home-drop-after="consistency"]')).toBeNull();
   });
-  it('rejects space too narrow for the card even at its compact width', async () => {
+  it('fits an expanded section into a third-width space', async () => {
     await act(async () =>
       root.render(
         <Harness
@@ -121,9 +127,60 @@ describe('Home empty-space dragging', () => {
     pointTarget = container.querySelector('[data-home-drop-after="cardio-sessions"]');
     expect(pointTarget!.getAttribute('data-home-drop-span')).toBe('2');
     await pointer(handle, 'pointermove');
-    expect(pointTarget!.classList.contains('is-drop-target')).toBe(false);
+    expect(pointTarget!.classList.contains('is-drop-target')).toBe(true);
     await pointer(handle, 'pointerup');
+    expect(changed.mock.lastCall![0].widths.friends).toBe('third');
+    expect(
+      container.querySelector('[data-home-section="friends"]')!.getAttribute('data-home-span'),
+    ).toBe('2');
+  });
+  it('adds a hidden section directly into the tapped space without duplicating it', async () => {
+    await act(async () =>
+      root.render(
+        <Harness
+          key="add"
+          initialLayout={{
+            order: ['workouts', 'cardio-sessions', 'friends', 'consistency'],
+            hidden: ['friends'],
+            widths: { workouts: 'compact', 'cardio-sessions': 'compact' },
+          }}
+        />,
+      ),
+    );
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>('[data-home-drop-after="cardio-sessions"]')!
+        .click(),
+    );
+    expect(document.querySelector('.home-section-picker')).not.toBeNull();
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('[aria-label="Add Friends here"]')!.click(),
+    );
+    expect(changed.mock.lastCall![0]).toEqual({
+      order: ['workouts', 'cardio-sessions', 'friends', 'consistency'],
+      hidden: [],
+      widths: { workouts: 'compact', 'cardio-sessions': 'compact', friends: 'third' },
+    });
+    expect(container.querySelectorAll('[data-home-section="friends"]')).toHaveLength(1);
+    expect(document.querySelector('.home-section-picker')).toBeNull();
+  });
+  it('moves an existing section from the chooser and closes it without edits when cancelled', async () => {
+    const gap = container.querySelector<HTMLButtonElement>('[data-home-drop-after="consistency"]')!;
+    await act(async () => gap.click());
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('[aria-label="Close Add a section here"]')!.click(),
+    );
     expect(changed).not.toHaveBeenCalled();
+    await act(async () => gap.click());
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('[aria-label="Move Zone 2 cardio here"]')!.click(),
+    );
+    expect(changed.mock.lastCall![0].order).toEqual([
+      'consistency',
+      'zone2',
+      'friends',
+      'bodyweight-trend',
+    ]);
   });
   it('cancels a highlighted drop without changing the draft', async () => {
     const handle = await begin('friends');
