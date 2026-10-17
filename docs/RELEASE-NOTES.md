@@ -56,8 +56,8 @@ account in the isolated verification environment.
 - The video screen leaves room below the final upload action so the bottom navigation does
   not cover it on a phone.
 - Administrators configure one Google Web application OAuth client and persistent encryption
-  key. See [YouTube setup](YOUTUBE-SETUP.md) for Google configuration, production consent,
-  migration and first real-upload checks. Migration: `0034_youtube_connections`.
+  key, then complete Google production consent and a first real-upload check. Migration:
+  `0034_youtube_connections`.
 
 The deployed 0.6.0 announcement is preserved in Earlier versions.
 

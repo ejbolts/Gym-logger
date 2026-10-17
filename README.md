@@ -44,7 +44,6 @@ Video access depends on the administrator's settings. You can use the workout tr
 Connect your own YouTube channel in **Settings** or **Video logger**. Choose your Google account
 and channel, approve access, and confirm the channel shown before uploading. The administrator
 configures Google once for the installation; users do not need API keys or credential files.
-See [YouTube setup](docs/YOUTUBE-SETUP.md) for the administrator's steps.
 
 ## Your account and sharing
 

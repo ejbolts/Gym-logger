@@ -16,3 +16,5 @@ backend/tests/.test-data/
 youtube-token*.json
 client_secret*.json
 secrets/
+# The administrator's YouTube setup guide is kept locally, not in the repository.
+docs/YOUTUBE-SETUP.md

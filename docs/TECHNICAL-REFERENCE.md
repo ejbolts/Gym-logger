@@ -184,7 +184,7 @@ Use `ruff format backend` and `npm run format` to apply formatting.
 
 ## Switching to real YouTube uploads
 
-Follow [the administrator's YouTube setup guide](YOUTUBE-SETUP.md). Configure one Google
+Configure one Google
 **Web application** OAuth client, its registered callback and a persistent private encryption
 key path, then enable real uploads and the appropriate account access in the admin console.
 Users connect their own channels in Settings or Video logger. Connections use upload and
@@ -194,7 +194,7 @@ PKCE authorization. Apply migration `0034_youtube_connections` before serving th
 The legacy Desktop app command and shared token are not used for personal connections. Existing
 video links remain; unfinished older batches must be uploaded again with a connected channel.
 Google's current API reference no longer imposes the old blanket private-only restriction for
-unverified projects; see the setup guide for OAuth production/testing and verification details.
+unverified projects; check Google's OAuth production, testing and verification requirements.
 
 Server-to-YouTube uploads are resumable and default to `unlisted`; phone-to-server transfers
 remain non-resumable. Title and description templates can use `{session_name}`, `{workout_date}`,
