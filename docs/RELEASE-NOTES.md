@@ -88,6 +88,10 @@
 - **App theme** offers Blue, Emerald, Plum, Coral and Amber accent colours. Choices apply
   immediately and stay on the current device across reloads. Status colours keep their
   meaning.
+- **App theme** also offers **Dark** and **Light** modes beside the accent colours. Light
+  mode switches every screen, popup, the workout logger and the Add to Home Screen guide to
+  light surfaces with darker text, and uses a darker shade of your accent colour so links
+  stay readable. Dark remains the default, and the choice stays on the current device.
 - The exercise picker's footer labels wrap on narrow screens. **Create super set** is now
   **Add super set**, and the selected exercise count no longer has parentheses.
 - The Videos page drops its top **New upload** shortcut. Sets per muscle no longer shows
@@ -169,6 +173,11 @@ your own profile and shared profiles. Captured with a synthetic sample account.
 <img src="screenshots/releases/0.7.0-settings-search-themes.png" alt="Settings with a username search result that links to Profile, and the five selectable accent colours with Plum selected." width="430">
 
 Search across Settings and Profile from either page, and choose a colour for this device.
+
+<img src="screenshots/releases/0.7.0-light-mode.png" alt="Two phone screens in light mode: Settings with the App theme panel showing Dark and Light options above the accent colours, Light and Blue selected, and Today with a light Workout live card, stat cards and the Consistency calendar." width="720">
+
+Light mode selected in App theme, and Today shown in light mode. Captured with a synthetic
+sample account in the isolated verification environment.
 
 <img src="screenshots/releases/0.7.0-today-multiple-friends.png" alt="Compact Friends card next to Daily check-in, showing Jordan and Alex's latest workouts above Sets per muscle without an RPE logging summary." width="430">
 

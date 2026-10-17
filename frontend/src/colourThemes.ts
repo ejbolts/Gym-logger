@@ -1,4 +1,10 @@
 const THEME_KEY = 'gym-logger-colour-theme';
+const MODE_KEY = 'gym-logger-colour-mode';
+export const COLOUR_MODES = [
+  { id: 'dark', name: 'Dark', icon: 'moon' },
+  { id: 'light', name: 'Light', icon: 'sun' },
+] as const;
+export type ColourModeId = (typeof COLOUR_MODES)[number]['id'];
 export const COLOUR_THEMES = [
   {
     id: 'blue',
@@ -7,6 +13,7 @@ export const COLOUR_THEMES = [
     accent: '#3987e5',
     hover: '#4b94ea',
     text: '#6da7ec',
+    lightText: '#1f62b4',
   },
   {
     id: 'emerald',
@@ -15,6 +22,7 @@ export const COLOUR_THEMES = [
     accent: '#237844',
     hover: '#2d8a51',
     text: '#78d49c',
+    lightText: '#1b6638',
   },
   {
     id: 'plum',
@@ -23,6 +31,7 @@ export const COLOUR_THEMES = [
     accent: '#8057ba',
     hover: '#9069c7',
     text: '#c4a2ef',
+    lightText: '#663f9e',
   },
   {
     id: 'coral',
@@ -31,6 +40,7 @@ export const COLOUR_THEMES = [
     accent: '#a44850',
     hover: '#b7565e',
     text: '#f3a0a6',
+    lightText: '#943a42',
   },
   {
     id: 'amber',
@@ -39,6 +49,7 @@ export const COLOUR_THEMES = [
     accent: '#985014',
     hover: '#ac6020',
     text: '#efb06d',
+    lightText: '#8a4410',
   },
 ] as const;
 export type ColourThemeId = (typeof COLOUR_THEMES)[number]['id'];
@@ -58,7 +69,11 @@ export function applyColourTheme(id: ColourThemeId) {
   root.dataset.colourTheme = theme.id;
   root.style.setProperty('--p-accent', theme.accent);
   root.style.setProperty('--p-accent-hover', theme.hover);
-  root.style.setProperty('--p-accent-text', theme.text);
+  // Light mode needs a darker accent tint so accent-coloured text stays readable on white.
+  root.style.setProperty(
+    '--p-accent-text',
+    root.dataset.colourMode === 'light' ? theme.lightText : theme.text,
+  );
   root.style.setProperty('--p-accent-soft', `color-mix(in srgb, ${theme.accent} 15%, transparent)`);
 }
 
@@ -66,6 +81,34 @@ export function saveColourTheme(id: ColourThemeId): boolean {
   applyColourTheme(id);
   try {
     localStorage.setItem(THEME_KEY, id);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function colourModePreference(): ColourModeId {
+  try {
+    return localStorage.getItem(MODE_KEY) === 'light' ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+export function applyColourMode(id: ColourModeId) {
+  const root = document.documentElement;
+  root.dataset.colourMode = id;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', id === 'light' ? '#f3f5f7' : '#0b0d0f');
+  const theme = root.dataset.colourTheme;
+  applyColourTheme(COLOUR_THEMES.find((entry) => entry.id === theme)?.id ?? 'blue');
+}
+
+export function saveColourMode(id: ColourModeId): boolean {
+  applyColourMode(id);
+  try {
+    localStorage.setItem(MODE_KEY, id);
     return true;
   } catch {
     return false;
