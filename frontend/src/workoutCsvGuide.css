@@ -174,13 +174,23 @@
   text-underline-offset: 0.15em;
 }
 
+/* Import and Export stay side by side; an import error and its guide link wrap below them. */
+.workout-data-panel .settings-actions {
+  grid-auto-flow: row dense;
+  align-items: start;
+}
+
 .settings-actions > .inline-error {
   grid-column: 1 / -1;
 }
 
-.settings-actions .csv-guide-link {
+.settings-actions > .csv-guide-link {
   grid-column: 1 / -1;
   justify-self: start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--p-accent-text);
   min-height: 2.75rem;
   font-size: 0.75rem;
 }
