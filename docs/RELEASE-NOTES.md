@@ -77,6 +77,9 @@
   Your profile and shared profiles display **Account UUID** with **Copy UUID**. Names match
   without case sensitivity, including accented names. Private and disabled accounts remain
   hidden; friends-only workouts still require approval.
+- **Copy UUID** confirms with a popup at the top of the screen that disappears after five
+  seconds, with a countdown and dismiss button. Copying again restarts the countdown;
+  no message is left beneath the account UUID.
 - **Search settings & profile** appears at the top of both pages. Search for rest timers,
   username changes, passwords, sharing, imports and other sections, then tap a result or
   press Enter to jump there. Folded sections open automatically; username/name/photo
@@ -156,6 +159,11 @@ Photo and name drafts wait for Save profile; Cancel discards them.
 Copy the account UUID from a profile and share it for an exact lookup, or search by display
 name or username. Only shared accounts appear. Captured with synthetic sample accounts;
 Profile sharing is folded here to keep the account UUID and search result together.
+
+<img src="screenshots/releases/0.6.6-uuid-copy-popup.png" alt="Profile with a temporary UUID copied popup and countdown at the top, with no persistent message beneath the account UUID." width="430">
+
+UUID copying uses the same temporary notification style as other saved actions, on both
+your own profile and shared profiles. Captured with a synthetic sample account.
 
 <img src="screenshots/releases/0.6.6-settings-search-themes.png" alt="Settings with a username search result that links to Profile, and the five selectable accent colours with Plum selected." width="430">
 

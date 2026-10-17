@@ -488,15 +488,6 @@
   flex-shrink: 0;
   font-size: 0.75rem;
 }
-.profile-account-id-status {
-  display: block;
-  margin-top: 0.3rem;
-  color: var(--p-accent-text);
-  font-size: 0.75rem;
-}
-.profile-account-id-status:empty {
-  display: none;
-}
 .people-search-form {
   display: flex;
   gap: 0.5rem;
