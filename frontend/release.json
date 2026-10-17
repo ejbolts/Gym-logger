@@ -1,14 +1,16 @@
 {
   "version": "0.6.6",
-  "title": "Bring your training history",
-  "summary": "After the tour, new accounts can import their workout history with a step-by-step CSV guide and a template showing exactly what the file should look like.",
+  "title": "Import history and undo check-ins",
+  "summary": "Import your workout history with a step-by-step CSV guide, and undo a daily body-weight check-in from a five-second popup at the top of the screen.",
   "changes": [
     "New accounts see the tour first. Next, Import or export opens Workout data in Settings with a CSV guide; Skip for now shows What's new.",
     "The three-page CSV guide explains what is imported, the columns and one-row-per-set layout, and common spreadsheet pitfalls. Download a template in your weight unit, then choose your file from the guide.",
     "Your own spreadsheets need only Date Lifted, Exercise and Reps columns, with Weight (kg) or Weight (lb) for weighted sets. Column names can use any capitalisation or spacing.",
     "Semicolon-separated files, decimal commas such as 82,5, dates with a time of day and Y/N warmups are accepted. Extra columns such as RPE are listed as not imported instead of blocking the file.",
     "Clearer errors show the date that could not be read and explain how to save as CSV UTF-8. Workout data has a CSV format guide link, and a failed import links to it.",
-    "Pound conversions are summarised in one warning, import confirmations use correct singular wording, and the account backup instructions link opens the right page."
+    "Pound conversions are summarised in one warning, import confirmations use correct singular wording, and the account backup instructions link opens the right page.",
+    "Daily body-weight check-ins show a top-screen Undo popup with a five-second countdown bar. Undo removes a new check-in or restores the previous entry after an update.",
+    "Daily check-in shows one Saved today summary with the saved weight. Feedback keeps only the reminder to leave out passwords and sensitive information, and the machine filter's Clear button is now Close."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

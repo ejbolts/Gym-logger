@@ -161,7 +161,7 @@ export function MachineFilterBanner({
         </button>
         <button type="button" className="machine-filter-clear" onClick={onClear}>
           <Icon name="close" />
-          Clear
+          Close
         </button>
       </div>
     </section>

@@ -17,6 +17,7 @@ import {
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { api } from './api';
+import { saveBodyweightCheckIn } from './bodyweightCheckIn';
 import { TrainingPreferencesProvider } from './TrainingPreferencesProvider';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
@@ -1309,11 +1310,19 @@ function AppContent() {
                 workoutStartedAt={activeWorkoutStartedAt}
                 todayBodyweight={todayMeasurement?.weight_kg ?? null}
                 onSaveBodyweight={(weight) =>
-                  saveMeasurement({
-                    measurement_date: localDate(),
-                    weight_kg: weight,
-                    body_fat_pct: todayMeasurement?.body_fat_pct ?? null,
-                    notes: todayMeasurement?.notes ?? null,
+                  withBackgroundActivity('Saving measurement…', async () => {
+                    const undo = await saveBodyweightCheckIn(
+                      todayMeasurement ?? null,
+                      localDate(),
+                      weight,
+                    );
+                    await refreshData({ activityLabel: null });
+                    return async () => {
+                      await withBackgroundActivity('Undoing check-in…', async () => {
+                        await undo();
+                        await refreshData({ activityLabel: null });
+                      });
+                    };
                   })
                 }
                 onStartTemplate={(template) => startWorkout(localDate(), false, template)}

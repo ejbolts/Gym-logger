@@ -248,7 +248,7 @@ describe('App startup', () => {
     expect(markup).toContain('live-workout-card');
     expect(markup).toContain('Workout live');
     expect(markup).toContain('1:05');
-    expect(markup).toContain('Today · 84.1 kg');
+    expect(markup).toContain('Saved today · 84.1 kg');
     expect(markup).not.toContain('next-session-title');
   });
 
