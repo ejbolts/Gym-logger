@@ -1,12 +1,13 @@
 import { useWeightUnit } from './trainingPreferencesContext';
 import { formatWeight, weightFromKg, type WeightUnit } from './weightUnits';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, ApiError } from './api';
 import { authErrorMessage } from './authForm';
 import { clipBodyWeightGoalPath } from './bodyTrend';
 import { CollapsibleSection } from './CollapsibleSection';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
+import { SharedWorkoutFilters } from './SharedWorkoutFilters';
 import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
 import {
@@ -20,12 +21,15 @@ import {
 import { addDays, dayMonth, parseLocalDate } from './trainingSummary';
 import type {
   FollowStatus,
+  MachinePhoto,
   PersonalRecord,
   SharedBodyMeasurement,
   SharedCardioSession,
   SharedGoals,
   SharedProfile,
   SharedProfileSummary,
+  SharedWorkoutFilters as WorkoutFilters,
+  SharedWorkoutFilterOptions,
   SharingConnection,
   SharingConnections,
   TrackedWorkout,
@@ -134,7 +138,13 @@ function FollowButton({
     <div className={compact ? 'shared-follow compact' : 'shared-follow'}>
       <button
         type="button"
-        className={following ? 'profile-secondary' : 'profile-primary'}
+        className={
+          profile.follow_status === 'accepted'
+            ? 'profile-danger'
+            : following
+              ? 'profile-secondary'
+              : 'profile-primary'
+        }
         disabled={busy}
         aria-label={compact ? `${label}: ${profile.display_name}` : undefined}
         onClick={() => void run()}
@@ -677,6 +687,7 @@ function CardioCard({ sessions }: { sessions: SharedCardioSession[] }) {
 export interface SharedWorkoutListProps {
   workouts: TrackedWorkout[];
   personalRecords: PersonalRecord[];
+  onFilterMachine?: (photo: MachinePhoto) => void;
 }
 
 export function SharedProfileScreen({
@@ -698,38 +709,82 @@ export function SharedProfileScreen({
   const [attempt, setAttempt] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreError, setMoreError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<WorkoutFilters>({
+    category: '',
+    exercise_id: '',
+    machine_photo_id: '',
+    start_date: '',
+    end_date: '',
+  });
+  const [filterOptions, setFilterOptions] = useState<SharedWorkoutFilterOptions>({
+    exercises: [],
+    machines: [],
+  });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [loadingWorkouts, setLoadingWorkouts] = useState(false);
+  const invalidDates = Boolean(
+    filters.start_date && filters.end_date && filters.start_date > filters.end_date,
+  );
+  const queryKey = JSON.stringify([profileId, attempt, filters]);
+  const currentQuery = useRef(queryKey);
+  currentQuery.current = queryKey;
 
   useEffect(() => {
+    if (invalidDates) {
+      setLoadingWorkouts(false);
+      return;
+    }
     let cancelled = false;
+    setLoadingWorkouts(true);
+    setLoadingMore(false);
+    setMoreError(null);
     async function load() {
       const nextProfile = await api.sharing.profile(profileId);
       // A friends-only profile you do not follow shares only its name and photo.
-      const page = nextProfile.can_view
-        ? await api.sharing.workouts(profileId, 0, SHARED_WORKOUT_PAGE_SIZE)
-        : { workouts: [], personal_records: [], total: 0 };
+      const [page, options] = nextProfile.can_view
+        ? await Promise.all([
+            api.sharing.workouts(profileId, 0, SHARED_WORKOUT_PAGE_SIZE, filters),
+            api.sharing.workoutFilters(profileId),
+          ])
+        : [
+            { workouts: [], personal_records: [], total: 0 },
+            { exercises: [], machines: [] },
+          ];
       if (cancelled) return;
       setProfile(nextProfile);
       setWorkouts(page.workouts);
       setRecords(page.personal_records);
       setTotal(page.total);
+      setFilterOptions(options);
       setState('ready');
     }
-    load().catch((reason: unknown) => {
-      if (cancelled) return;
-      setState(loadStateFor(reason));
-      setError(authErrorMessage(reason));
-    });
+    load()
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setState(loadStateFor(reason));
+        setError(authErrorMessage(reason));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingWorkouts(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [profileId, attempt]);
+  }, [profileId, attempt, filters, invalidDates]);
 
   async function loadMore() {
-    if (loadingMore) return;
+    if (loadingMore || loadingWorkouts || invalidDates) return;
+    const requestedQuery = queryKey;
     setLoadingMore(true);
     setMoreError(null);
     try {
-      const page = await api.sharing.workouts(profileId, workouts.length, SHARED_WORKOUT_PAGE_SIZE);
+      const page = await api.sharing.workouts(
+        profileId,
+        workouts.length,
+        SHARED_WORKOUT_PAGE_SIZE,
+        filters,
+      );
+      if (currentQuery.current !== requestedQuery) return;
       setWorkouts((current) => [
         ...current,
         ...page.workouts.filter((item) => !current.some((existing) => existing.id === item.id)),
@@ -737,9 +792,9 @@ export function SharedProfileScreen({
       setRecords((current) => [...current, ...page.personal_records]);
       setTotal(page.total);
     } catch (reason) {
-      setMoreError(authErrorMessage(reason));
+      if (currentQuery.current === requestedQuery) setMoreError(authErrorMessage(reason));
     } finally {
-      setLoadingMore(false);
+      if (currentQuery.current === requestedQuery) setLoadingMore(false);
     }
   }
 
@@ -864,17 +919,43 @@ export function SharedProfileScreen({
               <h2 id="shared-workouts-title">Workouts</h2>
               <span className="num">{plural(total, 'workout')}</span>
             </header>
-            {workouts.length === 0 ? (
-              <p className="shared-card-empty">No workouts logged yet.</p>
+            <SharedWorkoutFilters
+              filters={filters}
+              options={filterOptions}
+              open={filtersOpen}
+              onToggle={setFiltersOpen}
+              onChange={setFilters}
+            />
+            {invalidDates ? (
+              <p className="inline-error" role="alert">
+                From date must not be after To date.
+              </p>
+            ) : loadingWorkouts ? (
+              <p className="sharing-loading" role="status">
+                Loading workouts…
+              </p>
+            ) : workouts.length === 0 ? (
+              <p className="shared-card-empty">
+                {Object.values(filters).some(Boolean)
+                  ? 'No workouts match these filters.'
+                  : 'No workouts logged yet.'}
+              </p>
             ) : (
-              renderWorkouts({ workouts, personalRecords: records })
+              renderWorkouts({
+                workouts,
+                personalRecords: records,
+                onFilterMachine: (photo) => {
+                  setFilters((current) => ({ ...current, machine_photo_id: photo.id }));
+                  setFiltersOpen(true);
+                },
+              })
             )}
             {moreError && (
               <p className="inline-error" role="alert">
                 {moreError}
               </p>
             )}
-            {workouts.length < total && (
+            {!invalidDates && !loadingWorkouts && workouts.length < total && (
               <button
                 type="button"
                 className="show-more-button"

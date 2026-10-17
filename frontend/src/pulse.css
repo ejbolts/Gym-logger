@@ -805,6 +805,39 @@ button.pulse-card:hover {
   gap: 0.5rem;
 }
 
+.quick-check-in-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.quick-check-in-heading h3 {
+  margin: 0;
+  color: var(--p-ink);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.quick-check-in-heading > span {
+  color: var(--p-muted);
+  font-size: 0.6875rem;
+}
+
+.quick-check-in-row + .quick-check-in-row {
+  margin-top: 1.1rem;
+  border-top: 2px dotted var(--p-line-strong);
+  padding-top: 1.1rem;
+}
+
+.quick-check-in-hint {
+  margin: 0.6rem 0 0;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
 .quick-bodyweight-form .stepper {
   min-height: 2.875rem;
   border: 0;

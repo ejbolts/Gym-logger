@@ -352,6 +352,89 @@ def test_workouts_are_paged_newest_first(client, other_client):
     assert other_client.get(path, params={"limit": 51}).status_code == 422
 
 
+def test_shared_workout_filters_cover_full_history_and_filtered_pagination(client, other_client):
+    history = add_training_history(client)
+    bench = history["workout"]["movements"][0]["exercise"]["id"]
+    squat = named(client, "Back Squat")["id"]
+    older = detailed_workout(bench, history["photo"]["id"], "Older push")
+    older["workout_date"] = (date.today() - timedelta(days=45)).isoformat()
+    assert client.post("/api/workouts", json=older).status_code == 201
+    lower = {
+        "name": "Lower",
+        "workout_date": (date.today() - timedelta(days=5)).isoformat(),
+        "category": "lower",
+        "movements": [{"exercise_id": squat, "sets": [{"reps": 5, "weight_kg": 60}]}],
+    }
+    assert client.post("/api/workouts", json=lower).status_code == 201
+    share(client, "public", share_machine_photos=True)
+    share(other_client)
+    base = f"/api/sharing/profiles/{client.user['id']}"
+    options = other_client.get(base + "/workout-filters").json()
+    assert {item["id"] for item in options["exercises"]} == {bench, squat}
+    assert [item["id"] for item in options["machines"]] == [history["photo"]["id"]]
+    assert options["machines"][0]["thumbnail_url"].startswith(base + "/machine-photos/")
+    first = other_client.get(base + "/workouts", params={"category": "push", "limit": 1}).json()
+    rest = other_client.get(
+        base + "/workouts", params={"category": "push", "limit": 1, "offset": 1}
+    ).json()
+    assert first["total"] == rest["total"] == 2
+    assert first["workouts"][0]["name"] == "Push day"
+    assert rest["workouts"][0]["name"] == "Older push"
+    assert other_client.get(base + "/workouts", params={"exercise_id": squat}).json()["total"] == 1
+    assert (
+        other_client.get(
+            base + "/workouts", params={"machine_photo_id": history["photo"]["id"]}
+        ).json()["total"]
+        == 2
+    )
+    page = other_client.get(
+        base + "/workouts",
+        params={
+            "category": "push",
+            "start_date": date.today().isoformat(),
+            "end_date": date.today().isoformat(),
+        },
+    ).json()
+    assert page["total"] == 1 and page["workouts"][0]["name"] == "Push day"
+    assert (
+        other_client.get(
+            base + "/workouts", params={"exercise_id": "another-members-exercise"}
+        ).json()["total"]
+        == 0
+    )
+    assert (
+        other_client.get(
+            base + "/workouts", params={"machine_photo_id": history["sample_only_photo"]["id"]}
+        ).json()["total"]
+        == 0
+    )
+    assert (
+        other_client.get(
+            base + "/workouts", params={"start_date": "2026-10-10", "end_date": "2026-10-01"}
+        ).status_code
+        == 422
+    )
+
+
+def test_shared_filter_options_respect_profile_access_and_photo_sharing(client, other_client):
+    history = add_training_history(client)
+    share(client, "public")
+    share(other_client)
+    base = f"/api/sharing/profiles/{client.user['id']}"
+    assert other_client.get(base + "/workout-filters").json()["machines"] == []
+    assert (
+        other_client.get(
+            base + "/workouts", params={"machine_photo_id": history["photo"]["id"]}
+        ).status_code
+        == 403
+    )
+    share(client, "followers")
+    assert other_client.get(base + "/workout-filters").status_code == 403
+    assert other_client.get(base + "/workouts", params={"category": "push"}).status_code == 403
+    share(client, "private")
+    assert other_client.get(base + "/workout-filters").status_code == 404
+
+
 def test_going_private_hides_the_profile_and_others(client, other_client):
     share(client)
     share(other_client)

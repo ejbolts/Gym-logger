@@ -339,6 +339,65 @@
   padding-top: 1.25rem;
 }
 
+.shared-workout-filters {
+  margin: 0 0 1rem;
+  border: 1px solid var(--p-line);
+  border-radius: 12px;
+  background: var(--p-surface);
+}
+
+.shared-workout-filters summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  color: var(--p-ink-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shared-workout-filters summary .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.shared-workout-filter-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  padding: 0 0.75rem 0.85rem;
+}
+
+.shared-workout-filter-fields label {
+  min-width: 0;
+  display: grid;
+  gap: 0.4rem;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.shared-workout-filter-fields select,
+.shared-workout-filter-fields input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: var(--p-page);
+  color: var(--p-ink);
+  font-size: 1rem;
+  color-scheme: dark;
+}
+
+.shared-workout-filter-fields > button {
+  justify-self: start;
+  align-self: end;
+  min-height: 2.75rem;
+}
+
 .history-exercise-name {
   font-size: 0.875rem;
   font-weight: 600;

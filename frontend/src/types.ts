@@ -733,3 +733,16 @@ export interface SharedWorkoutPage {
   workouts: TrackedWorkout[];
   personal_records: PersonalRecord[];
 }
+
+export interface SharedWorkoutFilters {
+  category: WorkoutCategory | '';
+  exercise_id: string;
+  machine_photo_id: string;
+  start_date: string;
+  end_date: string;
+}
+
+export interface SharedWorkoutFilterOptions {
+  exercises: { id: string; name: string }[];
+  machines: MachinePhoto[];
+}

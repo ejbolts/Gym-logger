@@ -31,19 +31,26 @@ from .models import (
     BodyMeasurement,
     BodyWeightGoal,
     CardioSession,
+    Exercise,
     MachinePhoto,
     PersonalRecord,
     ProfileFollow,
     ProfileSharing,
     TrainingWorkout,
     User,
+    WorkoutCategory,
     WorkoutMovement,
     movement_machine_photos,
     utc_now,
 )
 from .photo_storage import profile_photo_path
 from .tracker import training_preferences, workout_options, zone2_week
-from .tracker_schemas import PersonalRecordRead, TrainingWorkoutRead, Zone2WeekRead
+from .tracker_schemas import (
+    MachinePhotoRead,
+    PersonalRecordRead,
+    TrainingWorkoutRead,
+    Zone2WeekRead,
+)
 from .training_metrics import start_of_week
 
 Db = Annotated[Session, Depends(get_db)]
@@ -159,6 +166,16 @@ class SharedWorkoutPage(BaseModel):
     total: int
     workouts: list[TrainingWorkoutRead]
     personal_records: list[PersonalRecordRead]
+
+
+class SharedExerciseOption(BaseModel):
+    id: str
+    name: str
+
+
+class SharedWorkoutFiltersRead(BaseModel):
+    exercises: list[SharedExerciseOption]
+    machines: list[MachinePhotoRead]
 
 
 class FollowRead(BaseModel):
@@ -523,9 +540,34 @@ def list_shared_workouts(
     db: Db,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=MAX_WORKOUT_PAGE)] = 10,
+    category: WorkoutCategory | None = None,
+    exercise_id: str | None = None,
+    machine_photo_id: str | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> SharedWorkoutPage:
     member, sharing = viewable_member(db, user, user_id)
-    owned = (TrainingWorkout.user_id == member.id, TrainingWorkout.is_sample.is_(False))
+    if start_date and end_date and start_date > end_date:
+        raise api_error(422, "invalid_date_range", "From date must not be after To date.")
+    owned = [TrainingWorkout.user_id == member.id, TrainingWorkout.is_sample.is_(False)]
+    if category:
+        owned.append(TrainingWorkout.category == category)
+    if exercise_id:
+        owned.append(TrainingWorkout.movements.any(WorkoutMovement.exercise_id == exercise_id))
+    if machine_photo_id:
+        if not sharing.share_machine_photos:
+            raise api_error(
+                403, "machine_photos_not_shared", "This member is not sharing machine photos."
+            )
+        owned.append(
+            TrainingWorkout.movements.any(
+                WorkoutMovement.machine_photos.any(MachinePhoto.id == machine_photo_id)
+            )
+        )
+    if start_date:
+        owned.append(TrainingWorkout.workout_date >= start_date)
+    if end_date:
+        owned.append(TrainingWorkout.workout_date <= end_date)
     total = db.scalar(select(func.count(TrainingWorkout.id)).where(*owned)) or 0
     workouts = list(
         db.scalars(
@@ -550,6 +592,44 @@ def list_shared_workouts(
         total=total,
         workouts=[shared_workout(workout, sharing) for workout in workouts],
         personal_records=[PersonalRecordRead.model_validate(record) for record in records],
+    )
+
+
+@sharing_router.get("/profiles/{user_id}/workout-filters", response_model=SharedWorkoutFiltersRead)
+def shared_workout_filters(user_id: str, user: CurrentUser, db: Db) -> SharedWorkoutFiltersRead:
+    member, sharing = viewable_member(db, user, user_id)
+    owned = [TrainingWorkout.user_id == member.id, TrainingWorkout.is_sample.is_(False)]
+    exercises = db.execute(
+        select(Exercise.id, Exercise.name)
+        .join(WorkoutMovement, WorkoutMovement.exercise_id == Exercise.id)
+        .join(TrainingWorkout, TrainingWorkout.id == WorkoutMovement.workout_id)
+        .where(*owned)
+        .distinct()
+        .order_by(Exercise.name)
+    )
+    machines = []
+    if sharing.share_machine_photos:
+        photos = db.scalars(
+            select(MachinePhoto)
+            .join(
+                movement_machine_photos,
+                movement_machine_photos.c.machine_photo_id == MachinePhoto.id,
+            )
+            .join(WorkoutMovement, WorkoutMovement.id == movement_machine_photos.c.movement_id)
+            .join(TrainingWorkout, TrainingWorkout.id == WorkoutMovement.workout_id)
+            .where(*owned, MachinePhoto.user_id == member.id)
+            .distinct()
+            .order_by(MachinePhoto.caption)
+        )
+        for photo in photos:
+            item = MachinePhotoRead.model_validate(photo)
+            base = f"/api/sharing/profiles/{member.id}/machine-photos/{photo.id}"
+            item.thumbnail_url = f"{base}?variant=thumbnail"
+            item.full_url = f"{base}?variant=full"
+            machines.append(item)
+    return SharedWorkoutFiltersRead(
+        exercises=[SharedExerciseOption(id=row.id, name=row.name) for row in exercises],
+        machines=machines,
     )
 
 

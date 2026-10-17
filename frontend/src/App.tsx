@@ -17,7 +17,7 @@ import {
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { api } from './api';
-import { saveBodyweightCheckIn } from './bodyweightCheckIn';
+import { saveBodyFatCheckIn, saveBodyweightCheckIn } from './bodyweightCheckIn';
 import { TrainingPreferencesProvider } from './TrainingPreferencesProvider';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
@@ -1306,6 +1306,23 @@ function AppContent() {
                 categoryColors={workoutTypeColors}
                 workoutStartedAt={activeWorkoutStartedAt}
                 todayBodyweight={todayMeasurement?.weight_kg ?? null}
+                todayBodyFat={todayMeasurement?.body_fat_pct ?? null}
+                onSaveBodyFat={(bodyFat) =>
+                  withBackgroundActivity('Saving body fat…', async () => {
+                    const undo = await saveBodyFatCheckIn(
+                      todayMeasurement ?? null,
+                      localDate(),
+                      bodyFat,
+                    );
+                    await refreshData({ activityLabel: null });
+                    return async () => {
+                      await withBackgroundActivity('Undoing check-in…', async () => {
+                        await undo();
+                        await refreshData({ activityLabel: null });
+                      });
+                    };
+                  })
+                }
                 onSaveBodyweight={(weight) =>
                   withBackgroundActivity('Saving measurement…', async () => {
                     const undo = await saveBodyweightCheckIn(
@@ -8820,6 +8837,7 @@ function HistoryScreen({
 function SharedWorkoutHistory({
   workouts,
   personalRecords,
+  onFilterMachine,
   categoryColors,
   weekStartDay,
 }: SharedWorkoutListProps & { categoryColors: WorkoutTypeColors; weekStartDay: number }) {
@@ -8861,6 +8879,7 @@ function SharedWorkoutHistory({
               activeWorkout={false}
               expandedPhoto={expandedPhoto}
               onExpandPhoto={setExpandedPhoto}
+              onFilterMachine={onFilterMachine}
               onToggle={() => setOpenId((current) => (current === workout.id ? null : workout.id))}
             />
           ))}

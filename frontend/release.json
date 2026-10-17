@@ -10,7 +10,7 @@
     "Clearer errors show the date that could not be read and explain how to save as CSV UTF-8. Workout data has a CSV format guide link, and a failed import links to it.",
     "Pound conversions are summarised in one warning, import confirmations use correct singular wording, and the account backup instructions link opens the right page.",
     "Daily body-weight check-ins show a top-screen Undo popup with a five-second countdown bar. Undo removes a new check-in or restores the previous entry after an update.",
-    "Daily check-in shows one Saved today summary with the saved weight. Feedback keeps only the reminder to leave out passwords and sensitive information, and the machine filter's Clear button is now Close.",
+    "Daily check-in labels body weight and body fat separately, with a saved-today summary for each. Feedback keeps only the reminder to leave out passwords and sensitive information, and the machine filter's Clear button is now Close.",
     "Tap a workout type in the Consistency calendar's legend to switch it off. Its tick becomes a cross, the name dims, and that type's dots and day borders turn grey while the dates stay readable; tap again to show it.",
     "Ticking an exercise as finished now also ticks its remaining sets with their shown weight and reps, so a finished exercise no longer reads 0 completed working sets. Blank sets are left unticked.",
     "The exercise menu shows a clock for Recent History and a link for Group Superset, and drops Edit Notes because the note field sits at the bottom of each exercise. Equipment photos show a camera icon, and the Take photo button is blue. The Workout live card on Today is spaced like the other cards.",
@@ -21,7 +21,10 @@
     "Today shows a numbered badge on your profile picture for waiting friend requests. It refreshes when you return to Today or refocus the app.",
     "A new Friends card on Today shows the latest workout from up to five friends you follow, with workout names, dates, exercise and completed-set counts. Tap a friend to open their profile; move or hide the card with Edit Home.",
     "Profiles label signup dates as Joined and show the exact date you followed someone or they followed you. Pending follow requests stand out in a blue dotted box.",
-    "Profile opens in viewing mode. Edit profile reveals name and username fields plus a pencil over a slightly dimmed profile photo. Remove photo sits below the avatar on the left, with no blue outline on the avatar or editing card. Preview a new photo or remove it, then Save profile or Cancel; changes wait for Save."
+    "Profile opens in viewing mode. Edit profile reveals name and username fields plus a pencil over a slightly dimmed profile photo. Remove photo sits below the avatar on the left, with no blue outline on the avatar or editing card. Preview a new photo or remove it, then Save profile or Cancel; changes wait for Save.",
+    "Unfollow uses a red outline and tint to match the delete-button style.",
+    "Filter another member’s shared workout history by type, exercise, date range and shared machine photos. Filters search the full shared history, including older workouts, and remain applied when loading more.",
+    "Daily check-in adds body-fat percentage with minus, plus and Log or Update controls beneath body weight, separated by a padded dotted line. Log today’s weight first; body-fat saves keep that weight and notes, and Undo restores only body fat."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

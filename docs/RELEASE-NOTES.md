@@ -29,8 +29,8 @@
 - Logging or updating today's body weight shows an **Undo** popup at the top of the
   screen with a five-second countdown bar. Undo removes a new check-in or restores the
   previous weight, body-fat value and notes after an update.
-- Daily check-in shows **Saved today · [weight]** once in its header, without a second
-  saved message below the controls.
+- Daily check-in labels **Body weight** and **Body fat** separately, each with its own
+  **Saved today** summary and no duplicate saved message below the controls.
 - The feedback form keeps only **Please leave out passwords and sensitive information.**
   The machine filter's **Clear** button is now labelled **Close**.
 - Workout types in the **Consistency** calendar legend now switch on and off. Every type is
@@ -76,6 +76,16 @@
   the avatar has no blue outline. Preview or remove the photo, then **Save profile** or
   **Cancel**. Drafts wait for Save.
 
+- **Unfollow** uses the red outline and subtle red tint of the delete-button style.
+- Shared profiles have **Filter workouts** controls for workout type, exercise, From/To
+  dates and shared machine photos. Filters search the full shared history before pagination,
+  including older sessions, and stay applied with **Show more**. Machine filters appear only
+  for photos the owner shares. Expand a shared machine photo to filter all workouts on it.
+- Daily check-in adds **Body fat** percentage beneath **Body weight**, with its own minus,
+  plus and **Log**/**Update** controls. A padded dotted divider separates the rows. Log
+  today's weight first; saving body fat preserves that weight and notes. Its five-second
+  **Undo** restores body fat without changing the latest weight or notes.
+
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
 <img src="screenshots/releases/0.6.6-import-history-guide.png" alt="Three phone screens: the Your workout history step after the tour with Skip for now and Import or export, the CSV guide's Shape your file page with required columns, example rows and Download template CSV, and the Before you choose a file page with spreadsheet tips and Choose CSV file." width="720">
@@ -114,10 +124,15 @@ Example of a member viewing someone else's workout with pinned exercise images. 
 enabled **Machine photos** under **What you share**. These synthetic sample images illustrate
 the existing sharing behavior; photos remain hidden when that option is off.
 
-<img src="screenshots/releases/0.6.6-shared-profile-dates.png" alt="Alex's shared profile showing Following since 9 Oct 2026, Follows you since 6 Oct 2026 and Joined October 2026." width="390">
+<img src="screenshots/releases/0.6.6-shared-workout-filters.png" alt="Alex's shared profile with exact follow dates, a red Unfollow button, and workout type, exercise, machine and date filters showing one matching workout." width="390">
 
-Exact dates in each direction are separate from when the account joined. All profile screenshots
-use synthetic sample accounts in the isolated verification environment.
+Shared history filters find matching workouts across the member's full shared history. The red
+Unfollow button and exact relationship dates remain above the results.
+
+<img src="screenshots/releases/0.6.6-daily-check-in-body-fat.png" alt="Daily check-in with separate Body weight and Body fat headings, minus and plus controls, a padded dotted divider, saved values and a Body fat saved Undo popup." width="390">
+
+Body weight and body fat have separate controls and saved states. All screenshots use synthetic
+sample accounts in the isolated verification environment.
 
 ## 0.6.5
 
