@@ -90,6 +90,7 @@ export interface TodayScreenProps {
   personalRecords: PersonalRecord[];
   categoryColors: WorkoutTypeColors;
   workoutStartedAt: number | null;
+  workoutSaving?: boolean;
   todayBodyweight: number | null;
   todayBodyFat?: number | null;
   onSaveBodyweight: (weight: number) => Promise<UndoBodyweightCheckIn>;
@@ -125,6 +126,7 @@ export function TodayScreen({
   personalRecords,
   categoryColors,
   workoutStartedAt,
+  workoutSaving = false,
   todayBodyweight,
   todayBodyFat = null,
   onSaveBodyweight,
@@ -567,7 +569,11 @@ export function TodayScreen({
         {home.message}
       </p>
       {workoutStartedAt !== null && (
-        <LiveWorkoutCard startedAt={workoutStartedAt} onResume={onResumeWorkout} />
+        <LiveWorkoutCard
+          startedAt={workoutStartedAt}
+          saving={workoutSaving}
+          onResume={onResumeWorkout}
+        />
       )}
       <HomeLayoutSections
         layout={home.editing ? home.draft : home.layout}
@@ -586,20 +592,35 @@ export function TodayScreen({
   );
 }
 
-function LiveWorkoutCard({ startedAt, onResume }: { startedAt: number; onResume: () => void }) {
+function LiveWorkoutCard({
+  startedAt,
+  saving,
+  onResume,
+}: {
+  startedAt: number;
+  saving: boolean;
+  onResume: () => void;
+}) {
   const elapsed = useElapsedSeconds(startedAt);
   return (
-    <button className="pulse-card live-workout-card" type="button" onClick={onResume}>
+    <button
+      className="pulse-card live-workout-card"
+      type="button"
+      onClick={onResume}
+      disabled={saving}
+    >
       <span className="live-workout-label">
         <i aria-hidden="true" />
-        Workout live
+        {saving ? 'Workout finished' : 'Workout live'}
       </span>
-      <time className="live-workout-duration num" dateTime={`PT${elapsed}S`}>
-        {formatElapsed(elapsed)}
-      </time>
+      {!saving && (
+        <time className="live-workout-duration num" dateTime={`PT${elapsed}S`}>
+          {formatElapsed(elapsed)}
+        </time>
+      )}
       <span className="live-workout-resume">
-        Resume
-        <Icon name="chevron-right" />
+        {saving ? 'Saving in the background…' : 'Resume'}
+        {!saving && <Icon name="chevron-right" />}
       </span>
     </button>
   );

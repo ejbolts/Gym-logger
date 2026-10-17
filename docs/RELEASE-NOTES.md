@@ -6,6 +6,10 @@
 
 ### Friends, profiles and a more personal Home
 
+- Finishing a new or resumed workout returns to **Today** immediately while the saving
+  popup sends it to the server in the background. You can browse the app while it saves.
+  If saving fails, the workout reopens with your entries intact so you can retry.
+
 - New accounts see the app tour first. The next step offers **Import or export**: it opens
   **Settings > Workout data** with a CSV guide. **Skip for now** shows What's new instead;
   after choosing to import, What's new appears once you leave Settings.
@@ -128,6 +132,11 @@
   **Undo** restores body fat without changing the latest weight or notes.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
+
+<img src="screenshots/releases/0.7.0-workout-background-save.png" alt="Today showing Workout finished, the Saving workout changes popup and a Saving footer while a sample workout saves in the background." width="390">
+
+Today remains usable while a resumed workout saves. This reviewed frame from the isolated
+sample-data test recording shows the server request still pending.
 
 <img src="screenshots/releases/0.7.0-import-history-guide.png" alt="Three phone screens: the Your workout history step after the tour with Skip for now and Import or export, the CSV guide's Shape your file page with required columns, example rows and Download template CSV, and the Before you choose a file page with spreadsheet tips and Choose CSV file." width="720">
 
