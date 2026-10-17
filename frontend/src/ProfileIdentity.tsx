@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useContext, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError } from './api';
 import { authErrorMessage, USERNAME_HINT, validateUsername } from './authForm';
 import { Icon } from './Icon';
@@ -7,6 +7,7 @@ import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileAccountId } from './ProfileAccountId';
 import { formatMemberSince } from './profileDisplay';
 import type { User } from './types';
+import { SettingsNavigationContext } from './settingsNavigation';
 
 const PHOTO_ERRORS = new Set([
   'invalid_photo',
@@ -30,6 +31,21 @@ export function ProfileIdentity({ user, onSaved }: { user: User; onSaved: (user:
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigation = useContext(SettingsNavigationContext);
+  const handledJump = useRef(0);
+  const editRequest = navigation?.request?.destination.editProfile ? navigation.request : null;
+
+  useEffect(() => {
+    if (!editRequest || handledJump.current === editRequest.serial) return;
+    handledJump.current = editRequest.serial;
+    if (!editing) {
+      setDisplayName(user.display_name);
+      setUsername(user.username);
+      setStatus(null);
+      setError(null);
+      setEditing(true);
+    }
+  }, [editRequest, editing, user.display_name, user.username]);
 
   useEffect(() => {
     if (!photo) {

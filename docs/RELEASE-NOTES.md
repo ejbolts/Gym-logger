@@ -77,6 +77,20 @@
   Your profile and shared profiles display **Account UUID** with **Copy UUID**. Names match
   without case sensitivity, including accented names. Private and disabled accounts remain
   hidden; friends-only workouts still require approval.
+- **Search settings & profile** appears at the top of both pages. Search for rest timers,
+  username changes, passwords, sharing, imports and other sections, then tap a result or
+  press Enter to jump there. Folded sections open automatically; username/name/photo
+  results open profile editing without saving or changing anything.
+- **App theme** offers Blue, Emerald, Plum, Coral and Amber accent colours. Choices apply
+  immediately and stay on the current device across reloads. Status colours keep their
+  meaning.
+- The exercise picker's footer labels wrap on narrow screens. **Create super set** is now
+  **Add super set**, and the selected exercise count no longer has parentheses.
+- The Videos page drops its top **New upload** shortcut. Sets per muscle no longer shows
+  **RPE logged on …% of sets**; the untrained-muscle summary remains.
+- The compact **Friends** card keeps its list below the heading instead of centring one
+  friend in the spare space. It shows the latest workout from up to five followed friends;
+  the refreshed sample preview shows multiple people together.
 - On Profile, **Profile sharing** and **Friends** start open. **What you share** and
   **Change password** start folded. Tap any heading to open or close
   it; sharing status and waiting request counts remain visible when folded.
@@ -142,6 +156,18 @@ Photo and name drafts wait for Save profile; Cancel discards them.
 Copy the account UUID from a profile and share it for an exact lookup, or search by display
 name or username. Only shared accounts appear. Captured with synthetic sample accounts;
 Profile sharing is folded here to keep the account UUID and search result together.
+
+<img src="screenshots/releases/0.6.6-settings-search-themes.png" alt="Settings with a username search result that links to Profile, and the five selectable accent colours with Plum selected." width="430">
+
+Search across Settings and Profile from either page, and choose a colour for this device.
+
+<img src="screenshots/releases/0.6.6-today-multiple-friends.png" alt="Compact Friends card next to Daily check-in, showing Jordan and Alex's latest workouts above Sets per muscle without an RPE logging summary." width="430">
+
+Multiple sample friends in the compact card, with their latest workouts and completed sets.
+
+<img src="screenshots/releases/0.6.6-exercise-picker-wrap.png" alt="Narrow exercise picker with two exercises selected, a wrapped Add selected exercises label and an Add super set action without parentheses." width="375">
+
+Exercise-picker actions wrap at phone width while keeping the selected count visible.
 
 <img src="screenshots/releases/0.6.6-shared-workout-images.png" alt="Another member viewing Alex's shared profile with an expanded workout and example images pinned to Back Extension Machine and Back Squat." width="720">
 

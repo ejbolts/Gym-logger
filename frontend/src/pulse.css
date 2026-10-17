@@ -29,6 +29,9 @@
   --p-accent-hover: #4b94ea;
   --p-accent-text: #6da7ec;
   --p-accent-soft: rgb(57 135 229 / 15%);
+  --accent: var(--p-accent);
+  --accent-dark: var(--p-accent-hover);
+  --green: var(--p-accent);
   --p-good: #2fb84a;
   --p-gold: #e9b44a;
   --p-gold-soft: rgb(201 133 0 / 15%);
@@ -3860,14 +3863,21 @@ small.custom-exercise-label,
 }
 
 .exercise-picker .exercise-picker-actions:not(.single-action) {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .exercise-picker .create-superset-button,
 .exercise-picker .add-selected-button {
-  padding: 0 1rem;
+  padding: 0.625rem 0.75rem;
   font-size: 0.9375rem;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.exercise-picker .exercise-option-copy strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* ───────── Motion ───────── */

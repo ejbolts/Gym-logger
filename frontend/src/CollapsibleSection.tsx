@@ -1,6 +1,7 @@
 import { useId, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { useCollapseAnimation } from './motionHooks';
+import { useSettingsReveal } from './settingsNavigation';
 import './collapsibleSection.css';
 
 /**
@@ -30,6 +31,7 @@ export function CollapsibleSection({
   const id = useId();
   const ref = useRef<HTMLElement>(null);
   const [expanded, setExpanded] = useState(defaultExpanded);
+  useSettingsReveal(title, () => setExpanded(true));
   useCollapseAnimation(ref, expanded);
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
 

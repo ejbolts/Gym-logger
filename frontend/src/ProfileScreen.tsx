@@ -3,6 +3,8 @@ import { api, ApiError } from './api';
 import { authErrorMessage, MIN_PASSWORD_LENGTH, validateNewPassword } from './authForm';
 import { CollapsibleSection } from './CollapsibleSection';
 import { ProfileIdentity } from './ProfileIdentity';
+import { SettingsSearch } from './SettingsSearch';
+import { useSettingsPageJump } from './settingsNavigation';
 import { ProfileSharingPanel } from './ProfileSharing';
 import { FriendsPanel } from './SharedProfiles';
 import type { SharedProfileSummary } from './types';
@@ -291,10 +293,12 @@ export function ProfileScreen({
 }) {
   const { user, updateUser } = useUserSession();
   const [sharingVersion, setSharingVersion] = useState(0);
+  useSettingsPageJump('profile', active);
   if (!user) return null;
 
   return (
-    <section className="settings-screen profile-screen content-page">
+    <section className="settings-screen profile-screen content-page" data-settings-page="profile">
+      <SettingsSearch />
       <ProfileIdentity user={user} onSaved={updateUser} />
       <ProfileSharingPanel onSaved={() => setSharingVersion((version) => version + 1)} />
       <FriendsPanel active={active} refreshKey={sharingVersion} onOpenProfile={onOpenProfile} />

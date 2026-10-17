@@ -599,6 +599,15 @@
 
 /* Today's Friends card */
 
+.home-section-content > .friends-activity {
+  justify-content: flex-start;
+}
+
+.friends-activity .friend-activity-list {
+  margin-top: 0.75rem;
+  flex: 0 0 auto;
+}
+
 .friend-activity-list .shared-profile-avatar.small {
   font-size: 0.875rem;
 }

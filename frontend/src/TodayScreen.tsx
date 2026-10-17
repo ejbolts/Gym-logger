@@ -391,11 +391,8 @@ export function TodayScreen({
         ) : (
           <p className="pulse-empty-line">No working sets logged yet this week.</p>
         )}
-        {data?.weekly_sets && muscles.length > 0 && (
-          <p className="pulse-footnote">
-            RPE logged on {Math.round(data.weekly_sets.rpe_logging_percent)}% of sets
-            {untrainedMuscles ? ` · ${untrainedMuscles} muscles not trained yet` : ''}
-          </p>
+        {muscles.length > 0 && untrainedMuscles > 0 && (
+          <p className="pulse-footnote">{untrainedMuscles} muscles not trained yet</p>
         )}
       </section>
     ),

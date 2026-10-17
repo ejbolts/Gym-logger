@@ -298,12 +298,6 @@ export function VideoUpload() {
 
   return (
     <div className="video-module">
-      <header className="video-toolbar" aria-label="Video tools">
-        <button className="video-tool" onClick={resetUpload}>
-          <span aria-hidden="true">＋</span>
-          New upload
-        </button>
-      </header>
       <YouTubeConnectionPanel disabled={busy} onChange={setYoutube} />
       {message && (
         <p className="message" role="alert">

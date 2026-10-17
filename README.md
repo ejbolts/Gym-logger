@@ -81,6 +81,10 @@ Shared profiles include workouts and your profile photo. You choose separately w
 
 Administrators can manage accounts, registration, video access and private app feedback from the admin console.
 
+Use **Search settings & profile** on either page to jump to rest timers, username changes,
+sharing, data tools and other sections. **Settings > App theme** offers five accent colours;
+the selection applies immediately and stays on that device.
+
 ## Getting started
 
 Sign in or create an account if registration is available. The guided tour introduces the main screens, then offers to import your existing workout history from a CSV file; tap **Start** to log your first workout. In **Settings**, you can replay the guide, find **Add to Home Screen** instructions, adjust training and display preferences, enable phone alerts, and send feedback or feature requests.

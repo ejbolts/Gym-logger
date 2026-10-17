@@ -42,6 +42,11 @@
 .home-section-content > .pulse-card:has(> .pulse-card-header) > :last-child {
   margin-bottom: auto;
 }
+
+.home-section-content > .pulse-card.friends-activity > .friend-activity-list {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
 .home-section-stat .pulse-kpi {
   width: 100%;
   height: 100%;
