@@ -321,12 +321,14 @@ describe('App startup', () => {
     expect(markup).toContain('Loading your sharing choices');
   });
 
-  it('opens the shared profile list, and the list for a reloaded profile link', () => {
+  it('opens Friends on Profile for old shared list links and reloaded profile links', () => {
     for (const hash of ['#shared', '#shared-profile']) {
       const markup = renderSignedIn(hash, account);
 
-      expect(markup).toContain('<strong>Shared profiles</strong>');
-      expect(markup).toContain('Loading shared profiles');
+      expect(markup).toContain('<strong>Profile</strong>');
+      expect(markup).toContain('<span>Friends</span>');
+      expect(markup).toContain('Loading your friends');
+      expect(markup).not.toContain('View shared profiles');
     }
   });
 

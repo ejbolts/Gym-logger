@@ -2294,9 +2294,13 @@ button.metric-card:focus-visible {
 .machine-photo-placeholder {
   display: grid;
   place-items: center;
-  background: rgb(255 99 84 / 9%);
   color: var(--accent);
   font-size: 1rem;
+}
+
+.machine-photo-placeholder > .pulse-icon {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .machine-photo-summary-copy {
@@ -2373,13 +2377,19 @@ button.metric-card:focus-visible {
 }
 
 .machine-photo-actions label:first-child {
-  border-color: rgb(255 99 84 / 55%);
-  background: rgb(255 99 84 / 6%);
+  border-color: rgb(57 135 229 / 55%);
+  background: rgb(57 135 229 / 8%);
 }
 
 .machine-photo-actions label span {
   color: var(--accent);
   font-size: 0.9rem;
+}
+
+.machine-photo-actions label span > .pulse-icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
 }
 
 .machine-photo-rail,
@@ -7674,6 +7684,13 @@ body,
   color: #e6e3df;
   font-size: 1.05rem;
   text-align: center;
+}
+
+.movement-overflow-menu button > span > .pulse-icon {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0 auto;
 }
 
 .movement-overflow-menu button.active,

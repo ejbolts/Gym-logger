@@ -1,30 +1,36 @@
 import { useWeightUnit } from './trainingPreferencesContext';
 import { formatWeight, weightFromKg, type WeightUnit } from './weightUnits';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, ApiError } from './api';
 import { authErrorMessage } from './authForm';
 import { clipBodyWeightGoalPath } from './bodyTrend';
+import { CollapsibleSection } from './CollapsibleSection';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
+import { ProfileAccountId } from './ProfileAccountId';
+import { SharedWorkoutFilters } from './SharedWorkoutFilters';
 import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
 import {
   followActionLabel,
+  followSinceLabel,
   plural,
   SHARED_WORKOUT_PAGE_SIZE,
-  sharedParts,
   VISIBILITY_LABELS,
   workoutActivitySummary,
 } from './sharedProfileDisplay';
 import { addDays, dayMonth, parseLocalDate } from './trainingSummary';
 import type {
   FollowStatus,
+  MachinePhoto,
   PersonalRecord,
   SharedBodyMeasurement,
   SharedCardioSession,
   SharedGoals,
   SharedProfile,
   SharedProfileSummary,
+  SharedWorkoutFilters as WorkoutFilters,
+  SharedWorkoutFilterOptions,
   SharingConnection,
   SharingConnections,
   TrackedWorkout,
@@ -133,7 +139,13 @@ function FollowButton({
     <div className={compact ? 'shared-follow compact' : 'shared-follow'}>
       <button
         type="button"
-        className={following ? 'profile-secondary' : 'profile-primary'}
+        className={
+          profile.follow_status === 'accepted'
+            ? 'profile-danger'
+            : following
+              ? 'profile-secondary'
+              : 'profile-primary'
+        }
         disabled={busy}
         aria-label={compact ? `${label}: ${profile.display_name}` : undefined}
         onClick={() => void run()}
@@ -157,67 +169,213 @@ function StatusChips({ profile }: { profile: SharedProfileSummary }) {
       <em className={`visibility-${profile.visibility}`}>
         {VISIBILITY_LABELS[profile.visibility]}
       </em>
-      {profile.follow_status === 'accepted' && <em>Following</em>}
+      {profile.follow_status === 'accepted' && (
+        <em>{followSinceLabel('Following', profile.following_since)}</em>
+      )}
       {profile.follow_status === 'pending' && <em>Requested</em>}
-      {profile.follows_you && <em>Follows you</em>}
+      {profile.follows_you && <em>{followSinceLabel('Follows you', profile.follows_you_since)}</em>}
     </span>
   );
 }
 
-function ConnectionList({
-  title,
-  kicker,
-  people,
-  emptyText,
-  sinceLabel,
+function FriendRow({
+  person,
+  detail,
+  onOpen,
   actions,
 }: {
-  title: string;
-  kicker: string;
-  people: SharingConnection[];
-  emptyText?: string;
-  sinceLabel: string;
-  actions: (person: SharingConnection) => ReactNode;
+  person: { display_name: string; profile_photo_url: string | null };
+  detail: string;
+  onOpen?: () => void;
+  actions?: ReactNode;
 }) {
-  if (people.length === 0 && !emptyText) return null;
   return (
-    <section className="settings-panel panel sharing-connections">
-      <header>
-        <div>
-          <p className="section-kicker">{kicker}</p>
-          <h2>{title}</h2>
-        </div>
-      </header>
-      {people.length === 0 ? (
-        <p className="shared-card-empty">{emptyText}</p>
-      ) : (
-        <ul>
-          {people.map((person) => (
-            <li key={person.id}>
-              <ProfileAvatar className="shared-profile-avatar small" user={avatarUser(person)} />
-              <span className="shared-connection-copy">
-                <strong>{person.display_name}</strong>
-                <small>
-                  {sinceLabel} {longDate(person.since.slice(0, 10))}
-                </small>
-              </span>
-              <span className="shared-connection-actions">{actions(person)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <li>
+      <button
+        type="button"
+        className="friend-open"
+        disabled={!onOpen}
+        aria-label={onOpen ? `Open ${person.display_name}'s profile` : undefined}
+        onClick={onOpen}
+      >
+        <ProfileAvatar className="shared-profile-avatar small" user={avatarUser(person)} />
+        <span className="shared-connection-copy">
+          <strong>{person.display_name}</strong>
+          <small>{detail}</small>
+        </span>
+        {onOpen && !actions && <Icon name="chevron-right" />}
+      </button>
+      {actions && <span className="shared-connection-actions">{actions}</span>}
+    </li>
   );
 }
 
-export function SharedProfilesScreen({
+function FriendGroup({
+  title,
+  count,
+  emptyText,
+  highlighted = false,
+  children,
+}: {
+  title: string;
+  count?: number;
+  emptyText: string;
+  highlighted?: boolean;
+  children: ReactNode[];
+}) {
+  return (
+    <div className={`friend-group${highlighted ? ' friend-requests' : ''}`}>
+      <h3>
+        {title}
+        {count !== undefined && <span>{count}</span>}
+      </h3>
+      {children.length === 0 ? (
+        <p className="shared-card-empty">{emptyText}</p>
+      ) : (
+        <ul>{children}</ul>
+      )}
+    </div>
+  );
+}
+
+export function PeopleSearch({
   active,
+  refreshKey,
   onOpenProfile,
-  onChooseSharing,
+  onFollowChanged,
 }: {
   active: boolean;
+  refreshKey: string;
   onOpenProfile: (profile: SharedProfileSummary) => void;
-  onChooseSharing: () => void;
+  onFollowChanged: () => void;
+}) {
+  const id = useId();
+  const [input, setInput] = useState('');
+  const [submitted, setSubmitted] = useState({ term: '', serial: 0 });
+  const [results, setResults] = useState<SharedProfileSummary[]>([]);
+  const [state, setState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!active || !submitted.term) return;
+    let cancelled = false;
+    setState('loading');
+    setError(null);
+    api.sharing
+      .profiles(submitted.term)
+      .then((profiles) => {
+        if (cancelled) return;
+        setResults(profiles.filter((profile) => !profile.is_you));
+        setState('ready');
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setError(authErrorMessage(reason));
+        setState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, submitted, refreshKey]);
+  return (
+    <div className="friend-group people-search">
+      <h3>Search people</h3>
+      <form
+        className="people-search-form"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (input.trim())
+            setSubmitted((current) => ({ term: input.trim(), serial: current.serial + 1 }));
+        }}
+      >
+        <label className="sr-only" htmlFor={id}>
+          Account name or UUID
+        </label>
+        <input
+          id={id}
+          type="search"
+          value={input}
+          maxLength={100}
+          autoComplete="off"
+          placeholder="Account name or UUID"
+          onChange={(event) => {
+            const next = event.target.value;
+            setInput(next);
+            if (!next.trim()) {
+              setSubmitted((current) => ({ term: '', serial: current.serial + 1 }));
+              setResults([]);
+              setState('idle');
+              setError(null);
+            }
+          }}
+        />
+        <button
+          type="submit"
+          className="profile-primary"
+          disabled={!input.trim() || (state === 'loading' && input.trim() === submitted.term)}
+          aria-busy={state === 'loading'}
+        >
+          <Icon name="search" /> Search
+        </button>
+      </form>
+      <p className="shared-card-empty">
+        Search by display name, username or full UUID. Only shared profiles appear.
+      </p>
+      {state === 'loading' && (
+        <p className="sharing-loading" role="status">
+          Searching…
+        </p>
+      )}
+      {state === 'error' && (
+        <div className="sharing-load-error">
+          <p className="inline-error" role="alert">
+            {error ?? 'Could not search people.'}
+          </p>
+          <button
+            type="button"
+            className="profile-secondary"
+            onClick={() => setSubmitted((current) => ({ ...current, serial: current.serial + 1 }))}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      {state === 'ready' && (
+        <>
+          <p className="people-search-summary" role="status">
+            {results.length} {results.length === 1 ? 'account' : 'accounts'} found for “
+            {submitted.term}”.
+          </p>
+          {results.length === 0 ? (
+            <p className="shared-card-empty">No shared accounts found. Check the name or UUID.</p>
+          ) : (
+            <ul>
+              {results.map((profile) => (
+                <FriendRow
+                  key={profile.id}
+                  person={profile}
+                  detail={VISIBILITY_LABELS[profile.visibility]}
+                  onOpen={() => onOpenProfile(profile)}
+                  actions={<FollowButton compact profile={profile} onChange={onFollowChanged} />}
+                />
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Profile's Friends section: requests, follows, followers and account search. */
+export function FriendsPanel({
+  active,
+  refreshKey,
+  onOpenProfile,
+}: {
+  active: boolean;
+  refreshKey: number;
+  onOpenProfile: (profile: SharedProfileSummary) => void;
 }) {
   const [profiles, setProfiles] = useState<SharedProfileSummary[] | null>(null);
   const [connections, setConnections] = useState<SharingConnections | null>(null);
@@ -228,7 +386,7 @@ export function SharedProfilesScreen({
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Refreshed whenever the screen is shown, so sharing changes appear straight away.
+    // Refreshed whenever Profile is shown or sharing changes, so follows appear straight away.
     if (!active) return;
     let cancelled = false;
     api.sharing
@@ -246,13 +404,14 @@ export function SharedProfilesScreen({
       })
       .catch((reason: unknown) => {
         if (cancelled) return;
+        setProfiles(null);
         setState(loadStateFor(reason));
         setError(authErrorMessage(reason));
       });
     return () => {
       cancelled = true;
     };
-  }, [active, attempt]);
+  }, [active, attempt, refreshKey]);
 
   function updateProfile(id: string, change: Partial<SharedProfileSummary>) {
     setProfiles(
@@ -267,18 +426,12 @@ export function SharedProfilesScreen({
     try {
       if (action === 'approve') await api.sharing.approveFollower(person.id);
       else await api.sharing.removeFollower(person.id);
-      setConnections((current) =>
-        current
-          ? {
-              requests: current.requests.filter((item) => item.id !== person.id),
-              followers:
-                action === 'approve'
-                  ? [person, ...current.followers]
-                  : current.followers.filter((item) => item.id !== person.id),
-            }
-          : current,
-      );
-      updateProfile(person.id, { follows_you: action === 'approve' });
+      const next = await api.sharing.connections();
+      setConnections(next);
+      updateProfile(person.id, {
+        follows_you: action === 'approve',
+        follows_you_since: next.followers.find((item) => item.id === person.id)?.since ?? null,
+      });
     } catch (reason) {
       setActionError(authErrorMessage(reason));
     } finally {
@@ -287,126 +440,149 @@ export function SharedProfilesScreen({
   }
 
   const others = profiles?.filter((profile) => !profile.is_you) ?? [];
+  const following = others.filter((profile) => profile.follow_status !== 'none');
+  const openFor = (id: string) => {
+    const profile = others.find((item) => item.id === id);
+    return profile ? () => onOpenProfile(profile) : undefined;
+  };
+  const requestCount = state === 'locked' ? 0 : (connections?.requests.length ?? 0);
 
   return (
-    <section className="settings-screen shared-profiles-screen content-page">
-      {actionError && (
-        <p className="inline-error" role="alert">
-          {actionError}
-        </p>
-      )}
-      {connections && (
-        <ConnectionList
-          kicker="FOLLOW REQUESTS"
-          title={`${connections.requests.length} waiting for you`}
-          people={connections.requests}
-          sinceLabel="Asked"
-          actions={(person) => (
-            <>
-              <button
-                type="button"
-                className="profile-primary"
-                disabled={busyId !== null}
-                aria-label={`Approve ${person.display_name}`}
-                onClick={() => void respond(person, 'approve')}
-              >
-                Approve
-              </button>
-              <button
-                type="button"
-                className="profile-secondary"
-                disabled={busyId !== null}
-                aria-label={`Decline ${person.display_name}`}
-                onClick={() => void respond(person, 'remove')}
-              >
-                Decline
-              </button>
-            </>
-          )}
-        />
-      )}
+    <CollapsibleSection
+      className="settings-panel panel sharing-connections friends-panel"
+      kicker="SOCIAL"
+      title="Friends"
+      defaultExpanded
+      badge={
+        requestCount > 0 && (
+          <span className="sharing-state is-on">
+            {requestCount} {requestCount === 1 ? 'request' : 'requests'}
+          </span>
+        )
+      }
+    >
       {state === 'locked' ? (
-        <SharingLocked onChooseSharing={onChooseSharing} />
+        <p className="shared-card-empty">
+          Share your profile above to see and follow other members.
+        </p>
       ) : state === 'error' && !profiles ? (
-        <LoadProblem
-          message={error ?? 'Could not load shared profiles.'}
-          onRetry={() => setAttempt((count) => count + 1)}
-        />
+        <div className="sharing-load-error">
+          <p className="inline-error" role="alert">
+            {error ?? 'Could not load your friends.'}
+          </p>
+          <button
+            type="button"
+            className="profile-secondary"
+            onClick={() => setAttempt((count) => count + 1)}
+          >
+            Try again
+          </button>
+        </div>
       ) : !profiles ? (
         <p className="sharing-loading" role="status">
-          Loading shared profiles…
+          Loading your friends…
         </p>
       ) : (
         <>
-          <ul className="shared-profile-list" aria-label="Shared profiles">
-            {profiles.map((profile) => {
-              const action = followActionLabel(profile);
-              return (
-                <li key={profile.id} className="shared-profile-card">
-                  <button
-                    type="button"
-                    className="shared-profile-open"
-                    onClick={() => onOpenProfile(profile)}
-                  >
-                    <ProfileAvatar className="shared-profile-avatar" user={avatarUser(profile)} />
-                    <span className="shared-profile-copy">
-                      <strong>{profile.display_name}</strong>
-                      <StatusChips profile={profile} />
-                      <small>{workoutActivitySummary(profile)}</small>
-                      {profile.can_view && (
-                        <span className="shared-profile-chips" aria-label="Shares">
-                          {sharedParts(profile).map((part) => (
-                            <em key={part}>{part}</em>
-                          ))}
-                        </span>
-                      )}
-                    </span>
-                    {!action && <Icon name="chevron-right" />}
-                  </button>
-                  {action && (
-                    <FollowButton
-                      compact
-                      profile={profile}
-                      onChange={(status) =>
-                        updateProfile(profile.id, {
-                          follow_status: status,
-                          can_view: profile.can_view || status === 'accepted',
-                        })
-                      }
-                    />
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          {others.length === 0 && (
-            <p className="shared-profiles-empty">
-              No one else is sharing yet. Members appear here as soon as they share their profile.
+          {actionError && (
+            <p className="inline-error" role="alert">
+              {actionError}
             </p>
           )}
+          {connections && connections.requests.length > 0 && (
+            <FriendGroup
+              title="Follow requests"
+              count={connections.requests.length}
+              emptyText=""
+              highlighted
+            >
+              {connections.requests.map((person) => (
+                <FriendRow
+                  key={person.id}
+                  person={person}
+                  detail={`Asked ${longDate(person.since.slice(0, 10))}`}
+                  onOpen={openFor(person.id)}
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        className="profile-primary"
+                        disabled={busyId !== null}
+                        aria-label={`Approve ${person.display_name}`}
+                        onClick={() => void respond(person, 'approve')}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        className="profile-secondary"
+                        disabled={busyId !== null}
+                        aria-label={`Decline ${person.display_name}`}
+                        onClick={() => void respond(person, 'remove')}
+                      >
+                        Decline
+                      </button>
+                    </>
+                  }
+                />
+              ))}
+            </FriendGroup>
+          )}
+          <FriendGroup
+            title="Following"
+            count={following.length}
+            emptyText="You are not following anyone yet."
+          >
+            {following.map((profile) => (
+              <FriendRow
+                key={profile.id}
+                person={profile}
+                detail={[
+                  profile.follow_status === 'accepted'
+                    ? followSinceLabel('Following', profile.following_since)
+                    : null,
+                  workoutActivitySummary(profile),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+                onOpen={() => onOpenProfile(profile)}
+              />
+            ))}
+          </FriendGroup>
+          <FriendGroup
+            title="Followers"
+            count={connections?.followers.length ?? 0}
+            emptyText="Nobody follows you yet."
+          >
+            {(connections?.followers ?? []).map((person) => (
+              <FriendRow
+                key={person.id}
+                person={person}
+                detail={followSinceLabel('Follows you', person.since)}
+                onOpen={openFor(person.id)}
+                actions={
+                  <button
+                    type="button"
+                    className="profile-secondary"
+                    disabled={busyId !== null}
+                    aria-label={`Remove ${person.display_name} from your followers`}
+                    onClick={() => void respond(person, 'remove')}
+                  >
+                    Remove
+                  </button>
+                }
+              />
+            ))}
+          </FriendGroup>
+          <PeopleSearch
+            active={active}
+            refreshKey={`${refreshKey}:${attempt}`}
+            onOpenProfile={onOpenProfile}
+            onFollowChanged={() => setAttempt((count) => count + 1)}
+          />
         </>
       )}
-      {connections && (
-        <ConnectionList
-          kicker="FOLLOWERS"
-          title="Your followers"
-          people={connections.followers}
-          sinceLabel="Following since"
-          emptyText="Nobody follows you yet."
-          actions={(person) => (
-            <button
-              type="button"
-              className="profile-secondary"
-              disabled={busyId !== null}
-              aria-label={`Remove ${person.display_name} from your followers`}
-              onClick={() => void respond(person, 'remove')}
-            >
-              Remove
-            </button>
-          )}
-        />
-      )}
-    </section>
+    </CollapsibleSection>
   );
 }
 
@@ -613,6 +789,7 @@ function CardioCard({ sessions }: { sessions: SharedCardioSession[] }) {
 export interface SharedWorkoutListProps {
   workouts: TrackedWorkout[];
   personalRecords: PersonalRecord[];
+  onFilterMachine?: (photo: MachinePhoto) => void;
 }
 
 export function SharedProfileScreen({
@@ -634,38 +811,82 @@ export function SharedProfileScreen({
   const [attempt, setAttempt] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreError, setMoreError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<WorkoutFilters>({
+    category: '',
+    exercise_id: '',
+    machine_photo_id: '',
+    start_date: '',
+    end_date: '',
+  });
+  const [filterOptions, setFilterOptions] = useState<SharedWorkoutFilterOptions>({
+    exercises: [],
+    machines: [],
+  });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [loadingWorkouts, setLoadingWorkouts] = useState(false);
+  const invalidDates = Boolean(
+    filters.start_date && filters.end_date && filters.start_date > filters.end_date,
+  );
+  const queryKey = JSON.stringify([profileId, attempt, filters]);
+  const currentQuery = useRef(queryKey);
+  currentQuery.current = queryKey;
 
   useEffect(() => {
+    if (invalidDates) {
+      setLoadingWorkouts(false);
+      return;
+    }
     let cancelled = false;
+    setLoadingWorkouts(true);
+    setLoadingMore(false);
+    setMoreError(null);
     async function load() {
       const nextProfile = await api.sharing.profile(profileId);
       // A friends-only profile you do not follow shares only its name and photo.
-      const page = nextProfile.can_view
-        ? await api.sharing.workouts(profileId, 0, SHARED_WORKOUT_PAGE_SIZE)
-        : { workouts: [], personal_records: [], total: 0 };
+      const [page, options] = nextProfile.can_view
+        ? await Promise.all([
+            api.sharing.workouts(profileId, 0, SHARED_WORKOUT_PAGE_SIZE, filters),
+            api.sharing.workoutFilters(profileId),
+          ])
+        : [
+            { workouts: [], personal_records: [], total: 0 },
+            { exercises: [], machines: [] },
+          ];
       if (cancelled) return;
       setProfile(nextProfile);
       setWorkouts(page.workouts);
       setRecords(page.personal_records);
       setTotal(page.total);
+      setFilterOptions(options);
       setState('ready');
     }
-    load().catch((reason: unknown) => {
-      if (cancelled) return;
-      setState(loadStateFor(reason));
-      setError(authErrorMessage(reason));
-    });
+    load()
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setState(loadStateFor(reason));
+        setError(authErrorMessage(reason));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingWorkouts(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [profileId, attempt]);
+  }, [profileId, attempt, filters, invalidDates]);
 
   async function loadMore() {
-    if (loadingMore) return;
+    if (loadingMore || loadingWorkouts || invalidDates) return;
+    const requestedQuery = queryKey;
     setLoadingMore(true);
     setMoreError(null);
     try {
-      const page = await api.sharing.workouts(profileId, workouts.length, SHARED_WORKOUT_PAGE_SIZE);
+      const page = await api.sharing.workouts(
+        profileId,
+        workouts.length,
+        SHARED_WORKOUT_PAGE_SIZE,
+        filters,
+      );
+      if (currentQuery.current !== requestedQuery) return;
       setWorkouts((current) => [
         ...current,
         ...page.workouts.filter((item) => !current.some((existing) => existing.id === item.id)),
@@ -673,18 +894,17 @@ export function SharedProfileScreen({
       setRecords((current) => [...current, ...page.personal_records]);
       setTotal(page.total);
     } catch (reason) {
-      setMoreError(authErrorMessage(reason));
+      if (currentQuery.current === requestedQuery) setMoreError(authErrorMessage(reason));
     } finally {
-      setLoadingMore(false);
+      if (currentQuery.current === requestedQuery) setLoadingMore(false);
     }
   }
 
   function followChanged(status: FollowStatus) {
     if (!profile) return;
     // Gaining or losing access to a friends-only profile changes what it shows.
-    const access = profile.visibility === 'public' || status === 'accepted';
-    if (access !== profile.can_view) setAttempt((count) => count + 1);
-    else setProfile({ ...profile, follow_status: status });
+    setProfile({ ...profile, follow_status: status, following_since: null });
+    setAttempt((count) => count + 1);
   }
 
   if (state === 'locked') {
@@ -740,9 +960,10 @@ export function SharedProfileScreen({
           <div className="profile-summary-copy">
             <strong>{profile.display_name}</strong>
             <StatusChips profile={profile} />
-            {memberSince && <small>Member since {memberSince}</small>}
+            {memberSince && <small>Joined {memberSince}</small>}
           </div>
         </div>
+        <ProfileAccountId accountId={profile.id} />
         {profile.can_view && (
           <dl className="shared-stat-row">
             <div>
@@ -801,17 +1022,43 @@ export function SharedProfileScreen({
               <h2 id="shared-workouts-title">Workouts</h2>
               <span className="num">{plural(total, 'workout')}</span>
             </header>
-            {workouts.length === 0 ? (
-              <p className="shared-card-empty">No workouts logged yet.</p>
+            <SharedWorkoutFilters
+              filters={filters}
+              options={filterOptions}
+              open={filtersOpen}
+              onToggle={setFiltersOpen}
+              onChange={setFilters}
+            />
+            {invalidDates ? (
+              <p className="inline-error" role="alert">
+                From date must not be after To date.
+              </p>
+            ) : loadingWorkouts ? (
+              <p className="sharing-loading" role="status">
+                Loading workouts…
+              </p>
+            ) : workouts.length === 0 ? (
+              <p className="shared-card-empty">
+                {Object.values(filters).some(Boolean)
+                  ? 'No workouts match these filters.'
+                  : 'No workouts logged yet.'}
+              </p>
             ) : (
-              renderWorkouts({ workouts, personalRecords: records })
+              renderWorkouts({
+                workouts,
+                personalRecords: records,
+                onFilterMachine: (photo) => {
+                  setFilters((current) => ({ ...current, machine_photo_id: photo.id }));
+                  setFiltersOpen(true);
+                },
+              })
             )}
             {moreError && (
               <p className="inline-error" role="alert">
                 {moreError}
               </p>
             )}
-            {workouts.length < total && (
+            {!invalidDates && !loadingWorkouts && workouts.length < total && (
               <button
                 type="button"
                 className="show-more-button"

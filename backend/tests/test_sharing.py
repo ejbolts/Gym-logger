@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from io import BytesIO
 
 from conftest import TEST_PASSWORD, register_user
@@ -8,7 +8,7 @@ from sqlalchemy import func, select, update
 from test_auth import named, upload_photo
 
 from app.database import SessionLocal
-from app.models import ProfileFollow, ProfileSharing, TrainingWorkout
+from app.models import ProfileFollow, ProfileSharing, TrainingWorkout, User
 
 NOTHING_EXTRA = {
     "share_notes": False,
@@ -134,6 +134,54 @@ def test_sharing_starts_private_and_keeps_choices(client):
     assert client.get("/api/sharing").headers["cache-control"] == "no-store"
 
 
+def test_people_search_matches_names_and_exact_uuid_without_wildcards(client, other_client):
+    share(client)
+    share(other_client)
+    target_id = other_client.user["id"]
+    with SessionLocal() as db:
+        db.execute(
+            update(User)
+            .where(User.id == target_id)
+            .values(display_name="Case_100% Lifter Élodie", username="tagged.user")
+        )
+        db.commit()
+    for term in (
+        "  case_100%  ",
+        "LIFTER",
+        "élodie",
+        "TAGGED.",
+        "%",
+        "_",
+        target_id.upper(),
+        target_id.replace("-", ""),
+    ):
+        response = client.get("/api/sharing/profiles", params={"q": term})
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()] == [target_id]
+        assert "username" not in response.json()[0]
+    for term in ("not-a-uuid", target_id[:8], "  "):
+        assert client.get("/api/sharing/profiles", params={"q": term}).json() == []
+    assert len(client.get("/api/sharing/profiles").json()) == 2
+    assert client.get("/api/sharing/profiles", params={"q": "x" * 101}).status_code == 422
+
+
+def test_people_search_keeps_profile_permissions(client, other_client):
+    share(client)
+    target_id = other_client.user["id"]
+    terms = (target_id, other_client.user["username"], other_client.user["display_name"])
+    for term in terms:
+        assert client.get("/api/sharing/profiles", params={"q": term}).json() == []
+    share(other_client, "followers")
+    [found] = client.get("/api/sharing/profiles", params={"q": target_id}).json()
+    assert found["can_view"] is False and found["workout_count"] is None
+    assert found["shares"] is None and "username" not in found
+    assert client.patch(f"/api/admin/users/{target_id}", json={"disabled": True}).is_success
+    for term in terms:
+        assert client.get("/api/sharing/profiles", params={"q": term}).json() == []
+    share(client, "private")
+    assert client.get("/api/sharing/profiles", params={"q": target_id}).status_code == 403
+
+
 def test_private_members_neither_see_others_nor_appear(client, other_client):
     share(client)
     response = other_client.get("/api/sharing/profiles")
@@ -169,6 +217,42 @@ def test_public_profiles_are_open_to_sharing_members_and_follows_are_instant(cli
     assert [item["display_name"] for item in followers["followers"]] == ["Other"]
     assert followers["requests"] == []
     assert profile(client, other_client).json()["follows_you"] is True
+
+
+def test_follow_dates_describe_each_direction_and_exclude_pending_requests(client, other_client):
+    share(client, "public")
+    share(other_client, "followers")
+    client.post(f"/api/sharing/follows/{other_client.user['id']}")
+    other_client.post(f"/api/sharing/follows/{client.user['id']}")
+    started = datetime(2026, 10, 6, 12, tzinfo=UTC)
+    with SessionLocal() as db:
+        follow = db.get(ProfileFollow, (other_client.user["id"], client.user["id"]))
+        follow.created_at = datetime(2026, 10, 1, 12, tzinfo=UTC)
+        follow.accepted_at = started
+        db.commit()
+    expected = started.isoformat().replace("+00:00", "Z")
+    detail = profile(client, other_client).json()
+    assert detail["follow_status"] == "pending"
+    assert detail["following_since"] is None
+    assert detail["follows_you_since"] == expected
+    listed = next(
+        item
+        for item in client.get("/api/sharing/profiles").json()
+        if item["id"] == other_client.user["id"]
+    )
+    assert listed["follows_you_since"] == expected
+    assert listed["following_since"] is None
+    reverse = profile(other_client, client).json()
+    assert reverse["following_since"] == expected
+    assert reverse["follows_you_since"] is None
+    # Approval starts the relationship now, rather than on the request or signup date.
+    other_client.post(f"/api/sharing/followers/{client.user['id']}")
+    accepted = profile(client, other_client).json()["following_since"]
+    connections = other_client.get("/api/sharing/followers").json()
+    assert accepted == connections["followers"][0]["since"]
+    assert profile(other_client, client).json()["follows_you_since"] == accepted
+    other_client.delete(f"/api/sharing/follows/{client.user['id']}")
+    assert profile(client, other_client).json()["follows_you_since"] is None
 
 
 def test_friends_only_profiles_need_an_approved_follow_request(client, other_client):
@@ -314,6 +398,89 @@ def test_workouts_are_paged_newest_first(client, other_client):
         "Day 2",
     ]
     assert other_client.get(path, params={"limit": 51}).status_code == 422
+
+
+def test_shared_workout_filters_cover_full_history_and_filtered_pagination(client, other_client):
+    history = add_training_history(client)
+    bench = history["workout"]["movements"][0]["exercise"]["id"]
+    squat = named(client, "Back Squat")["id"]
+    older = detailed_workout(bench, history["photo"]["id"], "Older push")
+    older["workout_date"] = (date.today() - timedelta(days=45)).isoformat()
+    assert client.post("/api/workouts", json=older).status_code == 201
+    lower = {
+        "name": "Lower",
+        "workout_date": (date.today() - timedelta(days=5)).isoformat(),
+        "category": "lower",
+        "movements": [{"exercise_id": squat, "sets": [{"reps": 5, "weight_kg": 60}]}],
+    }
+    assert client.post("/api/workouts", json=lower).status_code == 201
+    share(client, "public", share_machine_photos=True)
+    share(other_client)
+    base = f"/api/sharing/profiles/{client.user['id']}"
+    options = other_client.get(base + "/workout-filters").json()
+    assert {item["id"] for item in options["exercises"]} == {bench, squat}
+    assert [item["id"] for item in options["machines"]] == [history["photo"]["id"]]
+    assert options["machines"][0]["thumbnail_url"].startswith(base + "/machine-photos/")
+    first = other_client.get(base + "/workouts", params={"category": "push", "limit": 1}).json()
+    rest = other_client.get(
+        base + "/workouts", params={"category": "push", "limit": 1, "offset": 1}
+    ).json()
+    assert first["total"] == rest["total"] == 2
+    assert first["workouts"][0]["name"] == "Push day"
+    assert rest["workouts"][0]["name"] == "Older push"
+    assert other_client.get(base + "/workouts", params={"exercise_id": squat}).json()["total"] == 1
+    assert (
+        other_client.get(
+            base + "/workouts", params={"machine_photo_id": history["photo"]["id"]}
+        ).json()["total"]
+        == 2
+    )
+    page = other_client.get(
+        base + "/workouts",
+        params={
+            "category": "push",
+            "start_date": date.today().isoformat(),
+            "end_date": date.today().isoformat(),
+        },
+    ).json()
+    assert page["total"] == 1 and page["workouts"][0]["name"] == "Push day"
+    assert (
+        other_client.get(
+            base + "/workouts", params={"exercise_id": "another-members-exercise"}
+        ).json()["total"]
+        == 0
+    )
+    assert (
+        other_client.get(
+            base + "/workouts", params={"machine_photo_id": history["sample_only_photo"]["id"]}
+        ).json()["total"]
+        == 0
+    )
+    assert (
+        other_client.get(
+            base + "/workouts", params={"start_date": "2026-10-10", "end_date": "2026-10-01"}
+        ).status_code
+        == 422
+    )
+
+
+def test_shared_filter_options_respect_profile_access_and_photo_sharing(client, other_client):
+    history = add_training_history(client)
+    share(client, "public")
+    share(other_client)
+    base = f"/api/sharing/profiles/{client.user['id']}"
+    assert other_client.get(base + "/workout-filters").json()["machines"] == []
+    assert (
+        other_client.get(
+            base + "/workouts", params={"machine_photo_id": history["photo"]["id"]}
+        ).status_code
+        == 403
+    )
+    share(client, "followers")
+    assert other_client.get(base + "/workout-filters").status_code == 403
+    assert other_client.get(base + "/workouts", params={"category": "push"}).status_code == 403
+    share(client, "private")
+    assert other_client.get(base + "/workout-filters").status_code == 404
 
 
 def test_going_private_hides_the_profile_and_others(client, other_client):

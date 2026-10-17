@@ -1,6 +1,7 @@
 [
   {
     "version": "0.6.5",
+    "date": "2026-10-17",
     "title": "Your videos, your YouTube channel",
     "summary": "Connect your own YouTube channel in the app and upload workout videos without API keys or credential files.",
     "changes": [
@@ -19,6 +20,7 @@
   },
   {
     "version": "0.6.0",
+    "date": "2026-10-16",
     "title": "Faster start, machine history and earlier releases",
     "summary": "Open with your recent training, find the last time you used a machine, and browse what changed in earlier versions.",
     "changes": [
@@ -40,6 +42,7 @@
   },
   {
     "version": "0.5.5",
+    "date": "2026-10-15",
     "title": "Update when you are ready",
     "summary": "Keep logging through app releases, then refresh when it suits you.",
     "changes": [
@@ -53,6 +56,7 @@
   },
   {
     "version": "0.5.4",
+    "date": "2026-10-15",
     "title": "Flexible Home cards and goal-aware weight changes",
     "summary": "Resize your Home cards and see whether body-weight changes match your goal.",
     "changes": [
@@ -70,6 +74,7 @@
   },
   {
     "version": "0.5.3",
+    "date": "2026-10-13",
     "title": "Safer workout records, imports and shared training",
     "summary": "Keep workouts through reloads, use your preferred units, review imports, and choose who sees your training.",
     "changes": [
@@ -93,6 +98,7 @@
   },
   {
     "version": "0.3.1",
+    "date": "2026-10-11",
     "title": "See what's changed",
     "summary": "Release announcements now include screenshots of visible changes, such as the recent username-based signup screen.",
     "changes": [
@@ -108,6 +114,7 @@
   },
   {
     "version": "0.3.0",
+    "date": "2026-10-11",
     "title": "Sign in with a username",
     "summary": "Gym Logger accounts now use a username and password, with no email address required.",
     "changes": [
@@ -119,6 +126,7 @@
   },
   {
     "version": "0.2.0",
+    "date": "2026-10-11",
     "title": "Stay up to date",
     "summary": "Gym Logger now lets you know when a new version is ready.",
     "changes": [

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { followActionLabel, sharedParts, workoutActivitySummary } from './sharedProfileDisplay';
+import {
+  followActionLabel,
+  followSinceLabel,
+  sharedParts,
+  workoutActivitySummary,
+} from './sharedProfileDisplay';
 import type { SharedProfileSummary } from './types';
 
 const nothingExtra = {
@@ -37,6 +42,16 @@ const friendsOnly: SharedProfileSummary = {
 };
 
 describe('shared profile display', () => {
+  it('labels relationship start dates independently of signup and missing dates', () => {
+    expect(followSinceLabel('Following', '2026-10-06T12:00:00Z')).toBe(
+      'Following since 6 Oct 2026',
+    );
+    expect(followSinceLabel('Follows you', '2026-10-09T12:00:00Z')).toBe(
+      'Follows you since 9 Oct 2026',
+    );
+    expect(followSinceLabel('Following', null)).toBe('Following');
+    expect(followSinceLabel('Following', 'invalid')).toBe('Following');
+  });
   it('always lists workouts, then only the parts the owner chose to share', () => {
     expect(sharedParts(profile)).toEqual(['Workouts']);
     expect(

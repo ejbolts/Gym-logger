@@ -1,17 +1,13 @@
-import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from './api';
-import {
-  authErrorMessage,
-  MIN_PASSWORD_LENGTH,
-  USERNAME_HINT,
-  validateUsername,
-  validateNewPassword,
-} from './authForm';
-import { optimisePhoto } from './photoOptimise';
-import { ProfileAvatar } from './ProfileAvatar';
-import { formatMemberSince } from './profileDisplay';
+import { authErrorMessage, MIN_PASSWORD_LENGTH, validateNewPassword } from './authForm';
+import { CollapsibleSection } from './CollapsibleSection';
+import { ProfileIdentity } from './ProfileIdentity';
+import { SettingsSearch } from './SettingsSearch';
+import { useSettingsPageJump } from './settingsNavigation';
 import { ProfileSharingPanel } from './ProfileSharing';
-import type { User } from './types';
+import { FriendsPanel } from './SharedProfiles';
+import type { SharedProfileSummary } from './types';
 import { useUserSession } from './userContext';
 
 function Spinner() {
@@ -52,183 +48,6 @@ function FormFeedback({ status, error }: { status: string | null; error: string 
         </p>
       )}
     </div>
-  );
-}
-
-/** The server stores a 512 px square; a little extra lets it crop without losing detail. */
-const PROFILE_PHOTO_UPLOAD_DIMENSION = 1024;
-const PHOTO_ERROR_CODES = new Set([
-  'invalid_photo',
-  'unsupported_photo_type',
-  'photo_too_large',
-  'photo_dimensions_too_large',
-]);
-
-function photoErrorMessage(reason: unknown): string {
-  // The server explains photo problems in plain words, such as the size limit.
-  return reason instanceof ApiError && PHOTO_ERROR_CODES.has(reason.code)
-    ? reason.message
-    : authErrorMessage(reason);
-}
-
-function PhotoControls({ user, onSaved }: { user: User; onSaved: (user: User) => void }) {
-  const input = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState<'upload' | 'remove' | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const hasPhoto = Boolean(user.profile_photo_url);
-
-  async function run(action: 'upload' | 'remove', file?: File) {
-    if (busy) return;
-    setBusy(action);
-    setStatus(null);
-    setError(null);
-    try {
-      const updated =
-        action === 'upload' && file
-          ? await api.uploadProfilePhoto(await optimisePhoto(file, PROFILE_PHOTO_UPLOAD_DIMENSION))
-          : await api.removeProfilePhoto();
-      onSaved(updated);
-      setStatus(action === 'upload' ? 'Profile photo updated.' : 'Profile photo removed.');
-    } catch (reason) {
-      setError(photoErrorMessage(reason));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  return (
-    <div className="profile-photo-controls">
-      <input
-        ref={input}
-        className="sr-only"
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-        tabIndex={-1}
-        aria-hidden="true"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          if (file) void run('upload', file);
-        }}
-      />
-      <div className={hasPhoto ? 'profile-photo-actions' : undefined}>
-        <button
-          type="button"
-          className="profile-secondary"
-          disabled={busy !== null}
-          onClick={() => input.current?.click()}
-        >
-          {busy === 'upload' && <Spinner />}
-          <span>
-            {busy === 'upload' ? 'Uploading…' : hasPhoto ? 'Change photo' : 'Add profile photo'}
-          </span>
-        </button>
-        {hasPhoto && (
-          <button
-            type="button"
-            className="profile-secondary"
-            disabled={busy !== null}
-            onClick={() => void run('remove')}
-          >
-            {busy === 'remove' && <Spinner />}
-            <span>{busy === 'remove' ? 'Removing…' : 'Remove'}</span>
-          </button>
-        )}
-      </div>
-      <FormFeedback status={status} error={error} />
-    </div>
-  );
-}
-
-function DetailsForm({ user, onSaved }: { user: User; onSaved: (user: User) => void }) {
-  const id = useId();
-  const [displayName, setDisplayName] = useState(user.display_name);
-  const [username, setUsername] = useState(user.username);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const dirty = displayName.trim() !== user.display_name || username.trim() !== user.username;
-
-  async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (saving || !dirty) return;
-    setStatus(null);
-    setError(null);
-    if (!displayName.trim()) {
-      setError('Enter a name to show in the app.');
-      return;
-    }
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      setError(usernameError);
-      return;
-    }
-    setSaving(true);
-    try {
-      const updated = await api.updateProfile({
-        ...(displayName.trim() !== user.display_name ? { display_name: displayName.trim() } : {}),
-        ...(username.trim() !== user.username ? { username: username.trim() } : {}),
-      });
-      onSaved(updated);
-      setDisplayName(updated.display_name);
-      setUsername(updated.username);
-      setStatus('Profile saved.');
-    } catch (reason) {
-      setError(authErrorMessage(reason));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <section className="settings-panel panel" aria-labelledby={`${id}-title`}>
-      <header>
-        <div>
-          <p className="section-kicker">DETAILS</p>
-          <h2 id={`${id}-title`}>Name &amp; username</h2>
-        </div>
-      </header>
-      <form className="profile-form" noValidate onSubmit={(event) => void save(event)}>
-        <Field id={`${id}-name`} label="Name">
-          <input
-            id={`${id}-name`}
-            type="text"
-            autoComplete="name"
-            autoCapitalize="words"
-            required
-            value={displayName}
-            onChange={(event) => {
-              setDisplayName(event.target.value);
-              setStatus(null);
-            }}
-          />
-        </Field>
-        <Field id={`${id}-username`} label="Username" hint={USERNAME_HINT}>
-          <input
-            id={`${id}-username`}
-            type="text"
-            inputMode="text"
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            required
-            maxLength={32}
-            value={username}
-            onChange={(event) => {
-              setUsername(event.target.value);
-              setStatus(null);
-            }}
-          />
-        </Field>
-        <FormFeedback status={status} error={error} />
-        <button type="submit" className="profile-primary" disabled={saving || !dirty}>
-          {saving && <Spinner />}
-          <span>{saving ? 'Saving…' : 'Save changes'}</span>
-        </button>
-      </form>
-    </section>
   );
 }
 
@@ -278,13 +97,7 @@ function PasswordForm() {
   }
 
   return (
-    <section className="settings-panel panel" aria-labelledby={`${id}-title`}>
-      <header>
-        <div>
-          <p className="section-kicker">SECURITY</p>
-          <h2 id={`${id}-title`}>Change password</h2>
-        </div>
-      </header>
+    <CollapsibleSection className="settings-panel panel" kicker="SECURITY" title="Change password">
       <form className="profile-form" noValidate onSubmit={(event) => void save(event)}>
         <Field id={`${id}-current`} label="Current password">
           <input
@@ -331,7 +144,7 @@ function PasswordForm() {
           <span>{saving ? 'Updating…' : 'Update password'}</span>
         </button>
       </form>
-    </section>
+    </CollapsibleSection>
   );
 }
 
@@ -471,29 +284,24 @@ function DangerZone() {
   );
 }
 
-export function ProfileScreen({ onOpenSharedProfiles }: { onOpenSharedProfiles: () => void }) {
+export function ProfileScreen({
+  active,
+  onOpenProfile,
+}: {
+  active: boolean;
+  onOpenProfile: (profile: SharedProfileSummary) => void;
+}) {
   const { user, updateUser } = useUserSession();
+  const [sharingVersion, setSharingVersion] = useState(0);
+  useSettingsPageJump('profile', active);
   if (!user) return null;
-  const memberSince = formatMemberSince(user.created_at);
 
   return (
-    <section className="settings-screen profile-screen content-page">
-      <section className="settings-panel panel profile-summary" aria-label="Signed-in account">
-        <div className="profile-summary-main">
-          <ProfileAvatar className="profile-avatar" user={user} />
-          <div className="profile-summary-copy">
-            <strong>
-              {user.display_name}
-              {user.is_admin && <span className="profile-badge">Admin</span>}
-            </strong>
-            <span>{user.username}</span>
-            {memberSince && <small>Member since {memberSince}</small>}
-          </div>
-        </div>
-        <PhotoControls user={user} onSaved={updateUser} />
-      </section>
-      <ProfileSharingPanel onOpenSharedProfiles={onOpenSharedProfiles} />
-      <DetailsForm user={user} onSaved={updateUser} />
+    <section className="settings-screen profile-screen content-page" data-settings-page="profile">
+      <SettingsSearch />
+      <ProfileIdentity user={user} onSaved={updateUser} />
+      <ProfileSharingPanel onSaved={() => setSharingVersion((version) => version + 1)} />
+      <FriendsPanel active={active} refreshKey={sharingVersion} onOpenProfile={onOpenProfile} />
       <PasswordForm />
       <SessionPanel />
       <DangerZone />

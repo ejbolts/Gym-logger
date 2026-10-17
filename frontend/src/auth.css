@@ -277,17 +277,6 @@
   min-width: 0;
 }
 
-.profile-photo-controls {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.profile-photo-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
 .profile-avatar,
 .profile-button-initial {
   display: grid;
@@ -719,4 +708,93 @@
   to {
     opacity: 0;
   }
+}
+
+.profile-button {
+  position: relative;
+}
+
+.profile-edit-button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  margin-left: auto;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.profile-edit-button .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.profile-photo-edit {
+  position: relative;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: var(--p-ink);
+}
+
+.profile-photo-edit .profile-avatar {
+  opacity: 0.55;
+}
+
+.profile-photo-edit > .pulse-icon {
+  position: absolute;
+  inset: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: auto;
+  filter: drop-shadow(0 1px 3px #000);
+}
+
+.profile-photo-remove {
+  justify-self: start;
+}
+
+.profile-identity > .profile-form {
+  margin-top: 0 !important;
+}
+
+.profile-identity .auth-field > span {
+  color: var(--p-ink-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+@media (max-width: 400px) {
+  .profile-edit-button span {
+    display: none;
+  }
+}
+
+/* Follow requests waiting for approval. */
+.profile-request-badge {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--p-page);
+  border-radius: 999px;
+  padding: 0 0.25rem;
+  background: var(--p-danger);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1;
 }

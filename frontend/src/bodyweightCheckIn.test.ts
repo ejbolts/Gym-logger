@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
-import { saveBodyweightCheckIn } from './bodyweightCheckIn';
+import { saveBodyFatCheckIn, saveBodyweightCheckIn } from './bodyweightCheckIn';
 import type { BodyMeasurement } from './types';
 
 const previous: BodyMeasurement = {
@@ -16,6 +16,41 @@ const previous: BodyMeasurement = {
 afterEach(() => vi.restoreAllMocks());
 
 describe('bodyweight check-in persistence', () => {
+  it('saves fat without changing weight/notes and undoes only fat against the latest entry', async () => {
+    const save = vi
+      .spyOn(api, 'saveBodyMeasurement')
+      .mockResolvedValue({ ...previous, body_fat_pct: 19 });
+    vi.spyOn(api, 'listBodyMeasurements').mockResolvedValue([
+      { ...previous, weight_kg: 85, body_fat_pct: 19, notes: 'Updated notes' },
+    ]);
+    const undo = await saveBodyFatCheckIn(previous, previous.measurement_date, 19);
+    expect(save).toHaveBeenLastCalledWith({
+      measurement_date: previous.measurement_date,
+      weight_kg: 84.2,
+      body_fat_pct: 19,
+      notes: previous.notes,
+    });
+    await undo();
+    expect(save).toHaveBeenLastCalledWith({
+      measurement_date: previous.measurement_date,
+      weight_kg: 85,
+      body_fat_pct: 18,
+      notes: 'Updated notes',
+    });
+  });
+
+  it('does not invent a weight or recreate a removed check-in for body fat', async () => {
+    const save = vi.spyOn(api, 'saveBodyMeasurement').mockResolvedValue(previous);
+    await expect(saveBodyFatCheckIn(null, previous.measurement_date, 19)).rejects.toThrow(
+      'body weight',
+    );
+    await expect(saveBodyFatCheckIn(previous, '2026-10-18', 19)).rejects.toThrow('body weight');
+    expect(save).not.toHaveBeenCalled();
+    const undo = await saveBodyFatCheckIn(previous, previous.measurement_date, 19);
+    vi.spyOn(api, 'listBodyMeasurements').mockResolvedValue([]);
+    await expect(undo()).rejects.toThrow('no longer exists');
+    expect(save).toHaveBeenCalledTimes(1);
+  });
   it('deletes only the newly saved entry when undoing a first check-in', async () => {
     const save = vi.spyOn(api, 'saveBodyMeasurement').mockResolvedValue({ ...previous, id: 'new' });
     const remove = vi.spyOn(api, 'deleteBodyMeasurement').mockResolvedValue(undefined);

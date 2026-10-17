@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultHomeLayout,
   HOME_SECTIONS,
+  fillHomeSectionGap,
+  homeSectionGaps,
   homeSectionSpans,
   moveHomeSection,
   toggleHomeSection,
@@ -9,6 +11,66 @@ import {
 } from './homeLayout';
 
 describe('Home layout edits', () => {
+  it('unhides and fits a section to a third-width gap while retaining other preferences', () => {
+    const saved = {
+      ...defaultHomeLayout(),
+      hidden: ['friends' as const],
+      widths: {
+        friends: 'full' as const,
+        workouts: 'compact' as const,
+        'cardio-sessions': 'compact' as const,
+      },
+    };
+    const added = fillHomeSectionGap(saved, 'friends', 'cardio-sessions', 2);
+    expect(added.hidden).toEqual([]);
+    expect(added.widths?.friends).toBe('third');
+    expect(homeSectionSpans(['workouts', 'cardio-sessions', 'friends'], added.widths)).toEqual([
+      2, 2, 2,
+    ]);
+    expect(saved.hidden).toEqual(['friends']);
+    expect(saved.widths.friends).toBe('full');
+  });
+  it('fills unusable strips in mixed-size rows without removing usable drop spaces', () => {
+    const widths = {
+      consistency: 'compact',
+      'weekly-bodyweight': 'compact',
+      workouts: 'compact',
+      'cardio-sessions': 'compact',
+    } as const;
+    expect(
+      homeSectionSpans(['consistency', 'weekly-bodyweight', 'workouts', 'cardio-sessions'], widths),
+    ).toEqual([3, 3, 2, 2]);
+    expect(homeSectionSpans(['weekly-bodyweight', 'consistency'], widths)).toEqual([3, 3]);
+    expect(homeSectionSpans(['consistency'], widths)).toEqual([3]);
+    expect(homeSectionSpans(['workouts', 'cardio-sessions'], widths)).toEqual([2, 2]);
+  });
+  it('finds empty space beside a compact card before a full row and at the end', () => {
+    expect([...homeSectionGaps(['consistency', 'friends', 'zone2'], [3, 6, 3])]).toEqual([
+      ['consistency', 3],
+      ['zone2', 3],
+    ]);
+    expect([...homeSectionGaps(['workouts', 'cardio-sessions', 'zone2'], [2, 2, 3])]).toEqual([
+      ['cardio-sessions', 2],
+      ['zone2', 3],
+    ]);
+    expect([...homeSectionGaps(['zone2', 'bodyweight-trend'], [3, 3])]).toEqual([]);
+    expect([...homeSectionGaps([], [])]).toEqual([]);
+    expect([...homeSectionGaps(['workouts', 'consistency', 'friends'], [2, 3, 6])]).toEqual([]);
+  });
+
+  it('fills a gap from either direction and keeps the source compact after saving', () => {
+    const saved = { ...defaultHomeLayout(), widths: { consistency: 'compact' as const } };
+    const moved = fillHomeSectionGap(saved, 'zone2', 'consistency');
+    expect(moved.order[moved.order.indexOf('consistency') + 1]).toBe('zone2');
+    expect(moved.widths).toEqual({ consistency: 'compact', zone2: 'compact' });
+    expect(homeSectionSpans(['consistency', 'zone2', 'friends'], moved.widths)).toEqual([3, 3, 6]);
+    const forward = fillHomeSectionGap(saved, 'zone2', 'friends');
+    expect(forward.order[forward.order.indexOf('friends') + 1]).toBe('zone2');
+    expect(new Set(forward.order).size).toBe(HOME_SECTIONS.length);
+    expect(moved.hidden).toEqual(saved.hidden);
+    expect(saved.widths).toEqual({ consistency: 'compact' });
+    expect(fillHomeSectionGap(saved, 'zone2', 'zone2')).toBe(saved);
+  });
   it('fills rows after hiding or moving small cards without changing their order', () => {
     expect(homeSectionSpans(['workouts', 'cardio-sessions', 'weekly-bodyweight'])).toEqual([
       2, 2, 2,
@@ -27,7 +89,7 @@ describe('Home layout edits', () => {
     expect(new Set(reordered.order).size).toBe(HOME_SECTIONS.length);
     expect(reordered.hidden).toEqual(['records']);
     expect(saved.order[0]).toBe('next-workout');
-    expect(moveHomeSection(reordered, 'consistency', 'records').order.at(-1)).toBe('consistency');
+    expect(moveHomeSection(reordered, 'consistency', 'friends').order.at(-1)).toBe('consistency');
     expect(moveHomeSection(saved, 'records', 'records')).toBe(saved);
   });
 

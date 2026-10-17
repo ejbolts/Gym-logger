@@ -28,3 +28,30 @@ export async function saveBodyweightCheckIn(
     else await api.deleteBodyMeasurement(saved.id);
   };
 }
+
+/** Add body fat to today's recorded weight; undo changes only body fat. */
+export async function saveBodyFatCheckIn(
+  previous: BodyMeasurement | null,
+  date: string,
+  bodyFat: number,
+): Promise<UndoBodyweightCheckIn> {
+  if (!previous || previous.measurement_date !== date) {
+    throw new Error('Log today’s body weight before logging body fat.');
+  }
+  const saved = await api.saveBodyMeasurement({
+    measurement_date: date,
+    weight_kg: previous.weight_kg,
+    body_fat_pct: bodyFat,
+    notes: previous.notes,
+  });
+  return async () => {
+    const current = (await api.listBodyMeasurements()).find((item) => item.id === saved.id);
+    if (!current) throw new Error('This check-in no longer exists. Refresh before trying again.');
+    await api.saveBodyMeasurement({
+      measurement_date: date,
+      weight_kg: current.weight_kg,
+      body_fat_pct: previous.body_fat_pct,
+      notes: current.notes,
+    });
+  };
+}

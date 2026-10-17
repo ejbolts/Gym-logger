@@ -1,4 +1,6 @@
 import type {
+  SharedWorkoutFilters,
+  SharedWorkoutFilterOptions,
   AccountLimits,
   AppFeedback,
   AccountLimitsSettings,
@@ -201,14 +203,27 @@ export const api = {
         headers: jsonHeaders,
         body: JSON.stringify(choices),
       }),
-    profiles: () => request<SharedProfileSummary[]>('/api/sharing/profiles'),
+    profiles: (query?: string) =>
+      request<SharedProfileSummary[]>(
+        `/api/sharing/profiles${query === undefined ? '' : `?q=${encodeURIComponent(query.trim())}`}`,
+      ),
     profile: (userId: string) =>
       request<SharedProfile>(`/api/sharing/profiles/${encodeURIComponent(userId)}`),
-    workouts: (userId: string, offset: number, limit: number) =>
+    workoutFilters: (userId: string) =>
+      request<SharedWorkoutFilterOptions>(
+        `/api/sharing/profiles/${encodeURIComponent(userId)}/workout-filters`,
+      ),
+    workouts: (
+      userId: string,
+      offset: number,
+      limit: number,
+      filters: Partial<SharedWorkoutFilters> = {},
+    ) =>
       request<SharedWorkoutPage>(
         `/api/sharing/profiles/${encodeURIComponent(userId)}/workouts?${new URLSearchParams({
           offset: String(offset),
           limit: String(limit),
+          ...Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== '')),
         })}`,
       ),
     follow: (userId: string) =>

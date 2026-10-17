@@ -1,8 +1,10 @@
 # Gym Logger release notes
 
-## 0.6.6
+## 0.7.0
 
-### Import history and undo check-ins
+17 October 2026
+
+### Friends, profiles and a more personal Home
 
 - New accounts see the app tour first. The next step offers **Import or export**: it opens
   **Settings > Workout data** with a CSV guide. **Skip for now** shows What's new instead;
@@ -29,33 +31,196 @@
 - Logging or updating today's body weight shows an **Undo** popup at the top of the
   screen with a five-second countdown bar. Undo removes a new check-in or restores the
   previous weight, body-fat value and notes after an update.
-- Daily check-in shows **Saved today · [weight]** once in its header, without a second
-  saved message below the controls.
+- Daily check-in labels **Body weight** and **Body fat** separately, each with its own
+  green **Saved today** summary and no duplicate saved message below the controls.
 - The feedback form keeps only **Please leave out passwords and sensitive information.**
   The machine filter's **Clear** button is now labelled **Close**.
 - Workout types in the **Consistency** calendar legend now switch on and off. Every type is
   shown at first, each with a tick; tap one to swap its tick for a cross and dim its name.
   The calendar greys out that type's dots, and the borders of days with only hidden types,
   while every date stays readable. Tap the type again to show it.
+- Ticking an exercise as finished also ticks its remaining sets, including suggestions from
+  your last workout, with the weight and reps shown. A finished exercise no longer reads
+  **0 completed working sets**. Blank sets stay unticked, and unticking the exercise leaves
+  its logged sets as they are.
+- The exercise menu uses clearer icons: a clock for **Recent History** and a link for
+  **Group Superset**. **Edit Notes** is removed from the menu; use the note field at the
+  bottom of each exercise. **Equipment photo** and **Take photo** show a camera, and the
+  **Take photo** button is blue to match the app's accent colour.
+- The **Workout live** card on Today has the same spacing below it as the other cards.
+- On Home, a card placed beside a taller one centres its content instead of leaving an empty
+  gap at the bottom, for example **Sets per muscle** next to **Consistency** or **Daily
+  check-in** next to **Recent records**.
+- While a workout is live, editing Home no longer shows a placeholder **Next workout** card.
+- Mixed compact cards fill an unusable narrow strip at the end of a row. For example, a
+  compact **Body weight** card fills the space beside half-width **Consistency**, while
+  larger spaces remain available for dropping another section.
+- **What's new** shows a date for the current notes and each earlier version, including
+  collapsed entries. Older dates are taken from the recorded release-metadata dates.
+- In **Edit Home**, drag a section into an empty space beside another card. Expanded cards
+  automatically shrink to compact width when dropped into a smaller space. Dotted targets
+  highlight spaces that fit the compact card, and its new width stays after saving.
+- Empty spaces now show a plus: tap one to choose a section that is not already on Home.
+  Only hidden sections appear; when all available sections are added, the picker explains
+  that there are none left to add. Sections fit the chosen space, including a third-width
+  slot. Dragging into those spaces still works. Tap the top pencil again to **save** the layout; the bottom
+  **Cancel** button discards changes. A failed save retains the draft for retry.
+- Profile sharing has one button under the three options: **Make my profile private**,
+  **Make my profile friends only** or **Make my profile public**, matching your choice. It
+  only becomes available when the choice differs from your current setting, and choosing
+  your current option again cancels the change. The saved message appears as a
+  five-second popup at the top of the screen with a countdown bar.
+- A new **Friends** section on Profile replaces the separate shared profiles screen. It
+  lists follow requests to approve or decline, who you follow, your followers and a search
+  for other members. Tap anyone to open their profile.
+- **Search people** replaces the unfiltered Find people list. Search shared accounts by
+  display name, username or full account UUID, then open a result or follow/request it.
+  Your profile and shared profiles display **Account UUID** with **Copy UUID**. Names match
+  without case sensitivity, including accented names. Private and disabled accounts remain
+  hidden; friends-only workouts still require approval.
+- **Copy UUID** confirms with a popup at the top of the screen that disappears after five
+  seconds, with a countdown and dismiss button. Copying again restarts the countdown;
+  no message is left beneath the account UUID.
+- **Search settings & profile** appears at the top of both pages. Search for rest timers,
+  username changes, passwords, sharing, imports and other sections, then tap a result or
+  press Enter to jump there. Folded sections open automatically; username/name/photo
+  results open profile editing without saving or changing anything.
+- **App theme** offers Blue, Emerald, Plum, Coral and Amber accent colours. Choices apply
+  immediately and stay on the current device across reloads. Status colours keep their
+  meaning.
+- The exercise picker's footer labels wrap on narrow screens. **Create super set** is now
+  **Add super set**, and the selected exercise count no longer has parentheses.
+- The Videos page drops its top **New upload** shortcut. Sets per muscle no longer shows
+  **RPE logged on …% of sets**; the untrained-muscle summary remains.
+- The compact **Friends** card keeps its list below the heading instead of centring one
+  friend in the spare space. It shows the latest workout from up to five followed friends;
+  the refreshed sample preview shows multiple people together.
+- On Profile, **Profile sharing** and **Friends** start open. **What you share** and
+  **Change password** start folded. Tap any heading to open or close
+  it; sharing status and waiting request counts remain visible when folded.
+- A numbered badge above your profile picture on **Today** shows waiting friend requests.
+  It refreshes when you return to Today or refocus the app, including after you handle a request.
+- Today's **Friends** card shows the latest workout from up to five friends you follow,
+  most recently active first, with workout names, dates, exercises and completed sets.
+  Tap a friend to open their profile, or **See all** to manage friends on Profile.
+  Move, resize or hide the card with **Edit Home**.
+- Profiles label signup dates as **Joined**. **Following since [date]** and **Follows you
+  since [date]** show when each relationship began, separately from when someone joined.
+  Pending requests are highlighted with a blue dotted outline.
+- Profile starts in viewing mode with an **Edit profile** button. Editing reveals the name
+  and username fields plus a pencil over a slightly dimmed avatar. Tap it to choose a photo;
+  **Remove photo** sits below the avatar on the left. The card keeps its normal border and
+  the avatar has no blue outline. Preview or remove the photo, then **Save profile** or
+  **Cancel**. Drafts wait for Save.
+
+- **Unfollow** uses the red outline and subtle red tint of the delete-button style.
+- Shared profiles have **Filter workouts** controls for workout type, exercise, From/To
+  dates and shared machine photos. Filters search the full shared history before pagination,
+  including older sessions, and stay applied with **Show more**. Machine filters appear only
+  for photos the owner shares. Expand a shared machine photo to filter all workouts on it.
+- Daily check-in adds **Body fat** percentage beneath **Body weight**, with its own minus,
+  plus and **Log**/**Update** controls. A padded dotted divider separates the rows. Log
+  today's weight first; saving body fat preserves that weight and notes. Its five-second
+  **Undo** restores body fat without changing the latest weight or notes.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
-<img src="screenshots/releases/0.6.6-import-history-guide.png" alt="Three phone screens: the Your workout history step after the tour with Skip for now and Import or export, the CSV guide's Shape your file page with required columns, example rows and Download template CSV, and the Before you choose a file page with spreadsheet tips and Choose CSV file." width="720">
+<img src="screenshots/releases/0.7.0-import-history-guide.png" alt="Three phone screens: the Your workout history step after the tour with Skip for now and Import or export, the CSV guide's Shape your file page with required columns, example rows and Download template CSV, and the Before you choose a file page with spreadsheet tips and Choose CSV file." width="720">
 
 The import step after the tour, then pages 2 and 3 of the CSV guide, recorded with a sample
 account in the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-check-in-undo.png" alt="Daily check-in showing Saved today and 84.5 kg once in the header, with an Undo popup and countdown bar at the top of the phone screen." width="390">
+<img src="screenshots/releases/0.7.0-check-in-undo.png" alt="Daily check-in showing Saved today and 84.5 kg once in the header, with an Undo popup and countdown bar at the top of the phone screen." width="390">
 
 The body-weight Undo popup and single saved-today summary, captured with sample data in
 the isolated verification environment.
 
-<img src="screenshots/releases/0.6.6-calendar-type-filter.png" alt="Consistency calendar for October 2026 with Upper body and Push switched off in the legend: their names are dimmed with a cross, their days have grey borders and dots, and Lower body, Pull, Full body and Cardio keep their ticks, colours and green borders." width="390">
+<img src="screenshots/releases/0.7.0-calendar-type-filter.png" alt="Consistency calendar for October 2026 with Upper body and Push switched off in the legend: their names are dimmed with a cross, their days have grey borders and dots, and Lower body, Pull, Full body and Cardio keep their ticks, colours and green borders." width="390">
 
 The Consistency calendar with Upper body and Push switched off, captured with synthetic
 sample workouts in the isolated verification environment.
 
+<img src="screenshots/releases/0.7.0-today-friends-badge.png" alt="Today with a one-request badge on the profile avatar and the Friends card showing Jordan and Alex's latest workouts, dates and completed set totals." width="390">
+
+The Friends card moved to the top of a sample dashboard, with one waiting friend request.
+Captured with synthetic accounts and workouts in the isolated verification environment.
+
+<img src="screenshots/releases/0.7.0-profile-view.png" alt="Profile in viewing mode with Joined, an Edit profile button, and a blue dotted box around a waiting follow request." width="390">
+
+Viewing mode keeps the avatar clear and shows Edit profile. Sharing is folded here to keep the
+highlighted request and relationship dates in view; sharing and Friends still start open.
+
+<img src="screenshots/releases/0.7.0-profile-edit.png" alt="Profile editing with a pencil over the dimmed avatar, name and username fields, and Cancel and Save profile buttons." width="390">
+
+Editing mode keeps Remove photo on the left and has no blue outline on the card or avatar.
+Photo and name drafts wait for Save profile; Cancel discards them.
+
+<img src="screenshots/releases/0.7.0-people-search-uuid.png" alt="Profile showing the full Account UUID with Copy UUID, and Search people finding Alex Sample by account name." width="430">
+
+Copy the account UUID from a profile and share it for an exact lookup, or search by display
+name or username. Only shared accounts appear. Captured with synthetic sample accounts;
+Profile sharing is folded here to keep the account UUID and search result together.
+
+<img src="screenshots/releases/0.7.0-uuid-copy-popup.png" alt="Profile with a temporary UUID copied popup and countdown at the top, with no persistent message beneath the account UUID." width="430">
+
+UUID copying uses the same temporary notification style as other saved actions, on both
+your own profile and shared profiles. Captured with a synthetic sample account.
+
+<img src="screenshots/releases/0.7.0-settings-search-themes.png" alt="Settings with a username search result that links to Profile, and the five selectable accent colours with Plum selected." width="430">
+
+Search across Settings and Profile from either page, and choose a colour for this device.
+
+<img src="screenshots/releases/0.7.0-today-multiple-friends.png" alt="Compact Friends card next to Daily check-in, showing Jordan and Alex's latest workouts above Sets per muscle without an RPE logging summary." width="430">
+
+Multiple sample friends in the compact card, with their latest workouts and completed sets.
+
+<img src="screenshots/releases/0.7.0-exercise-picker-wrap.png" alt="Narrow exercise picker with two exercises selected, a wrapped Add selected exercises label and an Add super set action without parentheses." width="375">
+
+Exercise-picker actions wrap at phone width while keeping the selected count visible.
+
+<img src="screenshots/releases/0.7.0-shared-workout-images.png" alt="Another member viewing Alex's shared profile with an expanded workout and example images pinned to Back Extension Machine and Back Squat." width="720">
+
+Example of a member viewing someone else's workout with pinned exercise images. The owner
+enabled **Machine photos** under **What you share**. These synthetic sample images illustrate
+the existing sharing behavior; photos remain hidden when that option is off.
+
+<img src="screenshots/releases/0.7.0-shared-workout-filters.png" alt="Alex's shared profile with exact follow dates, a red Unfollow button, and workout type, exercise, machine and date filters showing one matching workout." width="390">
+
+Shared history filters find matching workouts across the member's full shared history. The red
+Unfollow button and exact relationship dates remain above the results.
+
+<img src="screenshots/releases/0.7.0-daily-check-in-body-fat.png" alt="Daily check-in with separate Body weight and Body fat headings, minus and plus controls, a padded dotted divider, and green Saved today summaries for both measurements." width="390">
+
+Body weight and body fat have separate controls and saved states. All screenshots use synthetic
+sample accounts in the isolated verification environment.
+
+<img src="screenshots/releases/0.7.0-home-space-drop.png" alt="Previously expanded Friends card shrunk into the half-row beside Bodyweight trend, with green Saved today summaries above." width="720">
+
+Drag a section into the dotted empty space in Edit Home, then save to keep it beside the existing
+card. Expanded sections shrink to fit the smaller space and retain their compact width.
+
+<img src="screenshots/releases/0.7.0-release-dates.png" alt="What's new with a date under the current release title and under every collapsed earlier version." width="500">
+
+Release-note dates remain visible when a version's changes are folded.
+
+<img src="screenshots/releases/0.7.0-home-row-gap.png" alt="Compact Consistency and Body weight cards fill the same row with no narrow strip on the right, while the row below keeps its usable drop space." width="720">
+
+Mixed compact cards fill unusable single-column strips while preserving spaces large enough
+for another card. Captured with synthetic sample data in the isolated verification environment.
+
+<img src="screenshots/releases/0.7.0-home-section-picker.png" alt="Add a section here picker showing only Friends, the one section not already on this sample Home layout." width="720">
+
+Tap an empty space's plus to add a missing section in that position. This sample layout
+already has every available section except Friends, so only Friends appears.
+
+<img src="screenshots/releases/0.7.0-home-section-saved.png" alt="Friends added as the third card beside Workouts and Cardio sessions, after the top pencil saved the layout." width="720">
+
+The chosen card fills the tapped third-width space. The top pencil saves the current layout;
+the bottom Cancel action still discards unsaved edits. These examples use synthetic accounts.
+
 ## 0.6.5
+
+17 October 2026
 
 ### Your videos, your YouTube channel
 
@@ -89,6 +254,8 @@ simulated; the administrator must complete the documented real-channel check aft
 the installation's Google client.
 
 ## 0.6.0
+
+16 October 2026
 
 This release combines PRs #48–#54.
 
@@ -228,6 +395,8 @@ No database migration is required for this release.
 
 ## 0.5.5
 
+15 October 2026
+
 - A persistent top notification announces a new app release without interrupting
   your current screen. Checks run every minute while the app is visible and online,
   and when you return or reconnect. Use the refresh arrow when ready.
@@ -260,6 +429,8 @@ Check manually from Settings. Captures use fictional records and a separate data
 
 ## 0.5.4
 
+15 October 2026
+
 - In **Today > Edit Home**, use the resize button beside a card's drag handle to
   switch between compact and full width. Save widths with the card order and
   visibility across devices. Cancel discards edits; Reset layout restores default
@@ -289,6 +460,8 @@ Arrows show the direction of change, with colours reflecting the active goal.
 Both cut and bulk goals were exercised with the isolated sample account.
 
 ## 0.5.3
+
+13 October 2026
 
 ### User-review corrections before deployment
 
@@ -423,6 +596,8 @@ The full-screen graph in the combined 0.5.3 build, captured on MainPC's isolated
 
 ## 0.3.1
 
+11 October 2026
+
 - The **What's new** pop-up can show a screenshot alongside the release notes. Select it to view the image full size.
 - Screenshots include descriptive text and scale to fit mobile screens. If an image cannot load, the notes, GitHub link and dismissal controls remain available.
 - Release screenshots are stored with the GitHub notes; the announcement uses a direct image URL pinned to the screenshot's commit. Releases without a screenshot continue to work.
@@ -432,6 +607,8 @@ The full-screen graph in the combined 0.5.3 build, captured on MainPC's isolated
 The illustrated announcement in the isolated mobile verification environment, using the [username signup screenshot](screenshots/releases/0.3.0-username-signup.png) as an example.
 
 ## 0.3.0
+
+11 October 2026
 
 - Create accounts and sign in with a **username and password**. Account emails are no longer collected or stored in the active users table.
 - Usernames ignore letter case and use 3–32 ASCII letters, numbers, dots, underscores or hyphens, starting with a letter or number. The separate display name remains available.
@@ -445,6 +622,8 @@ The illustrated announcement in the isolated mobile verification environment, us
 Username-based account creation in v0.3.0, captured with empty fields in the isolated verification environment.
 
 ## 0.2.0
+
+11 October 2026
 
 - A **What's new** pop-up shows the deployed version, a short list of changes and a link to these GitHub notes when you sign in, reopen the app or reconnect after an update.
 - Dismiss a version once per account and browser. Later releases appear automatically; local and production addresses remember dismissal independently. First-time users see the current release too.

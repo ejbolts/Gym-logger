@@ -53,6 +53,69 @@ async function clickUndo() {
 }
 
 describe('daily bodyweight check-in', () => {
+  it('logs and undoes fat independently with both rows blocked while saving', async () => {
+    let finish!: (value: () => Promise<void>) => void;
+    const fatUndo = vi.fn().mockResolvedValue(undefined);
+    const saveFat = vi.fn(
+      () =>
+        new Promise<() => Promise<void>>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await act(async () =>
+      root.render(
+        <DashboardQuickBodyweight
+          latestBodyweight={84.2}
+          todayBodyweight={84.2}
+          latestBodyFat={18}
+          onSave={save}
+          onSaveBodyFat={saveFat}
+        />,
+      ),
+    );
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Increase body fat by 0.1%"]')!
+        .click(),
+    );
+    await act(async () =>
+      container
+        .querySelectorAll('form')[1]
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+    );
+    expect(saveFat).toHaveBeenCalledExactlyOnceWith(18.1);
+    expect(save).not.toHaveBeenCalled();
+    expect([...container.querySelectorAll('input')].every((input) => input.disabled)).toBe(true);
+    await act(async () => finish(fatUndo));
+    expect(toast()?.textContent).toContain('Body fat saved');
+    await clickUndo();
+    expect(fatUndo).toHaveBeenCalledOnce();
+    expect(undo).not.toHaveBeenCalled();
+  });
+
+  it('requires today’s weight before body fat can be logged', async () => {
+    const saveFat = vi.fn();
+    await act(async () =>
+      root.render(
+        <DashboardQuickBodyweight
+          latestBodyweight={84.2}
+          todayBodyweight={null}
+          latestBodyFat={18}
+          onSave={save}
+          onSaveBodyFat={saveFat}
+        />,
+      ),
+    );
+    const row = container.querySelector('.body-fat-check-in')!;
+    expect(row.textContent).toContain('Log today’s body weight first.');
+    expect(row.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(true);
+    await act(async () =>
+      row
+        .querySelector('form')!
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+    );
+    expect(saveFat).not.toHaveBeenCalled();
+  });
   it('shows one saved-today summary and a temporary five-second undo popup after save', async () => {
     await render();
     expect(toast()).toBeNull();

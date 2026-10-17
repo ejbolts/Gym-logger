@@ -64,7 +64,7 @@ describe('Home layout rendering', () => {
     expect(markup).not.toContain('home-card-resize');
   });
 
-  it('can configure next-workout visibility during an active workout', () => {
+  it('leaves out next workout while editing during an active workout', () => {
     const markup = renderToStaticMarkup(
       <HomeLayoutSections
         layout={defaultHomeLayout()}
@@ -72,7 +72,8 @@ describe('Home layout rendering', () => {
         edit={{ onChange: vi.fn(), saving: false }}
       />,
     );
-    expect(markup).toContain('Your active workout stays above the cards.');
-    expect(markup).toContain('aria-label="Hide Next workout"');
+    expect(markup).not.toContain('data-home-section="next-workout"');
+    expect(markup).not.toContain('aria-label="Hide Next workout"');
+    expect(markup).toContain('aria-label="Hide Consistency"');
   });
 });

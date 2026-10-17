@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from './api';
 import { authErrorMessage } from './authForm';
+import { CollapsibleSection } from './CollapsibleSection';
+import { Icon } from './Icon';
 import { VISIBILITY_LABELS } from './sharedProfileDisplay';
 import type { ProfileVisibility, SharingChoices, SharingSettings } from './types';
 
@@ -54,6 +57,14 @@ const VISIBILITY_SAVED: Record<ProfileVisibility, string> = {
   public: 'Your profile is public to every member who shares.',
 };
 
+const VISIBILITY_CONFIRM: Record<ProfileVisibility, string> = {
+  private: 'Make my profile private',
+  followers: 'Make my profile friends only',
+  public: 'Make my profile public',
+};
+
+const STATUS_TOAST_MS = 5000;
+
 const PRIVATE_DEFAULTS: SharingChoices = {
   visibility: 'private',
   share_notes: false,
@@ -79,16 +90,12 @@ function Spinner() {
 }
 
 /** Profile's sharing section: who can see the profile, and what it shares. */
-export function ProfileSharingPanel({
-  onOpenSharedProfiles,
-}: {
-  onOpenSharedProfiles: () => void;
-}) {
+export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
   const [saved, setSaved] = useState<SharingSettings | null>(null);
   const [draft, setDraft] = useState<SharingChoices>(PRIVATE_DEFAULTS);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ message: string; id: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
@@ -112,6 +119,12 @@ export function ProfileSharingPanel({
 
   const sharing = saved !== null && saved.visibility !== 'private';
 
+  useEffect(() => {
+    if (!status) return;
+    const timer = window.setTimeout(() => setStatus(null), STATUS_TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [status]);
+
   async function save(next: SharingChoices, message: string) {
     if (saving) return;
     setSaving(true);
@@ -122,7 +135,8 @@ export function ProfileSharingPanel({
       const stored = await api.sharing.updateChoices(next);
       setSaved(stored);
       setDraft(choicesFrom(stored));
-      setStatus(message);
+      setStatus({ message, id: Date.now() });
+      onSaved?.();
     } catch (reason) {
       setDraft(saved ? choicesFrom(saved) : PRIVATE_DEFAULTS);
       setError(authErrorMessage(reason));
@@ -131,35 +145,38 @@ export function ProfileSharingPanel({
     }
   }
 
-  // While private, choices are a draft until the owner agrees to share; afterwards each
-  // change saves at once.
-  function change(next: SharingChoices, message: string) {
-    if (sharing) void save(next, message);
+  // A new visibility stays a draft until its confirm button is pressed; reselecting the saved
+  // one cancels it. Share toggles save at once while sharing with no visibility change pending.
+  const visibilityPending = saved !== null && draft.visibility !== saved.visibility;
+
+  function changeVisibility(visibility: ProfileVisibility) {
+    setStatus(null);
+    if (sharing && visibility === saved.visibility) setDraft(choicesFrom(saved));
+    else setDraft({ ...draft, visibility });
+  }
+
+  function toggle(next: SharingChoices) {
+    if (sharing && !visibilityPending) void save(next, 'Sharing choices saved.');
     else {
       setDraft(next);
       setStatus(null);
     }
   }
 
-  const requests = saved?.pending_requests ?? 0;
-
   return (
-    <section
+    <CollapsibleSection
       className="settings-panel panel profile-sharing"
-      aria-labelledby="profile-sharing-title"
-      aria-busy={saving}
-    >
-      <header>
-        <div>
-          <p className="section-kicker">SHARING</p>
-          <h2 id="profile-sharing-title">Profile sharing</h2>
-        </div>
-        {saved && (
+      kicker="SHARING"
+      title="Profile sharing"
+      defaultExpanded
+      badge={
+        saved && (
           <span className={`sharing-state ${sharing ? 'is-on' : ''}`}>
             {VISIBILITY_LABELS[saved.visibility]}
           </span>
-        )}
-      </header>
+        )
+      }
+    >
       <p>
         Choose who can see your training. Only members who share their own profile can see or follow
         others.
@@ -198,9 +215,7 @@ export function ProfileSharingPanel({
                   name="profile-visibility"
                   value={option.value}
                   checked={draft.visibility === option.value}
-                  onChange={() =>
-                    change({ ...draft, visibility: option.value }, VISIBILITY_SAVED[option.value])
-                  }
+                  onChange={() => changeVisibility(option.value)}
                 />
                 <span>
                   <strong>{VISIBILITY_LABELS[option.value]}</strong>
@@ -209,8 +224,21 @@ export function ProfileSharingPanel({
               </label>
             ))}
           </fieldset>
-          <div className="sharing-options" role="group" aria-label="What to share">
-            <p className="sharing-group-title">What you share</p>
+          <button
+            type="button"
+            className="profile-primary sharing-start"
+            disabled={saving || !visibilityPending}
+            onClick={() => void save(draft, VISIBILITY_SAVED[draft.visibility])}
+          >
+            {saving && <Spinner />}
+            <span>{VISIBILITY_CONFIRM[draft.visibility]}</span>
+          </button>
+          <CollapsibleSection
+            className="sharing-options"
+            title="What you share"
+            headingLevel={3}
+            headingClassName="sharing-group-title"
+          >
             {ALWAYS_SHARED.map((item) => (
               <div className="notification-setting-row" key={item.label}>
                 <div>
@@ -243,64 +271,45 @@ export function ProfileSharingPanel({
                   aria-checked={draft[option.key]}
                   className={draft[option.key] ? 'is-on' : ''}
                   disabled={saving}
-                  onClick={() =>
-                    change({ ...draft, [option.key]: !draft[option.key] }, 'Sharing choices saved.')
-                  }
+                  onClick={() => toggle({ ...draft, [option.key]: !draft[option.key] })}
                 >
                   <span />
                   {draft[option.key] ? 'On' : 'Off'}
                 </button>
               </div>
             ))}
-          </div>
+          </CollapsibleSection>
           <small className="sharing-never">
-            Never shared: your username, videos and sample data.
+            Shared accounts can be found by username. Your videos and sample data are never shared.
           </small>
-          <div aria-live="polite" aria-atomic="true">
-            {status && (
-              <p className="notification-setting-status" role="status">
-                {status}
-              </p>
-            )}
-            {error && (
-              <p className="inline-error" role="alert">
-                {error}
-              </p>
-            )}
-          </div>
-          {!sharing && draft.visibility !== 'private' && (
-            <button
-              type="button"
-              className="profile-primary sharing-start"
-              disabled={saving}
-              onClick={() => void save(draft, VISIBILITY_SAVED[draft.visibility])}
-            >
-              {saving && <Spinner />}
-              <span>
-                {draft.visibility === 'public' ? 'Make my profile public' : 'Share with friends'}
-              </span>
-            </button>
-          )}
-          {(sharing || requests > 0) && (
-            <div className="sharing-actions">
-              {requests > 0 && (
-                <button type="button" className="profile-primary" onClick={onOpenSharedProfiles}>
-                  Review {requests} follow {requests === 1 ? 'request' : 'requests'}
-                </button>
-              )}
-              {sharing && (
+          {status &&
+            createPortal(
+              <div
+                key={status.id}
+                className="undo-toast top-toast"
+                role="status"
+                aria-atomic="true"
+                style={{ '--undo-toast-duration': `${STATUS_TOAST_MS}ms` } as CSSProperties}
+              >
+                <span>{status.message}</span>
                 <button
+                  className="undo-toast-close"
                   type="button"
-                  className={requests > 0 ? 'profile-secondary' : 'profile-primary'}
-                  onClick={onOpenSharedProfiles}
+                  aria-label="Dismiss sharing notification"
+                  onClick={() => setStatus(null)}
                 >
-                  View shared profiles
+                  <Icon name="close" />
                 </button>
-              )}
-            </div>
+              </div>,
+              document.body,
+            )}
+          {error && (
+            <p className="inline-error" role="alert">
+              {error}
+            </p>
           )}
         </>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }

@@ -13,6 +13,17 @@ export function plural(count: number, word: string): string {
   return `${count.toLocaleString('en-GB')} ${word}${count === 1 ? '' : 's'}`;
 }
 
+export function followSinceLabel(label: string, since?: string | null): string {
+  const date = since ? new Date(since) : null;
+  return date && !Number.isNaN(date.getTime())
+    ? `${label} since ${date.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })}`
+    : label;
+}
+
 /** What a viewable profile shares: workouts always, then the optional parts its owner chose. */
 export function sharedParts(profile: SharedProfileSummary): string[] {
   const shares = profile.shares;

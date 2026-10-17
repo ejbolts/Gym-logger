@@ -86,6 +86,10 @@
   padding-top: 0.75rem;
 }
 
+.sharing-options.is-collapsed .sharing-group-title {
+  margin-bottom: 0;
+}
+
 .sharing-options .notification-setting-row > button {
   flex-shrink: 0;
   white-space: nowrap;
@@ -108,18 +112,11 @@
   line-height: 1.45;
 }
 
-.profile-sharing .sharing-actions,
 .profile-sharing .sharing-start {
-  margin-top: 0.85rem;
-}
-
-.sharing-actions {
-  display: grid;
-  gap: 0.5rem;
+  margin: 0 0 0.9rem;
 }
 
 .sharing-loading,
-.shared-profiles-empty,
 .shared-card-empty {
   color: var(--p-muted);
   font-size: 0.8125rem;
@@ -135,48 +132,7 @@
   margin-top: 0.25rem;
 }
 
-/* Shared profile list */
-
-.shared-profile-list {
-  display: grid;
-  gap: 0.6rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.shared-profile-card {
-  display: grid;
-  gap: 0.7rem;
-  border: 1px solid var(--p-line);
-  border-radius: 18px;
-  padding: 0.85rem 0.9rem;
-  background: var(--p-surface);
-}
-
-.shared-profile-card:hover {
-  border-color: var(--p-line-strong);
-}
-
-.shared-profile-open {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  border: 0;
-  padding: 0;
-  background: none;
-  color: var(--p-ink);
-  font: inherit;
-  text-align: left;
-  touch-action: manipulation;
-}
-
-.shared-profile-open > .pulse-icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  color: var(--p-muted);
-}
+/* Member chips and follow buttons */
 
 .shared-status-chips {
   display: flex;
@@ -235,48 +191,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.shared-profile-copy {
-  min-width: 0;
-  flex: 1;
-  display: grid;
-  gap: 0.25rem;
-}
-
-.shared-profile-copy strong {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
-  overflow-wrap: anywhere;
-  font-size: 0.9375rem;
-}
-
-.shared-profile-copy small {
-  color: var(--p-muted);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.shared-profile-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.shared-profile-chips em {
-  border-radius: 999px;
-  padding: 0.12rem 0.45rem;
-  background: var(--p-surface-2);
-  color: var(--p-ink-2);
-  font-size: 0.6875rem;
-  font-style: normal;
-  font-weight: 600;
-}
-
-.shared-profiles-empty {
-  margin: 0.9rem 0.25rem 0;
 }
 
 /* One shared profile */
@@ -425,6 +339,65 @@
   padding-top: 1.25rem;
 }
 
+.shared-workout-filters {
+  margin: 0 0 1rem;
+  border: 1px solid var(--p-line);
+  border-radius: 12px;
+  background: var(--p-surface);
+}
+
+.shared-workout-filters summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  color: var(--p-ink-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shared-workout-filters summary .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.shared-workout-filter-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  padding: 0 0.75rem 0.85rem;
+}
+
+.shared-workout-filter-fields label {
+  min-width: 0;
+  display: grid;
+  gap: 0.4rem;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.shared-workout-filter-fields select,
+.shared-workout-filter-fields input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: var(--p-page);
+  color: var(--p-ink);
+  font-size: 1rem;
+  color-scheme: dark;
+}
+
+.shared-workout-filter-fields > button {
+  justify-self: start;
+  align-self: end;
+  min-height: 2.75rem;
+}
+
 .history-exercise-name {
   font-size: 0.875rem;
   font-weight: 600;
@@ -484,6 +457,159 @@
   font-size: 0.8125rem;
 }
 
-.shared-profiles-screen > .inline-error {
-  margin: 0 0 0.75rem;
+/* Friends */
+
+.profile-account-id {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--p-line);
+}
+.profile-account-id-label {
+  display: block;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+.profile-account-id-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.profile-account-id-row code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--p-ink-2);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  user-select: text;
+}
+.profile-account-id-row button {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+.people-search-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+  margin-top: 0.75rem;
+}
+.people-search-form input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.people-search-form .profile-primary {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.people-search-form .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+.people-search-summary {
+  overflow-wrap: anywhere;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  margin: 0.75rem 0 0;
+}
+
+.friends-panel > header + * {
+  margin-top: 0.9rem;
+}
+
+.friend-group + .friend-group {
+  margin-top: 1.1rem;
+  border-top: 1px solid var(--p-line);
+  padding-top: 1rem;
+}
+
+.friend-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+}
+
+.friend-group h3 > span {
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.friend-group .shared-card-empty {
+  margin: 0.5rem 0 0;
+}
+
+.friend-group.friend-requests {
+  border: 2px dotted var(--p-accent);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: rgb(57 135 229 / 4%);
+}
+
+.friend-open {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--p-ink);
+  font: inherit;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.friend-open:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.friend-open > .pulse-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--p-muted);
+}
+
+.friends-panel > .inline-error {
+  margin: 0.5rem 0 0;
+}
+
+/* Today's Friends card */
+
+.home-section-content > .friends-activity {
+  justify-content: flex-start;
+}
+
+.friends-activity .friend-activity-list {
+  margin-top: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.friend-activity-list .shared-profile-avatar.small {
+  font-size: 0.875rem;
+}
+
+.friend-activity-list .record-copy {
+  overflow-wrap: anywhere;
+}
+
+.friend-activity-meta {
+  flex-shrink: 0;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
 }

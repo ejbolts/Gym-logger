@@ -71,6 +71,13 @@ export const HOME_SECTIONS = [
     icon: 'trophy',
     size: 'full',
   },
+  {
+    id: 'friends',
+    title: 'Friends',
+    description: 'Latest workouts from friends you follow',
+    icon: 'user',
+    size: 'full',
+  },
 ] as const satisfies ReadonlyArray<{
   id: string;
   title: string;
@@ -80,7 +87,7 @@ export const HOME_SECTIONS = [
 }>;
 
 export type HomeSectionId = (typeof HOME_SECTIONS)[number]['id'];
-export type HomeSectionWidth = 'compact' | 'full';
+export type HomeSectionWidth = 'compact' | 'full' | 'third';
 export type HomeSectionWidths = Partial<Record<HomeSectionId, HomeSectionWidth>>;
 export interface HomeLayout {
   order: HomeSectionId[];
@@ -98,11 +105,13 @@ export function homeSectionSpans(ids: HomeSectionId[], widths: HomeSectionWidths
   const spans: number[] = [];
   const sizeFor = (id: HomeSectionId) => {
     const size = HOME_SECTIONS.find((section) => section.id === id)!.size;
-    return widths[id] === 'full'
-      ? 'full'
-      : widths[id] === 'compact' && size === 'full'
-        ? 'half'
-        : size;
+    return widths[id] === 'third'
+      ? 'stat'
+      : widths[id] === 'full'
+        ? 'full'
+        : widths[id] === 'compact' && size === 'full'
+          ? 'half'
+          : size;
   };
   for (let start = 0; start < ids.length;) {
     const size = sizeFor(ids[start]);
@@ -113,15 +122,69 @@ export function homeSectionSpans(ids: HomeSectionId[], widths: HomeSectionWidths
       const count = Math.min(perRow, end - row);
       const compactCount = ids
         .slice(row, row + count)
-        .filter((id) => widths[id] === 'compact').length;
+        .filter((id) => widths[id] === 'compact' || widths[id] === 'third').length;
       const compactSpan = 6 / perRow;
       const adaptiveSpan = (6 - compactCount * compactSpan) / (count - compactCount || 1);
       for (let item = 0; item < count; item++)
-        spans.push(widths[ids[row + item]] === 'compact' ? compactSpan : adaptiveSpan);
+        spans.push(
+          ['compact', 'third'].includes(widths[ids[row + item]] ?? '') ? compactSpan : adaptiveSpan,
+        );
     }
     start = end;
   }
+  // A one-column strip cannot accept any card. Give it to the smallest card in that row,
+  // while retaining larger spaces that can be filled by dragging another section.
+  let rowStart = 0;
+  let used = 0;
+  spans.forEach((span, index) => {
+    used += span;
+    if (index === spans.length - 1 || used + spans[index + 1] > 6) {
+      if (used === 5) {
+        let smallest = rowStart;
+        for (let item = rowStart + 1; item <= index; item++)
+          if (spans[item] < spans[smallest]) smallest = item;
+        spans[smallest]++;
+      }
+      rowStart = index + 1;
+      used = 0;
+    }
+  });
   return spans;
+}
+
+/** Usable space at the end of a grid row, keyed by the card before the space. */
+export function homeSectionGaps(ids: HomeSectionId[], spans: number[]): Map<HomeSectionId, number> {
+  const gaps = new Map<HomeSectionId, number>();
+  let used = 0;
+  ids.forEach((id, index) => {
+    used += spans[index];
+    if (index === ids.length - 1 || used + spans[index + 1] > 6) {
+      // The smallest compact card spans two columns; a single column cannot accept a card.
+      if (used <= 4) gaps.set(id, 6 - used);
+      used = 0;
+    }
+  });
+  return gaps;
+}
+
+/** Fill a row's empty space without resizing its existing cards or expanding the moved card. */
+export function fillHomeSectionGap(
+  layout: HomeLayout,
+  source: HomeSectionId,
+  after: HomeSectionId,
+  span = 3,
+): HomeLayout {
+  if (source === after || !layout.order.includes(source) || !layout.order.includes(after))
+    return layout;
+  const order = layout.order.filter((id) => id !== source);
+  order.splice(order.indexOf(after) + 1, 0, source);
+  const compactSpan = homeSectionSpans([source], { [source]: 'compact' })[0];
+  return {
+    ...layout,
+    order,
+    hidden: layout.hidden.filter((id) => id !== source),
+    widths: { ...layout.widths, [source]: span === 2 && compactSpan > 2 ? 'third' : 'compact' },
+  };
 }
 
 /** Explicit compact widths stay compact even when a card has no neighbour. */

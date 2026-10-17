@@ -29,6 +29,9 @@
   --p-accent-hover: #4b94ea;
   --p-accent-text: #6da7ec;
   --p-accent-soft: rgb(57 135 229 / 15%);
+  --accent: var(--p-accent);
+  --accent-dark: var(--p-accent-hover);
+  --green: var(--p-accent);
   --p-good: #2fb84a;
   --p-gold: #e9b44a;
   --p-gold-soft: rgb(201 133 0 / 15%);
@@ -515,6 +518,7 @@ button.pulse-card:hover {
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 0.25rem 1rem;
+  margin-bottom: 0.75rem;
   border-color: rgb(57 135 229 / 35%);
   background: linear-gradient(160deg, #15263a 0%, var(--p-surface) 70%);
 }
@@ -802,6 +806,44 @@ button.pulse-card:hover {
   display: grid;
   grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem auto;
   gap: 0.5rem;
+}
+
+.quick-check-in-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.quick-check-in-heading h3 {
+  margin: 0;
+  color: var(--p-ink);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.quick-check-in-heading > span {
+  color: var(--p-muted);
+  font-size: 0.6875rem;
+}
+
+.quick-check-in-heading > span.logged {
+  color: var(--p-good);
+  font-weight: 600;
+}
+
+.quick-check-in-row + .quick-check-in-row {
+  margin-top: 1.1rem;
+  border-top: 2px dotted var(--p-line-strong);
+  padding-top: 1.1rem;
+}
+
+.quick-check-in-hint {
+  margin: 0.6rem 0 0;
+  color: var(--p-muted);
+  font-size: 0.75rem;
 }
 
 .quick-bodyweight-form .stepper {
@@ -3453,7 +3495,8 @@ html.edge-swipe-ready .edge-swipe-indicator {
   font-weight: 650;
 }
 
-.bodyweight-undo-toast {
+.bodyweight-undo-toast,
+.top-toast {
   top: max(1rem, env(safe-area-inset-top));
   bottom: auto;
   z-index: 120;
@@ -3820,14 +3863,21 @@ small.custom-exercise-label,
 }
 
 .exercise-picker .exercise-picker-actions:not(.single-action) {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .exercise-picker .create-superset-button,
 .exercise-picker .add-selected-button {
-  padding: 0 1rem;
+  padding: 0.625rem 0.75rem;
   font-size: 0.9375rem;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.exercise-picker .exercise-option-copy strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* ───────── Motion ───────── */

@@ -77,9 +77,13 @@ configures Google once for the installation; users do not need API keys or crede
 
 Sign in with a username and password, personalise your name and profile photo, and keep your profile **Private** or choose **Friends only** or **Public** sharing within the app's sharing community.
 
-Shared profiles include workouts and your profile photo. You choose separately whether to share machine photos, body measurements, goals, cardio and notes. Friends-only profiles require approval before followers can see your training. Usernames and uploaded videos are not shared through profiles.
+Shared profiles include workouts and your profile photo. You choose separately whether to share machine photos, body measurements, goals, cardio and notes. Friends-only profiles require approval before followers can see your training. Search shared accounts by display name, username or the account UUID shown on Profile. Shared profiles do not display usernames or uploaded videos.
 
 Administrators can manage accounts, registration, video access and private app feedback from the admin console.
+
+Use **Search settings & profile** on either page to jump to rest timers, username changes,
+sharing, data tools and other sections. **Settings > App theme** offers five accent colours;
+the selection applies immediately and stays on that device.
 
 ## Getting started
 

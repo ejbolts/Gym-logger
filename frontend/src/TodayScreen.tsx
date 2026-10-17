@@ -91,7 +91,9 @@ export interface TodayScreenProps {
   categoryColors: WorkoutTypeColors;
   workoutStartedAt: number | null;
   todayBodyweight: number | null;
+  todayBodyFat?: number | null;
   onSaveBodyweight: (weight: number) => Promise<UndoBodyweightCheckIn>;
+  onSaveBodyFat?: (bodyFat: number) => Promise<UndoBodyweightCheckIn>;
   onStartTemplate: (template: SessionTemplate) => void;
   onStartEmpty: () => void;
   onResumeWorkout: () => void;
@@ -107,7 +109,11 @@ export interface TodayScreenProps {
   /** Shown on the profile button so the signed-in account is visible at a glance. */
   profileLabel?: string;
   profilePhotoUrl?: string | null;
+  /** Follow requests waiting for approval, shown as a count on the profile button. */
+  followRequests?: number;
   calendar?: ReactNode;
+  /** The Friends card; omitted outside the signed-in app. */
+  friendsActivity?: ReactNode;
   today?: string;
 }
 
@@ -120,7 +126,9 @@ export function TodayScreen({
   categoryColors,
   workoutStartedAt,
   todayBodyweight,
+  todayBodyFat = null,
   onSaveBodyweight,
+  onSaveBodyFat,
   onStartTemplate,
   onStartEmpty,
   onResumeWorkout,
@@ -133,7 +141,9 @@ export function TodayScreen({
   onOpenProfile,
   profileLabel,
   profilePhotoUrl,
+  followRequests = 0,
   calendar,
+  friendsActivity,
   today = localDate(),
 }: TodayScreenProps) {
   const weightUnit = useWeightUnit();
@@ -381,11 +391,8 @@ export function TodayScreen({
         ) : (
           <p className="pulse-empty-line">No working sets logged yet this week.</p>
         )}
-        {data?.weekly_sets && muscles.length > 0 && (
-          <p className="pulse-footnote">
-            RPE logged on {Math.round(data.weekly_sets.rpe_logging_percent)}% of sets
-            {untrainedMuscles ? ` · ${untrainedMuscles} muscles not trained yet` : ''}
-          </p>
+        {muscles.length > 0 && untrainedMuscles > 0 && (
+          <p className="pulse-footnote">{untrainedMuscles} muscles not trained yet</p>
         )}
       </section>
     ),
@@ -431,7 +438,12 @@ export function TodayScreen({
       <DashboardQuickBodyweight
         latestBodyweight={latest?.weight_kg ?? null}
         todayBodyweight={todayBodyweight}
+        todayBodyFat={todayBodyFat}
+        latestBodyFat={
+          measurements.find((item) => item.body_fat_pct !== null)?.body_fat_pct ?? null
+        }
         onSave={onSaveBodyweight}
+        onSaveBodyFat={onSaveBodyFat}
       />
     ),
     records: (
@@ -470,6 +482,7 @@ export function TodayScreen({
         )}
       </section>
     ),
+    friends: friendsActivity ?? null,
   };
 
   return (
@@ -488,7 +501,9 @@ export function TodayScreen({
               ref={home.editButton}
               className="icon-button-pulse"
               type="button"
-              aria-label="Edit Home layout"
+              aria-label={home.editing ? 'Save Home layout' : 'Edit Home layout'}
+              title={home.editing ? 'Save Home layout' : 'Edit Home layout'}
+              aria-busy={home.saving}
               aria-pressed={home.editing}
               disabled={!home.loaded || (home.editing && (home.saving || home.dragging))}
               onClick={home.toggleEditing}
@@ -500,8 +515,17 @@ export function TodayScreen({
                 className="icon-button-pulse profile-button"
                 type="button"
                 onClick={onOpenProfile}
-                aria-label={profileLabel ? `Profile: ${profileLabel}` : 'Profile'}
+                aria-label={`${profileLabel ? `Profile: ${profileLabel}` : 'Profile'}${
+                  followRequests > 0
+                    ? `, ${followRequests} follow ${followRequests === 1 ? 'request' : 'requests'}`
+                    : ''
+                }`}
               >
+                {followRequests > 0 && (
+                  <span className="profile-request-badge" aria-hidden="true">
+                    {followRequests > 9 ? '9+' : followRequests}
+                  </span>
+                )}
                 {profileLabel ? (
                   <ProfileAvatar
                     className="profile-button-initial"
@@ -586,19 +610,34 @@ const BODYWEIGHT_UNDO_MS = 5000;
 export function DashboardQuickBodyweight({
   latestBodyweight,
   todayBodyweight,
+  latestBodyFat = null,
+  todayBodyFat = null,
   onSave,
+  onSaveBodyFat,
 }: {
   latestBodyweight: number | null;
   todayBodyweight: number | null;
+  latestBodyFat?: number | null;
+  todayBodyFat?: number | null;
   onSave: (weight: number) => Promise<UndoBodyweightCheckIn>;
+  onSaveBodyFat?: (bodyFat: number) => Promise<UndoBodyweightCheckIn>;
 }) {
   const weightUnit = useWeightUnit();
   const initialWeight = todayBodyweight ?? latestBodyweight;
   const [weight, setWeight] = useState<number | null>(initialWeight);
+  const [bodyFat, setBodyFat] = useState<string>(() => String(todayBodyFat ?? latestBodyFat ?? ''));
   const [saving, setSaving] = useState(false);
-  const [undo, setUndo] = useState<{ run: UndoBodyweightCheckIn; attempt: number } | null>(null);
+  const [undo, setUndo] = useState<{
+    run: UndoBodyweightCheckIn;
+    attempt: number;
+    kind: 'weight' | 'fat';
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const selectedWeight = weight;
+
+  useEffect(() => {
+    setBodyFat(String(todayBodyFat ?? latestBodyFat ?? ''));
+  }, [todayBodyFat, latestBodyFat]);
 
   useEffect(() => {
     const nextWeight = todayBodyweight ?? latestBodyweight;
@@ -627,12 +666,43 @@ export function DashboardQuickBodyweight({
     setUndo(null);
     try {
       const run = await onSave(selectedWeight);
-      setUndo({ run, attempt: 0 });
+      setUndo({ run, attempt: 0, kind: 'weight' });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save today’s weight.');
     } finally {
       setSaving(false);
     }
+  }
+
+  async function saveFat() {
+    if (saving || !onSaveBodyFat) return;
+    const value = bodyFat.trim() === '' ? NaN : Number(bodyFat);
+    if (!Number.isFinite(value) || value < 1 || value > 70) {
+      setError('Enter body fat from 1% to 70%.');
+      return;
+    }
+    if (todayBodyweight === null) {
+      setError('Log today’s body weight before logging body fat.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setUndo(null);
+    try {
+      const run = await onSaveBodyFat(value);
+      setUndo({ run, attempt: 0, kind: 'fat' });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not save today’s body fat.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function nudgeFat(delta: number) {
+    const current = Number(bodyFat);
+    const base = bodyFat !== '' && Number.isFinite(current) ? current : (latestBodyFat ?? 0);
+    setBodyFat(Math.min(70, Math.max(1, base + delta)).toFixed(1));
+    setError(null);
   }
 
   async function undoSave() {
@@ -668,59 +738,132 @@ export function DashboardQuickBodyweight({
     <section className="pulse-card quick-bodyweight" aria-labelledby="daily-bodyweight-title">
       <header className="pulse-card-header">
         <h2 id="daily-bodyweight-title">Daily check-in</h2>
-        <span className={todayBodyweight === null ? '' : 'logged'} role="status">
-          {todayBodyweight === null
-            ? 'Not logged today'
-            : `Saved today · ${weightFromKg(todayBodyweight, weightUnit).toFixed(1)} ${weightUnit}`}
-        </span>
       </header>
-      <form
-        className="quick-bodyweight-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void save();
-        }}
-      >
-        <button
-          type="button"
-          className="stepper"
-          onClick={() => nudge(-0.1)}
-          aria-label={`Decrease by 0.1 ${weightUnit}`}
-          disabled={saving}
+      <section className="quick-check-in-row" aria-label="Body weight check-in">
+        <header className="quick-check-in-heading">
+          <h3>Body weight</h3>
+          <span className={todayBodyweight === null ? '' : 'logged'} role="status">
+            {todayBodyweight === null
+              ? 'Not logged today'
+              : `Saved today · ${weightFromKg(todayBodyweight, weightUnit).toFixed(1)} ${weightUnit}`}
+          </span>
+        </header>
+        <form
+          className="quick-bodyweight-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
         >
-          −
-        </button>
-        <label>
-          <span className="sr-only">Bodyweight in {weightUnitName(weightUnit)}</span>
-          <WeightInput
-            weightKg={weight}
+          <button
+            type="button"
+            className="stepper"
+            onClick={() => nudge(-0.1)}
+            aria-label={`Decrease by 0.1 ${weightUnit}`}
             disabled={saving}
-            aria-label={`Bodyweight in ${weightUnitName(weightUnit)}`}
-            style={
-              {
-                '--bw-chars': `${Math.max(weightInputValue(weight, weightUnit).length, 1)}ch`,
-              } as CSSProperties
-            }
-            onWeightChange={(kg) => {
-              setWeight(kg);
-              setError(null);
+          >
+            −
+          </button>
+          <label>
+            <span className="sr-only">Bodyweight in {weightUnitName(weightUnit)}</span>
+            <WeightInput
+              weightKg={weight}
+              disabled={saving}
+              aria-label={`Bodyweight in ${weightUnitName(weightUnit)}`}
+              style={
+                {
+                  '--bw-chars': `${Math.max(weightInputValue(weight, weightUnit).length, 1)}ch`,
+                } as CSSProperties
+              }
+              onWeightChange={(kg) => {
+                setWeight(kg);
+                setError(null);
+              }}
+            />
+            <b aria-hidden="true">{weightUnit}</b>
+          </label>
+          <button
+            type="button"
+            className="stepper"
+            onClick={() => nudge(0.1)}
+            aria-label={`Increase by 0.1 ${weightUnit}`}
+            disabled={saving}
+          >
+            +
+          </button>
+          <button className="pulse-button primary" type="submit" disabled={saving}>
+            {saving ? 'Saving…' : todayBodyweight === null ? 'Log' : 'Update'}
+          </button>
+        </form>
+      </section>
+      {onSaveBodyFat && (
+        <section className="quick-check-in-row body-fat-check-in" aria-label="Body fat check-in">
+          <header className="quick-check-in-heading">
+            <h3>Body fat</h3>
+            <span className={todayBodyFat === null ? '' : 'logged'} role="status">
+              {todayBodyFat === null
+                ? 'Not logged today'
+                : `Saved today · ${todayBodyFat.toFixed(1)}%`}
+            </span>
+          </header>
+          <form
+            className="quick-bodyweight-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveFat();
             }}
-          />
-          <b aria-hidden="true">{weightUnit}</b>
-        </label>
-        <button
-          type="button"
-          className="stepper"
-          onClick={() => nudge(0.1)}
-          aria-label={`Increase by 0.1 ${weightUnit}`}
-          disabled={saving}
-        >
-          +
-        </button>
-        <button className="pulse-button primary" type="submit" disabled={saving}>
-          {saving ? 'Saving…' : todayBodyweight === null ? 'Log' : 'Update'}
-        </button>
-      </form>
+          >
+            <button
+              className="stepper"
+              type="button"
+              aria-label="Decrease body fat by 0.1%"
+              disabled={saving}
+              onClick={() => nudgeFat(-0.1)}
+            >
+              −
+            </button>
+            <label>
+              <span className="sr-only">Body fat percentage</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="1"
+                max="70"
+                step="0.1"
+                placeholder="—"
+                aria-label="Body fat percentage"
+                disabled={saving}
+                value={bodyFat}
+                style={{ '--bw-chars': `${Math.max(bodyFat.length, 1)}ch` } as CSSProperties}
+                onChange={(event) => {
+                  setBodyFat(event.target.value);
+                  setError(null);
+                }}
+              />
+              <b aria-hidden="true">%</b>
+            </label>
+            <button
+              className="stepper"
+              type="button"
+              aria-label="Increase body fat by 0.1%"
+              disabled={saving}
+              onClick={() => nudgeFat(0.1)}
+            >
+              +
+            </button>
+            <button
+              className="pulse-button primary"
+              type="submit"
+              disabled={saving || todayBodyweight === null}
+            >
+              {saving ? 'Saving…' : todayBodyFat === null ? 'Log' : 'Update'}
+            </button>
+          </form>
+          {todayBodyweight === null && (
+            <p className="quick-check-in-hint">Log today’s body weight first.</p>
+          )}
+        </section>
+      )}
       {undo &&
         createPortal(
           <div
@@ -730,7 +873,13 @@ export function DashboardQuickBodyweight({
             aria-atomic="true"
             style={{ '--undo-toast-duration': `${BODYWEIGHT_UNDO_MS}ms` } as CSSProperties}
           >
-            <span>{saving ? 'Undoing check-in…' : 'Body weight saved'}</span>
+            <span>
+              {saving
+                ? 'Undoing check-in…'
+                : undo.kind === 'fat'
+                  ? 'Body fat saved'
+                  : 'Body weight saved'}
+            </span>
             <button
               className="undo-toast-action"
               type="button"
@@ -743,7 +892,11 @@ export function DashboardQuickBodyweight({
               className="undo-toast-close"
               type="button"
               disabled={saving}
-              aria-label="Dismiss body weight notification"
+              aria-label={
+                undo.kind === 'fat'
+                  ? 'Dismiss body fat notification'
+                  : 'Dismiss body weight notification'
+              }
               onClick={() => setUndo(null)}
             >
               <Icon name="close" />

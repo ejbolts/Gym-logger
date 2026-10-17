@@ -118,3 +118,34 @@ export function restTimerSecondsAfterSetUpdate(
   const seconds = update.rest_seconds ?? current.rest_seconds;
   return seconds !== null && seconds > 0 ? seconds : null;
 }
+
+function hasRecordedPerformance(kind: ExerciseKind, item: WorkoutSetInput): boolean {
+  if (kind === 'cardio') {
+    return [
+      item.duration_seconds,
+      item.distance_km,
+      item.calories_kcal,
+      item.average_heart_rate_bpm,
+      item.incline_percent,
+      item.speed_kph,
+    ].some((value) => value != null);
+  }
+  return [item.reps, item.weight_kg, item.bodyweight_kg, item.percentile].some(
+    (value) => value != null,
+  );
+}
+
+/**
+ * Finishing an exercise logs its remaining sets as shown, including suggestions from the last
+ * workout. Blank sets stay unticked so no empty set is recorded.
+ */
+export function completeRemainingSets<T extends WorkoutSetInput & { fromPrevious?: boolean }>(
+  kind: ExerciseKind,
+  sets: T[],
+): T[] {
+  return sets.map((item) =>
+    item.completed || !hasRecordedPerformance(kind, item)
+      ? item
+      : { ...item, completed: true, fromPrevious: false },
+  );
+}

@@ -17,7 +17,7 @@ import {
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { api } from './api';
-import { saveBodyweightCheckIn } from './bodyweightCheckIn';
+import { saveBodyFatCheckIn, saveBodyweightCheckIn } from './bodyweightCheckIn';
 import { TrainingPreferencesProvider } from './TrainingPreferencesProvider';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
@@ -215,11 +215,17 @@ import {
 import { VideoUpload } from './VideoUpload';
 import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
+import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
+import { FriendsActivityCard } from './FriendsActivity';
+import { SettingsSearch } from './SettingsSearch';
+import { ColourThemePanel } from './ColourThemePanel';
 import {
-  SharedProfileScreen,
-  SharedProfilesScreen,
-  type SharedWorkoutListProps,
-} from './SharedProfiles';
+  SettingsNavigationContext,
+  useSettingsPageJump,
+  type SettingsDestination,
+  type SettingsJump,
+} from './settingsNavigation';
+import { useFollowRequestCount } from './friendsActivityData';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -230,6 +236,7 @@ import {
   writeActiveWorkoutDraft,
 } from './workoutDraft';
 import {
+  completeRemainingSets,
   createSuggestedWorkoutSet,
   createWorkoutSet,
   DEFAULT_REST_SECONDS,
@@ -544,6 +551,7 @@ export function App() {
 }
 
 function AppContent() {
+  const [settingsJump, setSettingsJump] = useState<SettingsJump | null>(null);
   const { user, signingIn = false } = useUserSession();
   const announcement = useReleaseAnnouncement(user?.id ?? null);
   const appUpdates = useAppUpdates();
@@ -564,11 +572,12 @@ function AppContent() {
     const initialTab = initialHistoryState
       ? initialHistoryState.tab
       : appTabFromHash(window.location.hash);
-    // Which shared profile was open is not kept across a reload, so start from the list.
-    return initialTab === 'shared-profile' ? 'shared' : initialTab;
+    // Which shared profile was open is not kept across a reload, so start from Friends.
+    return initialTab === 'shared-profile' ? 'profile' : initialTab;
   });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const home = useHomeLayout(tab === 'dashboard');
+  const followRequests = useFollowRequestCount(tab === 'dashboard', Boolean(user));
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
   const currentTabRef = useRef(tab);
@@ -650,10 +659,10 @@ function AppContent() {
     setTabState('dashboard');
   }, [tab, videosAllowed]);
   useEffect(() => {
-    // A reloaded #shared-profile link has no profile to show, so it opens the list instead.
+    // A reloaded #shared-profile link has no profile to show, so it opens Friends instead.
     if (tab !== 'shared-profile' || sharedProfile) return;
     navigationActionRef.current = 'replace';
-    setTabState('shared');
+    setTabState('profile');
   }, [tab, sharedProfile]);
   useEffect(() => {
     // Only administrators can open the admin console, even from an old #admin link.
@@ -1148,6 +1157,11 @@ function AppContent() {
     setRestTimerEnabled(enabled);
   }
 
+  function openSetting(destination: SettingsDestination) {
+    setSettingsJump((current) => ({ destination, serial: (current?.serial ?? 0) + 1 }));
+    setTab(destination.page);
+  }
+
   function updateReduceMotion(reduced: boolean) {
     saveReduceMotionPreference(reduced);
     applyReduceMotion(reduced);
@@ -1166,13 +1180,11 @@ function AppContent() {
         ? { title: 'Videos', subtitle: 'Workout clips • uploads' }
         : tab === 'profile'
           ? { title: 'Profile', subtitle: user ? user.display_name : 'Account • security' }
-          : tab === 'shared'
-            ? { title: 'Shared profiles', subtitle: 'Members sharing their training' }
-            : tab === 'shared-profile' && sharedProfile
-              ? { title: sharedProfile.name, subtitle: 'Shared profile' }
-              : tab === 'admin' && isAdmin
-                ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
-                : null;
+          : tab === 'shared-profile' && sharedProfile
+            ? { title: sharedProfile.name, subtitle: 'Shared profile' }
+            : tab === 'admin' && isAdmin
+              ? { title: 'Admin console', subtitle: 'Accounts • switches • server' }
+              : null;
   const activeMainTab = mainTabFor(tab);
   const showTabBar = tab !== 'log';
   // The home screen guide follows the release announcement, behind the same interruptions.
@@ -1207,376 +1219,398 @@ function AppContent() {
   }
 
   return (
-    <div
-      className={`tracker-app${showTabBar ? ' has-tab-bar' : ''}${appUpdates.available ? ' has-app-update' : ''}`}
-    >
-      {appUpdates.available && (
-        <AppUpdateBanner
-          version={appUpdates.availableRelease?.version}
-          refreshing={appUpdates.refreshing}
-          error={appUpdates.refreshError}
-          onRefresh={() => void appUpdates.refresh()}
-        />
-      )}
-      {prompt === 'release' && (
-        <ReleaseAnnouncement
-          release={announcement.release}
-          history={announcement.history}
-          onClose={announcement.dismiss}
-        />
-      )}
-      {prompt === 'tour' && (
-        <AppGuide
-          videosAllowed={videosAllowed}
-          onNavigate={setTab}
-          onClose={() => {
-            if (user) finishAppTour(user.id);
-            if (guideWaiting) setImportStepPending(true);
-            setGuideWaiting(false);
-            setGuideRequested(false);
-            homeScreenGuide.dismiss();
-            setTab(guideReturnTab.current ?? 'dashboard');
-            guideReturnTab.current = null;
-          }}
-        />
-      )}
-      {prompt === 'import' && (
-        <ImportHistoryPrompt
-          onSkip={() => {
-            if (user) finishAppGuide(user.id);
-            setImportStepPending(false);
-          }}
-          onContinue={() => {
-            if (user) finishAppGuide(user.id);
-            setImportStepPending(false);
-            setReleaseAfterImport(true);
-            setCsvGuideOpen(true);
-            setTab('settings');
-          }}
-        />
-      )}
-      {homeScreenGuide.open &&
-        !guideRequested &&
-        !guideWaiting &&
-        !importStepPending &&
-        !announcement.open &&
-        canShowPrompts && <HomeScreenGuide onClose={homeScreenGuide.dismiss} />}
-      <EdgeSwipeBack onBack={navigateBack} enabled={canNavigateBack} />
-      <BackgroundActivityBar label={backgroundActivityLabel} />
-      {message && (
-        <NotificationDialog key={message} message={message} onClose={() => setMessage(null)} />
-      )}
-      {completionRecords.length > 0 && (
-        <WorkoutCompletionDialog
-          records={completionRecords}
-          onClose={() => setCompletionRecords([])}
-        />
-      )}
-
-      {nestedHeader && (
-        <OverlayScreenHeader
-          title={nestedHeader.title}
-          subtitle={nestedHeader.subtitle}
-          onBack={navigateBack}
-          actions={
-            tab !== 'settings' ? <SettingsButton onClick={() => setTab('settings')} /> : undefined
-          }
-        />
-      )}
-
-      <main
-        className={`tracker-content ${tab === 'videos' ? 'video-content' : ''} ${nestedHeader || tab === 'log' ? 'with-overlay-header' : ''}`}
-        data-nav-direction={navDirection}
+    <SettingsNavigationContext.Provider value={{ request: settingsJump, navigate: openSetting }}>
+      <div
+        className={`tracker-app${showTabBar ? ' has-tab-bar' : ''}${appUpdates.available ? ' has-app-update' : ''}`}
       >
-        {loading &&
-          tab !== 'dashboard' &&
-          tab !== 'videos' &&
-          tab !== 'profile' &&
-          tab !== 'shared' &&
-          tab !== 'shared-profile' &&
-          tab !== 'admin' && <TodaySkeleton />}
-        {(tab === 'dashboard' || visitedTabs.has('dashboard')) && (
-          <CachedTabPanel active={tab === 'dashboard'}>
-            {loading && dashboard === null ? (
-              <TodaySkeleton />
-            ) : (
-              <TodayScreen
-                home={home}
-                data={dashboard}
-                workouts={workouts}
-                measurements={measurements}
-                personalRecords={personalRecords}
-                categoryColors={workoutTypeColors}
-                workoutStartedAt={activeWorkoutStartedAt}
-                todayBodyweight={todayMeasurement?.weight_kg ?? null}
-                onSaveBodyweight={(weight) =>
-                  withBackgroundActivity('Saving measurement…', async () => {
-                    const undo = await saveBodyweightCheckIn(
-                      todayMeasurement ?? null,
-                      localDate(),
-                      weight,
-                    );
-                    await refreshData({ activityLabel: null });
-                    return async () => {
-                      await withBackgroundActivity('Undoing check-in…', async () => {
-                        await undo();
-                        await refreshData({ activityLabel: null });
-                      });
-                    };
-                  })
-                }
-                onStartTemplate={(template) => startWorkout(localDate(), false, template)}
-                onStartEmpty={() => startWorkout()}
-                onResumeWorkout={() => setTab('log')}
-                onOpenHistory={() => openHistorySection('history')}
-                onOpenProgress={(exerciseId) => openHistorySection('progress', exerciseId ?? null)}
-                onOpenCardio={() => openHistorySection('cardio')}
-                onOpenBody={() => setTab('body')}
-                onOpenSettings={() => setTab('settings')}
-                onOpenVideos={videosAllowed ? () => setTab('videos') : undefined}
-                onOpenProfile={user ? () => setTab('profile') : undefined}
-                profileLabel={user?.display_name}
-                profilePhotoUrl={user?.profile_photo_url}
-                calendar={
-                  <InteractiveWorkoutCalendar
-                    entries={dashboard?.heatmap ?? []}
-                    workouts={workouts}
-                    olderHistory={olderHistoryProps}
-                    categoryColors={workoutTypeColors}
-                    activeWorkout={activeWorkoutStartedAt !== null}
-                    activeWorkoutDate={activeWorkoutDate}
-                    onResumeWorkout={() => setTab('log')}
-                    onEditWorkout={editWorkout}
-                    onStartWorkout={(workoutDate) => startWorkout(workoutDate)}
-                    onReplaceActiveWorkout={(workoutDate) => startWorkout(workoutDate, true)}
-                  />
-                }
-              />
-            )}
-          </CachedTabPanel>
+        {appUpdates.available && (
+          <AppUpdateBanner
+            version={appUpdates.availableRelease?.version}
+            refreshing={appUpdates.refreshing}
+            error={appUpdates.refreshError}
+            onRefresh={() => void appUpdates.refresh()}
+          />
         )}
-        {!loading &&
-          (tab === 'log' ||
-            activeWorkoutStartedAt !== null ||
-            (visitedTabs.has('log') && editingWorkout !== null)) && (
-            <CachedTabPanel active={tab === 'log'}>
-              {workoutCatalogueReady ? (
-                <WorkoutLogger
-                  key={
-                    editingWorkout
-                      ? `edit-${editingWorkout.id}`
-                      : `active-${activeWorkoutStartedAt ?? workoutStartDate}`
-                  }
-                  exercises={exercises}
-                  restoredDraftMovements={restoredDraftMovements}
-                  recommendation={dashboard?.recommendation ?? null}
-                  template={workoutTemplate}
-                  initialDate={workoutStartDate}
-                  initialWorkout={editingWorkout}
-                  resumingWorkout={resumingWorkout}
-                  currentBodyweight={measurements[0]?.weight_kg ?? null}
-                  historicalWorkouts={workouts}
-                  historyBaselines={historyBaselines}
-                  restTimerEnabled={restTimerEnabled}
-                  categoryColors={workoutTypeColors}
-                  onExerciseHistory={(exerciseId) => openHistorySection('progress', exerciseId)}
-                  onExerciseFavorite={updateExerciseFavorite}
-                  onCreateExercise={createExercise}
-                  onSave={saveWorkout}
-                  onAutoSaved={() =>
-                    setMessage('Your inactive workout passed its time limit and was auto-saved.')
-                  }
-                  activeStartedAt={activeWorkoutStartedAt}
-                  onClose={navigateBack}
-                  onDelete={() => {
-                    if (editingWorkout) {
-                      void deleteWorkout(editingWorkout);
-                      setTab('history');
-                    } else {
-                      clearActiveWorkoutDraft();
-                      setActiveWorkoutStartedAt(null);
-                      setResumingWorkoutId(null);
-                      setTab('dashboard');
-                    }
-                    setEditingWorkout(null);
-                  }}
-                />
+        {prompt === 'release' && (
+          <ReleaseAnnouncement
+            release={announcement.release}
+            history={announcement.history}
+            onClose={announcement.dismiss}
+          />
+        )}
+        {prompt === 'tour' && (
+          <AppGuide
+            videosAllowed={videosAllowed}
+            onNavigate={setTab}
+            onClose={() => {
+              if (user) finishAppTour(user.id);
+              if (guideWaiting) setImportStepPending(true);
+              setGuideWaiting(false);
+              setGuideRequested(false);
+              homeScreenGuide.dismiss();
+              setTab(guideReturnTab.current ?? 'dashboard');
+              guideReturnTab.current = null;
+            }}
+          />
+        )}
+        {prompt === 'import' && (
+          <ImportHistoryPrompt
+            onSkip={() => {
+              if (user) finishAppGuide(user.id);
+              setImportStepPending(false);
+            }}
+            onContinue={() => {
+              if (user) finishAppGuide(user.id);
+              setImportStepPending(false);
+              setReleaseAfterImport(true);
+              setCsvGuideOpen(true);
+              setTab('settings');
+            }}
+          />
+        )}
+        {homeScreenGuide.open &&
+          !guideRequested &&
+          !guideWaiting &&
+          !importStepPending &&
+          !announcement.open &&
+          canShowPrompts && <HomeScreenGuide onClose={homeScreenGuide.dismiss} />}
+        <EdgeSwipeBack onBack={navigateBack} enabled={canNavigateBack} />
+        <BackgroundActivityBar label={backgroundActivityLabel} />
+        {message && (
+          <NotificationDialog key={message} message={message} onClose={() => setMessage(null)} />
+        )}
+        {completionRecords.length > 0 && (
+          <WorkoutCompletionDialog
+            records={completionRecords}
+            onClose={() => setCompletionRecords([])}
+          />
+        )}
+
+        {nestedHeader && (
+          <OverlayScreenHeader
+            title={nestedHeader.title}
+            subtitle={nestedHeader.subtitle}
+            onBack={navigateBack}
+            actions={
+              tab !== 'settings' ? <SettingsButton onClick={() => setTab('settings')} /> : undefined
+            }
+          />
+        )}
+
+        <main
+          className={`tracker-content ${tab === 'videos' ? 'video-content' : ''} ${nestedHeader || tab === 'log' ? 'with-overlay-header' : ''}`}
+          data-nav-direction={navDirection}
+        >
+          {loading &&
+            tab !== 'dashboard' &&
+            tab !== 'videos' &&
+            tab !== 'profile' &&
+            tab !== 'shared-profile' &&
+            tab !== 'admin' && <TodaySkeleton />}
+          {(tab === 'dashboard' || visitedTabs.has('dashboard')) && (
+            <CachedTabPanel active={tab === 'dashboard'}>
+              {loading && dashboard === null ? (
+                <TodaySkeleton />
               ) : (
-                <section className="logger-screen content-page" aria-live="polite">
-                  <OverlayScreenHeader
-                    title={activeDraft ? 'Workout recovery' : 'Workout unavailable'}
-                    subtitle={
-                      activeDraft
-                        ? 'Your workout is saved on this device'
-                        : 'Load your exercise library to start'
-                    }
-                    onBack={navigateBack}
-                  />
-                  <p>
-                    {exerciseCatalogue.error
-                      ? 'Your exercises could not be loaded.'
-                      : 'Some exercises in your saved workout are not available yet.'}{' '}
-                    {activeDraft
-                      ? 'Your saved workout is safe on this device. Reload the exercises to resume it.'
-                      : 'Reload the exercises to start your workout.'}
-                  </p>
-                  {exerciseCatalogue.error && <p>{exerciseCatalogue.error}</p>}
-                  <button
-                    type="button"
-                    className="primary"
-                    onClick={() => void refreshData({ activityLabel: 'Reloading exercises…' })}
-                  >
-                    Retry loading exercises
-                  </button>
-                </section>
+                <TodayScreen
+                  home={home}
+                  data={dashboard}
+                  workouts={workouts}
+                  measurements={measurements}
+                  personalRecords={personalRecords}
+                  categoryColors={workoutTypeColors}
+                  workoutStartedAt={activeWorkoutStartedAt}
+                  todayBodyweight={todayMeasurement?.weight_kg ?? null}
+                  todayBodyFat={todayMeasurement?.body_fat_pct ?? null}
+                  onSaveBodyFat={(bodyFat) =>
+                    withBackgroundActivity('Saving body fat…', async () => {
+                      const undo = await saveBodyFatCheckIn(
+                        todayMeasurement ?? null,
+                        localDate(),
+                        bodyFat,
+                      );
+                      await refreshData({ activityLabel: null });
+                      return async () => {
+                        await withBackgroundActivity('Undoing check-in…', async () => {
+                          await undo();
+                          await refreshData({ activityLabel: null });
+                        });
+                      };
+                    })
+                  }
+                  onSaveBodyweight={(weight) =>
+                    withBackgroundActivity('Saving measurement…', async () => {
+                      const undo = await saveBodyweightCheckIn(
+                        todayMeasurement ?? null,
+                        localDate(),
+                        weight,
+                      );
+                      await refreshData({ activityLabel: null });
+                      return async () => {
+                        await withBackgroundActivity('Undoing check-in…', async () => {
+                          await undo();
+                          await refreshData({ activityLabel: null });
+                        });
+                      };
+                    })
+                  }
+                  onStartTemplate={(template) => startWorkout(localDate(), false, template)}
+                  onStartEmpty={() => startWorkout()}
+                  onResumeWorkout={() => setTab('log')}
+                  onOpenHistory={() => openHistorySection('history')}
+                  onOpenProgress={(exerciseId) =>
+                    openHistorySection('progress', exerciseId ?? null)
+                  }
+                  onOpenCardio={() => openHistorySection('cardio')}
+                  onOpenBody={() => setTab('body')}
+                  onOpenSettings={() => setTab('settings')}
+                  onOpenVideos={videosAllowed ? () => setTab('videos') : undefined}
+                  onOpenProfile={user ? () => setTab('profile') : undefined}
+                  profileLabel={user?.display_name}
+                  profilePhotoUrl={user?.profile_photo_url}
+                  followRequests={followRequests}
+                  friendsActivity={
+                    user ? (
+                      <FriendsActivityCard
+                        active={tab === 'dashboard'}
+                        onOpenFriend={openSharedProfile}
+                        onOpenFriends={() => setTab('profile')}
+                      />
+                    ) : undefined
+                  }
+                  calendar={
+                    <InteractiveWorkoutCalendar
+                      entries={dashboard?.heatmap ?? []}
+                      workouts={workouts}
+                      olderHistory={olderHistoryProps}
+                      categoryColors={workoutTypeColors}
+                      activeWorkout={activeWorkoutStartedAt !== null}
+                      activeWorkoutDate={activeWorkoutDate}
+                      onResumeWorkout={() => setTab('log')}
+                      onEditWorkout={editWorkout}
+                      onStartWorkout={(workoutDate) => startWorkout(workoutDate)}
+                      onReplaceActiveWorkout={(workoutDate) => startWorkout(workoutDate, true)}
+                    />
+                  }
+                />
               )}
             </CachedTabPanel>
           )}
-        {!loading && (tab === 'body' || visitedTabs.has('body')) && (
-          <CachedTabPanel active={tab === 'body'}>
-            <BodyCompositionScreen
-              measurements={measurements}
-              onSave={saveMeasurement}
-              onDelete={deleteMeasurement}
-              onDataChange={refreshAfterMutation}
-              trendPreference={bodyTrendPreference}
-              onOpenSettings={() => setTab('settings')}
-            />
-          </CachedTabPanel>
-        )}
-        {!loading && historyGroupVisited && (
-          <CachedTabPanel active={sectionFromTab !== null}>
-            <HistoryScreen
-              key={`${historyOpenId ?? 'history'}-${historyExerciseId ?? 'all'}`}
-              workouts={workouts}
-              categoryColors={workoutTypeColors}
-              measurements={measurements}
-              exercises={exercises}
-              onEdit={editWorkout}
-              onResume={resumeWorkout}
-              onDelete={deleteWorkout}
-              personalRecords={personalRecords}
-              onDataChange={refreshAfterMutation}
-              initialOpenId={historyOpenId}
-              section={historySection}
-              onSectionChange={(section) => setTab(section)}
-              onOpenSettings={() => setTab('settings')}
-              onOpenExercise={(exerciseId) => openHistorySection('progress', exerciseId)}
-              onOpenWorkout={(workoutId, exerciseId) => {
-                setHistoryOpenId(workoutId);
-                setHistoryExerciseId(exerciseId);
-                setTab('history');
-              }}
-              initialExerciseId={historyExerciseId}
-              weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
-              heatmap={dashboard?.heatmap ?? []}
-              historySummary={historySummary}
-              olderHistory={olderHistoryProps}
-              activeWorkout={activeWorkoutStartedAt !== null}
-              activeWorkoutDate={activeWorkoutDate}
-              onResumeWorkout={() => setTab('log')}
-              onStartWorkout={(workoutDate) => startWorkout(workoutDate)}
-              onReplaceActiveWorkout={(workoutDate) => startWorkout(workoutDate, true)}
-            />
-          </CachedTabPanel>
-        )}
-        {!loading && (tab === 'settings' || visitedTabs.has('settings')) && (
-          <CachedTabPanel active={tab === 'settings'}>
-            <SettingsScreen
-              workouts={workouts}
-              historySummary={historySummary}
-              measurements={measurements}
-              workoutTypeColors={workoutTypeColors}
-              onWorkoutTypeColorsChange={setWorkoutTypeColors}
-              restTimerEnabled={restTimerEnabled}
-              onRestTimerEnabledChange={updateRestTimerPreference}
-              reduceMotion={reduceMotion}
-              onReduceMotionChange={updateReduceMotion}
-              bodyTrendPreference={bodyTrendPreference}
-              onBodyTrendPreferenceChange={updateBodyTrendPreference}
-              onImportWorkouts={importWorkoutCsv}
-              csvGuideOpen={csvGuideOpen}
-              onCsvGuideOpenChange={setCsvGuideOpen}
-              onExportWorkouts={exportWorkoutCsv}
-              onDeleteSamples={deleteSampleData}
-              onDataChange={refreshAfterMutation}
-              account={user}
-              onOpenProfile={() => setTab('profile')}
-              onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
-              releaseVersion={announcement.release.version}
-              onOpenReleaseNotes={announcement.show}
-              updateCheck={
-                <AppUpdateCheck
-                  available={appUpdates.available}
-                  status={appUpdates.status}
-                  onCheck={() => void appUpdates.check()}
-                />
-              }
-              onOpenHomeScreenGuide={homeScreenGuide.show}
-              onOpenAppGuide={() => {
-                guideReturnTab.current = tab;
-                setGuideRequested(true);
-              }}
-            />
-          </CachedTabPanel>
-        )}
-        {user && (tab === 'profile' || visitedTabs.has('profile')) && (
-          <CachedTabPanel active={tab === 'profile'}>
-            <ProfileScreen onOpenSharedProfiles={() => setTab('shared')} />
-          </CachedTabPanel>
-        )}
-        {user && (tab === 'shared' || visitedTabs.has('shared')) && (
-          <CachedTabPanel active={tab === 'shared'}>
-            <SharedProfilesScreen
-              active={tab === 'shared'}
-              onOpenProfile={openSharedProfile}
-              onChooseSharing={() => setTab('profile')}
-            />
-          </CachedTabPanel>
-        )}
-        {user &&
-          sharedProfile &&
-          (tab === 'shared-profile' || visitedTabs.has('shared-profile')) && (
-            <CachedTabPanel active={tab === 'shared-profile'}>
-              <SharedProfileScreen
-                key={`${sharedProfile.id}-${sharedProfile.opened}`}
-                profileId={sharedProfile.id}
-                onChooseSharing={() => setTab('profile')}
-                renderWorkouts={(props) => (
-                  <SharedWorkoutHistory
-                    {...props}
+          {!loading &&
+            (tab === 'log' ||
+              activeWorkoutStartedAt !== null ||
+              (visitedTabs.has('log') && editingWorkout !== null)) && (
+              <CachedTabPanel active={tab === 'log'}>
+                {workoutCatalogueReady ? (
+                  <WorkoutLogger
+                    key={
+                      editingWorkout
+                        ? `edit-${editingWorkout.id}`
+                        : `active-${activeWorkoutStartedAt ?? workoutStartDate}`
+                    }
+                    exercises={exercises}
+                    restoredDraftMovements={restoredDraftMovements}
+                    recommendation={dashboard?.recommendation ?? null}
+                    template={workoutTemplate}
+                    initialDate={workoutStartDate}
+                    initialWorkout={editingWorkout}
+                    resumingWorkout={resumingWorkout}
+                    currentBodyweight={measurements[0]?.weight_kg ?? null}
+                    historicalWorkouts={workouts}
+                    historyBaselines={historyBaselines}
+                    restTimerEnabled={restTimerEnabled}
                     categoryColors={workoutTypeColors}
-                    weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
+                    onExerciseHistory={(exerciseId) => openHistorySection('progress', exerciseId)}
+                    onExerciseFavorite={updateExerciseFavorite}
+                    onCreateExercise={createExercise}
+                    onSave={saveWorkout}
+                    onAutoSaved={() =>
+                      setMessage('Your inactive workout passed its time limit and was auto-saved.')
+                    }
+                    activeStartedAt={activeWorkoutStartedAt}
+                    onClose={navigateBack}
+                    onDelete={() => {
+                      if (editingWorkout) {
+                        void deleteWorkout(editingWorkout);
+                        setTab('history');
+                      } else {
+                        clearActiveWorkoutDraft();
+                        setActiveWorkoutStartedAt(null);
+                        setResumingWorkoutId(null);
+                        setTab('dashboard');
+                      }
+                      setEditingWorkout(null);
+                    }}
                   />
+                ) : (
+                  <section className="logger-screen content-page" aria-live="polite">
+                    <OverlayScreenHeader
+                      title={activeDraft ? 'Workout recovery' : 'Workout unavailable'}
+                      subtitle={
+                        activeDraft
+                          ? 'Your workout is saved on this device'
+                          : 'Load your exercise library to start'
+                      }
+                      onBack={navigateBack}
+                    />
+                    <p>
+                      {exerciseCatalogue.error
+                        ? 'Your exercises could not be loaded.'
+                        : 'Some exercises in your saved workout are not available yet.'}{' '}
+                      {activeDraft
+                        ? 'Your saved workout is safe on this device. Reload the exercises to resume it.'
+                        : 'Reload the exercises to start your workout.'}
+                    </p>
+                    {exerciseCatalogue.error && <p>{exerciseCatalogue.error}</p>}
+                    <button
+                      type="button"
+                      className="primary"
+                      onClick={() => void refreshData({ activityLabel: 'Reloading exercises…' })}
+                    >
+                      Retry loading exercises
+                    </button>
+                  </section>
                 )}
+              </CachedTabPanel>
+            )}
+          {!loading && (tab === 'body' || visitedTabs.has('body')) && (
+            <CachedTabPanel active={tab === 'body'}>
+              <BodyCompositionScreen
+                measurements={measurements}
+                onSave={saveMeasurement}
+                onDelete={deleteMeasurement}
+                onDataChange={refreshAfterMutation}
+                trendPreference={bodyTrendPreference}
+                onOpenSettings={() => setTab('settings')}
               />
             </CachedTabPanel>
           )}
-        {isAdmin && (tab === 'admin' || visitedTabs.has('admin')) && (
-          <CachedTabPanel active={tab === 'admin'}>
-            <AdminScreen active={tab === 'admin'} />
-          </CachedTabPanel>
-        )}
-        {videosAllowed && (tab === 'videos' || visitedTabs.has('videos')) && (
-          <CachedTabPanel active={tab === 'videos'}>
-            <VideoUpload />
-          </CachedTabPanel>
-        )}
-      </main>
+          {!loading && historyGroupVisited && (
+            <CachedTabPanel active={sectionFromTab !== null}>
+              <HistoryScreen
+                key={`${historyOpenId ?? 'history'}-${historyExerciseId ?? 'all'}`}
+                workouts={workouts}
+                categoryColors={workoutTypeColors}
+                measurements={measurements}
+                exercises={exercises}
+                onEdit={editWorkout}
+                onResume={resumeWorkout}
+                onDelete={deleteWorkout}
+                personalRecords={personalRecords}
+                onDataChange={refreshAfterMutation}
+                initialOpenId={historyOpenId}
+                section={historySection}
+                onSectionChange={(section) => setTab(section)}
+                onOpenSettings={() => setTab('settings')}
+                onOpenExercise={(exerciseId) => openHistorySection('progress', exerciseId)}
+                onOpenWorkout={(workoutId, exerciseId) => {
+                  setHistoryOpenId(workoutId);
+                  setHistoryExerciseId(exerciseId);
+                  setTab('history');
+                }}
+                initialExerciseId={historyExerciseId}
+                weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
+                heatmap={dashboard?.heatmap ?? []}
+                historySummary={historySummary}
+                olderHistory={olderHistoryProps}
+                activeWorkout={activeWorkoutStartedAt !== null}
+                activeWorkoutDate={activeWorkoutDate}
+                onResumeWorkout={() => setTab('log')}
+                onStartWorkout={(workoutDate) => startWorkout(workoutDate)}
+                onReplaceActiveWorkout={(workoutDate) => startWorkout(workoutDate, true)}
+              />
+            </CachedTabPanel>
+          )}
+          {!loading && (tab === 'settings' || visitedTabs.has('settings')) && (
+            <CachedTabPanel active={tab === 'settings'}>
+              <SettingsScreen
+                active={tab === 'settings'}
+                workouts={workouts}
+                historySummary={historySummary}
+                measurements={measurements}
+                workoutTypeColors={workoutTypeColors}
+                onWorkoutTypeColorsChange={setWorkoutTypeColors}
+                restTimerEnabled={restTimerEnabled}
+                onRestTimerEnabledChange={updateRestTimerPreference}
+                reduceMotion={reduceMotion}
+                onReduceMotionChange={updateReduceMotion}
+                bodyTrendPreference={bodyTrendPreference}
+                onBodyTrendPreferenceChange={updateBodyTrendPreference}
+                onImportWorkouts={importWorkoutCsv}
+                csvGuideOpen={csvGuideOpen}
+                onCsvGuideOpenChange={setCsvGuideOpen}
+                onExportWorkouts={exportWorkoutCsv}
+                onDeleteSamples={deleteSampleData}
+                onDataChange={refreshAfterMutation}
+                account={user}
+                onOpenProfile={() => setTab('profile')}
+                onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
+                releaseVersion={announcement.release.version}
+                onOpenReleaseNotes={announcement.show}
+                updateCheck={
+                  <AppUpdateCheck
+                    available={appUpdates.available}
+                    status={appUpdates.status}
+                    onCheck={() => void appUpdates.check()}
+                  />
+                }
+                onOpenHomeScreenGuide={homeScreenGuide.show}
+                onOpenAppGuide={() => {
+                  guideReturnTab.current = tab;
+                  setGuideRequested(true);
+                }}
+              />
+            </CachedTabPanel>
+          )}
+          {user && (tab === 'profile' || visitedTabs.has('profile')) && (
+            <CachedTabPanel active={tab === 'profile'}>
+              <ProfileScreen active={tab === 'profile'} onOpenProfile={openSharedProfile} />
+            </CachedTabPanel>
+          )}
+          {user &&
+            sharedProfile &&
+            (tab === 'shared-profile' || visitedTabs.has('shared-profile')) && (
+              <CachedTabPanel active={tab === 'shared-profile'}>
+                <SharedProfileScreen
+                  key={`${sharedProfile.id}-${sharedProfile.opened}`}
+                  profileId={sharedProfile.id}
+                  onChooseSharing={() => setTab('profile')}
+                  renderWorkouts={(props) => (
+                    <SharedWorkoutHistory
+                      {...props}
+                      categoryColors={workoutTypeColors}
+                      weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
+                    />
+                  )}
+                />
+              </CachedTabPanel>
+            )}
+          {isAdmin && (tab === 'admin' || visitedTabs.has('admin')) && (
+            <CachedTabPanel active={tab === 'admin'}>
+              <AdminScreen active={tab === 'admin'} />
+            </CachedTabPanel>
+          )}
+          {videosAllowed && (tab === 'videos' || visitedTabs.has('videos')) && (
+            <CachedTabPanel active={tab === 'videos'}>
+              <VideoUpload />
+            </CachedTabPanel>
+          )}
+        </main>
 
-      {showTabBar && (
-        <AppTabBar
-          homeLayout={home}
-          active={activeMainTab}
-          workoutStartedAt={activeWorkoutStartedAt}
-          onSelect={(nextTab) => {
-            if (nextTab === 'history' || nextTab === 'progress') openHistorySection(nextTab);
-            else setTab(nextTab);
-          }}
-          onStart={() => startWorkout()}
-        />
-      )}
-    </div>
+        {showTabBar && (
+          <AppTabBar
+            homeLayout={home}
+            active={activeMainTab}
+            workoutStartedAt={activeWorkoutStartedAt}
+            onSelect={(nextTab) => {
+              if (nextTab === 'history' || nextTab === 'progress') openHistorySection(nextTab);
+              else setTab(nextTab);
+            }}
+            onStart={() => startWorkout()}
+          />
+        )}
+      </div>
+    </SettingsNavigationContext.Provider>
   );
 }
 
@@ -3389,7 +3423,17 @@ function WorkoutLogger({
             onExerciseHistory={() => onExerciseHistory(movement.exercise.id)}
             onExerciseComplete={(isComplete) =>
               setMovements((current) =>
-                current.map((item) => (item.key === movement.key ? { ...item, isComplete } : item)),
+                current.map((item) =>
+                  item.key === movement.key
+                    ? {
+                        ...item,
+                        isComplete,
+                        sets: isComplete
+                          ? completeRemainingSets(item.exercise.kind, item.sets)
+                          : item.sets,
+                      }
+                    : item,
+                ),
               )
             }
             onUpdateSet={(setKey, update) => updateSet(movement.key, setKey, update)}
@@ -3937,7 +3981,6 @@ function MovementCard({
   const draggingSetKeyRef = useRef<string | null>(null);
   const dragTargetSetKeyRef = useRef<string | null>(null);
   const movementMenuRef = useRef<HTMLDetailsElement>(null);
-  const movementNoteRef = useRef<HTMLInputElement>(null);
   const setGridRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLElement>(null);
   const setNumbers = setNumberLabels(movement.sets);
@@ -4595,18 +4638,10 @@ function MovementCard({
                   closeMovementMenu();
                 }}
               >
-                <span aria-hidden="true">▰</span>
+                <span aria-hidden="true">
+                  <Icon name="history" />
+                </span>
                 {historyOpen ? 'Hide Recent History' : 'Recent History'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  closeMovementMenu();
-                  window.requestAnimationFrame(() => movementNoteRef.current?.focus());
-                }}
-              >
-                <span aria-hidden="true">✎</span>
-                Edit Notes
               </button>
               <button
                 type="button"
@@ -4617,7 +4652,9 @@ function MovementCard({
                 }}
                 aria-haspopup="dialog"
               >
-                <span aria-hidden="true">▰</span>
+                <span aria-hidden="true">
+                  <Icon name="link" />
+                </span>
                 {supersetLabel ? 'Edit Group' : 'Group Superset'}
               </button>
               <button
@@ -4795,7 +4832,6 @@ function MovementCard({
         ＋ Add set
       </button>
       <input
-        ref={movementNoteRef}
         className="movement-note"
         value={movement.notes}
         onChange={(event) => onMovementNotes(event.target.value)}
@@ -5063,7 +5099,7 @@ function MachinePhotoChooser({
           <img src={primaryPinnedPhoto.thumbnail_url} alt="" loading="lazy" />
         ) : (
           <span className="machine-photo-placeholder" aria-hidden="true">
-            ⌁
+            <Icon name="camera" />
           </span>
         )}
         <span className="machine-photo-summary-copy">
@@ -5079,7 +5115,9 @@ function MachinePhotoChooser({
         <p>Take, choose, or pin equipment photos for every set in this exercise.</p>
         <div className="machine-photo-actions">
           <label>
-            <span aria-hidden="true">⌁</span>
+            <span aria-hidden="true">
+              <Icon name="camera" />
+            </span>
             Take photo
             <input
               className="sr-only"
@@ -5627,7 +5665,7 @@ function ExercisePicker({
               disabled={selectedIds.length < 2}
               onClick={() => onCreateSuperset?.(itemsInSelectionOrder(exercises, selectedIds))}
             >
-              Create super set
+              Add super set
             </button>
           )}
           <button
@@ -5636,7 +5674,13 @@ function ExercisePicker({
             disabled={!selectedIds.length}
             onClick={() => onChoose(itemsInSelectionOrder(exercises, selectedIds))}
           >
-            {singleSelect ? 'Switch exercise' : `Add selected exercises (${selectedIds.length})`}
+            {singleSelect ? (
+              'Switch exercise'
+            ) : (
+              <>
+                <span>Add selected exercises</span> <b>{selectedIds.length}</b>
+              </>
+            )}
           </button>
         </div>
       </section>
@@ -6216,6 +6260,7 @@ function ExportTimeFrame({
 }
 
 function SettingsScreen({
+  active,
   workouts,
   historySummary,
   measurements,
@@ -6242,6 +6287,7 @@ function SettingsScreen({
   onOpenHomeScreenGuide,
   onOpenAppGuide,
 }: {
+  active: boolean;
   releaseVersion: string;
   onOpenReleaseNotes: () => void;
   updateCheck: ReactNode;
@@ -6269,6 +6315,7 @@ function SettingsScreen({
   onDeleteSamples: () => Promise<void>;
   onDataChange: () => Promise<void>;
 }) {
+  useSettingsPageJump('settings', active);
   const bodyCsvInput = useRef<HTMLInputElement>(null);
   const workoutDataSection = useRef<HTMLElement>(null);
   const [exportingWorkouts, setExportingWorkouts] = useState(false);
@@ -6477,7 +6524,9 @@ function SettingsScreen({
   }
 
   return (
-    <section className="settings-screen content-page">
+    <section className="settings-screen content-page" data-settings-page="settings">
+      <SettingsSearch includeProfile={account !== null} />
+      <ColourThemePanel />
       <section className="settings-panel panel" aria-labelledby="release-settings-title">
         <header>
           <div>
@@ -8818,6 +8867,7 @@ function HistoryScreen({
 function SharedWorkoutHistory({
   workouts,
   personalRecords,
+  onFilterMachine,
   categoryColors,
   weekStartDay,
 }: SharedWorkoutListProps & { categoryColors: WorkoutTypeColors; weekStartDay: number }) {
@@ -8859,6 +8909,7 @@ function SharedWorkoutHistory({
               activeWorkout={false}
               expandedPhoto={expandedPhoto}
               onExpandPhoto={setExpandedPhoto}
+              onFilterMachine={onFilterMachine}
               onToggle={() => setOpenId((current) => (current === workout.id ? null : workout.id))}
             />
           ))}
