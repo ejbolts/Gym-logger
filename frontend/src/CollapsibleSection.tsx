@@ -13,6 +13,7 @@ export function CollapsibleSection({
   title,
   headingLevel = 2,
   headingClassName,
+  badge,
   defaultExpanded = false,
   children,
 }: {
@@ -21,6 +22,8 @@ export function CollapsibleSection({
   title: string;
   headingLevel?: 2 | 3;
   headingClassName?: string;
+  /** Status shown beside the chevron, so it stays visible while the section is folded. */
+  badge?: ReactNode;
   defaultExpanded?: boolean;
   children: ReactNode;
 }) {
@@ -42,7 +45,10 @@ export function CollapsibleSection({
           <Heading id={`${id}-title`} className={headingClassName}>
             <button type="button" className="collapsible-toggle" aria-expanded={expanded}>
               <span>{title}</span>
-              <Icon name="chevron-down" />
+              <span className="collapsible-toggle-end">
+                {badge}
+                <Icon name="chevron-down" />
+              </span>
             </button>
           </Heading>
         </div>

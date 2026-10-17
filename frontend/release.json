@@ -17,7 +17,7 @@
     "On Home, a card beside a taller one centres its content instead of leaving a gap at the bottom, and editing Home during a live workout no longer shows a placeholder Next workout card.",
     "Profile sharing has one Make my profile private, friends only or public button under the options, and changes only when you press it. The saved message is a five-second popup.",
     "A new Friends section on Profile shows follow requests, who you follow, your followers and people to find; tap anyone to open their profile.",
-    "What you share, Name & username and Change password start folded on Profile and slide open when you tap their heading."
+    "Profile sharing, What you share, Friends, Name & username and Change password start folded on Profile and slide open when you tap their heading; your sharing setting and waiting follow requests stay visible."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

@@ -24,6 +24,13 @@
   touch-action: manipulation;
 }
 
+.collapsible-toggle-end {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .collapsible-toggle:focus-visible {
   outline: 2px solid var(--p-accent);
   outline-offset: 3px;

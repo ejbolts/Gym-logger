@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, ApiError } from './api';
 import { authErrorMessage } from './authForm';
 import { clipBodyWeightGoalPath } from './bodyTrend';
+import { CollapsibleSection } from './CollapsibleSection';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { formatMemberSince } from './profileDisplay';
@@ -306,18 +307,21 @@ export function FriendsPanel({
     const profile = others.find((item) => item.id === id);
     return profile ? () => onOpenProfile(profile) : undefined;
   };
+  const requestCount = state === 'locked' ? 0 : (connections?.requests.length ?? 0);
 
   return (
-    <section
+    <CollapsibleSection
       className="settings-panel panel sharing-connections friends-panel"
-      aria-labelledby="friends-title"
+      kicker="SOCIAL"
+      title="Friends"
+      badge={
+        requestCount > 0 && (
+          <span className="sharing-state is-on">
+            {requestCount} {requestCount === 1 ? 'request' : 'requests'}
+          </span>
+        )
+      }
     >
-      <header>
-        <div>
-          <p className="section-kicker">SOCIAL</p>
-          <h2 id="friends-title">Friends</h2>
-        </div>
-      </header>
       {state === 'locked' ? (
         <p className="shared-card-empty">
           Share your profile above to see and follow other members.
@@ -450,7 +454,7 @@ export function FriendsPanel({
           </FriendGroup>
         </>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
 

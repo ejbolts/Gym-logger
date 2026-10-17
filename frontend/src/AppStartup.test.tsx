@@ -326,7 +326,7 @@ describe('App startup', () => {
       const markup = renderSignedIn(hash, account);
 
       expect(markup).toContain('<strong>Profile</strong>');
-      expect(markup).toContain('id="friends-title"');
+      expect(markup).toContain('<span>Friends</span>');
       expect(markup).toContain('Loading your friends');
       expect(markup).not.toContain('View shared profiles');
     }

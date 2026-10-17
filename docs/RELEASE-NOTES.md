@@ -58,8 +58,10 @@
 - A new **Friends** section on Profile replaces the separate shared profiles screen. It
   lists follow requests to approve or decline, who you follow, your followers and other
   members to follow. Tap anyone to open their profile.
-- On Profile, **What you share**, **Name & username** and **Change password** start folded
-  to their headings. Tap a heading to slide the section open, and again to close it.
+- On Profile, **Profile sharing**, **What you share**, **Friends**, **Name & username** and
+  **Change password** start folded to their headings. Tap a heading to slide the section open,
+  and again to close it. Your sharing setting and any waiting follow requests stay visible on
+  the folded headings.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 

@@ -164,22 +164,18 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
   }
 
   return (
-    <section
+    <CollapsibleSection
       className="settings-panel panel profile-sharing"
-      aria-labelledby="profile-sharing-title"
-      aria-busy={saving}
-    >
-      <header>
-        <div>
-          <p className="section-kicker">SHARING</p>
-          <h2 id="profile-sharing-title">Profile sharing</h2>
-        </div>
-        {saved && (
+      kicker="SHARING"
+      title="Profile sharing"
+      badge={
+        saved && (
           <span className={`sharing-state ${sharing ? 'is-on' : ''}`}>
             {VISIBILITY_LABELS[saved.visibility]}
           </span>
-        )}
-      </header>
+        )
+      }
+    >
       <p>
         Choose who can see your training. Only members who share their own profile can see or follow
         others.
@@ -313,6 +309,6 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
           )}
         </>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
