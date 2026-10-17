@@ -56,6 +56,7 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "exercise_muscle_contributions": f"exercise_id IN ({_EXERCISES})",
     "machine_photos": _OWNED,
     "training_workouts": _OWNED,
+    "workout_types": _OWNED,
     "workout_movements": f"workout_id IN ({_WORKOUTS})",
     "workout_sets": f"movement_id IN ({_MOVEMENTS})",
     "superset_groups": f"workout_id IN ({_WORKOUTS})",

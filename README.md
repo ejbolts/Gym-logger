@@ -24,6 +24,7 @@ Customise the dashboard by rearranging cards, hiding sections you do not need an
 
 - Choose from the exercise library, save favourites or create your own exercises.
 - Record sets, reps, weight and effort (RPE), with warmups, supersets and notes.
+- Add your own workout types and colours in Settings; remove or restore types while keeping saved history.
 - Use previous-session suggestions to pick up where you left off.
 - Follow a live rest timer, with optional phone alerts and a reminder if a workout is left running.
 - Attach reusable machine photos to remember equipment settings or setups.

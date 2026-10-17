@@ -196,9 +196,12 @@ export function niceTicks(min: number, max: number, count = 4): number[] {
 }
 
 /** Imported workouts are named “Imported workout · YYYY-MM-DD”; their type reads better. */
-export function workoutDisplayName(workout: Pick<TrackedWorkout, 'name' | 'category'>): string {
+export function workoutDisplayName(
+  workout: Pick<TrackedWorkout, 'name' | 'category' | 'workout_type'>,
+): string {
   const name = workout.name.trim();
-  if (!name || /^Imported workout\b/i.test(name)) return CATEGORY_LABELS[workout.category];
+  if (!name || /^Imported workout\b/i.test(name))
+    return workout.workout_type?.name ?? CATEGORY_LABELS[workout.category];
   return name;
 }
 

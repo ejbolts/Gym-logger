@@ -21,8 +21,10 @@ from .models import (
     WorkoutCategory,
     WorkoutMovement,
     WorkoutSet,
+    WorkoutType,
 )
 from .workout_category import infer_workout_category
+from .workout_types import DEFAULT_NAMES, MAX_CUSTOM_TYPES
 
 CSV_HEADERS = (
     "Date Lifted",
@@ -36,6 +38,7 @@ CSV_HEADERS = (
     "Warmup",
 )
 SESSION_HEADERS = ("Workout ID", "Workout name")
+WORKOUT_TYPE_HEADERS = ("Workout type", "Workout type color")
 # Exports always write every column; hand-made files need only these.
 REQUIRED_HEADERS = ("Date Lifted", "Exercise", "Reps")
 WEIGHT_HEADERS = ("Weight (kg)", "Weight (lb)")
@@ -54,7 +57,9 @@ def header_key(name: str) -> str:
     return re.sub(r"\s+", "", name).casefold()
 
 
-KNOWN_HEADERS = {header_key(header): header for header in (*CSV_HEADERS, *SESSION_HEADERS)}
+KNOWN_HEADERS = {
+    header_key(header): header for header in (*CSV_HEADERS, *SESSION_HEADERS, *WORKOUT_TYPE_HEADERS)
+}
 
 
 class CsvImportError(ValueError):
@@ -72,6 +77,8 @@ class ParsedRow:
     warmup: bool
     session_id: str = ""
     session_name: str = ""
+    workout_type_name: str = ""
+    workout_type_color: str = ""
     weight_from_lb: bool = False
     bodyweight_from_lb: bool = False
 
@@ -177,6 +184,7 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
     legacy_dates: set[date] = set()
     session_dates: dict[str, date] = {}
     session_names: dict[tuple[date, str], str] = {}
+    session_types: dict[tuple[date, str], tuple[str, str]] = {}
     for row_number, row in enumerate(reader, start=2):
         if None in row:
             raise CsvImportError(f"Row {row_number}: there are more values than columns.")
@@ -201,6 +209,22 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
             )
         session_id = (row.get("Workout ID") or "").strip()
         session_name = (row.get("Workout name") or "").strip()
+        type_name = (row.get("Workout type") or "").strip()
+        type_color = (row.get("Workout type color") or "").strip()
+        if type_name or type_color:
+            if (
+                not type_name
+                or len(type_name) > 40
+                or not re.fullmatch(r"#[0-9a-fA-F]{6}", type_color)
+            ):
+                raise CsvImportError(
+                    f"Row {row_number}: Workout type needs a name up to 40 characters "
+                    "and a #RRGGBB color."
+                )
+        type_key = (workout_date, session_id)
+        type_details = (type_name, type_color)
+        if session_types.setdefault(type_key, type_details) != type_details:
+            raise CsvImportError(f"Row {row_number}: Workout types disagree for one session.")
         if len(session_id) > 128 or len(session_name) > 200:
             raise CsvImportError(f"Row {row_number}: Workout ID or name is too long.")
         if session_id:
@@ -248,6 +272,8 @@ def parse_rows(raw: bytes) -> tuple[list[ParsedRow], list[str]]:
                 warmup=warmup_value in {"1", "true", "yes", "y"},
                 session_id=session_id,
                 session_name=session_name,
+                workout_type_name=type_name,
+                workout_type_color=type_color,
                 weight_from_lb=weight_from_lb,
                 bodyweight_from_lb=bodyweight_from_lb,
             )
@@ -393,6 +419,11 @@ def same_number(left: float | None, right: float | None, *, from_lb: bool = Fals
 
 
 def matching_session(rows: list[ParsedRow], workout: TrainingWorkout) -> bool:
+    if rows[0].workout_type_name:
+        if workout.workout_type is None or (
+            workout.workout_type.name.casefold() != rows[0].workout_type_name.casefold()
+        ):
+            return False
     existing: dict[str, list[WorkoutSet]] = defaultdict(list)
     incoming: dict[str, list[ParsedRow]] = defaultdict(list)
     for movement in workout.movements:
@@ -498,6 +529,10 @@ def import_workouts(
         for item in db.scalars(select(Exercise).where(Exercise.user_id == user_id))
     }
     exercises_created = 0
+    workout_types = {
+        item.name.casefold(): item
+        for item in db.scalars(select(WorkoutType).where(WorkoutType.user_id == user_id))
+    }
     bodyweights: dict[date, list[float]] = defaultdict(list)
     sessions = [session for session in plan.sessions if not session.duplicate]
     for session in sessions:
@@ -548,7 +583,27 @@ def import_workouts(
                     )
                 )
             workout.movements.append(movement)
-        workout.category = infer_workout_category(movement_categories) or WorkoutCategory.OTHER
+        type_row = session.rows[0]
+        if type_row.workout_type_name:
+            type_key = type_row.workout_type_name.casefold()
+            custom_type = workout_types.get(type_key)
+            if custom_type is None:
+                if type_key in {name.casefold() for name in DEFAULT_NAMES.values()}:
+                    raise CsvImportError("A custom workout type cannot use a built-in type's name.")
+                if len(workout_types) >= MAX_CUSTOM_TYPES:
+                    raise CsvImportError(
+                        f"You can save up to {MAX_CUSTOM_TYPES} custom workout types."
+                    )
+                custom_type = WorkoutType(
+                    user_id=user_id,
+                    name=type_row.workout_type_name,
+                    color=type_row.workout_type_color,
+                )
+                db.add(custom_type)
+                workout_types[type_key] = custom_type
+            workout.workout_type = custom_type
+        else:
+            workout.category = infer_workout_category(movement_categories) or WorkoutCategory.OTHER
     body_measurements_created, body_measurements_updated = sync_imported_bodyweights(
         db, user_id, bodyweights
     )
@@ -573,7 +628,7 @@ def format_number(value: float | int | None) -> str:
 def export_workouts(workouts: list[TrainingWorkout]) -> str:
     output = io.StringIO(newline="")
     writer = csv.writer(output, lineterminator="\r\n")
-    writer.writerow((*CSV_HEADERS, *SESSION_HEADERS))
+    writer.writerow((*CSV_HEADERS, *SESSION_HEADERS, *WORKOUT_TYPE_HEADERS))
     for workout in workouts:
         for movement in sorted(workout.movements, key=lambda item: item.order_index):
             for item in sorted(movement.sets, key=lambda entry: entry.order_index):
@@ -600,6 +655,8 @@ def export_workouts(workouts: list[TrainingWorkout]) -> str:
                         "1" if item.warmup else "0",
                         workout.id,
                         workout.name,
+                        workout.workout_type.name if workout.workout_type else "",
+                        workout.workout_type.color if workout.workout_type else "",
                     )
                 )
     return output.getvalue()

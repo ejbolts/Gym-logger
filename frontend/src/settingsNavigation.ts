@@ -48,10 +48,10 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'colours',
-    title: 'Workout type colours',
+    title: 'Workout types',
     page: 'settings',
-    keywords: 'color category calendar legend',
-    selector: '#workout-type-colors-title',
+    keywords: 'colour color category calendar legend custom add remove arms legs limbs torso',
+    selector: '#workout-types-title',
   },
   {
     id: 'trend',

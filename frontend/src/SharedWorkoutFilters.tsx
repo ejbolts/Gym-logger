@@ -34,10 +34,17 @@ export function SharedWorkoutFilters({
           Workout type
           <select
             aria-label="Workout type"
-            value={filters.category}
-            onChange={(event) =>
-              onChange({ ...filters, category: event.target.value as WorkoutCategory | '' })
-            }
+            value={filters.workout_type_id ? `custom:${filters.workout_type_id}` : filters.category}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value.startsWith('custom:')) {
+                onChange({ ...filters, category: '', workout_type_id: value.slice(7) });
+              } else {
+                const next = { ...filters, category: value as WorkoutCategory | '' };
+                delete next.workout_type_id;
+                onChange(next);
+              }
+            }}
           >
             <option value="">All types</option>
             {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
@@ -45,6 +52,13 @@ export function SharedWorkoutFilters({
                 {label}
               </option>
             ))}
+            {options.workout_types
+              ?.filter((type) => type.is_custom)
+              .map((type) => (
+                <option value={`custom:${type.id}`} key={type.id}>
+                  {type.name}
+                </option>
+              ))}
           </select>
         </label>
         <label>

@@ -35,6 +35,8 @@ export interface ActiveWorkoutDraft {
   name: string;
   workoutDate: string;
   category: WorkoutCategory;
+  workoutTypeId?: string | null;
+  workoutTypeExplicit?: boolean;
   notes: string;
   movements: StoredDraftMovement[];
 }
@@ -120,6 +122,11 @@ function isActiveWorkoutDraft(value: unknown): value is ActiveWorkoutDraft {
     /^\d{4}-\d{2}-\d{2}$/.test(value.workoutDate) &&
     typeof value.category === 'string' &&
     workoutCategories.has(value.category as WorkoutCategory) &&
+    (value.workoutTypeId == null ||
+      (typeof value.workoutTypeId === 'string' &&
+        value.workoutTypeId.length > 0 &&
+        value.workoutTypeId.length <= 64)) &&
+    (value.workoutTypeExplicit === undefined || typeof value.workoutTypeExplicit === 'boolean') &&
     typeof value.notes === 'string' &&
     Array.isArray(value.movements) &&
     value.movements.every(isStoredMovement)
@@ -186,7 +193,8 @@ export function savedWorkoutMatchesOldDraft(
   if (
     workout.workout_date !== draft.workoutDate ||
     workout.name !== draft.name.trim() ||
-    workout.category !== draft.category
+    workout.category !== draft.category ||
+    (workout.workout_type_id ?? null) !== (draft.workoutTypeId ?? null)
   ) {
     return false;
   }

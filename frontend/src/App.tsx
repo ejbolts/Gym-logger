@@ -19,6 +19,15 @@ import { createPortal, flushSync } from 'react-dom';
 import { api } from './api';
 import { saveBodyFatCheckIn, saveBodyweightCheckIn } from './bodyweightCheckIn';
 import { TrainingPreferencesProvider } from './TrainingPreferencesProvider';
+import { WorkoutTypesProvider } from './WorkoutTypesProvider';
+import { useWorkoutTypes } from './workoutTypesContext';
+import { WorkoutTypesSettings } from './WorkoutTypesSettings';
+import {
+  builtinTypeColors,
+  calendarDayTypes,
+  calendarLegendTypes,
+  effectiveWorkoutType,
+} from './workoutTypes';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
 import {
@@ -245,7 +254,7 @@ import {
   restTimerSecondsAfterSetUpdate,
   suggestNextSetFromLoggedSet,
 } from './workoutSets';
-import { finalizeWorkoutIdentity } from './workoutCategory';
+import { finalizeWorkoutIdentity, workoutNameForCategory } from './workoutCategory';
 import {
   replaceMovementExercise,
   restoreWorkoutDraftMovements,
@@ -283,16 +292,6 @@ const categoryNames: Record<WorkoutCategory, string> = {
   full_body: 'Full body',
   cardio: 'Cardio',
   other: 'Other',
-};
-
-const defaultCategoryColors: WorkoutTypeColors = {
-  upper: '#8b5cf6',
-  lower: '#f59e0b',
-  push: '#ef476f',
-  pull: '#3b82f6',
-  full_body: '#14b8a6',
-  cardio: '#22c55e',
-  other: '#94a3b8',
 };
 
 const restOptions = [60, 90, 120, 150, 180, 210, 240, 270, 300];
@@ -545,7 +544,9 @@ function WorkoutCompletionDialog({
 export function App() {
   return (
     <TrainingPreferencesProvider>
-      <AppContent />
+      <WorkoutTypesProvider>
+        <AppContent />
+      </WorkoutTypesProvider>
     </TrainingPreferencesProvider>
   );
 }
@@ -614,8 +615,11 @@ function AppContent() {
   const [reduceMotion, setReduceMotion] = useState(reduceMotionPreference);
   const [navDirection, setNavDirection] = useState<'forward' | 'back'>('forward');
   const [bodyTrendPreference, setBodyTrendPreference] = useState(loadBodyTrendPreference);
-  const [workoutTypeColors, setWorkoutTypeColors] =
-    useState<WorkoutTypeColors>(defaultCategoryColors);
+  const workoutTypes = useWorkoutTypes();
+  const workoutTypeColors = useMemo(
+    () => builtinTypeColors(workoutTypes.types),
+    [workoutTypes.types],
+  );
   const [workoutStartDate, setWorkoutStartDate] = useState(localDate());
   const [editingWorkout, setEditingWorkout] = useState<TrackedWorkout | null>(null);
   const [resumingWorkoutId, setResumingWorkoutId] = useState<string | null>(
@@ -903,13 +907,6 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    void api
-      .getWorkoutTypeColors()
-      .then(setWorkoutTypeColors)
-      .catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
     // The CSV guide belongs to Settings; going back or switching screens closes it.
     if (tab !== 'settings') setCsvGuideOpen(false);
   }, [tab]);
@@ -1031,6 +1028,7 @@ function AppContent() {
   async function importWorkoutCsv(file: File) {
     const result = await withBackgroundActivity('Importing workouts…', async () => {
       const imported = await api.importWorkouts(file);
+      await workoutTypes.reload();
       await refreshData({ activityLabel: null });
       return imported;
     });
@@ -1528,8 +1526,6 @@ function AppContent() {
                 workouts={workouts}
                 historySummary={historySummary}
                 measurements={measurements}
-                workoutTypeColors={workoutTypeColors}
-                onWorkoutTypeColorsChange={setWorkoutTypeColors}
                 restTimerEnabled={restTimerEnabled}
                 onRestTimerEnabledChange={updateRestTimerPreference}
                 reduceMotion={reduceMotion}
@@ -1857,13 +1853,14 @@ function WorkoutCalendar({
   entries: DashboardData['heatmap'];
   categoryColors: WorkoutTypeColors;
   /** Workout types switched off in the legend; their dots and day borders are greyed out. */
-  hiddenCategories?: ReadonlySet<WorkoutCategory>;
+  hiddenCategories?: ReadonlySet<string>;
   activeWorkoutDate?: string | null;
   onActiveWorkoutClick?: () => void;
   onDayClick: (workoutDate: string, entry: DashboardData['heatmap'][number] | undefined) => void;
   olderHistory?: OlderHistoryProps;
 }) {
   const calendarScrollRef = useRef<HTMLDivElement>(null);
+  const { types } = useWorkoutTypes();
   const historyStart = olderHistory?.historyStart ?? null;
   const hasOlder = olderHistory?.hasOlder ?? false;
   const map = useMemo(
@@ -1989,18 +1986,12 @@ function WorkoutCalendar({
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
               <span key={`${day}-${index}`}>{day}</span>
             ))}
-            <span className="calendar-week-total-heading">Sets</span>
           </div>
           <div className="calendar-days">
             {/* Every month keeps all six week rows, so months share one height and the ones
                 scrolled out of view can skip layout without the calendar changing height. */}
             {Array.from({ length: 6 }, (_, row) => month.cells.slice(row * 7, row * 7 + 7)).map(
               (week, row) => {
-                const weekSets = week.reduce(
-                  (total, day) =>
-                    day ? total + (map.get(localCalendarDate(day))?.set_count ?? 0) : total,
-                  0,
-                );
                 return (
                   <Fragment key={`row-${row}`}>
                     {week.map((day, index) => {
@@ -2012,10 +2003,10 @@ function WorkoutCalendar({
                       const key = localCalendarDate(day);
                       const entry = map.get(key);
                       const inProgress = key === activeWorkoutDate;
-                      const categories = entry?.categories ?? [];
+                      const dayTypes = entry ? calendarDayTypes(entry, types) : [];
                       const filteredOut =
-                        categories.length > 0 &&
-                        categories.every((category) => hiddenCategories?.has(category));
+                        dayTypes.length > 0 &&
+                        dayTypes.every((type) => hiddenCategories?.has(type.id));
                       return (
                         <button
                           type="button"
@@ -2048,13 +2039,17 @@ function WorkoutCalendar({
                             {inProgress ? (
                               <i className="calendar-live-dot" />
                             ) : (
-                              categories.map((category, dotIndex) =>
-                                hiddenCategories?.has(category) ? (
+                              dayTypes.map((type, dotIndex) =>
+                                hiddenCategories?.has(type.id) ? (
                                   <i key={dotIndex} className="is-off" />
                                 ) : (
                                   <i
                                     key={dotIndex}
-                                    style={{ backgroundColor: categoryColors[category] }}
+                                    style={{
+                                      backgroundColor: type.is_custom
+                                        ? type.color
+                                        : categoryColors[type.id as WorkoutCategory],
+                                    }}
                                   />
                                 ),
                               )
@@ -2063,7 +2058,6 @@ function WorkoutCalendar({
                         </button>
                       );
                     })}
-                    <span className="calendar-week-total num">{weekSets || ''}</span>
                   </Fragment>
                 );
               },
@@ -2071,7 +2065,7 @@ function WorkoutCalendar({
           </div>
         </article>
       )),
-    [activeWorkoutDate, categoryColors, hiddenCategories, map, months, todayKey],
+    [activeWorkoutDate, categoryColors, hiddenCategories, map, months, todayKey, types],
   );
 
   return (
@@ -2128,13 +2122,10 @@ function InteractiveWorkoutCalendar({
   const [selectedDay, setSelectedDay] = useState<DashboardData['heatmap'][number] | null>(null);
   const [pendingWorkoutDate, setPendingWorkoutDate] = useState<string | null>(null);
   // Every type shows by default; tapping one in the legend greys it out in the calendar.
-  const [hiddenCategories, setHiddenCategories] = useState<ReadonlySet<WorkoutCategory>>(
-    () => new Set(),
-  );
-  const presentCategories = (Object.keys(categoryNames) as WorkoutCategory[]).filter((category) =>
-    entries.some((day) => day.categories.includes(category)),
-  );
-  const toggleCategory = (category: WorkoutCategory) =>
+  const { types } = useWorkoutTypes();
+  const [hiddenCategories, setHiddenCategories] = useState<ReadonlySet<string>>(() => new Set());
+  const presentTypes = calendarLegendTypes(entries, types);
+  const toggleCategory = (category: string) =>
     setHiddenCategories((current) => {
       const next = new Set(current);
       if (!next.delete(category)) next.add(category);
@@ -2155,20 +2146,27 @@ function InteractiveWorkoutCalendar({
           else setPendingWorkoutDate(workoutDate);
         }}
       />
-      {presentCategories.length > 0 && (
+      {presentTypes.length > 0 && (
         <ul className="category-legend" aria-label="Workout types">
-          {presentCategories.map((category) => {
-            const shown = !hiddenCategories.has(category);
+          {presentTypes.map((type) => {
+            const shown = !hiddenCategories.has(type.id);
             return (
-              <li key={category}>
+              <li key={type.id}>
                 <button
                   type="button"
                   className={shown ? '' : 'is-off'}
                   aria-pressed={shown}
-                  onClick={() => toggleCategory(category)}
+                  onClick={() => toggleCategory(type.id)}
                 >
-                  <i style={{ background: categoryColors[category] }} aria-hidden="true" />
-                  <span className="category-legend-label">{categoryNames[category]}</span>
+                  <i
+                    style={{
+                      background: type.is_custom
+                        ? type.color
+                        : categoryColors[type.id as WorkoutCategory],
+                    }}
+                    aria-hidden="true"
+                  />
+                  <span className="category-legend-label">{type.name}</span>
                   <span className="category-legend-state" aria-hidden="true">
                     <Icon name="check" />
                     <Icon name="close" />
@@ -2227,6 +2225,7 @@ function CalendarDayDetail({
   onEditWorkout: (workoutId: string) => void;
 }) {
   const weightUnit = useWeightUnit();
+  const { types } = useWorkoutTypes();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const backdropDismiss = useBackdropDismiss(onClose);
@@ -2286,11 +2285,17 @@ function CalendarDayDetail({
                 onClick={() => onEditWorkout(workout.id)}
                 aria-label={`View and edit ${workout.name}`}
               >
-                <i style={{ background: categoryColors[workout.category] }} />
+                <i
+                  style={{
+                    background: workout.workout_type_id
+                      ? effectiveWorkoutType(workout, types).color
+                      : categoryColors[workout.category],
+                  }}
+                />
                 <span>
                   <strong>{workout.name}</strong>
                   <small>
-                    {categoryNames[workout.category]} ·{' '}
+                    {effectiveWorkoutType(workout, types).name} ·{' '}
                     {formatMinutesDuration(workout.duration_minutes)}
                   </small>
                 </span>
@@ -2398,6 +2403,65 @@ function WorkoutLogger({
       recommendation?.category ??
       'push',
   );
+  const workoutTypes = useWorkoutTypes();
+  const [customTypeId, setCustomTypeId] = useState<string | null>(
+    initialWorkout?.workout_type_id ??
+      restoredDraft?.workoutTypeId ??
+      resumingWorkout?.workout_type_id ??
+      template?.sourceWorkout.workout_type_id ??
+      null,
+  );
+  const [workoutTypeExplicit, setWorkoutTypeExplicit] = useState(
+    restoredDraft?.workoutTypeExplicit ??
+      Boolean(initialWorkout || resumingWorkout || customTypeId),
+  );
+  const selectedType = effectiveWorkoutType(
+    {
+      category,
+      workout_type_id: customTypeId,
+      workout_type:
+        initialWorkout?.workout_type ??
+        resumingWorkout?.workout_type ??
+        template?.sourceWorkout.workout_type,
+    },
+    workoutTypes.types,
+  );
+  const typeOptions = workoutTypes.types.filter(
+    (type) =>
+      !type.archived || (type.id === selectedType.id && Boolean(initialWorkout || resumingWorkout)),
+  );
+  function chooseWorkoutType(id: string) {
+    const type = workoutTypes.types.find((item) => item.id === id);
+    if (!type) return;
+    const automaticNames = ['', `${selectedType.name} workout`, workoutNameForCategory(category)];
+    if (automaticNames.includes(name.trim())) setName('');
+    setCustomTypeId(type.is_custom ? type.id : null);
+    setCategory(type.is_custom ? 'other' : (type.id as WorkoutCategory));
+    setWorkoutTypeExplicit(true);
+  }
+  useEffect(() => {
+    if (
+      workoutTypes.loading ||
+      workoutTypes.error ||
+      initialWorkout ||
+      resumingWorkout ||
+      workoutTypeExplicit
+    )
+      return;
+    if (!selectedType.archived) return;
+    const first = workoutTypes.types.find((type) => !type.archived);
+    if (!first) return;
+    setCategory(first.is_custom ? 'other' : (first.id as WorkoutCategory));
+    setCustomTypeId(first.is_custom ? first.id : null);
+  }, [
+    initialWorkout,
+    resumingWorkout,
+    selectedType.archived,
+    workoutTypeExplicit,
+    workoutTypes.loading,
+    workoutTypes.error,
+    workoutTypes.types,
+  ]);
   const [notes, setNotes] = useState(
     initialWorkout?.notes ?? restoredDraft?.notes ?? resumingWorkout?.notes ?? '',
   );
@@ -2553,6 +2617,8 @@ function WorkoutLogger({
         name,
         workoutDate,
         category,
+        workoutTypeId: customTypeId,
+        workoutTypeExplicit,
         notes,
         movements: movements.map((movement) => ({
           key: movement.key,
@@ -2603,6 +2669,8 @@ function WorkoutLogger({
     };
   }, [
     category,
+    customTypeId,
+    workoutTypeExplicit,
     initialWorkout,
     movements,
     name,
@@ -3002,6 +3070,22 @@ function WorkoutLogger({
 
   async function finishWorkout(automaticEndAt?: number) {
     if (savingRef.current) return;
+    if (workoutTypes.loading) {
+      setError('Workout types are still loading. Please try saving again in a moment.');
+      return;
+    }
+    if (customTypeId && selectedType.id !== customTypeId) {
+      setError('Your workout type could not load. Reload workout types or choose another type.');
+      return;
+    }
+    if (!typeOptions.some((type) => type.id === selectedType.id)) {
+      setError('Choose an available workout type. Add or restore types in Settings if needed.');
+      return;
+    }
+    if (selectedType.archived && !initialWorkout && !resumedWorkoutId) {
+      setError('This workout type was removed. Choose another type before saving.');
+      return;
+    }
     const finishedAt = automaticEndAt ?? Date.now();
     const durationMinutes = initialWorkout
       ? editedDurationMinutes
@@ -3038,18 +3122,31 @@ function WorkoutLogger({
     savingRef.current = true;
     setSaving(true);
     setError(null);
-    const completedIdentity = finalizeWorkoutIdentity(
+    let completedIdentity = finalizeWorkoutIdentity(
       movements.map((movement) => movement.exercise),
       category,
       name,
-      !initialWorkout && !resumedWorkoutId,
+      !initialWorkout && !resumedWorkoutId && !workoutTypeExplicit && !customTypeId,
+      customTypeId ? selectedType : null,
     );
+    if (
+      !customTypeId &&
+      workoutTypes.types.find((type) => type.id === completedIdentity.category)?.archived
+    ) {
+      completedIdentity = finalizeWorkoutIdentity(
+        movements.map((movement) => movement.exercise),
+        category,
+        name,
+        false,
+      );
+    }
     try {
       cancelRestTimer();
       await onSave({
         name: completedIdentity.name,
         workout_date: workoutDate,
         category: completedIdentity.category,
+        workout_type_id: customTypeId,
         notes: notes.trim() || null,
         duration_minutes: durationMinutes,
         start_time: initialWorkout && startTime && endTime ? startTime : null,
@@ -3158,13 +3255,25 @@ function WorkoutLogger({
     setNameEditorOpen(true);
   };
 
-  // Matches the name and type saved for a new workout, which are inferred from its exercises.
-  const liveIdentity = finalizeWorkoutIdentity(
+  // Explicit choices retain their identity in both the live heading and the saved workout.
+  let liveIdentity = finalizeWorkoutIdentity(
     movements.map((movement) => movement.exercise),
     category,
     name,
-    !initialWorkout && !resumedWorkoutId,
+    !initialWorkout && !resumedWorkoutId && !workoutTypeExplicit && !customTypeId,
+    customTypeId ? selectedType : null,
   );
+  if (
+    !customTypeId &&
+    workoutTypes.types.find((type) => type.id === liveIdentity.category)?.archived
+  ) {
+    liveIdentity = finalizeWorkoutIdentity(
+      movements.map((movement) => movement.exercise),
+      category,
+      name,
+      false,
+    );
+  }
 
   return (
     <section className="logger-screen content-page">
@@ -3217,42 +3326,50 @@ function WorkoutLogger({
           </>
         }
       />
-      {recommendation && !initialWorkout && !template && movements.length === 0 && (
-        <section className="workout-recommendation panel">
-          <div className="recommendation-heading">
-            <div>
-              <p className="section-kicker">RECOMMENDED NEXT</p>
-              <h2>{recommendation.session_name.replace(' workout', '')}</h2>
+      {recommendation &&
+        !workoutTypes.types.find((type) => type.id === recommendation.category)?.archived &&
+        !initialWorkout &&
+        !template &&
+        movements.length === 0 && (
+          <section className="workout-recommendation panel">
+            <div className="recommendation-heading">
+              <div>
+                <p className="section-kicker">RECOMMENDED NEXT</p>
+                <h2>{recommendation.session_name.replace(' workout', '')}</h2>
+              </div>
+              <span style={{ background: categoryColors[recommendation.category] }} />
             </div>
-            <span style={{ background: categoryColors[recommendation.category] }} />
-          </div>
-          <p>{recommendation.reason}</p>
-          <div className="frequency-chips" aria-label="Seven-day muscle frequency">
-            {recommendation.muscle_frequency.map((item) => (
-              <span
-                className={
-                  item.sessions_last_7_days < item.target_sessions ? 'needs-attention' : 'on-target'
-                }
-                key={item.muscle_group}
-              >
-                {item.muscle_group}{' '}
-                <b>
-                  {item.sessions_last_7_days}/{item.target_sessions}
-                </b>
-              </span>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setCategory(recommendation.category);
-              setName(recommendation.session_name);
-            }}
-          >
-            Use {recommendation.session_name}
-          </button>
-        </section>
-      )}
+            <p>{recommendation.reason}</p>
+            <div className="frequency-chips" aria-label="Seven-day muscle frequency">
+              {recommendation.muscle_frequency.map((item) => (
+                <span
+                  className={
+                    item.sessions_last_7_days < item.target_sessions
+                      ? 'needs-attention'
+                      : 'on-target'
+                  }
+                  key={item.muscle_group}
+                >
+                  {item.muscle_group}{' '}
+                  <b>
+                    {item.sessions_last_7_days}/{item.target_sessions}
+                  </b>
+                </span>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCategory(recommendation.category);
+                setCustomTypeId(null);
+                setWorkoutTypeExplicit(true);
+                setName(recommendation.session_name);
+              }}
+            >
+              Use {recommendation.session_name}
+            </button>
+          </section>
+        )}
 
       <section className="workout-details panel">
         <div className="details-row">
@@ -3267,12 +3384,19 @@ function WorkoutLogger({
           <label>
             Workout type
             <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value as WorkoutCategory)}
+              value={customTypeId ?? category}
+              onChange={(event) => chooseWorkoutType(event.target.value)}
+              disabled={workoutTypes.loading}
             >
-              {Object.entries(categoryNames).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
+              {!typeOptions.some((type) => type.id === (customTypeId ?? category)) && (
+                <option value={customTypeId ?? category} disabled>
+                  Choose a workout type
+                </option>
+              )}
+              {typeOptions.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                  {type.archived ? ' (removed)' : ''}
                 </option>
               ))}
             </select>
@@ -3559,7 +3683,7 @@ function WorkoutLogger({
       {nameEditorOpen && (
         <WorkoutNameDialog
           value={nameDraft}
-          fallbackName={`${categoryNames[category]} workout`}
+          fallbackName={`${selectedType.name} workout`}
           onChange={setNameDraft}
           onCancel={() => setNameEditorOpen(false)}
           onSave={() => {
@@ -6264,8 +6388,6 @@ function SettingsScreen({
   workouts,
   historySummary,
   measurements,
-  workoutTypeColors,
-  onWorkoutTypeColorsChange,
   restTimerEnabled,
   onRestTimerEnabledChange,
   reduceMotion,
@@ -6300,8 +6422,6 @@ function SettingsScreen({
   workouts: TrackedWorkout[];
   historySummary: WorkoutHistorySummary | null;
   measurements: BodyMeasurement[];
-  workoutTypeColors: WorkoutTypeColors;
-  onWorkoutTypeColorsChange: (colors: WorkoutTypeColors) => void;
   restTimerEnabled: boolean;
   onRestTimerEnabledChange: (enabled: boolean) => void;
   reduceMotion: boolean;
@@ -6337,15 +6457,7 @@ function SettingsScreen({
   const [trainingPreferencesStatus, setTrainingPreferencesStatus] = useState<string | null>(null);
   const [trainingPreferencesError, setTrainingPreferencesError] = useState<string | null>(null);
   const [savingTrainingPreferences, setSavingTrainingPreferences] = useState(false);
-  const [colorDraft, setColorDraft] = useState<WorkoutTypeColors>(workoutTypeColors);
-  const [colorsDirty, setColorsDirty] = useState(false);
-  const [savingColors, setSavingColors] = useState(false);
-  const [colorsStatus, setColorsStatus] = useState<string | null>(null);
-  const [colorsError, setColorsError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!colorsDirty) setColorDraft(workoutTypeColors);
-  }, [colorsDirty, workoutTypeColors]);
+  const workoutTypes = useWorkoutTypes();
 
   useEffect(() => {
     if (!csvGuideOpen) return;
@@ -6435,25 +6547,6 @@ function SettingsScreen({
       );
     } finally {
       setSavingTrainingPreferences(false);
-    }
-  }
-
-  async function saveWorkoutTypeColors() {
-    if (savingColors || !colorsDirty) return;
-    setSavingColors(true);
-    setColorsStatus(null);
-    setColorsError(null);
-    try {
-      const saved = await api.updateWorkoutTypeColors(colorDraft);
-      onWorkoutTypeColorsChange(saved);
-      setColorsDirty(false);
-      setColorsStatus('Workout type colours saved.');
-    } catch (reason) {
-      setColorsError(
-        reason instanceof Error ? reason.message : 'Could not save workout type colours.',
-      );
-    } finally {
-      setSavingColors(false);
     }
   }
 
@@ -6797,69 +6890,13 @@ function SettingsScreen({
         </div>
       </section>
 
-      <section className="settings-panel panel" aria-labelledby="workout-type-colors-title">
-        <header>
-          <div>
-            <p className="section-kicker">APPEARANCE</p>
-            <h2 id="workout-type-colors-title">Workout type colours</h2>
-          </div>
-        </header>
-        <p>Choose the colours shown in the workout calendar and history.</p>
-        <div className="workout-type-color-grid">
-          {(Object.entries(categoryNames) as [WorkoutCategory, string][]).map(
-            ([category, label]) => (
-              <label className="workout-type-color-row" key={category}>
-                <span>{label}</span>
-                <input
-                  type="color"
-                  aria-label={`${label} workout colour`}
-                  value={colorDraft[category]}
-                  disabled={savingColors}
-                  onChange={(event) => {
-                    setColorDraft((current) => ({ ...current, [category]: event.target.value }));
-                    setColorsDirty(true);
-                    setColorsStatus(null);
-                    setColorsError(null);
-                  }}
-                />
-                <code>{colorDraft[category].toUpperCase()}</code>
-              </label>
-            ),
-          )}
-        </div>
-        <div className="workout-type-color-actions">
-          <button
-            type="button"
-            className="color-reset-button"
-            disabled={savingColors}
-            onClick={() => {
-              setColorDraft(defaultCategoryColors);
-              setColorsDirty(true);
-              setColorsStatus(null);
-              setColorsError(null);
-            }}
-          >
-            Reset defaults
-          </button>
-          <button
-            type="button"
-            disabled={savingColors || !colorsDirty}
-            onClick={() => void saveWorkoutTypeColors()}
-          >
-            {savingColors ? 'Saving…' : 'Save colours'}
-          </button>
-        </div>
-        {colorsStatus && (
-          <p className="training-preference-status" role="status">
-            {colorsStatus}
-          </p>
-        )}
-        {colorsError && (
-          <p className="inline-error" role="alert">
-            {colorsError}
-          </p>
-        )}
-      </section>
+      <WorkoutTypesSettings
+        types={workoutTypes.types}
+        onTypesChange={workoutTypes.applySaved}
+        loading={workoutTypes.loading}
+        error={workoutTypes.error}
+        onRetry={() => void workoutTypes.reload()}
+      />
 
       <section className="settings-panel panel" aria-labelledby="bodyweight-trend-title">
         <header>
@@ -8525,6 +8562,7 @@ function HistoryScreen({
   onOpenSettings: () => void;
 }) {
   const weightUnit = useWeightUnit();
+  const { types } = useWorkoutTypes();
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
   const [visibleCount, setVisibleCount] = useState(() => {
     const index = initialOpenId ? workouts.findIndex((item) => item.id === initialOpenId) : -1;
@@ -8633,7 +8671,11 @@ function HistoryScreen({
         summaryRef={openId === workout.id ? openWorkoutSummaryRef : null}
         targetExerciseId={targetExerciseId}
         targetExerciseRef={targetExerciseRef}
-        categoryColor={categoryColors[workout.category]}
+        categoryColor={
+          workout.workout_type_id
+            ? effectiveWorkoutType(workout, types).color
+            : categoryColors[workout.category]
+        }
         records={recordCounts.get(workout.id) ?? 0}
         personalRecords={personalRecords}
         activeWorkout={activeWorkout}
@@ -8903,7 +8945,7 @@ function SharedWorkoutHistory({
               summaryRef={null}
               targetExerciseId={null}
               targetExerciseRef={targetExerciseRef}
-              categoryColor={categoryColors[workout.category]}
+              categoryColor={workout.workout_type?.color ?? categoryColors[workout.category]}
               records={recordCounts.get(workout.id) ?? 0}
               personalRecords={personalRecords}
               activeWorkout={false}

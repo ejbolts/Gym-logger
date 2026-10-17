@@ -78,6 +78,10 @@ def test_snapshot_holds_only_its_owners_data(client, other_client):
     owner_id, other_id = client.user["id"], other_client.user["id"]
     owner_workout = add_workout(client)
     other_workout = add_workout(other_client)
+    owner_type = client.post("/api/workout-types", json={"name": "Arms", "color": "#a855f7"}).json()
+    other_type = other_client.post(
+        "/api/workout-types", json={"name": "Legs", "color": "#a855f7"}
+    ).json()
     add_photo(owner_id, "owner-photo")
     add_photo(other_id, "other-photo")
 
@@ -88,6 +92,7 @@ def test_snapshot_holds_only_its_owners_data(client, other_client):
     assert backup.user_id == owner_id
     assert rows(database, "SELECT id, password_hash FROM users") == [(owner_id, "")]
     assert rows(database, "SELECT id FROM training_workouts") == [(owner_workout,)]
+    assert rows(database, "SELECT id, name FROM workout_types") == [(owner_type["id"], "Arms")]
     assert rows(database, "SELECT COUNT(*) FROM workout_sets") == [(2,)]
     assert {owner for (owner,) in rows(database, "SELECT user_id FROM exercises")} == {owner_id}
     for table in ("user_sessions", "push_subscriptions", "account_backups"):
@@ -111,6 +116,9 @@ def test_snapshot_holds_only_its_owners_data(client, other_client):
     other_backup = snapshot("other")
     other_database = backup_folder(get_settings(), other_id, other_backup.id) / BACKUP_DATABASE
     assert rows(other_database, "SELECT id FROM training_workouts") == [(other_workout,)]
+    assert rows(other_database, "SELECT id, name FROM workout_types") == [
+        (other_type["id"], "Legs")
+    ]
 
 
 def test_snapshot_refuses_a_table_it_does_not_know_and_leaves_nothing_behind(client):

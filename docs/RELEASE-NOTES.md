@@ -4,8 +4,18 @@
 
 17 October 2026
 
-### Friends, profiles and a more personal Home
+### Custom workout types and a more personal Home
 
+- **Settings > Workout types** lets you add your own types, such as **Arms**, **Legs**,
+  **Limbs** and **Torso**, and choose their colours. Select a named type while logging;
+  exercise-based suggestions no longer replace an explicitly selected type. Custom names
+  and colours appear in calendar dots, the bottom legend, day details and shared workouts.
+- **Remove** hides default or custom types from new workout choices. Saved workouts keep
+  their original type, and **Removed types > Restore** makes the type available again.
+  Workout CSV exports/imports and account backups preserve custom types.
+- The Consistency calendar uses seven day columns, without side **Sets** headings or weekly
+  set totals. Its legend includes every type present in the loaded workout history, including
+  custom types, and each still switches its dots on or off.
 - New accounts see the app tour first. The next step offers **Import or export**: it opens
   **Settings > Workout data** with a CSV guide. **Skip for now** shows What's new instead;
   after choosing to import, What's new appears once you leave Settings.
