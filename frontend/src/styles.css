@@ -2377,8 +2377,8 @@ button.metric-card:focus-visible {
 }
 
 .machine-photo-actions label:first-child {
-  border-color: rgb(255 99 84 / 55%);
-  background: rgb(255 99 84 / 6%);
+  border-color: rgb(57 135 229 / 55%);
+  background: rgb(57 135 229 / 8%);
 }
 
 .machine-photo-actions label span {

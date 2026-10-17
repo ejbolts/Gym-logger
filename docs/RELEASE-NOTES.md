@@ -43,7 +43,8 @@
   its logged sets as they are.
 - The exercise menu uses clearer icons: a clock for **Recent History** and a link for
   **Group Superset**. **Edit Notes** is removed from the menu; use the note field at the
-  bottom of each exercise. **Equipment photo** and **Take photo** show a camera.
+  bottom of each exercise. **Equipment photo** and **Take photo** show a camera, and the
+  **Take photo** button is blue to match the app's accent colour.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
