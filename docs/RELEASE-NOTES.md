@@ -1,6 +1,6 @@
 # Gym Logger release notes
 
-## 0.7.0
+## 0.6.5
 
 ### Your videos, your YouTube channel
 
@@ -25,11 +25,9 @@
   key. See [YouTube setup](YOUTUBE-SETUP.md) for Google configuration, production consent,
   migration and first real-upload checks. Migration: `0034_youtube_connections`.
 
-This independently released feature introduces per-user channel authorization and routing,
-a substantial new account workflow, so it uses a minor version bump from 0.6.0 to 0.7.0.
 The deployed 0.6.0 announcement is preserved in Earlier versions.
 
-<img src="screenshots/releases/0.7.0-youtube-channel.png" alt="Video logger showing a connected sample YouTube channel, a highlighted Unlisted upload and link-sharing explanation, and a simplified toolbar with only New upload." width="420">
+<img src="screenshots/releases/0.6.5-youtube-channel.png" alt="Video logger showing a connected sample YouTube channel, a highlighted Unlisted upload and link-sharing explanation, and a simplified toolbar with only New upload." width="420">
 
 A connected sample channel in the isolated verification environment. Google responses were
 simulated; the administrator must complete the documented real-channel check after configuring

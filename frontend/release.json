@@ -1,5 +1,5 @@
 {
-  "version": "0.7.0",
+  "version": "0.6.5",
   "title": "Your videos, your YouTube channel",
   "summary": "Connect your own YouTube channel in the app and upload workout videos without API keys or credential files.",
   "changes": [
@@ -10,9 +10,9 @@
     "The video toolbar has only New upload. Configure Phone alerts in Settings; the separate video History and Enable alerts buttons have been removed.",
     "Administrators configure one Google Web application client for the installation. Existing video links are kept; older unfinished shared-channel batches must be uploaded again."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#070",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#065",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/d8dcff3249d09932ded522d47285f12cfd82b9b9/docs/screenshots/releases/0.7.0-youtube-channel.png",
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/7a81e85345596db6275078b5e89bbca1823ac401/docs/screenshots/releases/0.6.5-youtube-channel.png",
     "alt": "Video logger connected to a sample user's own YouTube channel, with a highlighted Unlisted upload and link-sharing explanation and only New upload in the toolbar."
   }
 }
