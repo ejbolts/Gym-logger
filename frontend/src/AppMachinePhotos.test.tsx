@@ -356,7 +356,7 @@ describe('filtering History by machine', () => {
     expect(opened.textContent).toContain('Legs 2025-10-12');
     expect(opened.querySelector('.targeted-exercise')?.textContent).toContain('180');
 
-    await click(button('Clear', banner));
+    await click(button('Close', banner));
     expect(container.querySelector('.machine-filter-banner')).toBeNull();
     expect(historyCardTitles()).toHaveLength(4);
   });

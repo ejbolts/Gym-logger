@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import type { UndoBodyweightCheckIn } from './bodyweightCheckIn';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { HomeLayoutSections } from './HomeLayoutSections';
@@ -89,7 +91,7 @@ export interface TodayScreenProps {
   categoryColors: WorkoutTypeColors;
   workoutStartedAt: number | null;
   todayBodyweight: number | null;
-  onSaveBodyweight: (weight: number) => Promise<void>;
+  onSaveBodyweight: (weight: number) => Promise<UndoBodyweightCheckIn>;
   onStartTemplate: (template: SessionTemplate) => void;
   onStartEmpty: () => void;
   onResumeWorkout: () => void;
@@ -579,6 +581,8 @@ function LiveWorkoutCard({ startedAt, onResume }: { startedAt: number; onResume:
   );
 }
 
+const BODYWEIGHT_UNDO_MS = 5000;
+
 export function DashboardQuickBodyweight({
   latestBodyweight,
   todayBodyweight,
@@ -586,13 +590,13 @@ export function DashboardQuickBodyweight({
 }: {
   latestBodyweight: number | null;
   todayBodyweight: number | null;
-  onSave: (weight: number) => Promise<void>;
+  onSave: (weight: number) => Promise<UndoBodyweightCheckIn>;
 }) {
   const weightUnit = useWeightUnit();
   const initialWeight = todayBodyweight ?? latestBodyweight;
   const [weight, setWeight] = useState<number | null>(initialWeight);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [undo, setUndo] = useState<{ run: UndoBodyweightCheckIn; attempt: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const selectedWeight = weight;
 
@@ -601,7 +605,14 @@ export function DashboardQuickBodyweight({
     setWeight(nextWeight);
   }, [latestBodyweight, todayBodyweight]);
 
+  useEffect(() => {
+    if (!undo || saving) return;
+    const timer = window.setTimeout(() => setUndo(null), BODYWEIGHT_UNDO_MS);
+    return () => window.clearTimeout(timer);
+  }, [undo, saving]);
+
   async function save() {
+    if (saving) return;
     if (
       selectedWeight === null ||
       !Number.isFinite(selectedWeight) ||
@@ -609,17 +620,31 @@ export function DashboardQuickBodyweight({
       selectedWeight > 500
     ) {
       setError(`Enter a bodyweight above 0 and up to ${formatWeight(500, weightUnit)}.`);
-      setMessage(null);
       return;
     }
     setSaving(true);
     setError(null);
-    setMessage(null);
+    setUndo(null);
     try {
-      await onSave(selectedWeight);
-      setMessage(`${formatWeight(selectedWeight, weightUnit)} saved for today.`);
+      const run = await onSave(selectedWeight);
+      setUndo({ run, attempt: 0 });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save today’s weight.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function undoSave() {
+    if (!undo || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await undo.run();
+      setUndo(null);
+    } catch (undoError) {
+      setError(undoError instanceof Error ? undoError.message : 'Could not undo the check-in.');
+      setUndo((current) => current && { ...current, attempt: current.attempt + 1 });
     } finally {
       setSaving(false);
     }
@@ -637,17 +662,16 @@ export function DashboardQuickBodyweight({
       ),
     );
     setError(null);
-    setMessage(null);
   }
 
   return (
     <section className="pulse-card quick-bodyweight" aria-labelledby="daily-bodyweight-title">
       <header className="pulse-card-header">
         <h2 id="daily-bodyweight-title">Daily check-in</h2>
-        <span className={todayBodyweight === null ? '' : 'logged'}>
+        <span className={todayBodyweight === null ? '' : 'logged'} role="status">
           {todayBodyweight === null
             ? 'Not logged today'
-            : `Today · ${weightFromKg(todayBodyweight, weightUnit).toFixed(1)} ${weightUnit}`}
+            : `Saved today · ${weightFromKg(todayBodyweight, weightUnit).toFixed(1)} ${weightUnit}`}
         </span>
       </header>
       <form
@@ -662,6 +686,7 @@ export function DashboardQuickBodyweight({
           className="stepper"
           onClick={() => nudge(-0.1)}
           aria-label={`Decrease by 0.1 ${weightUnit}`}
+          disabled={saving}
         >
           −
         </button>
@@ -669,6 +694,7 @@ export function DashboardQuickBodyweight({
           <span className="sr-only">Bodyweight in {weightUnitName(weightUnit)}</span>
           <WeightInput
             weightKg={weight}
+            disabled={saving}
             aria-label={`Bodyweight in ${weightUnitName(weightUnit)}`}
             style={
               {
@@ -678,7 +704,6 @@ export function DashboardQuickBodyweight({
             onWeightChange={(kg) => {
               setWeight(kg);
               setError(null);
-              setMessage(null);
             }}
           />
           <b aria-hidden="true">{weightUnit}</b>
@@ -688,6 +713,7 @@ export function DashboardQuickBodyweight({
           className="stepper"
           onClick={() => nudge(0.1)}
           aria-label={`Increase by 0.1 ${weightUnit}`}
+          disabled={saving}
         >
           +
         </button>
@@ -695,11 +721,36 @@ export function DashboardQuickBodyweight({
           {saving ? 'Saving…' : todayBodyweight === null ? 'Log' : 'Update'}
         </button>
       </form>
-      {message && (
-        <p className="quick-bodyweight-message" role="status">
-          {message}
-        </p>
-      )}
+      {undo &&
+        createPortal(
+          <div
+            key={undo.attempt}
+            className={`undo-toast bodyweight-undo-toast${saving ? ' is-undoing' : ''}`}
+            role="status"
+            aria-atomic="true"
+            style={{ '--undo-toast-duration': `${BODYWEIGHT_UNDO_MS}ms` } as CSSProperties}
+          >
+            <span>{saving ? 'Undoing check-in…' : 'Body weight saved'}</span>
+            <button
+              className="undo-toast-action"
+              type="button"
+              disabled={saving}
+              onClick={() => void undoSave()}
+            >
+              Undo
+            </button>
+            <button
+              className="undo-toast-close"
+              type="button"
+              disabled={saving}
+              aria-label="Dismiss body weight notification"
+              onClick={() => setUndo(null)}
+            >
+              <Icon name="close" />
+            </button>
+          </div>,
+          document.body,
+        )}
       {error && (
         <p className="inline-error" role="alert">
           {error}

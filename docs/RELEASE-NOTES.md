@@ -2,7 +2,7 @@
 
 ## 0.6.6
 
-### Bring your training history
+### Import history and undo check-ins
 
 - New accounts see the app tour first. The next step offers **Import or export**: it opens
   **Settings > Workout data** with a CSV guide. **Skip for now** shows What's new instead;
@@ -26,6 +26,13 @@
   instructions link in Workout data opens the technical reference.
 - Exports from other apps, such as Strong or Hevy, are not converted automatically; rename
   their columns to the layout shown in the guide first.
+- Logging or updating today's body weight shows an **Undo** popup at the top of the
+  screen with a five-second countdown bar. Undo removes a new check-in or restores the
+  previous weight, body-fat value and notes after an update.
+- Daily check-in shows **Saved today · [weight]** once in its header, without a second
+  saved message below the controls.
+- The feedback form keeps only **Please leave out passwords and sensitive information.**
+  The machine filter's **Clear** button is now labelled **Close**.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
@@ -33,6 +40,11 @@ The deployed 0.6.5 announcement is preserved in Earlier versions.
 
 The import step after the tour, then pages 2 and 3 of the CSV guide, recorded with a sample
 account in the isolated verification environment.
+
+<img src="screenshots/releases/0.6.6-check-in-undo.png" alt="Daily check-in showing Saved today and 84.5 kg once in the header, with an Undo popup and countdown bar at the top of the phone screen." width="390">
+
+The body-weight Undo popup and single saved-today summary, captured with sample data in
+the isolated verification environment.
 
 ## 0.6.5
 
