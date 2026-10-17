@@ -51,7 +51,8 @@ After merging a PR or branch into `main`, delete its head branch on GitHub (and 
 
 - For stacked PRs, retarget each child PR to `main` (or merge them bottom-up) before merging and deleting its parent. A child merged into a parent branch after the parent has already reached `main` never reaches `main` itself, even though GitHub shows it as merged.
 - Delete a branch only after confirming that its current head reached `main`: it is an ancestor of `main`, or it matches the head of a PR merged into `main` (squash merges). Keep a branch that has commits newer than its merged PR, and report it instead.
-- Keep `pr-media` and `media/*` branches. They host screenshots and recordings referenced by PR descriptions and are never merged.
+- Keep one permanent `pr-media` branch for reviewed PR screenshots and recordings, organized in a folder for each task. Reuse it for every PR; do not create separate `media/*` branches, and never merge the media branch into application branches.
+- Pin published media URLs to committed revisions. Delete legacy `media/*` branches only after preserving their full commit history on `pr-media` and confirming that existing published links still work.
 
 ## Private Tailscale endpoints
 
