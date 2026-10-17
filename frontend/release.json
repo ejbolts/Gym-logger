@@ -21,7 +21,7 @@
     "Today shows a numbered badge on your profile picture for waiting friend requests. It refreshes when you return to Today or refocus the app.",
     "A new Friends card on Today shows the latest workout from up to five friends you follow, with workout names, dates, exercise and completed-set counts. Tap a friend to open their profile; move or hide the card with Edit Home.",
     "Profiles label signup dates as Joined and show the exact date you followed someone or they followed you. Pending follow requests stand out in a blue dotted box.",
-    "Profile opens in viewing mode. Edit profile reveals name and username fields plus a pencil over a slightly dimmed profile photo. Preview a new photo or remove it, then Save profile or Cancel; changes wait for Save."
+    "Profile opens in viewing mode. Edit profile reveals name and username fields plus a pencil over a slightly dimmed profile photo. Remove photo sits below the avatar on the left, with no blue outline on the avatar or editing card. Preview a new photo or remove it, then Save profile or Cancel; changes wait for Save."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

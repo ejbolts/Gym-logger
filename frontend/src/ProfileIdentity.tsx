@@ -178,23 +178,20 @@ export function ProfileIdentity({ user, onSaved }: { user: User; onSaved: (user:
               }
             }}
           />
-          <div className="profile-edit-heading">
-            <span className="profile-edit-label">Editing profile</span>
-            {photoUrl && (
-              <button
-                type="button"
-                className="text-link"
-                disabled={saving}
-                onClick={() => {
-                  setPhoto(null);
-                  setRemovePhoto(Boolean(user.profile_photo_url));
-                  setError(null);
-                }}
-              >
-                Remove photo
-              </button>
-            )}
-          </div>
+          {photoUrl && (
+            <button
+              type="button"
+              className="text-link profile-photo-remove"
+              disabled={saving}
+              onClick={() => {
+                setPhoto(null);
+                setRemovePhoto(Boolean(user.profile_photo_url));
+                setError(null);
+              }}
+            >
+              Remove photo
+            </button>
+          )}
           <form className="profile-form" noValidate onSubmit={(event) => void save(event)}>
             <label className="auth-field" htmlFor={`${id}-name`}>
               <span>Name</span>

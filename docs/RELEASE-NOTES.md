@@ -72,7 +72,9 @@
   Pending requests are highlighted with a blue dotted outline.
 - Profile starts in viewing mode with an **Edit profile** button. Editing reveals the name
   and username fields plus a pencil over a slightly dimmed avatar. Tap it to choose a photo;
-  preview or remove the photo, then **Save profile** or **Cancel**. Drafts wait for Save.
+  **Remove photo** sits below the avatar on the left. The card keeps its normal border and
+  the avatar has no blue outline. Preview or remove the photo, then **Save profile** or
+  **Cancel**. Drafts wait for Save.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
 
@@ -103,7 +105,14 @@ highlighted request and relationship dates in view; sharing and Friends still st
 
 <img src="screenshots/releases/0.6.6-profile-edit.png" alt="Profile editing with a pencil over the dimmed avatar, name and username fields, and Cancel and Save profile buttons." width="390">
 
-Editing mode previews a draft photo and name before Save profile. Cancel discards the drafts.
+Editing mode keeps Remove photo on the left and has no blue outline on the card or avatar.
+Photo and name drafts wait for Save profile; Cancel discards them.
+
+<img src="screenshots/releases/0.6.6-shared-workout-images.png" alt="Another member viewing Alex's shared profile with an expanded workout and example images pinned to Back Extension Machine and Back Squat." width="720">
+
+Example of a member viewing someone else's workout with pinned exercise images. The owner
+enabled **Machine photos** under **What you share**. These synthetic sample images illustrate
+the existing sharing behavior; photos remain hidden when that option is off.
 
 <img src="screenshots/releases/0.6.6-shared-profile-dates.png" alt="Alex's shared profile showing Following since 9 Oct 2026, Follows you since 6 Oct 2026 and Joined October 2026." width="390">
 
