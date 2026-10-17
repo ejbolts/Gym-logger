@@ -24,7 +24,8 @@
     "Profile opens in viewing mode. Edit profile reveals name and username fields plus a pencil over a slightly dimmed profile photo. Remove photo sits below the avatar on the left, with no blue outline on the avatar or editing card. Preview a new photo or remove it, then Save profile or Cancel; changes wait for Save.",
     "Unfollow uses a red outline and tint to match the delete-button style.",
     "Filter another member’s shared workout history by type, exercise, date range and shared machine photos. Filters search the full shared history, including older workouts, and remain applied when loading more.",
-    "Daily check-in adds body-fat percentage with minus, plus and Log or Update controls beneath body weight, separated by a padded dotted line. Log today’s weight first; body-fat saves keep that weight and notes, and Undo restores only body fat."
+    "Daily check-in adds body-fat percentage with minus, plus and Log or Update controls beneath body weight, separated by a padded dotted line. Log today’s weight first; body-fat saves keep that weight and notes, and Undo restores only body fat. Saved today summaries are green for both measurements.",
+    "In Edit Home, drag a compact section into an empty space beside another card. A dotted drop target highlights spaces that fit; the card stays compact after saving."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#066",
   "image": {

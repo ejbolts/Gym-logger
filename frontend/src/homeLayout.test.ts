@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultHomeLayout,
   HOME_SECTIONS,
+  fillHomeSectionGap,
+  homeSectionGaps,
   homeSectionSpans,
   moveHomeSection,
   toggleHomeSection,
@@ -9,6 +11,33 @@ import {
 } from './homeLayout';
 
 describe('Home layout edits', () => {
+  it('finds empty space beside a compact card before a full row and at the end', () => {
+    expect([...homeSectionGaps(['consistency', 'friends', 'zone2'], [3, 6, 3])]).toEqual([
+      ['consistency', 3],
+      ['zone2', 3],
+    ]);
+    expect([...homeSectionGaps(['workouts', 'cardio-sessions', 'zone2'], [2, 2, 3])]).toEqual([
+      ['cardio-sessions', 2],
+      ['zone2', 3],
+    ]);
+    expect([...homeSectionGaps(['zone2', 'bodyweight-trend'], [3, 3])]).toEqual([]);
+    expect([...homeSectionGaps([], [])]).toEqual([]);
+    expect([...homeSectionGaps(['workouts', 'consistency', 'friends'], [2, 3, 6])]).toEqual([]);
+  });
+
+  it('fills a gap from either direction and keeps the source compact after saving', () => {
+    const saved = { ...defaultHomeLayout(), widths: { consistency: 'compact' as const } };
+    const moved = fillHomeSectionGap(saved, 'zone2', 'consistency');
+    expect(moved.order[moved.order.indexOf('consistency') + 1]).toBe('zone2');
+    expect(moved.widths).toEqual({ consistency: 'compact', zone2: 'compact' });
+    expect(homeSectionSpans(['consistency', 'zone2', 'friends'], moved.widths)).toEqual([3, 3, 6]);
+    const forward = fillHomeSectionGap(saved, 'zone2', 'friends');
+    expect(forward.order[forward.order.indexOf('friends') + 1]).toBe('zone2');
+    expect(new Set(forward.order).size).toBe(HOME_SECTIONS.length);
+    expect(moved.hidden).toEqual(saved.hidden);
+    expect(saved.widths).toEqual({ consistency: 'compact' });
+    expect(fillHomeSectionGap(saved, 'zone2', 'zone2')).toBe(saved);
+  });
   it('fills rows after hiding or moving small cards without changing their order', () => {
     expect(homeSectionSpans(['workouts', 'cardio-sessions', 'weekly-bodyweight'])).toEqual([
       2, 2, 2,

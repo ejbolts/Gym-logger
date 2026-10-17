@@ -30,7 +30,7 @@
   screen with a five-second countdown bar. Undo removes a new check-in or restores the
   previous weight, body-fat value and notes after an update.
 - Daily check-in labels **Body weight** and **Body fat** separately, each with its own
-  **Saved today** summary and no duplicate saved message below the controls.
+  green **Saved today** summary and no duplicate saved message below the controls.
 - The feedback form keeps only **Please leave out passwords and sensitive information.**
   The machine filter's **Clear** button is now labelled **Close**.
 - Workout types in the **Consistency** calendar legend now switch on and off. Every type is
@@ -50,6 +50,8 @@
   gap at the bottom, for example **Sets per muscle** next to **Consistency** or **Daily
   check-in** next to **Recent records**.
 - While a workout is live, editing Home no longer shows a placeholder **Next workout** card.
+- In **Edit Home**, drag a compact section into an empty space beside another card.
+  Dotted drop targets highlight spaces that fit, and the moved card stays compact after saving.
 - Profile sharing has one button under the three options: **Make my profile private**,
   **Make my profile friends only** or **Make my profile public**, matching your choice. It
   only becomes available when the choice differs from your current setting, and choosing
@@ -129,10 +131,15 @@ the existing sharing behavior; photos remain hidden when that option is off.
 Shared history filters find matching workouts across the member's full shared history. The red
 Unfollow button and exact relationship dates remain above the results.
 
-<img src="screenshots/releases/0.6.6-daily-check-in-body-fat.png" alt="Daily check-in with separate Body weight and Body fat headings, minus and plus controls, a padded dotted divider, saved values and a Body fat saved Undo popup." width="390">
+<img src="screenshots/releases/0.6.6-daily-check-in-body-fat.png" alt="Daily check-in with separate Body weight and Body fat headings, minus and plus controls, a padded dotted divider, and green Saved today summaries for both measurements." width="390">
 
 Body weight and body fat have separate controls and saved states. All screenshots use synthetic
 sample accounts in the isolated verification environment.
+
+<img src="screenshots/releases/0.6.6-home-space-drop.png" alt="Zone 2 cardio moved into the space beside compact Consistency, with green Saved today summaries on the Daily check-in below." width="720">
+
+Drag a compact section into the dotted empty space in Edit Home, then save to keep it beside
+the existing card. The moved section retains its compact width.
 
 ## 0.6.5
 

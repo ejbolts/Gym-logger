@@ -131,6 +131,34 @@ export function homeSectionSpans(ids: HomeSectionId[], widths: HomeSectionWidths
   return spans;
 }
 
+/** Usable space at the end of a grid row, keyed by the card before the space. */
+export function homeSectionGaps(ids: HomeSectionId[], spans: number[]): Map<HomeSectionId, number> {
+  const gaps = new Map<HomeSectionId, number>();
+  let used = 0;
+  ids.forEach((id, index) => {
+    used += spans[index];
+    if (index === ids.length - 1 || used + spans[index + 1] > 6) {
+      // The smallest compact card spans two columns; a single column cannot accept a card.
+      if (used <= 4) gaps.set(id, 6 - used);
+      used = 0;
+    }
+  });
+  return gaps;
+}
+
+/** Fill a row's empty space without resizing its existing cards or expanding the moved card. */
+export function fillHomeSectionGap(
+  layout: HomeLayout,
+  source: HomeSectionId,
+  after: HomeSectionId,
+): HomeLayout {
+  if (source === after || !layout.order.includes(source) || !layout.order.includes(after))
+    return layout;
+  const order = layout.order.filter((id) => id !== source);
+  order.splice(order.indexOf(after) + 1, 0, source);
+  return { ...layout, order, widths: { ...layout.widths, [source]: 'compact' } };
+}
+
 /** Explicit compact widths stay compact even when a card has no neighbour. */
 export function toggleHomeSectionWidth(
   layout: HomeLayout,
