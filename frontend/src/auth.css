@@ -798,3 +798,198 @@
   font-weight: 800;
   line-height: 1;
 }
+
+/* ───────── Account creation: ? help, and the sample profile preview ───────── */
+
+.auth-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.auth-help-button {
+  position: relative;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 50%;
+  padding: 0;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* A larger invisible target for fingers. */
+.auth-help-button::after {
+  position: absolute;
+  inset: -0.6rem;
+  content: '';
+}
+
+.auth-help-button[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--p-accent) 50%, transparent);
+  background: var(--p-accent-soft);
+  color: var(--p-accent-text);
+}
+
+.auth-help {
+  position: relative;
+  margin: 0.2rem 0 0.15rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  background: var(--p-surface-3);
+  color: var(--p-ink-2);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.auth-help[hidden] {
+  display: none;
+}
+
+.auth-help b {
+  color: var(--p-ink);
+}
+
+.auth-help .auth-help-tag {
+  color: var(--p-good);
+}
+
+.auth-help .auth-help-tag.is-unique {
+  color: var(--p-gold);
+}
+
+.auth-sample-profile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 0.4rem;
+  border: 0;
+  padding: 0.35rem 0.5rem;
+  background: transparent;
+  color: var(--p-accent-text);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.auth-sample-profile svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.popup-dialog.sample-profile-dialog {
+  width: min(26rem, calc(100vw - 2rem));
+}
+
+.sample-profile-body {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem 0.25rem;
+}
+
+.sample-profile-intro {
+  margin: 0;
+  color: var(--p-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.sample-profile-name,
+.sample-profile-username {
+  border-radius: 6px;
+  outline-offset: 2px;
+}
+
+/* Outlined to match the Name and Username key below the card. */
+.sample-profile-name,
+.today-profile-body > .sample-profile-username {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 0.15rem;
+}
+
+.sample-profile-name {
+  outline: 2px solid color-mix(in srgb, var(--p-accent) 70%, transparent);
+}
+
+.today-profile-body > .sample-profile-username {
+  margin-top: 0.45rem;
+  outline: 2px solid color-mix(in srgb, var(--p-good) 65%, transparent);
+}
+
+.sample-profile-recent {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sample-profile-recent li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font-size: 0.8125rem;
+}
+
+.sample-profile-recent small {
+  color: var(--p-muted);
+}
+
+.sample-profile-key {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.sample-profile-key > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sample-profile-key dt {
+  min-width: 4.6rem;
+  border-radius: 6px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.sample-profile-key dt.is-name {
+  background: color-mix(in srgb, var(--p-accent) 22%, transparent);
+  color: var(--p-accent-text);
+}
+
+.sample-profile-key dt.is-username {
+  background: color-mix(in srgb, var(--p-good) 20%, transparent);
+  color: var(--p-good);
+}
+
+.sample-profile-key dd {
+  margin: 0;
+  color: var(--p-ink-2);
+}
+
+.sample-profile-dialog .popup-dialog-actions {
+  padding: 0.5rem 1rem 1rem;
+}
+
+.sample-profile-dialog .popup-dialog-actions .popup-primary-action {
+  flex: 1;
+}
