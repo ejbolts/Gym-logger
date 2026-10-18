@@ -32,11 +32,13 @@ export function ImportHistoryPrompt({
             Already tracking your workouts?
           </h3>
           <p>
-            Import completed sets from a CSV file, such as a spreadsheet or an export from another
-            Gym Logger account, so your charts, records and suggestions start from your real
-            training. You can export your sets the same way.
+            Bring your workout CSV straight from Strength Level, Hevy or Strong, or use a
+            spreadsheet or Gym Logger export. Review it before saving so your charts, records and
+            suggestions start from your real training.
           </p>
-          <p className="import-history-later">You can do this later in Settings → Workout data.</p>
+          <p className="import-history-later">
+            You can do this later in Settings → Workouts &amp; bodyweight.
+          </p>
         </div>
       </div>
       <footer className="popup-dialog-actions">

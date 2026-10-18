@@ -518,6 +518,12 @@ export interface CsvImportResult {
   warnings: string[];
 }
 
+export interface WorkoutImportOptions {
+  source: 'gym' | 'strengthlevel' | 'hevy' | 'strong';
+  weight_unit: 'kg' | 'lb';
+  distance_unit: 'km' | 'mi';
+}
+
 export interface CsvImportPreview {
   sessions: {
     workout_date: string;
@@ -531,6 +537,8 @@ export interface CsvImportPreview {
   sets_to_import: number;
   new_exercises: string[];
   warnings: string[];
+  body_measurements_to_create?: number;
+  body_measurements_to_skip?: number;
 }
 
 export interface User {

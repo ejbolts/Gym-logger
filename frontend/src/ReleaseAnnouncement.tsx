@@ -36,12 +36,12 @@ function ReleaseScreenshot({ image }: { image: NonNullable<Release['image']> }) 
 function ReleaseDetails({ release, linkLabel }: { release: Release; linkLabel: string }) {
   return (
     <>
+      {release.image && <ReleaseScreenshot key={release.image.url} image={release.image} />}
       <ul>
         {release.changes.map((change, index) => (
           <li key={index}>{change}</li>
         ))}
       </ul>
-      {release.image && <ReleaseScreenshot key={release.image.url} image={release.image} />}
       <a href={release.url} target="_blank" rel="noopener noreferrer">
         {linkLabel} <span aria-hidden="true">↗</span>
       </a>

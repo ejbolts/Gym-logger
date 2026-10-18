@@ -104,3 +104,21 @@ it('omits the earlier versions section when there is no history', async () => {
   await act(async () => root.render(<ReleaseAnnouncement release={metadata} onClose={vi.fn()} />));
   expect(document.querySelector('.release-history')).toBeNull();
 });
+
+it('shows feature media before change bullets for current and expanded earlier releases', async () => {
+  const image = { url: 'https://example.com/feature.png', alt: 'Feature preview' };
+  await act(async () =>
+    root.render(
+      <ReleaseAnnouncement
+        release={{ ...metadata, image }}
+        history={[{ ...history[0], image }]}
+        onClose={vi.fn()}
+      />,
+    ),
+  );
+  const current = document.querySelector('.release-current-details')!;
+  expect(current.querySelector('ul')?.previousElementSibling).toBe(current.querySelector('figure'));
+  await act(async () => versionToggle(history[0].version).click());
+  const earlier = document.querySelector('.release-history-details')!;
+  expect(earlier.querySelector('ul')?.previousElementSibling).toBe(earlier.querySelector('figure'));
+});

@@ -64,17 +64,10 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'workouts',
-    title: 'Workout data',
+    title: 'Workouts & bodyweight',
     page: 'settings',
-    keywords: 'import export csv backup sample workouts',
+    keywords: 'import export csv backup sample workouts body weight measurements check-ins',
     selector: '#workout-data-title',
-  },
-  {
-    id: 'body',
-    title: 'Bodyweight data',
-    page: 'settings',
-    keywords: 'body weight measurements import export csv',
-    selector: '#bodyweight-data-title',
   },
   {
     id: 'youtube',

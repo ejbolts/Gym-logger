@@ -1,20 +1,76 @@
 # Gym Logger release notes
 
-## 0.7.1
+## 0.8.0
 
 18 October 2026
 
-### Find the workout import guide in Settings
+### Bring your training from other apps
 
-- **Settings > Workout data** now has a **Show guide** button beside the CSV import and
-  export actions. It opens the existing three-page guide, with the same CSV template
-  download and file chooser used during onboarding.
+![Workout import guide with Strength Level, Hevy, Strong and Gym Logger logo choices](screenshots/releases/0.8.0-app-import.png)
 
-![Workout data in Settings with the Show guide button beside the CSV import and export actions](screenshots/releases/0.7.1-settings-import-guide.png)
+*Choose the app that created your CSV, then review the import before saving.*
 
-*Open the existing workout CSV guide directly from Settings.*
+![Workout data in Settings with four app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
+
+*One section handles workouts and bodyweight. External apps have a full-width import button; Gym Logger also offers Export data.*
+
+![Gym Logger export popup with workout history, bodyweight check-ins and a shared date range](screenshots/releases/0.8.0-export-data.png)
+
+*Choose either data type or both. Both downloads two CSV files for the selected date range.*
+
+![Workout import review with the sessions and sets being added highlighted in green](screenshots/releases/0.8.0-import-totals.png)
+
+*Import totals stand out in green before you save, for every app's export.*
+
+- Release previews show feature screenshots before the change bullets, including
+  expanded earlier versions. Written release notes also lead with feature media.
+- Choose **Strength Level**, **Hevy**, **Strong** or **Gym Logger** in
+  **Settings > Workouts & bodyweight** or the import guide. All four options are matching logo
+  buttons; Gym Logger replaces the spreadsheet hyperlink and also accepts template-based
+  spreadsheets. They form a row on larger screens and two rows on phones. Upload the original CSV;
+  no column renaming is needed. Workout and bodyweight imports share one section and file picker.
+  External apps get a full-width upload button. Gym Logger detects workout or bodyweight CSVs;
+  body-fat percentages and check-in notes are kept, and existing dates are skipped.
+- Select **Gym Logger > Export data** to choose workout history, bodyweight check-ins or both,
+  then a date range. Both downloads two labelled CSVs using the same date range. Export details
+  explain what is included and excluded before you download.
+- Hevy and Strong keep workout names and separate sessions on one date, warmups,
+  drop sets, RPE, workout and exercise notes, workout duration and set duration/distance.
+  Strong failed sets are kept. Timed cardio movements also populate Cardio.
+  Strong rest-timer rows are skipped; superset grouping is not transferred.
+- For Strong workouts, choose the weight and distance units used in the export.
+  Strong body-weight measurement files read their own units and add missing check-ins
+  without replacing existing entries. Multiple readings on one date use their median.
+  Other measurement types and source labels are not imported.
+- Strength Level retains weights, reps, warmups, percentiles and body weights;
+  date-only rows form one session per date. Unsupported columns are listed as warnings.
+- Review sessions, sets, exercises, body-weight totals and warnings before **Save import**.
+  The session, set and body-weight totals being added stand out in green for every source.
+  Identical sessions are skipped; invalid files save nothing. Exercise names match the
+  library where recognised; other names become custom exercises. Weights keep the
+  source app's per-dumbbell and assisted-load conventions. Negative loads are rejected
+  because Gym Logger cannot represent them safely.
+- Gym Logger's own CSV export remains a completed-set history format, rather than a
+  full backup of imported notes, RPE or cardio details.
+
+### Find the import guide in Settings
+
+![Workout data in Settings with the Show guide button beside the import actions](screenshots/releases/0.8.0-settings-show-guide.png)
+
+*Open the import guide directly from Settings.*
+
+- **Settings > Workouts & bodyweight** has a **Show guide** button beside the import
+  actions. It opens the same import guide used during onboarding.
 
 ### Review and resolve feedback as an administrator
+
+![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.8.0-admin-feedback-badge.png)
+
+*Open feedback is counted in the profile badge on Today.*
+
+![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.8.0-admin-feedback-inbox.png)
+
+*Resolve or reopen each message from the admin console.*
 
 - New feedback appears in the badge on an administrator's profile picture on **Today**,
   added to any follow requests. Profile shows how many messages are waiting and a
@@ -22,14 +78,6 @@
 - In the admin console, **App feedback** counts open messages and lists them before
   resolved ones. **Resolve** marks a message as handled, with who resolved it and when;
   **Reopen** returns it to the open list. Feedback stays private to administrators.
-
-![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.7.1-admin-feedback-badge.png)
-
-*Open feedback is counted in the profile badge on Today.*
-
-![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.7.1-admin-feedback-inbox.png)
-
-*Resolve or reopen each message from the admin console.*
 
 ## 0.7.0
 
