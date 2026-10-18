@@ -10,6 +10,7 @@ import {
 import { queueHomeScreenGuide } from './homeScreenGuideState';
 import { queueAppGuide } from './appGuideState';
 import { motionReduced } from './motion';
+import { SampleProfileDialog } from './SampleProfileDialog';
 import type { AuthConfig, User } from './types';
 
 interface AuthScreenProps {
@@ -58,17 +59,42 @@ function AuthField({
   label,
   error,
   hint,
+  help,
   children,
 }: {
   id: string;
   label: string;
   error?: string;
   hint?: string;
+  /** A short explanation shown under the label when its ? button is tapped. */
+  help?: ReactNode;
   children: ReactNode;
 }) {
+  const [helpOpen, setHelpOpen] = useState(false);
   return (
     <div className="auth-field">
-      <label htmlFor={id}>{label}</label>
+      {help ? (
+        <div className="auth-label-row">
+          <label htmlFor={id}>{label}</label>
+          <button
+            type="button"
+            className="auth-help-button"
+            aria-label={`About ${label.toLowerCase()}`}
+            aria-expanded={helpOpen}
+            aria-controls={`${id}-help`}
+            onClick={() => setHelpOpen((current) => !current)}
+          >
+            ?
+          </button>
+        </div>
+      ) : (
+        <label htmlFor={id}>{label}</label>
+      )}
+      {help && (
+        <p id={`${id}-help`} className="auth-help" hidden={!helpOpen}>
+          {help}
+        </p>
+      )}
       {children}
       {hint && !error && (
         <small id={`${id}-hint`} className="auth-hint">
@@ -123,6 +149,7 @@ export function AuthScreen({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
+  const [sampleOpen, setSampleOpen] = useState(false);
 
   const screenRef = useRef<HTMLElement>(null);
   const shellTopRef = useRef<number | null>(null);
@@ -290,7 +317,18 @@ export function AuthScreen({
             onSubmit={(event) => void submit(event)}
           >
             {creating && (
-              <AuthField id={ids.name} label="Name" error={fieldErrors.displayName}>
+              <AuthField
+                id={ids.name}
+                label="Name"
+                error={fieldErrors.displayName}
+                help={
+                  <>
+                    <b>Your display name.</b> Friends see it on your profile.{' '}
+                    <b className="auth-help-tag">Doesn't need to be unique</b> – spaces are fine.
+                    You can change it any time in Profile.
+                  </>
+                }
+              >
                 <input
                   id={ids.name}
                   name="name"
@@ -311,6 +349,15 @@ export function AuthScreen({
               label="Username"
               error={fieldErrors.username}
               hint={creating ? USERNAME_HINT : undefined}
+              help={
+                creating ? (
+                  <>
+                    <b>Used to sign in</b> and shown as @handle so friends can find you.{' '}
+                    <b className="auth-help-tag is-unique">Must be unique</b> – no one else can have
+                    it. You can change it any time in Profile.
+                  </>
+                ) : undefined
+              }
             >
               <input
                 id={ids.username}
@@ -412,7 +459,28 @@ export function AuthScreen({
                     : 'Sign in'}
               </span>
             </button>
+
+            {creating && (
+              <button
+                type="button"
+                className="auth-sample-profile"
+                onClick={() => setSampleOpen(true)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                See a sample profile
+              </button>
+            )}
           </form>
+          {creating && sampleOpen && (
+            <SampleProfileDialog
+              displayName={displayName}
+              username={username}
+              onClose={() => setSampleOpen(false)}
+            />
+          )}
         </section>
       </div>
     </main>

@@ -1,5 +1,26 @@
 # Gym Logger release notes
 
+## 0.8.1
+
+19 October 2026
+
+### Clearer account creation
+
+![Create account form with the Name and Username help open: Name doesn't need to be unique, Username must be unique, and both can be changed in Profile](screenshots/releases/0.8.1-account-help.png)
+
+*Tap ? beside Name or Username to see what each is for and which must be unique.*
+
+![Sample profile popup showing Jordan Reyes and @jordan.r outlined on a profile card with example workouts, cardio and PRs](screenshots/releases/0.8.1-sample-profile.png)
+
+*See a sample profile shows the names you've typed on a profile card.*
+
+- When creating an account, **?** beside **Name** and **Username** explains each one. Name is
+  your display name and doesn't need to be unique. Username is how you sign in and how friends
+  find you as @handle, so it must be unique. Both can be changed any time in **Profile**.
+- **See a sample profile**, below **Create account**, shows a profile card with the name and
+  username typed so far, or **Sam Sample** until they're filled in. The workouts, cardio and PRs
+  are examples, and a key shows where each name appears.
+
 ## 0.8.0
 
 18 October 2026
