@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from .models import (
     ExerciseKind,
@@ -12,6 +12,7 @@ from .models import (
     SetType,
     WorkoutCategory,
 )
+from .training_metrics import muscle_credits
 
 
 class MuscleContributionRead(BaseModel):
@@ -35,6 +36,11 @@ class ExerciseCreate(BaseModel):
         return value.strip() or None if isinstance(value, str) else value
 
 
+class MuscleSetCreditRead(BaseModel):
+    muscle_name: str
+    sets: float
+
+
 class ExerciseRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,6 +53,14 @@ class ExerciseRead(BaseModel):
     is_custom: bool
     is_favorite: bool
     muscle_contributions: list[MuscleContributionRead] = []
+
+    @computed_field
+    @property
+    def muscle_set_credits(self) -> list[MuscleSetCreditRead]:
+        # The read model carries the same calculation inputs as the ORM exercise.
+        return [
+            MuscleSetCreditRead(muscle_name=name, sets=sets) for name, sets in muscle_credits(self)
+        ]
 
 
 class ExerciseFavoriteUpdate(BaseModel):

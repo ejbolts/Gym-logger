@@ -6,6 +6,14 @@
 
 ### Friends, profiles and a more personal Home
 
+- Tap the question mark beside an exercise in the picker, workout logger or Progress
+  header to see its muscle credits per working set. The popup separates direct work
+  from partial assistance and uses the same credits as weekly muscle totals.
+
+![Exercise muscle credits popup showing pecs as direct work and front delts and triceps as partial assistance](screenshots/releases/0.7.0-exercise-muscle-help.png)
+
+*Tap an exercise's question mark to see the credits added by each working set.*
+
 - The weekly muscle-goal line has more space between its dots.
 - The [exercise-credit audit](EXERCISE-MUSCLE-CREDITS.md) reviews the built-in library using
   1 set for direct work and 0.5 for meaningful assistance. It aligns row and pulldown

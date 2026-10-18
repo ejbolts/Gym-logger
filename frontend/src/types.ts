@@ -108,6 +108,7 @@ export interface Exercise {
   is_custom: boolean;
   is_favorite: boolean;
   muscle_contributions: MuscleContribution[];
+  muscle_set_credits?: { muscle_name: string; sets: number }[];
 }
 
 export type ExerciseCreateInput = Pick<
