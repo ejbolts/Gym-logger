@@ -4,7 +4,7 @@ import uuid
 from bisect import bisect_right
 from collections import defaultdict
 from datetime import date, timedelta
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
@@ -1774,10 +1774,15 @@ async def preview_workout_csv(
     user: CurrentUser,
     settings: SettingsDependency,
     file: Annotated[UploadFile, File(...)],
+    source: Annotated[Literal["gym", "strengthlevel", "hevy", "strong"], Form()] = "gym",
+    weight_unit: Annotated[Literal["kg", "lb"], Form()] = "kg",
+    distance_unit: Annotated[Literal["km", "mi"], Form()] = "km",
 ) -> CsvImportPreviewRead:
     raw = await read_workout_csv(file)
     try:
-        plan = plan_import(db, user.id, raw)
+        plan = plan_import(
+            db, user.id, raw, source=source, weight_unit=weight_unit, distance_unit=distance_unit
+        )
     except CsvImportError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     check_import_plan(db, user, load_account_limits(db, settings), plan)
@@ -1801,6 +1806,8 @@ async def preview_workout_csv(
         sets_to_import=sum(len(session.rows) for session in plan.sessions if not session.duplicate),
         new_exercises=plan.new_exercises,
         warnings=plan.warnings,
+        body_measurements_to_create=plan.body_measurements_to_create,
+        body_measurements_to_skip=plan.body_measurements_to_skip,
     )
 
 
@@ -1810,14 +1817,21 @@ async def import_workout_csv(
     user: CurrentUser,
     settings: SettingsDependency,
     file: Annotated[UploadFile, File(...)],
+    source: Annotated[Literal["gym", "strengthlevel", "hevy", "strong"], Form()] = "gym",
+    weight_unit: Annotated[Literal["kg", "lb"], Form()] = "kg",
+    distance_unit: Annotated[Literal["km", "mi"], Form()] = "km",
 ) -> CsvImportRead:
     raw = await read_workout_csv(file)
     try:
         # Serialize comparison and writes, including two imports that finish together.
         db.connection().exec_driver_sql("BEGIN IMMEDIATE")
-        plan = plan_import(db, user.id, raw)
+        plan = plan_import(
+            db, user.id, raw, source=source, weight_unit=weight_unit, distance_unit=distance_unit
+        )
         check_import_plan(db, user, load_account_limits(db, settings), plan)
-        summary = import_workouts(db, user.id, raw, plan=plan)
+        summary = import_workouts(
+            db, user.id, raw, plan=plan, on_workout=sync_workout_cardio_sessions
+        )
         if summary.workouts_created:
             rebuild_personal_records(db, user.id)
             bump_workout_cache_revision(db, user.id)

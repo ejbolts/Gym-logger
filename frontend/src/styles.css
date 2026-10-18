@@ -4288,6 +4288,15 @@ body:has(.popup-dialog[open]) {
   color: var(--muted-ink);
 }
 
+.workout-import-review .workout-import-totals {
+  color: #69d89a;
+  font-weight: 700;
+}
+
+:root[data-colour-mode='light'] .workout-import-review .workout-import-totals {
+  color: #16713b;
+}
+
 .workout-import-warnings {
   border: 1px solid #66573c;
   border-radius: 8px;
@@ -8860,6 +8869,51 @@ body,
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
+}
+
+.data-transfer-import-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.data-export-dialog {
+  padding: 0 1rem 1rem;
+}
+
+.data-export-choices {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0;
+  border: 0;
+  margin: 1rem 0;
+}
+
+.data-export-choices label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid #41484b;
+  border-radius: 0.65rem;
+  cursor: pointer;
+}
+
+.data-export-choices input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+.data-export-choices span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.data-export-choices small,
+.data-export-note {
+  color: var(--muted-ink);
+  line-height: 1.5;
 }
 
 .export-time-frame {

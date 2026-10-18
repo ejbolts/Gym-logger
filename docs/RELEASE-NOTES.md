@@ -1,38 +1,76 @@
 # Gym Logger release notes
 
-## 0.7.1
+## 0.8.0
 
 18 October 2026
 
-### Rest timer popup
+### Bring your training from other apps
 
-- Completing a set opens a **rest timer popup** at the bottom of the workout, in the same
-  style as the app's other popups. It shows the time left, and a bar along its bottom edge
-  shrinks slowly from right to left over the rest period.
-- Tap **×** to dismiss the popup. The countdown keeps running beside the live workout
-  time, and tapping it there opens the popup again. **Cancel** stops the rest timer.
-- The popup sits clear of the workout header, and the page leaves room so **Finish
-  workout** stays reachable.
+![Workout import guide with Strength Level, Hevy, Strong and Gym Logger logo choices](screenshots/releases/0.8.0-app-import.png)
 
-![Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar](screenshots/releases/0.7.1-rest-timer-popup.png)
+*Choose the app that created your CSV, then review the import before saving.*
 
-*The rest timer counts down in a popup while you train.*
+![Workout data in Settings with four app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
 
-![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.7.1-rest-timer-header.png)
+*One section handles workouts and bodyweight. External apps have a full-width import button; Gym Logger also offers Export data.*
 
-*After dismissing the popup, the countdown stays beside the live time.*
+![Gym Logger export popup with workout history, bodyweight check-ins and a shared date range](screenshots/releases/0.8.0-export-data.png)
 
-### Find the workout import guide in Settings
+*Choose either data type or both. Both downloads two CSV files for the selected date range.*
 
-- **Settings > Workout data** now has a **Show guide** button beside the CSV import and
-  export actions. It opens the existing three-page guide, with the same CSV template
-  download and file chooser used during onboarding.
+![Workout import review with the sessions and sets being added highlighted in green](screenshots/releases/0.8.0-import-totals.png)
 
-![Workout data in Settings with the Show guide button beside the CSV import and export actions](screenshots/releases/0.7.1-settings-import-guide.png)
+*Import totals stand out in green before you save, for every app's export.*
 
-*Open the existing workout CSV guide directly from Settings.*
+- Release previews show feature screenshots before the change bullets, including
+  expanded earlier versions. Written release notes also lead with feature media.
+- Choose **Strength Level**, **Hevy**, **Strong** or **Gym Logger** in
+  **Settings > Workouts & bodyweight** or the import guide. All four options are matching logo
+  buttons; Gym Logger replaces the spreadsheet hyperlink and also accepts template-based
+  spreadsheets. They form a row on larger screens and two rows on phones. Upload the original CSV;
+  no column renaming is needed. Workout and bodyweight imports share one section and file picker.
+  External apps get a full-width upload button. Gym Logger detects workout or bodyweight CSVs;
+  body-fat percentages and check-in notes are kept, and existing dates are skipped.
+- Select **Gym Logger > Export data** to choose workout history, bodyweight check-ins or both,
+  then a date range. Both downloads two labelled CSVs using the same date range. Export details
+  explain what is included and excluded before you download.
+- Hevy and Strong keep workout names and separate sessions on one date, warmups,
+  drop sets, RPE, workout and exercise notes, workout duration and set duration/distance.
+  Strong failed sets are kept. Timed cardio movements also populate Cardio.
+  Strong rest-timer rows are skipped; superset grouping is not transferred.
+- For Strong workouts, choose the weight and distance units used in the export.
+  Strong body-weight measurement files read their own units and add missing check-ins
+  without replacing existing entries. Multiple readings on one date use their median.
+  Other measurement types and source labels are not imported.
+- Strength Level retains weights, reps, warmups, percentiles and body weights;
+  date-only rows form one session per date. Unsupported columns are listed as warnings.
+- Review sessions, sets, exercises, body-weight totals and warnings before **Save import**.
+  The session, set and body-weight totals being added stand out in green for every source.
+  Identical sessions are skipped; invalid files save nothing. Exercise names match the
+  library where recognised; other names become custom exercises. Weights keep the
+  source app's per-dumbbell and assisted-load conventions. Negative loads are rejected
+  because Gym Logger cannot represent them safely.
+- Gym Logger's own CSV export remains a completed-set history format, rather than a
+  full backup of imported notes, RPE or cardio details.
+
+### Find the import guide in Settings
+
+![Workout data in Settings with the Show guide button beside the import actions](screenshots/releases/0.8.0-settings-show-guide.png)
+
+*Open the import guide directly from Settings.*
+
+- **Settings > Workouts & bodyweight** has a **Show guide** button beside the import
+  actions. It opens the same import guide used during onboarding.
 
 ### Review and resolve feedback as an administrator
+
+![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.8.0-admin-feedback-badge.png)
+
+*Open feedback is counted in the profile badge on Today.*
+
+![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.8.0-admin-feedback-inbox.png)
+
+*Resolve or reopen each message from the admin console.*
 
 - New feedback appears in the badge on an administrator's profile picture on **Today**,
   added to any follow requests. Profile shows how many messages are waiting and a
@@ -41,13 +79,23 @@
   resolved ones. **Resolve** marks a message as handled, with who resolved it and when;
   **Reopen** returns it to the open list. Feedback stays private to administrators.
 
-![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.7.1-admin-feedback-badge.png)
+### Rest timer popup
 
-*Open feedback is counted in the profile badge on Today.*
+![Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar](screenshots/releases/0.8.0-rest-timer-popup.png)
 
-![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.7.1-admin-feedback-inbox.png)
+*The rest timer counts down in a popup while you train.*
 
-*Resolve or reopen each message from the admin console.*
+![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.8.0-rest-timer-header.png)
+
+*After dismissing the popup, the countdown stays beside the live time.*
+
+- Completing a set opens a **rest timer popup** at the bottom of the workout, in the same
+  style as the app's other popups. It shows the time left, and a bar along its bottom edge
+  shrinks slowly from right to left over the rest period.
+- Tap **×** to dismiss the popup. The countdown keeps running beside the live workout
+  time, and tapping it there opens the popup again. **Cancel** stops the rest timer.
+- The popup sits clear of the workout header, and the page leaves room so **Finish
+  workout** stays reachable.
 
 ## 0.7.0
 
