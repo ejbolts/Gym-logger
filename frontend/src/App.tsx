@@ -6882,16 +6882,13 @@ function SettingsScreen({
             <h2 id="workout-data-title">Workouts &amp; bodyweight</h2>
           </div>
         </header>
-        <p>
-          Bring your workout history and bodyweight check-ins together.{' '}
-          <button
-            type="button"
-            className="csv-guide-link"
-            onClick={() => onCsvGuideOpenChange(true)}
-          >
-            Import guide
-          </button>
-        </p>
+        <button
+          type="button"
+          className="profile-secondary workout-data-guide-button"
+          onClick={() => onCsvGuideOpenChange(true)}
+        >
+          Show guide
+        </button>
         <div
           className={`settings-actions data-transfer-actions${workoutImportSource !== 'gym' ? ' data-transfer-import-only' : ''}`}
         >
@@ -6901,9 +6898,6 @@ function SettingsScreen({
             onGuideOpenChange={onCsvGuideOpenChange}
             onSourceChange={setWorkoutImportSource}
           />
-          <button type="button" onClick={() => onCsvGuideOpenChange(true)}>
-            Show guide
-          </button>
           {workoutImportSource === 'gym' && (
             <button type="button" onClick={() => setExportOpen(true)}>
               ↓ Export data

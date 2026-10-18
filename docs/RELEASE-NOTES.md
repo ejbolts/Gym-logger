@@ -6,13 +6,13 @@
 
 ### Bring your training from other apps
 
-![Workout import guide with Strength Level, Hevy, Strong and Gym Logger logo choices](screenshots/releases/0.8.0-app-import.png)
+![Show guide directly below the Workouts and bodyweight title, above the app choices](screenshots/releases/0.8.0-settings-show-guide.jpg)
 
-*Choose the app that created your CSV, then review the import before saving.*
+*Show guide replaces the small description under the title; import and export stay together below.*
 
-![Workout data in Settings with four app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
+![One-page import guide with four app choices and a Choose CSV file button](screenshots/releases/0.8.0-app-import.jpg)
 
-*One section handles workouts and bodyweight. External apps have a full-width import button; Gym Logger also offers Export data.*
+*Choose the matching app and its original CSV from one simple popup.*
 
 ![Gym Logger export popup with workout history, bodyweight check-ins and a shared date range](screenshots/releases/0.8.0-export-data.png)
 
@@ -21,6 +21,26 @@
 ![Workout import review with the sessions and sets being added highlighted in green](screenshots/releases/0.8.0-import-totals.png)
 
 *Import totals stand out in green before you save, for every app's export.*
+
+![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.8.0-admin-feedback-badge.png)
+
+*Open feedback is counted in the profile badge on Today.*
+
+![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.8.0-admin-feedback-inbox.png)
+
+*Resolve or reopen each message from the admin console.*
+
+![Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar](screenshots/releases/0.8.0-rest-timer-popup.png)
+
+*The rest timer counts down in a popup while you train.*
+
+![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.8.0-rest-timer-header.png)
+
+*After dismissing the popup, the countdown stays beside the live time.*
+
+![What you share with Workouts + cardio and Profile photo marked Always, and switches for machine photos, body weight, goals and notes](screenshots/releases/0.8.0-share-workouts-cardio.png)
+
+*Cardio is now shared together with your workouts.*
 
 - Release previews show feature screenshots before the change bullets, including
   expanded earlier versions. Written release notes also lead with feature media.
@@ -55,22 +75,13 @@
 
 ### Find the import guide in Settings
 
-![Workout data in Settings with the Show guide button beside the import actions](screenshots/releases/0.8.0-settings-show-guide.png)
-
-*Open the import guide directly from Settings.*
-
-- **Settings > Workouts & bodyweight** has a **Show guide** button beside the import
-  actions. It opens the same import guide used during onboarding.
+- **Show guide** sits directly below the **Workouts & bodyweight** title, replacing the small
+  description and clearing the import/export row. The same single-page popup opens during onboarding.
+- Select the source app and choose its original CSV directly from the guide. The long column
+  explanations, example tables and Next/Back pages are removed. Strong unit choices and Gym Logger
+  spreadsheet template downloads remain available; review and save still happen afterwards.
 
 ### Review and resolve feedback as an administrator
-
-![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.8.0-admin-feedback-badge.png)
-
-*Open feedback is counted in the profile badge on Today.*
-
-![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.8.0-admin-feedback-inbox.png)
-
-*Resolve or reopen each message from the admin console.*
 
 - New feedback appears in the badge on an administrator's profile picture on **Today**,
   added to any follow requests. Profile shows how many messages are waiting and a
@@ -81,14 +92,6 @@
 
 ### Rest timer popup
 
-![Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar](screenshots/releases/0.8.0-rest-timer-popup.png)
-
-*The rest timer counts down in a popup while you train.*
-
-![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.8.0-rest-timer-header.png)
-
-*After dismissing the popup, the countdown stays beside the live time.*
-
 - Completing a set opens a **rest timer popup** at the bottom of the workout, in the same
   style as the app's other popups. It shows the time left, and a bar along its bottom edge
   shrinks slowly from right to left over the rest period.
@@ -98,10 +101,6 @@
   workout** stays reachable.
 
 ### Cardio is shared with your workouts
-
-![What you share with Workouts + cardio and Profile photo marked Always, and switches for machine photos, body weight, goals and notes](screenshots/releases/0.8.0-share-workouts-cardio.png)
-
-*Cardio is now shared together with your workouts.*
 
 - In **Profile > What you share**, workouts and cardio are now one always-shared item,
   **Workouts + cardio**, and the separate **Cardio sessions** switch has been removed.
