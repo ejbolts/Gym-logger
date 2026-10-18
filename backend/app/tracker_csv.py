@@ -103,6 +103,7 @@ class ImportPlan:
     bodyweights: dict[date, list[float]] = field(default_factory=dict)
     body_measurements_to_create: int = 0
     body_measurements_to_skip: int = 0
+    body_details: dict[date, tuple[float | None, str | None]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -361,7 +362,10 @@ def infer_exercise(name: str) -> tuple[WorkoutCategory, ExerciseKind, str, str |
 
 
 def sync_imported_bodyweights(
-    db: Session, user_id: str, bodyweights: dict[date, list[float]]
+    db: Session,
+    user_id: str,
+    bodyweights: dict[date, list[float]],
+    details: dict[date, tuple[float | None, str | None]] | None = None,
 ) -> tuple[int, int]:
     """Create missing graph check-ins without replacing any existing entries."""
     if not bodyweights:
@@ -381,13 +385,16 @@ def sync_imported_bodyweights(
         weight_kg = round(float(median(values)), 3)
         measurement = existing.get(measurement_date)
         if measurement is None:
+            body_fat, notes = (details or {}).get(
+                measurement_date, (None, IMPORTED_BODYWEIGHT_NOTE)
+            )
             db.add(
                 BodyMeasurement(
                     user_id=user_id,
                     measurement_date=measurement_date,
                     weight_kg=weight_kg,
-                    body_fat_pct=None,
-                    notes=IMPORTED_BODYWEIGHT_NOTE,
+                    body_fat_pct=body_fat,
+                    notes=notes,
                     is_sample=False,
                 )
             )
@@ -452,6 +459,26 @@ def matching_session(rows: list[ParsedRow], workout: TrainingWorkout) -> bool:
     return True
 
 
+def is_body_measurement_export(raw: bytes) -> bool:
+    """Recognize the native check-in schema without mistaking workout/app exports for it."""
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return False  # The selected parser reports the encoding error.
+    if not text.strip():
+        return False
+    reader = csv.reader(
+        io.StringIO(text), delimiter=max(DELIMITERS, key=text.splitlines()[0].count), strict=True
+    )
+    headers = {header.strip() for header in next(reader, [])}
+    return {"Date", "Weight (kg)"} <= headers and not {
+        "Date Lifted",
+        "Exercise",
+        "Measurement Type",
+        "Exercise Name",
+    } & headers
+
+
 def plan_import(
     db: Session,
     user_id: str,
@@ -464,10 +491,20 @@ def plan_import(
     """Read and compare only; no pending database writes, even on a rejected file."""
     try:
         bodyweights: dict[date, list[float]] = {}
+        body_details: dict[date, tuple[float | None, str | None]] = {}
         if source in {"hevy", "strong"}:
             from .workout_app_csv import parse_app_export
 
             rows, warnings, bodyweights = parse_app_export(raw, source, weight_unit, distance_unit)
+        elif source == "gym" and is_body_measurement_export(raw):
+            from .body_measurement_csv import parse_body_measurement_rows
+
+            measurements = parse_body_measurement_rows(raw)
+            bodyweights = {row.measurement_date: [row.weight_kg] for row in measurements}
+            body_details = {
+                row.measurement_date: (row.body_fat_pct, row.notes) for row in measurements
+            }
+            rows, warnings = [], []
         else:
             rows, warnings = parse_rows(raw)
     except csv.Error as error:
@@ -547,6 +584,7 @@ def plan_import(
         bodyweights,
         len(bodyweights.keys() - existing_dates),
         len(existing_dates),
+        body_details,
     )
 
 
@@ -637,7 +675,7 @@ def import_workouts(
             db.flush()
             on_workout(db, workout)
     body_measurements_created, body_measurements_updated = sync_imported_bodyweights(
-        db, user_id, bodyweights
+        db, user_id, bodyweights, plan.body_details
     )
     db.flush()
     return ImportSummary(

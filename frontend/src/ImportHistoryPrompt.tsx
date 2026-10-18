@@ -36,7 +36,9 @@ export function ImportHistoryPrompt({
             spreadsheet or Gym Logger export. Review it before saving so your charts, records and
             suggestions start from your real training.
           </p>
-          <p className="import-history-later">You can do this later in Settings → Workout data.</p>
+          <p className="import-history-later">
+            You can do this later in Settings → Workouts &amp; bodyweight.
+          </p>
         </div>
       </div>
       <footer className="popup-dialog-actions">

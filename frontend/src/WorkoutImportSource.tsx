@@ -42,7 +42,7 @@ export function WorkoutImportSource({
         {value.source === 'strong' &&
           'Choose a Strong workout or measurement CSV. Rest-timer rows are skipped. Body weights add missing check-ins without replacing yours.'}
         {value.source === 'gym' &&
-          'Choose a Gym Logger export or a spreadsheet using the template columns.'}
+          'Choose a Gym Logger workout or bodyweight CSV, or a spreadsheet using the template columns. Review before saving; existing check-ins are kept.'}
       </p>
       {value.source === 'strong' && (
         <div className="workout-import-units">

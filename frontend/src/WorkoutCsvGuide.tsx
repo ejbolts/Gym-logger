@@ -34,7 +34,7 @@ export function WorkoutCsvGuide({
 
   return (
     <PopupDialog
-      title="Import workout history"
+      title="Import workouts & bodyweight"
       kicker={`CSV GUIDE · ${page + 1} OF ${PAGE_TITLES.length}`}
       className="workout-csv-guide"
       onClose={onClose}
@@ -71,8 +71,8 @@ export function WorkoutCsvGuide({
               </section>
             </div>
             <p className="workout-csv-guide-note">
-              Strong measurement exports work here too. Gym Logger body-weight exports use
-              Bodyweight data in Settings.
+              Strong measurement exports and Gym Logger bodyweight CSVs use the same file picker.
+              Upload one file at a time. Existing check-ins are kept.
             </p>
           </>
         )}
@@ -113,6 +113,11 @@ export function WorkoutCsvGuide({
         )}
         {page === 1 && options.source === 'gym' && (
           <>
+            <p className="workout-csv-guide-note">
+              Bodyweight CSVs are detected automatically: Date and Weight (kg) are required; Body
+              Fat (%) and Notes are optional. Existing check-in dates are skipped. For workout CSVs,
+              use the columns below.
+            </p>
             <p>
               Put column names in the first row, then add one row for every set. Repeat the date and
               exercise on each row. Column order does not matter.
@@ -207,7 +212,8 @@ export function WorkoutCsvGuide({
             <p className="workout-csv-guide-note">
               Next, you review the sessions, sets and new exercises. Nothing is saved until you
               choose Save import, and sessions identical to ones already in your account are
-              skipped. Remove sample workouts from Workout data once your own history is in.
+              skipped. Remove sample workouts from Workouts &amp; bodyweight once your own history
+              is in.
             </p>
           </>
         )}

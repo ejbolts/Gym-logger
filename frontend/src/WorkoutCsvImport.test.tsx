@@ -230,7 +230,7 @@ describe('workout CSV review flow', () => {
         onSave={vi.fn()}
       />,
     );
-    expect(markup).toContain('Review workout import');
+    expect(markup).toContain('Review import');
     expect(markup).toContain('1 session');
     expect(markup).toContain('2 sets');
     expect(markup).toContain('New exercises: Safety Test Press');

@@ -12,7 +12,11 @@
 
 ![Workout data in Settings with four app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
 
-*Strong shows import controls only. Select Gym Logger to export workouts or choose an export date range.*
+*One section handles workouts and bodyweight. External apps have a full-width import button; Gym Logger also offers Export data.*
+
+![Gym Logger export popup with workout history, bodyweight check-ins and a shared date range](screenshots/releases/0.8.0-export-data.png)
+
+*Choose either data type or both. Both downloads two CSV files for the selected date range.*
 
 ![Workout import review with the sessions and sets being added highlighted in green](screenshots/releases/0.8.0-import-totals.png)
 
@@ -21,11 +25,15 @@
 - Release previews show feature screenshots before the change bullets, including
   expanded earlier versions. Written release notes also lead with feature media.
 - Choose **Strength Level**, **Hevy**, **Strong** or **Gym Logger** in
-  **Settings > Workout data** or the import guide. All four options are matching logo
+  **Settings > Workouts & bodyweight** or the import guide. All four options are matching logo
   buttons; Gym Logger replaces the spreadsheet hyperlink and also accepts template-based
   spreadsheets. They form a row on larger screens and two rows on phones. Upload the original CSV;
-  no column renaming is needed. The workout export button and export date range appear
-  only when Gym Logger is selected. Gym Logger exports and the spreadsheet template still work.
+  no column renaming is needed. Workout and bodyweight imports share one section and file picker.
+  External apps get a full-width upload button. Gym Logger detects workout or bodyweight CSVs;
+  body-fat percentages and check-in notes are kept, and existing dates are skipped.
+- Select **Gym Logger > Export data** to choose workout history, bodyweight check-ins or both,
+  then a date range. Both downloads two labelled CSVs using the same date range. Export details
+  explain what is included and excluded before you download.
 - Hevy and Strong keep workout names and separate sessions on one date, warmups,
   drop sets, RPE, workout and exercise notes, workout duration and set duration/distance.
   Strong failed sets are kept. Timed cardio movements also populate Cardio.

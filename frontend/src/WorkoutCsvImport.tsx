@@ -24,7 +24,7 @@ export function WorkoutImportReview({
   options?: WorkoutImportOptions;
 }) {
   return (
-    <PopupDialog title="Review workout import" kicker="CSV IMPORT" onClose={onCancel}>
+    <PopupDialog title="Review import" kicker="CSV IMPORT" onClose={onCancel}>
       <div className="workout-import-review">
         <p className="workout-import-filename">{fileName}</p>
         {options && (
@@ -41,26 +41,31 @@ export function WorkoutImportReview({
               : ''}
           </p>
         )}
-        <p>
-          <span className="workout-import-totals">
-            <strong>
-              {preview.workouts_to_create}{' '}
-              {preview.workouts_to_create === 1 ? 'session' : 'sessions'}
-            </strong>{' '}
-            and{' '}
-            <strong>
-              {preview.sets_to_import} {preview.sets_to_import === 1 ? 'set' : 'sets'}
-            </strong>{' '}
-            will be added.
-          </span>
-          {preview.workouts_to_skip > 0 && (
-            <>
-              {' '}
-              {preview.workouts_to_skip} identical existing{' '}
-              {preview.workouts_to_skip === 1 ? 'session' : 'sessions'} will be skipped.
-            </>
-          )}
-        </p>
+        {(preview.sessions.length > 0 ||
+          !(
+            (preview.body_measurements_to_create ?? 0) + (preview.body_measurements_to_skip ?? 0)
+          )) && (
+          <p>
+            <span className="workout-import-totals">
+              <strong>
+                {preview.workouts_to_create}{' '}
+                {preview.workouts_to_create === 1 ? 'session' : 'sessions'}
+              </strong>{' '}
+              and{' '}
+              <strong>
+                {preview.sets_to_import} {preview.sets_to_import === 1 ? 'set' : 'sets'}
+              </strong>{' '}
+              will be added.
+            </span>
+            {preview.workouts_to_skip > 0 && (
+              <>
+                {' '}
+                {preview.workouts_to_skip} identical existing{' '}
+                {preview.workouts_to_skip === 1 ? 'session' : 'sessions'} will be skipped.
+              </>
+            )}
+          </p>
+        )}
         {(preview.body_measurements_to_create ?? 0) + (preview.body_measurements_to_skip ?? 0) >
           0 && (
           <p>
@@ -75,14 +80,16 @@ export function WorkoutImportReview({
             {preview.body_measurements_to_skip === 1 ? 'date' : 'dates'} will be kept.
           </p>
         )}
-        <p>
-          {preview.new_exercises.length
-            ? `New exercises: ${preview.new_exercises.join(', ')}.`
-            : 'No new exercises.'}
-        </p>
+        {preview.sessions.length > 0 && (
+          <p>
+            {preview.new_exercises.length
+              ? `New exercises: ${preview.new_exercises.join(', ')}.`
+              : 'No new exercises.'}
+          </p>
+        )}
         <p className="workout-import-safety">
           Nothing is saved until you choose Save import. Existing workouts and body-weight check-ins
-          are kept. Missing body-weight dates may be added from these sets. Duplicates and save
+          are kept. Missing body-weight dates may be added from this file. Duplicates and save
           limits are checked again when saving.
         </p>
         {preview.warnings.length > 0 && (

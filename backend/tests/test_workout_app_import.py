@@ -260,3 +260,67 @@ def test_strength_level_original_columns_and_bodyweights(client):
     assert preview.json()["body_measurements_to_create"] == 1
     assert upload(client, raw, "strengthlevel").status_code == 201
     assert client.get("/api/body-measurements").json()[0]["weight_kg"] == 85
+
+
+def test_gym_bodyweight_export_uses_shared_preview_and_preserves_all_fields(client, other_client):
+    for day, weight in [("2026-10-10", 81), ("2026-10-11", 82)]:
+        assert (
+            client.post(
+                "/api/body-measurements",
+                json={
+                    "measurement_date": day,
+                    "weight_kg": weight,
+                    "body_fat_pct": 17.5,
+                    "notes": "Sample note, with comma\nand newline",
+                },
+            ).status_code
+            == 200
+        )
+    raw = client.get("/api/body-measurements/export.csv").content
+    before = client.get("/api/body-measurements").json()
+    own_preview = upload(client, raw, "gym", preview=True).json()
+    assert own_preview["body_measurements_to_create"] == 0
+    assert own_preview["body_measurements_to_skip"] == 2
+    assert upload(client, raw, "gym").json()["body_measurements_created"] == 0
+    assert client.get("/api/body-measurements").json() == before
+    preview = upload(other_client, raw, "gym", preview=True)
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["body_measurements_to_create"] == 2
+    assert preview.json()["sessions"] == []
+    assert other_client.get("/api/body-measurements").json() == []
+    # Saving rechecks dates added since preview and never overwrites them.
+    other_client.post(
+        "/api/body-measurements", json={"measurement_date": "2026-10-10", "weight_kg": 90}
+    )
+    result = upload(other_client, raw, "gym")
+    assert result.status_code == 201, result.text
+    assert result.json()["body_measurements_created"] == 1
+    saved = {
+        row["measurement_date"]: row for row in other_client.get("/api/body-measurements").json()
+    }
+    assert saved["2026-10-10"]["weight_kg"] == 90
+    for field in ("weight_kg", "body_fat_pct", "notes"):
+        assert (
+            saved["2026-10-11"][field]
+            == next(row for row in before if row["measurement_date"] == "2026-10-11")[field]
+        )
+    assert other_client.get("/api/workouts").json() == []
+    assert upload(client, raw, "strong", preview=True).status_code == 422
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "2026-10-11,nan,17,invalid\n",
+        "2026-10-10,82,17,duplicate date\n",
+        '2026-10-11,82,17,"unclosed',
+        "2026-10-11,82,17,note,extra\n",
+    ],
+)
+def test_invalid_native_bodyweight_file_saves_nothing(client, tail):
+    raw = ("Date,Weight (kg),Body Fat (%),Notes\n2026-10-10,81,17,valid\n" + tail).encode()
+    for preview in (True, False):
+        result = upload(client, raw, "gym", preview=preview)
+        assert result.status_code == 422, result.text
+    assert client.get("/api/body-measurements").json() == []
+    assert client.get("/api/workouts").json() == []
