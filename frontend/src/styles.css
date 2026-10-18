@@ -4288,6 +4288,15 @@ body:has(.popup-dialog[open]) {
   color: var(--muted-ink);
 }
 
+.workout-import-review .workout-import-totals {
+  color: #69d89a;
+  font-weight: 700;
+}
+
+:root[data-colour-mode='light'] .workout-import-review .workout-import-totals {
+  color: #16713b;
+}
+
 .workout-import-warnings {
   border: 1px solid #66573c;
   border-radius: 8px;

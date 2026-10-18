@@ -42,14 +42,17 @@ export function WorkoutImportReview({
           </p>
         )}
         <p>
-          <strong>
-            {preview.workouts_to_create} {preview.workouts_to_create === 1 ? 'session' : 'sessions'}
-          </strong>{' '}
-          and{' '}
-          <strong>
-            {preview.sets_to_import} {preview.sets_to_import === 1 ? 'set' : 'sets'}
-          </strong>{' '}
-          will be added.
+          <span className="workout-import-totals">
+            <strong>
+              {preview.workouts_to_create}{' '}
+              {preview.workouts_to_create === 1 ? 'session' : 'sessions'}
+            </strong>{' '}
+            and{' '}
+            <strong>
+              {preview.sets_to_import} {preview.sets_to_import === 1 ? 'set' : 'sets'}
+            </strong>{' '}
+            will be added.
+          </span>
           {preview.workouts_to_skip > 0 && (
             <>
               {' '}
@@ -61,11 +64,14 @@ export function WorkoutImportReview({
         {(preview.body_measurements_to_create ?? 0) + (preview.body_measurements_to_skip ?? 0) >
           0 && (
           <p>
-            <strong>
-              {preview.body_measurements_to_create ?? 0} body-weight{' '}
-              {preview.body_measurements_to_create === 1 ? 'check-in' : 'check-ins'}
-            </strong>{' '}
-            will be added. {preview.body_measurements_to_skip ?? 0} existing{' '}
+            <span className="workout-import-totals">
+              <strong>
+                {preview.body_measurements_to_create ?? 0} body-weight{' '}
+                {preview.body_measurements_to_create === 1 ? 'check-in' : 'check-ins'}
+              </strong>{' '}
+              will be added.
+            </span>{' '}
+            {preview.body_measurements_to_skip ?? 0} existing{' '}
             {preview.body_measurements_to_skip === 1 ? 'date' : 'dates'} will be kept.
           </p>
         )}

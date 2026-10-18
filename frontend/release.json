@@ -8,7 +8,7 @@
     "Choose Strength Level, Hevy or Strong in Workout data or the import guide, with each app's logo. Upload the original CSV without renaming columns, or keep using the Gym Logger spreadsheet template.",
     "Hevy and Strong imports keep workout names and separate sessions, warmups, drop sets, RPE, workout and exercise notes, duration and distance. Strong failed sets are kept; rest-timer rows are skipped. Superset grouping is not transferred.",
     "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
-    "Review sessions, sets, new exercises, body-weight totals and warnings before saving. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date."
+    "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
   "image": {

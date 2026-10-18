@@ -14,6 +14,10 @@
 
 *Strong workout exports use the units you select; measurement files supply their own units.*
 
+![Workout import review with the sessions and sets being added highlighted in green](screenshots/releases/0.8.0-import-totals.png)
+
+*Import totals stand out in green before you save, for every app's export.*
+
 - Release previews show feature screenshots before the change bullets, including
   expanded earlier versions. Written release notes also lead with feature media.
 - Choose **Strength Level**, **Hevy** or **Strong** in **Settings > Workout data** or
@@ -30,6 +34,7 @@
 - Strength Level retains weights, reps, warmups, percentiles and body weights;
   date-only rows form one session per date. Unsupported columns are listed as warnings.
 - Review sessions, sets, exercises, body-weight totals and warnings before **Save import**.
+  The session, set and body-weight totals being added stand out in green for every source.
   Identical sessions are skipped; invalid files save nothing. Exercise names match the
   library where recognised; other names become custom exercises. Weights keep the
   source app's per-dumbbell and assisted-load conventions. Negative loads are rejected
