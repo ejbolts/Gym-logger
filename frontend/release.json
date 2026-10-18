@@ -6,5 +6,9 @@
   "changes": [
     "Settings > Workout data now has a Show guide button beside the CSV import and export actions. It opens the same three-page guide used during onboarding, including the CSV template and file chooser."
   ],
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/99075a77dab58f7f5d6ca542a4ddb9f88b74cf19/docs/screenshots/releases/0.7.1-settings-import-guide.png",
+    "alt": "Workout data in Settings with the Show guide button beside the CSV import and export actions."
+  },
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#071"
 }
