@@ -730,7 +730,8 @@ def test_csv_import_and_export_use_supplied_column_format(client):
     decoded = exported.content.decode("utf-8-sig")
     assert decoded.splitlines()[0] == (
         "Date Lifted,Exercise,Weight (kg),Weight (lb),Reps,Bodyweight (kg),"
-        "Bodyweight (lb),Percentile (%),Warmup,Workout ID,Workout name"
+        "Bodyweight (lb),Percentile (%),Warmup,Workout ID,Workout name,"
+        "Workout type,Workout type color"
     )
     assert "2026-07-17,Machine Reverse Fly,45,99.2,10,83.6,184.3,38,1" in decoded
 

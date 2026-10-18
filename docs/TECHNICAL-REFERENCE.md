@@ -33,6 +33,14 @@ Long training logs load in windows. At startup the app requests `/api/dashboard?
 
 The first working path is YouTube mock mode. It accepts a batch, processes it with local ffmpeg, and returns a deterministic mock YouTube URL without any Google credentials.
 
+Workout types belong to each account. **Settings > Workout types** manages built-in and custom
+names/colours; removing a type archives it so saved workouts retain their identity. Custom types
+use a separate nullable workout-type association while exercise categories remain unchanged.
+Migration `0036_workout_types` adds the catalog and association; run migrations before using
+the updated backend. CSV exports include optional `Workout type` and `Workout type color`
+columns, and account backups include the catalog. Calendar days expose type metadata for
+custom dots and legend controls; existing weekly set totals are retained.
+
 Accounts use a username and password; no account email is collected. Usernames are case-insensitive, 3–32 ASCII letters, numbers, dots, underscores or hyphens, and start with a letter or number. The separate Name field is how you appear in the app. You can change both in Profile, where you can also add, change or remove a profile photo. Photos are cropped to a 512 px square, stored under `data/profile-photos/`, private by default and visible through optional profile sharing, included in account backups and deleted with the account; run migration `0032_profile_photos` before restarting the backend. An admin can reset a forgotten password with `python -m app.manage reset-password --username yourname`.
 
 Each account chooses who can see its profile in **Profile > Profile sharing**: **Private** (the default), **Friends only** (followers it approves) or **Public** (every sharing member). Only accounts that share can open **Shared profiles**, follow public profiles, request to follow friends-only ones, and approve, decline or remove their own followers. Workouts and the profile photo are always part of a shared profile; a friends-only profile shows only its name and photo until a request is approved. Machine photos (those pinned to shared workouts), body weight (including body weight logged with sets), goals (the active body-weight goal and weekly Zone 2 target), cardio sessions and notes are separate opt-ins. Usernames, videos and sample data are never shared. Going private hides the profile and other profiles immediately while keeping choices and followers; making a profile public approves waiting requests. Disabled accounts are hidden and admins have no extra access. Migration `0033_profile_sharing` (release 0.5.3) adds the `profile_sharing` table, which account backups include, and `profile_follows`, which they leave out because follows involve other accounts. Both are deleted with the account.

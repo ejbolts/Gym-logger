@@ -67,6 +67,7 @@ from .models import (
     WorkoutMovement,
     WorkoutSession,
     WorkoutSet,
+    WorkoutType,
     YouTubeConnection,
     YouTubeOAuthState,
     movement_machine_photos,
@@ -307,6 +308,7 @@ def delete_account(db: Session, settings: Settings, user: User, app_state=None) 
         delete(WorkoutMovement).where(WorkoutMovement.workout_id.in_(workout_ids)),
         delete(SupersetGroup).where(SupersetGroup.workout_id.in_(workout_ids)),
         delete(TrainingWorkout).where(TrainingWorkout.user_id == user_id),
+        delete(WorkoutType).where(WorkoutType.user_id == user_id),
         delete(MachinePhoto).where(MachinePhoto.user_id == user_id),
         delete(ExerciseMuscleContribution).where(
             ExerciseMuscleContribution.exercise_id.in_(exercise_ids)

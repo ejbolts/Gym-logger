@@ -52,6 +52,7 @@ import type {
   WorkoutSession,
   TrainingPreferences,
   WorkoutTypeColors,
+  WorkoutType,
   YouTubeConnection,
 } from './types';
 import { cachedWorkoutsForRevision, readWorkoutCache, writeWorkoutCache } from './workoutCache';
@@ -459,6 +460,21 @@ export const api = {
       body: JSON.stringify(layout),
     }),
   getWorkoutTypeColors: () => request<WorkoutTypeColors>('/api/workout-type-colors'),
+  getWorkoutTypes: () => request<WorkoutType[]>('/api/workout-types'),
+  createWorkoutType: (payload: { name: string; color: string }) =>
+    request<WorkoutType>('/api/workout-types', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  updateWorkoutType: (id: string, payload: { name?: string; color?: string; archived?: boolean }) =>
+    request<WorkoutType>(`/api/workout-types/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteWorkoutType: (id: string) =>
+    request<void>(`/api/workout-types/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   updateWorkoutTypeColors: (colors: WorkoutTypeColors) =>
     request<WorkoutTypeColors>('/api/workout-type-colors', {
       method: 'PUT',

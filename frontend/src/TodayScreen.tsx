@@ -35,6 +35,7 @@ import { localDate } from './utils';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
 import { profileButtonLabel } from './friendsActivityData';
+import { useWorkoutTypes } from './workoutTypesContext';
 import {
   formatWeight,
   formatWeightNumber,
@@ -173,7 +174,10 @@ export function TodayScreen({
     () => trainingDayGrid(workouts, today, weekStartDay, 12),
     [today, weekStartDay, workouts],
   );
-  const recommendation = data?.recommendation ?? null;
+  const { types } = useWorkoutTypes();
+  const recommendation = types.find((type) => type.id === data?.recommendation?.category)?.archived
+    ? null
+    : (data?.recommendation ?? null);
   const template = useMemo(
     () =>
       recommendation

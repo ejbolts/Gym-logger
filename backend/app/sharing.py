@@ -52,9 +52,11 @@ from .tracker_schemas import (
     MachinePhotoRead,
     PersonalRecordRead,
     TrainingWorkoutRead,
+    WorkoutTypeRead,
     Zone2WeekRead,
 )
 from .training_metrics import start_of_week
+from .workout_types import workout_type_catalog
 
 Db = Annotated[Session, Depends(get_db)]
 sharing_router = APIRouter(
@@ -180,6 +182,7 @@ class SharedExerciseOption(BaseModel):
 class SharedWorkoutFiltersRead(BaseModel):
     exercises: list[SharedExerciseOption]
     machines: list[MachinePhotoRead]
+    workout_types: list[WorkoutTypeRead] = []
 
 
 class FollowRead(BaseModel):
@@ -611,6 +614,7 @@ def list_shared_workouts(
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=MAX_WORKOUT_PAGE)] = 10,
     category: WorkoutCategory | None = None,
+    workout_type_id: str | None = None,
     exercise_id: str | None = None,
     machine_photo_id: str | None = None,
     start_date: date | None = None,
@@ -620,8 +624,11 @@ def list_shared_workouts(
     if start_date and end_date and start_date > end_date:
         raise api_error(422, "invalid_date_range", "From date must not be after To date.")
     owned = [TrainingWorkout.user_id == member.id, TrainingWorkout.is_sample.is_(False)]
-    if category:
+    if workout_type_id:
+        owned.append(TrainingWorkout.workout_type_id == workout_type_id)
+    elif category:
         owned.append(TrainingWorkout.category == category)
+        owned.append(TrainingWorkout.workout_type_id.is_(None))
     if exercise_id:
         owned.append(TrainingWorkout.movements.any(WorkoutMovement.exercise_id == exercise_id))
     if machine_photo_id:
@@ -697,9 +704,15 @@ def shared_workout_filters(user_id: str, user: CurrentUser, db: Db) -> SharedWor
             item.thumbnail_url = f"{base}?variant=thumbnail"
             item.full_url = f"{base}?variant=full"
             machines.append(item)
+    used_type_ids = set(db.scalars(select(TrainingWorkout.workout_type_id).where(*owned)))
     return SharedWorkoutFiltersRead(
         exercises=[SharedExerciseOption(id=row.id, name=row.name) for row in exercises],
         machines=machines,
+        workout_types=[
+            item
+            for item in workout_type_catalog(db, member.id)
+            if not item.is_custom or item.id in used_type_ids
+        ],
     )
 
 

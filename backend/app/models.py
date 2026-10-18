@@ -557,6 +557,22 @@ class MachinePhoto(Base):
     )
 
 
+class WorkoutType(Base):
+    __tablename__ = "workout_types"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(40, collation="NOCASE"))
+    color: Mapped[str] = mapped_column(String(7))
+    archived: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+
+    @property
+    def is_custom(self) -> bool:
+        return True
+
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_workout_type_user_name"),)
+
+
 class TrainingWorkout(Base):
     __tablename__ = "training_workouts"
 
@@ -565,6 +581,10 @@ class TrainingWorkout(Base):
     name: Mapped[str] = mapped_column(String(200))
     workout_date: Mapped[date] = mapped_column(Date)
     category: Mapped[WorkoutCategory] = mapped_column(Enum(WorkoutCategory, native_enum=False))
+    workout_type_id: Mapped[str | None] = mapped_column(
+        ForeignKey("workout_types.id", ondelete="RESTRICT"), nullable=True
+    )
+    workout_type: Mapped[WorkoutType | None] = relationship()
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)

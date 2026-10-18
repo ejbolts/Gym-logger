@@ -818,6 +818,8 @@ ACCOUNT_TABLES = {
     "profile_sharing",
     "youtube_connections",
     "youtube_oauth_states",
+    # Created only by signed-in accounts (user_id is required), so never legacy data.
+    "workout_types",
 }
 
 

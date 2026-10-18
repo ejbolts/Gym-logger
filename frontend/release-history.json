@@ -1,5 +1,32 @@
 [
   {
+    "version": "0.8.0",
+    "date": "2026-10-18",
+    "title": "Bring your training from other apps, plus a rest timer popup",
+    "summary": "Import Strength Level, Hevy and Strong exports with clear previews, watch your rest count down in a popup, work out barbell plates with a plate calculator, log cardio sets straight from a screenshot, share cardio together with workouts, open the import guide from Settings, and let administrators resolve feedback.",
+    "changes": [
+      "Release previews highlight the feature screenshot before the change bullets, including expanded earlier versions. Written release notes also put feature media first.",
+      "Choose Strength Level, Hevy, Strong or Gym Logger using four matching logo buttons in Workouts & bodyweight and the import guide. Workouts and bodyweight share one import section with full-width upload controls for external apps. Gym Logger accepts workout or bodyweight CSVs and template spreadsheets. Its Export data popup lets you choose workouts, bodyweight or both and a date range. Upload other apps' original CSVs without renaming columns.",
+      "Hevy and Strong imports keep workout names and separate sessions, warmups, drop sets, RPE, workout and exercise notes, duration and distance. Strong failed sets are kept; rest-timer rows are skipped. Superset grouping is not transferred.",
+      "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
+      "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date.",
+      "Show guide sits directly below the Workouts & bodyweight title, replacing the small description and keeping the import/export row tidy. The guide is one page: select the app, choose its original CSV, then review before saving. Gym Logger keeps its spreadsheet template link.",
+      "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages.",
+      "Completing a set opens a rest timer popup at the bottom of the workout with the time left centred between -30s and +30s buttons and a bar that shrinks from right to left. Tap Ã— to dismiss it and keep the countdown beside the live workout time, where tapping the time opens the popup again; Cancel stops the rest timer.",
+      "While resting, leaving the workout turns the live button in the bottom navigation into a timer counting down the rest.",
+      "The Friends card on Today shows each friend's total workouts, cardio sessions and PRs with the same icons as your profile, instead of exercises and sets.",
+      "Profile sharing now shares cardio together with workouts as Workouts + cardio, so the separate Cardio sessions switch is gone. If you had it off, anyone who can see your profile now sees your recent cardio sessions; cardio notes still follow the Notes switch.",
+      "Today always shows the dimmer Empty shortcut beside Start workout, including when the suggested workout has no previous session to copy. Empty starts a fresh workout without copied exercises.",
+      "Barbell, EZ-bar and trap-bar exercises have a barbell button that opens a plate calculator. It shows the plates for each side in standard colours, in kg or lb to match your settings, starting from a 20 kg / 45 lb Olympic bar, 10 kg / 25 lb EZ bar or 25 kg / 55 lb trap bar. Change the bar or its weight, tap plates to build a load, and Use copies the total into the set.",
+      "Uploading a cardio set screenshot fills in the set and ticks it off. While it scans, the upload button shows a spinner beside Scanning."
+    ],
+    "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
+    "image": {
+      "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/dbd1610ade4f4a9645d0a4aeb0441b40bc8bc454/docs/screenshots/releases/0.8.0-app-import.jpg",
+      "alt": "Single-page import guide with four app choices and a Choose CSV file button, shown on a phone."
+    }
+  },
+  {
     "version": "0.7.0",
     "date": "2026-10-17",
     "title": "Friends, profiles and a more personal Home",
@@ -31,8 +58,8 @@
       "Profiles label signup dates as Joined and show the exact date you followed someone or they followed you. Pending follow requests stand out in a blue dotted box.",
       "Profile opens in viewing mode. Edit profile reveals name and username fields plus a pencil over a slightly dimmed profile photo. Remove photo sits below the avatar on the left, with no blue outline on the avatar or editing card. Preview a new photo or remove it, then Save profile or Cancel; changes wait for Save.",
       "Unfollow uses a red outline and tint to match the delete-button style.",
-      "Filter another member’s shared workout history by type, exercise, date range and shared machine photos. Filters search the full shared history, including older workouts, and remain applied when loading more.",
-      "Daily check-in adds body-fat percentage with minus, plus and Log or Update controls beneath body weight, separated by a padded dotted line. Log today’s weight first; body-fat saves keep that weight and notes, and Undo restores only body fat. Saved today summaries are green for both measurements.",
+      "Filter another memberâ€™s shared workout history by type, exercise, date range and shared machine photos. Filters search the full shared history, including older workouts, and remain applied when loading more.",
+      "Daily check-in adds body-fat percentage with minus, plus and Log or Update controls beneath body weight, separated by a padded dotted line. Log todayâ€™s weight first; body-fat saves keep that weight and notes, and Undo restores only body fat. Saved today summaries are green for both measurements.",
       "In Edit Home, drag a section into an empty space beside another card. Expanded sections automatically shrink to compact width when dropped into a smaller space, and keep that width after saving. Mixed compact cards fill unusable narrow strips instead of leaving a gap.",
       "What's new shows a date for each release, including collapsed earlier versions.",
       "Tap the plus in an empty Home space to add a section that is not already on Home. The picker shows only hidden sections, or explains when all available sections are already added. Sections fit even third-width slots, and can still be dragged into place. Tap the top pencil again to save; Cancel below discards changes.",
