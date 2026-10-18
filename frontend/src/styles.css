@@ -11361,3 +11361,26 @@ html {
     font-size: 0.68rem;
   }
 }
+
+/* Screenshot uploads show a spinner beside "Scanning" while OCR runs. */
+.scanning-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.scanning-spinner {
+  width: 0.85em;
+  height: 0.85em;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: background-activity-spin 0.72s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanning-spinner {
+    animation-duration: 2s;
+  }
+}

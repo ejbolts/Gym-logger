@@ -2,7 +2,7 @@
   "version": "0.8.0",
   "date": "2026-10-18",
   "title": "Bring your training from other apps, plus a rest timer popup",
-  "summary": "Import Strength Level, Hevy and Strong exports with clear previews, watch your rest count down in a popup, work out barbell plates with a plate calculator, share cardio together with workouts, open the import guide from Settings, and let administrators resolve feedback.",
+  "summary": "Import Strength Level, Hevy and Strong exports with clear previews, watch your rest count down in a popup, work out barbell plates with a plate calculator, log cardio sets straight from a screenshot, share cardio together with workouts, open the import guide from Settings, and let administrators resolve feedback.",
   "changes": [
     "Release previews highlight the feature screenshot before the change bullets, including expanded earlier versions. Written release notes also put feature media first.",
     "Choose Strength Level, Hevy, Strong or Gym Logger using four matching logo buttons in Workouts & bodyweight and the import guide. Workouts and bodyweight share one import section with full-width upload controls for external apps. Gym Logger accepts workout or bodyweight CSVs and template spreadsheets. Its Export data popup lets you choose workouts, bodyweight or both and a date range. Upload other apps' original CSVs without renaming columns.",
@@ -16,7 +16,8 @@
     "The Friends card on Today shows each friend's total workouts, cardio sessions and PRs with the same icons as your profile, instead of exercises and sets.",
     "Profile sharing now shares cardio together with workouts as Workouts + cardio, so the separate Cardio sessions switch is gone. If you had it off, anyone who can see your profile now sees your recent cardio sessions; cardio notes still follow the Notes switch.",
     "Today always shows the dimmer Empty shortcut beside Start workout, including when the suggested workout has no previous session to copy. Empty starts a fresh workout without copied exercises.",
-    "Barbell, EZ-bar and trap-bar exercises have a barbell button that opens a plate calculator. It shows the plates for each side in standard colours, in kg or lb to match your settings, starting from a 20 kg / 45 lb Olympic bar, 10 kg / 25 lb EZ bar or 25 kg / 55 lb trap bar. Change the bar or its weight, tap plates to build a load, and Use copies the total into the set."
+    "Barbell, EZ-bar and trap-bar exercises have a barbell button that opens a plate calculator. It shows the plates for each side in standard colours, in kg or lb to match your settings, starting from a 20 kg / 45 lb Olympic bar, 10 kg / 25 lb EZ bar or 25 kg / 55 lb trap bar. Change the bar or its weight, tap plates to build a load, and Use copies the total into the set.",
+    "Uploading a cardio set screenshot fills in the set and ticks it off. While it scans, the upload button shows a spinner beside Scanning."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
   "image": {

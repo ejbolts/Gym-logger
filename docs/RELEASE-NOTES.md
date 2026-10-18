@@ -148,6 +148,21 @@
   bar to remove it. A weight that can't be loaded exactly shows the nearest weight below and how
   much is missing. **Use** copies the total into the set.
 
+### Cardio screenshots log the set
+
+![Cycling set row while a screenshot uploads, with a spinning circle beside the word Scanning](screenshots/releases/0.8.0-cardio-scanning.png)
+
+*A spinner shows while the screenshot is read.*
+
+![Cycling set logged from a screenshot as 30:00, 4.2 km and 8.4 km/h with a green tick](screenshots/releases/0.8.0-cardio-scan-logged.png)
+
+*The scanned set is filled in and ticked off.*
+
+- Uploading a screenshot for a cardio set fills in its details and ticks the set off, so it
+  folds away like any logged set. Tap the set to correct anything the scan missed.
+- While a screenshot is being read, the upload button shows a spinning circle beside
+  **Scanning**, on both workout sets and the Cardio page.
+
 ### Friends show workouts, cardio and PRs
 
 ![Friends card on Today with each friend's workouts, cardio sessions and PRs beside matching calendar, heart and trophy icons](screenshots/releases/0.8.0-friend-totals.png)

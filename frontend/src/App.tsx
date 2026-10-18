@@ -4610,7 +4610,11 @@ function MovementCard({
           />
           {cardio && (
             <CardioSetScreenshotUpload
-              onScan={(scan) => onUpdateSet(item.key, cardioSetUpdateFromScan(scan))}
+              onScan={(scan) => {
+                // A scanned screenshot is the finished set, so log it and fold it away.
+                onUpdateSet(item.key, { ...cardioSetUpdateFromScan(scan), completed: true });
+                setOpenOverride(item.key, null);
+              }}
             />
           )}
         </div>
@@ -5007,6 +5011,15 @@ function SetEntryConfirmationDialog({
   );
 }
 
+function ScanningLabel() {
+  return (
+    <span className="scanning-label">
+      <span className="scanning-spinner" aria-hidden="true" />
+      Scanning
+    </span>
+  );
+}
+
 function CardioSetScreenshotUpload({ onScan }: { onScan: (scan: CardioScreenshotScan) => void }) {
   const [scanning, setScanning] = useState(false);
   const [status, setStatus] = useState<{ message: string; warning: boolean } | null>(null);
@@ -5035,7 +5048,7 @@ function CardioSetScreenshotUpload({ onScan }: { onScan: (scan: CardioScreenshot
   return (
     <div className="cardio-set-screenshot-upload">
       <label className={scanning ? 'disabled' : ''}>
-        {scanning ? 'Scanning…' : 'Upload screenshot'}
+        {scanning ? <ScanningLabel /> : 'Upload screenshot'}
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
@@ -8085,7 +8098,7 @@ function CardioScreen({
               </small>
             </div>
             <label className={scanning ? 'disabled' : ''}>
-              {scanning ? 'Scanning…' : 'Choose screenshot'}
+              {scanning ? <ScanningLabel /> : 'Choose screenshot'}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
