@@ -220,6 +220,19 @@ describe('App startup', () => {
     },
   );
 
+  it.each([null, { category: 'pull' }])(
+    'keeps the Empty shortcut available without a previous session (%j)',
+    (recommendation) => {
+      const markup = renderToday({
+        workouts: [],
+        data: { recommendation } as unknown as DashboardData,
+      });
+      expect(markup).toContain('Start workout');
+      expect(markup).toContain('aria-label="Start empty workout"');
+      expect(markup).toContain('primary next-session-empty');
+    },
+  );
+
   it('shows the profile section with all-time totals and strength PRs', () => {
     const record = (record_type: string, value: number) =>
       ({
