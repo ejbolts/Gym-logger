@@ -213,16 +213,18 @@
 }
 
 :root[data-colour-mode='light'] .overlay-header-copy .workout-rest-timer,
-:root[data-colour-mode='light'] .overlay-header-copy .workout-rest-timer > strong {
+:root[data-colour-mode='light'] .overlay-header-copy .workout-rest-timer strong {
   color: var(--p-ink);
 }
-:root[data-colour-mode='light'] .workout-rest-timer > button {
+:root[data-colour-mode='light'] .workout-rest-timer > button:not(.workout-rest-timer-show) {
   border-color: rgb(197 59 59 / 55%);
   background: rgb(197 59 59 / 10%);
   color: var(--p-danger);
 }
-:root[data-colour-mode='light'] .workout-rest-timer > button:hover,
-:root[data-colour-mode='light'] .workout-rest-timer > button:focus-visible {
+:root[data-colour-mode='light'] .workout-rest-timer > button:not(.workout-rest-timer-show):hover,
+:root[data-colour-mode='light']
+  .workout-rest-timer
+  > button:not(.workout-rest-timer-show):focus-visible {
   background: rgb(197 59 59 / 18%);
 }
 :root[data-colour-mode='light']

@@ -1,8 +1,8 @@
 {
   "version": "0.8.0",
   "date": "2026-10-18",
-  "title": "Bring your training from other apps",
-  "summary": "Import original Strength Level, Hevy and Strong exports with app-specific choices, clear previews and support for Strong body-weight measurements.",
+  "title": "Bring your training from other apps, plus a rest timer popup",
+  "summary": "Import Strength Level, Hevy and Strong exports with clear previews, watch your rest count down in a popup, open the import guide from Settings, and let administrators resolve feedback.",
   "changes": [
     "Release previews highlight the feature screenshot before the change bullets, including expanded earlier versions. Written release notes also put feature media first.",
     "Choose Strength Level, Hevy, Strong or Gym Logger using four matching logo buttons in Workouts & bodyweight and the import guide. Workouts and bodyweight share one import section with full-width upload controls for external apps. Gym Logger accepts workout or bodyweight CSVs and template spreadsheets. Its Export data popup lets you choose workouts, bodyweight or both and a date range. Upload other apps' original CSVs without renaming columns.",
@@ -10,7 +10,8 @@
     "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
     "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date.",
     "Settings > Workouts & bodyweight has a Show guide button beside the import actions. It opens the same import guide used during onboarding.",
-    "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages."
+    "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages.",
+    "Completing a set opens a rest timer popup at the bottom of the workout with the time left and a bar that shrinks from right to left. Tap × to dismiss it and keep the countdown beside the live workout time, where tapping the time opens the popup again; Cancel stops the rest timer."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
   "image": {
