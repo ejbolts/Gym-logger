@@ -624,3 +624,5 @@ class CsvImportPreviewRead(BaseModel):
     sets_to_import: int
     new_exercises: list[str]
     warnings: list[str]
+    body_measurements_to_create: int = 0
+    body_measurements_to_skip: int = 0

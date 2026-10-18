@@ -57,6 +57,7 @@ import type {
   WorkoutInput,
   WorkoutRecommendation,
   WorkoutSetInput,
+  WorkoutImportOptions,
 } from './types';
 import {
   BODY_TREND_DURATION_OPTIONS,
@@ -181,6 +182,7 @@ import { TrendChart, type GoalPath, type TrendPoint } from './PulseCharts';
 import { PageHeader, SettingsButton, TodayScreen, TodaySkeleton } from './TodayScreen';
 import { FeedbackForm } from './FeedbackForm';
 import { WorkoutCsvImport } from './WorkoutCsvImport';
+import { DataExportDialog } from './DataExportDialog';
 import {
   compactSetSummary,
   dayMonth,
@@ -264,12 +266,7 @@ import {
 } from './workoutAutoSave';
 import { readDashboardCache, writeDashboardCache } from './workoutCache';
 import { trainingDataActivityLabel } from './trainingDataRefresh';
-import {
-  dateRangeForDates,
-  TIME_RANGE_OPTIONS,
-  type DateRange,
-  type TimeRange,
-} from './dateRanges';
+import { dateRangeForDates, TIME_RANGE_OPTIONS } from './dateRanges';
 
 type SetField = 'weight' | 'reps' | 'duration' | 'distance' | 'rpe' | 'notes';
 type RestAlertStatus =
@@ -1042,41 +1039,29 @@ function AppContent() {
     }
   }
 
-  async function importWorkoutCsv(file: File) {
+  async function importWorkoutCsv(file: File, options?: WorkoutImportOptions) {
     const result = await withBackgroundActivity('Importing workouts…', async () => {
-      const imported = await api.importWorkouts(file);
+      const imported = await api.importWorkouts(file, options);
       await refreshData({ activityLabel: null });
       return imported;
     });
     const bodyweightCount = result.body_measurements_created + result.body_measurements_updated;
     setMessage(
-      `Imported ${plural(result.sets_imported, 'set')} across ${plural(result.workouts_created, 'workout')}${
-        result.exercises_created ? ` and added ${plural(result.exercises_created, 'exercise')}` : ''
-      }${bodyweightCount ? `; added ${plural(bodyweightCount, 'body-weight check-in')}` : ''}${
-        result.workouts_skipped
-          ? `; skipped ${plural(result.workouts_skipped, 'identical session')}`
-          : ''
-      }.`,
+      !result.sets_imported &&
+        !result.workouts_created &&
+        !result.workouts_skipped &&
+        bodyweightCount
+        ? `Imported ${plural(bodyweightCount, 'body-weight check-in')}.`
+        : `Imported ${plural(result.sets_imported, 'set')} across ${plural(result.workouts_created, 'workout')}${
+            result.exercises_created
+              ? ` and added ${plural(result.exercises_created, 'exercise')}`
+              : ''
+          }${bodyweightCount ? `; added ${plural(bodyweightCount, 'body-weight check-in')}` : ''}${
+            result.workouts_skipped
+              ? `; skipped ${plural(result.workouts_skipped, 'identical session')}`
+              : ''
+          }.`,
     );
-  }
-
-  async function exportWorkoutCsv(range: DateRange) {
-    try {
-      const blob = await withBackgroundActivity('Preparing workout export…', () =>
-        api.exportWorkouts(range),
-      );
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `gym-workouts-${range.start_date ? `${range.start_date}-to-${range.end_date}` : localDate()}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      setMessage('Workout CSV exported.');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not export workout data.');
-    }
   }
 
   async function deleteSampleData() {
@@ -1558,7 +1543,6 @@ function AppContent() {
                 onImportWorkouts={importWorkoutCsv}
                 csvGuideOpen={csvGuideOpen}
                 onCsvGuideOpenChange={setCsvGuideOpen}
-                onExportWorkouts={exportWorkoutCsv}
                 onDeleteSamples={deleteSampleData}
                 onDataChange={refreshAfterMutation}
                 account={user}
@@ -6242,48 +6226,6 @@ function ProgressScreen({
   );
 }
 
-function ExportTimeFrame({
-  label,
-  value,
-  dates,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  value: TimeRange;
-  dates: string[];
-  disabled: boolean;
-  onChange: (range: TimeRange) => void;
-}) {
-  const range = dateRangeForDates(dates, value);
-  return (
-    <div className="export-time-frame">
-      <label className="chart-option-field">
-        <span>Export time frame</span>
-        <select
-          aria-label={label}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.value as TimeRange)}
-        >
-          {TIME_RANGE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <small>
-        {range.start_date && range.end_date
-          ? `${prettyDate(range.start_date)} – ${prettyDate(range.end_date)} · ends at your latest entry`
-          : dates.length
-            ? 'All saved entries'
-            : 'No saved entries — exports an empty CSV template'}
-      </small>
-    </div>
-  );
-}
-
 function SettingsScreen({
   active,
   workouts,
@@ -6300,7 +6242,6 @@ function SettingsScreen({
   onImportWorkouts,
   csvGuideOpen,
   onCsvGuideOpenChange,
-  onExportWorkouts,
   onDeleteSamples,
   onDataChange,
   account,
@@ -6333,23 +6274,17 @@ function SettingsScreen({
   onReduceMotionChange: (reduced: boolean) => void;
   bodyTrendPreference: BodyTrendPreference;
   onBodyTrendPreferenceChange: (preference: BodyTrendPreference) => void;
-  onImportWorkouts: (file: File) => Promise<void>;
+  onImportWorkouts: (file: File, options?: WorkoutImportOptions) => Promise<void>;
   csvGuideOpen: boolean;
   onCsvGuideOpenChange: (open: boolean) => void;
-  onExportWorkouts: (range: DateRange) => Promise<void>;
   onDeleteSamples: () => Promise<void>;
   onDataChange: () => Promise<void>;
 }) {
   useSettingsPageJump('settings', active);
-  const bodyCsvInput = useRef<HTMLInputElement>(null);
   const workoutDataSection = useRef<HTMLElement>(null);
-  const [exportingWorkouts, setExportingWorkouts] = useState(false);
-  const [workoutExportRange, setWorkoutExportRange] = useState<TimeRange>('all');
-  const [bodyExportRange, setBodyExportRange] = useState<TimeRange>('all');
-  const [importingBodyCsv, setImportingBodyCsv] = useState(false);
-  const [exportingBodyCsv, setExportingBodyCsv] = useState(false);
-  const [bodyCsvMessage, setBodyCsvMessage] = useState<string | null>(null);
-  const [bodyCsvError, setBodyCsvError] = useState<string | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [workoutImportSource, setWorkoutImportSource] =
+    useState<WorkoutImportOptions['source']>('gym');
   const [notificationStatus, setNotificationStatus] = useState<RestAlertStatus>(() =>
     pushNotificationsSupported() ? 'checking' : 'unsupported',
   );
@@ -6496,66 +6431,6 @@ function SettingsScreen({
     ...workouts.map((workout) => workout.workout_date),
     ...(historySummary?.last_workout_date ? [historySummary.last_workout_date] : []),
   ];
-
-  async function exportWorkouts() {
-    if (exportingWorkouts) return;
-    setExportingWorkouts(true);
-    try {
-      await onExportWorkouts(dateRangeForDates(workoutDates, workoutExportRange));
-    } finally {
-      setExportingWorkouts(false);
-    }
-  }
-
-  async function exportBodyCsv() {
-    if (exportingBodyCsv) return;
-    setExportingBodyCsv(true);
-    setBodyCsvError(null);
-    setBodyCsvMessage(null);
-    try {
-      const range = dateRangeForDates(
-        measurements.map((measurement) => measurement.measurement_date),
-        bodyExportRange,
-      );
-      const count = filterMeasurementsByRange(measurements, bodyExportRange).length;
-      const blob = await api.exportBodyMeasurements(range);
-      const href = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = href;
-      link.download = `body-weight-${range.start_date ? `${range.start_date}-to-${range.end_date}` : localDate()}.csv`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(href);
-      setBodyCsvMessage(
-        count
-          ? `Exported ${count} body-weight ${count === 1 ? 'entry' : 'entries'}.`
-          : 'Exported an empty body-weight CSV template.',
-      );
-    } catch (reason) {
-      setBodyCsvError(reason instanceof Error ? reason.message : 'Could not export body weight.');
-    } finally {
-      setExportingBodyCsv(false);
-    }
-  }
-
-  async function importBodyCsv(file: File) {
-    if (importingBodyCsv) return;
-    setImportingBodyCsv(true);
-    setBodyCsvError(null);
-    setBodyCsvMessage(null);
-    try {
-      const result = await api.importBodyMeasurements(file);
-      await onDataChange();
-      setBodyCsvMessage(
-        `Imported ${result.rows_imported} ${result.rows_imported === 1 ? 'row' : 'rows'}: ${result.measurements_created} created and ${result.measurements_updated} updated.`,
-      );
-    } catch (reason) {
-      setBodyCsvError(reason instanceof Error ? reason.message : 'Could not import body weight.');
-    } finally {
-      setImportingBodyCsv(false);
-    }
-  }
 
   return (
     <section className="settings-screen content-page" data-settings-page="settings">
@@ -6971,49 +6846,34 @@ function SettingsScreen({
       >
         <header>
           <div>
-            <p className="section-kicker">WORKOUTS</p>
-            <h2 id="workout-data-title">Workout data</h2>
+            <p className="section-kicker">DATA</p>
+            <h2 id="workout-data-title">Workouts &amp; bodyweight</h2>
           </div>
         </header>
         <p>
-          Import or export completed workout set data for your chosen time frame. All time includes
-          all completed sets. CSV does not include RPE, rest, duration, notes, photos, supersets or
-          goals.{' '}
+          Bring your workout history and bodyweight check-ins together.{' '}
           <button
             type="button"
             className="csv-guide-link"
             onClick={() => onCsvGuideOpenChange(true)}
           >
-            CSV format guide
+            Import guide
           </button>
         </p>
-        <p>
-          For account snapshots, see the{' '}
-          <a
-            href={`${PROJECT_URL}/blob/main/docs/TECHNICAL-REFERENCE.md#per-account-backups`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            account backup instructions
-          </a>
-          . Snapshots are created by the server administrator; video files are excluded.
-        </p>
-        <ExportTimeFrame
-          label="Workout export time frame"
-          value={workoutExportRange}
-          dates={workoutDates}
-          disabled={exportingWorkouts}
-          onChange={setWorkoutExportRange}
-        />
-        <div className="settings-actions">
+        <div
+          className={`settings-actions data-transfer-actions${workoutImportSource !== 'gym' ? ' data-transfer-import-only' : ''}`}
+        >
           <WorkoutCsvImport
             onImport={onImportWorkouts}
             guideOpen={csvGuideOpen}
             onGuideOpenChange={onCsvGuideOpenChange}
+            onSourceChange={setWorkoutImportSource}
           />
-          <button type="button" disabled={exportingWorkouts} onClick={() => void exportWorkouts()}>
-            {exportingWorkouts ? 'Exporting…' : '↓ Export workout CSV'}
-          </button>
+          {workoutImportSource === 'gym' && (
+            <button type="button" onClick={() => setExportOpen(true)}>
+              ↓ Export data
+            </button>
+          )}
           {(historySummary?.has_sample_workouts ??
             workouts.some((workout) => workout.is_sample)) && (
             <InlineConfirmButton
@@ -7026,55 +6886,13 @@ function SettingsScreen({
         </div>
       </section>
 
-      <section className="settings-panel panel" aria-labelledby="bodyweight-data-title">
-        <header>
-          <div>
-            <p className="section-kicker">BODYWEIGHT</p>
-            <h2 id="bodyweight-data-title">Bodyweight data</h2>
-          </div>
-        </header>
-        <p>Date and Weight (kg) are required; Body Fat (%) and Notes are optional.</p>
-        <ExportTimeFrame
-          label="Bodyweight export time frame"
-          value={bodyExportRange}
-          dates={measurements.map((measurement) => measurement.measurement_date)}
-          disabled={exportingBodyCsv}
-          onChange={setBodyExportRange}
+      {exportOpen && (
+        <DataExportDialog
+          workoutDates={workoutDates}
+          bodyweightDates={measurements.map((measurement) => measurement.measurement_date)}
+          onClose={() => setExportOpen(false)}
         />
-        <input
-          ref={bodyCsvInput}
-          className="sr-only"
-          type="file"
-          accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
-          onChange={(event) => {
-            const file = event.currentTarget.files?.[0];
-            event.currentTarget.value = '';
-            if (file) void importBodyCsv(file);
-          }}
-        />
-        <div className="settings-actions">
-          <button
-            type="button"
-            disabled={importingBodyCsv}
-            onClick={() => bodyCsvInput.current?.click()}
-          >
-            {importingBodyCsv ? 'Importing…' : '↑ Import bodyweight CSV'}
-          </button>
-          <button type="button" disabled={exportingBodyCsv} onClick={() => void exportBodyCsv()}>
-            {exportingBodyCsv ? 'Exporting…' : '↓ Export bodyweight CSV'}
-          </button>
-        </div>
-        {bodyCsvMessage && (
-          <p className="body-csv-status" role="status">
-            {bodyCsvMessage}
-          </p>
-        )}
-        {bodyCsvError && (
-          <p className="inline-error" role="alert">
-            {bodyCsvError}
-          </p>
-        )}
-      </section>
+      )}
     </section>
   );
 }

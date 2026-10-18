@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { PopupDialog } from './PopupDialog';
 import { useWeightUnit } from './trainingPreferencesContext';
 import { downloadWorkoutCsvTemplate, workoutCsvTemplateRows } from './workoutCsvTemplate';
+import { WorkoutImportSource } from './WorkoutImportSource';
+import type { WorkoutImportOptions } from './types';
 import './workoutCsvGuide.css';
 
 const PAGE_TITLES = ['What gets imported', 'Shape your file', 'Before you choose a file'];
@@ -10,9 +12,13 @@ const PAGE_TITLES = ['What gets imported', 'Shape your file', 'Before you choose
 export function WorkoutCsvGuide({
   onClose,
   onFileSelected,
+  options,
+  onOptionsChange,
 }: {
   onClose: () => void;
-  onFileSelected: (file: File) => void;
+  onFileSelected: (file: File, options: WorkoutImportOptions) => void;
+  options: WorkoutImportOptions;
+  onOptionsChange: (options: WorkoutImportOptions) => void;
 }) {
   const [page, setPage] = useState(0);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -28,27 +34,29 @@ export function WorkoutCsvGuide({
 
   return (
     <PopupDialog
-      title="Import workout history"
+      title="Import workouts & bodyweight"
       kicker={`CSV GUIDE · ${page + 1} OF ${PAGE_TITLES.length}`}
       className="workout-csv-guide"
       onClose={onClose}
     >
       <div className="workout-csv-guide-body">
         <h3 ref={titleRef} tabIndex={-1}>
-          {PAGE_TITLES[page]}
+          {page === 1 && options.source !== 'gym' ? 'Use your original export' : PAGE_TITLES[page]}
         </h3>
         {page === 0 && (
           <>
+            <WorkoutImportSource value={options} onChange={onOptionsChange} />
             <p>
-              Each row in your file is one completed set. Rows are grouped into workouts by date,
-              and exercises you have not used before are added for you. Charts, personal records and
-              next-set suggestions then include your imported training.
+              Each workout row is one completed set. Rows are grouped into sessions, and exercises
+              you have not used before are added for you. Charts, personal records and next-set
+              suggestions then include your imported training.
             </p>
             <div className="workout-csv-guide-lists">
               <section aria-labelledby="csv-guide-included">
                 <h4 id="csv-guide-included">Imported</h4>
                 <ul>
                   <li>Date, exercise, weight, reps and warmup sets</li>
+                  <li>Hevy / Strong: RPE, notes, duration, distance and drop sets</li>
                   <li>Workout names, keeping two sessions on one date apart</li>
                   <li>Body weight logged with a set, for dates without a check-in</li>
                 </ul>
@@ -56,19 +64,60 @@ export function WorkoutCsvGuide({
               <section aria-labelledby="csv-guide-excluded">
                 <h4 id="csv-guide-excluded">Not imported</h4>
                 <ul>
-                  <li>RPE, rest times and duration</li>
-                  <li>Notes, machine photos and videos</li>
-                  <li>Supersets, cardio metrics and goals</li>
+                  <li>Rest timers, machine photos and videos</li>
+                  <li>Superset grouping and goals</li>
+                  <li>Fields absent from the original export</li>
                 </ul>
               </section>
             </div>
             <p className="workout-csv-guide-note">
-              Body-weight check-ins on their own use the separate Bodyweight data CSV in Settings.
+              Strong measurement exports and Gym Logger bodyweight CSVs use the same file picker.
+              Upload one file at a time. Existing check-ins are kept.
             </p>
           </>
         )}
-        {page === 1 && (
+        {page === 1 && options.source !== 'gym' && (
           <>
+            <p>
+              No column renaming or spreadsheet editing is needed. Export a CSV from your chosen app
+              and upload that file.
+            </p>
+            <ol className="workout-csv-guide-tips">
+              <li>
+                Save the CSV export from{' '}
+                {options.source === 'strengthlevel'
+                  ? 'Strength Level'
+                  : options.source === 'hevy'
+                    ? 'Hevy'
+                    : 'Strong'}{' '}
+                to your device.
+              </li>
+              <li>
+                {options.source === 'strong'
+                  ? 'For workouts, match the kg/lb and km/miles choices to Strong’s export settings. Measurement files supply their own units; import these separately from workouts.'
+                  : options.source === 'hevy'
+                    ? 'Keep the original start_time and weight_kg columns. Separate workouts on one date stay separate.'
+                    : 'Keep Date Lifted, Exercise and Reps. Kilogram or pound columns work. The export has dates only, so sets on one date are combined.'}
+              </li>
+              <li>
+                Choose the file, review totals and warnings, then Save import. Upload one file at a
+                time.
+              </li>
+            </ol>
+            <p className="workout-csv-guide-note">
+              Exercise names match the library where recognised; other names become custom
+              exercises. Weights are kept as recorded, including each app’s per-dumbbell or
+              assisted-load conventions. Existing workouts and check-ins are preserved.
+            </p>
+          </>
+        )}
+        {page === 1 && options.source === 'gym' && (
+          <>
+            <p className="workout-csv-guide-note">
+              Bodyweight CSVs are detected automatically: Date and Weight (kg) are required; Body
+              Fat (%) and Notes are optional. Existing check-in dates are skipped. For workout CSVs,
+              use the columns below.
+            </p>
             <p>
               Put column names in the first row, then add one row for every set. Repeat the date and
               exercise on each row. Column order does not matter.
@@ -149,22 +198,22 @@ export function WorkoutCsvGuide({
                 copied from a spreadsheet with tabs also work. Files can be up to 20 MB.
               </li>
               <li>
-                <strong>Keep dates as YYYY-MM-DD.</strong> Spreadsheets can change them to
-                13/10/2026 when saving, so format the date column as text first.
+                <strong>Keep the export unchanged.</strong> App-specific dates are read
+                automatically. Your own spreadsheet should use YYYY-MM-DD dates.
               </li>
               <li>
                 <strong>Use plain numbers,</strong> such as 82.5, without kg or lb.
               </li>
               <li>
-                <strong>Moving from another app?</strong> Exports from apps such as Strong or Hevy
-                use different column names. Rename them to match this layout in a spreadsheet first;
-                other columns are left out and listed as warnings.
+                <strong>Check the selected app and units.</strong> Choose Strength Level, Hevy or
+                Strong for that app’s original export. Warnings explain skipped or unsupported data.
               </li>
             </ul>
             <p className="workout-csv-guide-note">
               Next, you review the sessions, sets and new exercises. Nothing is saved until you
               choose Save import, and sessions identical to ones already in your account are
-              skipped. Remove sample workouts from Workout data once your own history is in.
+              skipped. Remove sample workouts from Workouts &amp; bodyweight once your own history
+              is in.
             </p>
           </>
         )}
@@ -178,7 +227,7 @@ export function WorkoutCsvGuide({
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
           event.currentTarget.value = '';
-          if (file) onFileSelected(file);
+          if (file) onFileSelected(file, options);
         }}
       />
       <footer className="popup-dialog-actions workout-csv-guide-actions">

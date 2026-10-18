@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .models import BodyMeasurement
-from .tracker_csv import CsvImportError, format_number
+from .tracker_csv import DELIMITERS, CsvImportError, format_number
 
 CSV_HEADERS = ("Date", "Weight (kg)", "Body Fat (%)", "Notes")
 REQUIRED_HEADERS = CSV_HEADERS[:2]
@@ -52,6 +52,13 @@ def parse_optional_number(value: str | None, field: str, row_number: int) -> flo
 
 def parse_body_measurement_rows(raw: bytes) -> list[ParsedBodyMeasurement]:
     try:
+        return _parse_body_measurement_rows(raw)
+    except csv.Error as error:
+        raise CsvImportError("The CSV has malformed quoting or an oversized field.") from error
+
+
+def _parse_body_measurement_rows(raw: bytes) -> list[ParsedBodyMeasurement]:
+    try:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError as error:
         raise CsvImportError("The file must be UTF-8 encoded.") from error
@@ -59,8 +66,12 @@ def parse_body_measurement_rows(raw: bytes) -> list[ParsedBodyMeasurement]:
         raise CsvImportError("The CSV file is empty.")
 
     first_line = text.splitlines()[0]
-    delimiter = "\t" if first_line.count("\t") > first_line.count(",") else ","
-    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+    delimiter = max(DELIMITERS, key=first_line.count)
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter, strict=True)
+    headers = [(header or "").strip() for header in (reader.fieldnames or [])]
+    if len(headers) != len(set(headers)):
+        raise CsvImportError("The CSV contains duplicate column names.")
+    reader.fieldnames = headers
     supplied = {(header or "").strip() for header in (reader.fieldnames or [])}
     missing = [header for header in REQUIRED_HEADERS if header not in supplied]
     if missing:
@@ -69,6 +80,8 @@ def parse_body_measurement_rows(raw: bytes) -> list[ParsedBodyMeasurement]:
     rows: list[ParsedBodyMeasurement] = []
     seen_dates: set[date] = set()
     for row_number, row in enumerate(reader, start=2):
+        if None in row:
+            raise CsvImportError(f"Row {row_number}: there are more values than columns.")
         if not any((value or "").strip() for value in row.values()):
             continue
 
