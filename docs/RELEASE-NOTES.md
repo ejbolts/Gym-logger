@@ -6,6 +6,16 @@
 
 ### Bring your training from other apps
 
+![Workout import guide with Strength Level, Hevy and Strong logo choices](screenshots/releases/0.8.0-app-import.png)
+
+*Choose the app that created your CSV, then review the import before saving.*
+
+![Workout data in Settings with the three app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
+
+*Strong workout exports use the units you select; measurement files supply their own units.*
+
+- Release previews show feature screenshots before the change bullets, including
+  expanded earlier versions. Written release notes also lead with feature media.
 - Choose **Strength Level**, **Hevy** or **Strong** in **Settings > Workout data** or
   the import guide. Each option includes the app's logo. Upload the original CSV;
   no column renaming is needed. Gym Logger exports and the spreadsheet template still work.
@@ -26,14 +36,6 @@
   because Gym Logger cannot represent them safely.
 - Gym Logger's own CSV export remains a completed-set history format, rather than a
   full backup of imported notes, RPE or cardio details.
-
-![Workout import guide with Strength Level, Hevy and Strong logo choices](screenshots/releases/0.8.0-app-import.png)
-
-*Choose the app that created your CSV, then review the import before saving.*
-
-![Workout data in Settings with the three app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
-
-*Strong workout exports use the units you select; measurement files supply their own units.*
 
 ## 0.7.0
 
