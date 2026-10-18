@@ -30,6 +30,10 @@
 
 *See a sample profile shows the names you've typed on a profile card.*
 
+![Profile Time trained panel showing 8h 25min across 8 workouts, 2h 20min across 5 cardio sessions and 10h 10min combined](screenshots/releases/0.8.1-time-trained.png)
+
+*Time trained on Profile adds up workouts, cardio and all exercise combined.*
+
 - Open **Settings > Workout types** to add your own types and choose their colours, such as **Arms**, **Legs**, **Limbs** or **Torso**.
 - Remove built-in or custom types from new workouts and restore them later. Saved workouts retain their type and colour.
 - Types stay with workout drafts, history, calendar dots and filters, shared profiles, CSV imports/exports and account backups.
@@ -45,6 +49,9 @@
 - **See a sample profile**, below **Create account**, shows a profile card with the name and
   username typed so far, or **Sam Sample** until they're filled in. The workouts, cardio and PRs
   are examples, and a key shows where each name appears.
+- **Profile** has a **Time trained** panel with your total logged time for workouts, cardio
+  sessions and all exercise combined, plus how many workouts and sessions each covers. Cardio
+  logged during a workout counts once in **Combined**, and sample data is not included.
 
 ## 0.8.0
 

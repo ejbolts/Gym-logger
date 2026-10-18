@@ -2,7 +2,7 @@
   "version": "0.8.1",
   "date": "2026-10-19",
   "title": "Workout types, friends and account setup",
-  "summary": "Custom workout types return with a cleaner calendar, follow notifications and clearer account creation.",
+  "summary": "Custom workout types return with a cleaner calendar, follow notifications, clearer account creation and your total time trained on Profile.",
   "changes": [
     "Settings > Workout types lets each account add named workout types with their own colours, such as Arms, Legs, Limbs or Torso.",
     "Remove built-in or custom types from new workouts and restore them later. Saved workouts keep their type and colour.",
@@ -11,7 +11,8 @@
     "New accounts start public. Existing accounts keep their privacy settings; friends-only profiles stay searchable and require approval to view workouts.",
     "A bell beside your profile picture shows follow requests and new followers. Approve or decline requests and dismiss new-follower notices there.",
     "Creating an account has a ? beside Name and Username. Name is your display name and doesn't need to be unique; Username is how you sign in and how friends find you as @handle, so it must be unique. Both can be changed any time in Profile.",
-    "See a sample profile, under Create account, shows a profile card with the name and username you've typed, or Sam Sample until you type them, with example workouts, cardio and PRs."
+    "See a sample profile, under Create account, shows a profile card with the name and username you've typed, or Sam Sample until you type them, with example workouts, cardio and PRs.",
+    "Profile shows Time trained: total hours from workouts, cardio sessions and all exercise combined. Cardio logged during a workout counts once in Combined."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#081",
   "image": {

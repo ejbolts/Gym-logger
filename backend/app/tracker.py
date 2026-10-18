@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -92,6 +92,7 @@ from .tracker_schemas import (
     ProgressPoint,
     TrainingPreferencesRead,
     TrainingPreferencesUpdate,
+    TrainingTimeRead,
     TrainingWorkoutCreate,
     TrainingWorkoutRead,
     WeeklyDayBreakdown,
@@ -1638,6 +1639,49 @@ def workouts_between(
 @router.get("/workouts", response_model=list[TrainingWorkoutRead])
 def list_workouts(db: DbSession, user: CurrentUser) -> list[TrainingWorkout]:
     return workouts_between(db, user.id)
+
+
+@router.get("/training-time", response_model=TrainingTimeRead)
+def training_time(db: DbSession, user: CurrentUser) -> TrainingTimeRead:
+    """Lifetime minutes for Profile, without sample data. Workouts are those with a strength
+    movement; cardio covers every session. The combined total counts each workout once, using
+    its own cardio when that is longer than the workout's logged duration."""
+    has_strength = (
+        select(WorkoutMovement.id)
+        .join(Exercise, WorkoutMovement.exercise_id == Exercise.id)
+        .where(
+            WorkoutMovement.workout_id == TrainingWorkout.id,
+            Exercise.kind != ExerciseKind.CARDIO,
+        )
+        .exists()
+    )
+    workouts = db.execute(
+        select(TrainingWorkout.id, TrainingWorkout.duration_minutes, has_strength).where(
+            TrainingWorkout.user_id == user.id, TrainingWorkout.is_sample.is_(False)
+        )
+    ).all()
+    sessions = db.execute(
+        select(CardioSession.source_workout_id, CardioSession.duration_minutes)
+        .outerjoin(TrainingWorkout, CardioSession.source_workout_id == TrainingWorkout.id)
+        .where(
+            CardioSession.user_id == user.id,
+            or_(TrainingWorkout.id.is_(None), TrainingWorkout.is_sample.is_(False)),
+        )
+    ).all()
+    cardio_by_workout: defaultdict[str | None, int] = defaultdict(int)
+    for workout_id, minutes in sessions:
+        cardio_by_workout[workout_id] += minutes
+    strength = [minutes or 0 for _, minutes, strength_workout in workouts if strength_workout]
+    return TrainingTimeRead(
+        workout_minutes=sum(strength),
+        workout_count=len(strength),
+        cardio_minutes=sum(minutes for _, minutes in sessions),
+        cardio_count=len(sessions),
+        total_minutes=cardio_by_workout[None]
+        + sum(
+            max(minutes or 0, cardio_by_workout[workout_id]) for workout_id, minutes, _ in workouts
+        ),
+    )
 
 
 @router.get("/workouts/revision", response_model=WorkoutCacheRevisionRead)

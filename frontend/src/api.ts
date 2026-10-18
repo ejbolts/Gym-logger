@@ -51,6 +51,7 @@ import type {
   WorkoutSnapshot,
   WorkoutSession,
   TrainingPreferences,
+  TrainingTime,
   WorkoutTypeColors,
   WorkoutType,
   YouTubeConnection,
@@ -367,6 +368,7 @@ export const api = {
     request<DashboardData>(
       `/api/dashboard${calendarStart ? `?${new URLSearchParams({ calendar_start: calendarStart })}` : ''}`,
     ),
+  trainingTime: () => request<TrainingTime>('/api/training-time'),
   listWorkouts: listCachedWorkouts,
   listOlderHistory,
   exerciseHistoryBaselines: (before: string) =>
