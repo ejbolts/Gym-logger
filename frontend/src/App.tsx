@@ -8789,20 +8789,22 @@ function HistoryScreen({
             </section>
           ) : (
             <>
-              {(workouts.length > 0 || hasOlder) && (
-                <div className="history-filter-bar">
-                  <button type="button" onClick={() => setMachinePickerOpen(true)}>
-                    <Icon name="filter" />
-                    Filter by machine
-                  </button>
-                </div>
-              )}
               <section
                 className="history-calendar-panel calendar-panel pulse-card"
                 aria-label="Workout calendar"
               >
-                <header className="pulse-card-header">
+                <header className="pulse-card-header history-calendar-header">
                   <h2>Calendar</h2>
+                  {(workouts.length > 0 || hasOlder) && (
+                    <button
+                      type="button"
+                      className="history-machine-filter"
+                      onClick={() => setMachinePickerOpen(true)}
+                    >
+                      <Icon name="filter" />
+                      Filter by machine
+                    </button>
+                  )}
                 </header>
                 <InteractiveWorkoutCalendar
                   entries={heatmap}
