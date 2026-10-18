@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { cancelRestTimerPushSchedule, restTimerProgress } from './restTimer';
+import { cancelRestTimerPushSchedule, restSecondsLeft, restTimerProgress } from './restTimer';
 
 describe('rest timer push cancellation', () => {
   it('cancels immediately and again after an in-flight schedule completes', async () => {
@@ -36,5 +36,14 @@ describe('rest timer progress', () => {
     expect(restTimerProgress(0, 90)).toBe(0);
     expect(restTimerProgress(120, 90)).toBe(1);
     expect(restTimerProgress(10, 0)).toBe(0);
+  });
+});
+
+describe('rest time left', () => {
+  it('rounds partial seconds up and stops at zero', () => {
+    expect(restSecondsLeft(10_000, 0)).toBe(10);
+    expect(restSecondsLeft(10_000, 9_001)).toBe(1);
+    expect(restSecondsLeft(10_000, 10_000)).toBe(0);
+    expect(restSecondsLeft(10_000, 12_000)).toBe(0);
   });
 });

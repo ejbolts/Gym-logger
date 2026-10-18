@@ -337,31 +337,29 @@ export function TodayScreen({
           )}
           <div className="next-session-actions">
             {template ? (
-              <>
-                <button
-                  className="pulse-button primary"
-                  type="button"
-                  onClick={() => onStartTemplate(template)}
-                  aria-label={`Start ${recommendationLabel?.toLowerCase()} workout`}
-                >
-                  <Icon name="play" filled />
-                  Start workout
-                </button>
-                <button
-                  className="pulse-button primary next-session-empty"
-                  type="button"
-                  onClick={onStartEmpty}
-                  aria-label="Start empty workout"
-                >
-                  Empty
-                </button>
-              </>
+              <button
+                className="pulse-button primary"
+                type="button"
+                onClick={() => onStartTemplate(template)}
+                aria-label={`Start ${recommendationLabel?.toLowerCase()} workout`}
+              >
+                <Icon name="play" filled />
+                Start workout
+              </button>
             ) : (
               <button className="pulse-button primary" type="button" onClick={onStartEmpty}>
                 <Icon name="plus" />
                 Start workout
               </button>
             )}
+            <button
+              className="pulse-button primary next-session-empty"
+              type="button"
+              onClick={onStartEmpty}
+              aria-label="Start empty workout"
+            >
+              Empty
+            </button>
           </div>
         </section>
       ) : null,

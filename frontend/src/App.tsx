@@ -87,6 +87,8 @@ import {
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { NotificationDialog } from './NotificationDialog';
 import { PopupDialog } from './PopupDialog';
+import { PlateCalculatorDialog } from './PlateCalculator';
+import { barTypeForExercise } from './plateLoading';
 import { ExerciseMuscleHelp } from './ExerciseMuscleHelp';
 import {
   MachineFilterBanner,
@@ -133,7 +135,7 @@ import {
   type ProgressMetric,
 } from './progressChart';
 import { restTimerPreferenceEnabled, saveRestTimerPreference } from './restTimerPreference';
-import { cancelRestTimerPushSchedule } from './restTimer';
+import { cancelRestTimerPushSchedule, restSecondsLeft } from './restTimer';
 import {
   disablePhonePushNotifications,
   dismissRestTimerNotifications,
@@ -610,6 +612,8 @@ function AppContent() {
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [completionRecords, setCompletionRecords] = useState<PersonalRecord[]>([]);
   const [restTimerEnabled, setRestTimerEnabled] = useState(restTimerPreferenceEnabled);
+  // The live workout's rest end, so the tab bar can count it down away from the workout.
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [reduceMotion, setReduceMotion] = useState(reduceMotionPreference);
   const [navDirection, setNavDirection] = useState<'forward' | 'back'>('forward');
   const [bodyTrendPreference, setBodyTrendPreference] = useState(loadBodyTrendPreference);
@@ -1433,6 +1437,7 @@ function AppContent() {
                       setMessage('Your inactive workout passed its time limit and was auto-saved.')
                     }
                     activeStartedAt={activeWorkoutStartedAt}
+                    onRestTimerChange={editingWorkout ? undefined : setRestEndsAt}
                     onClose={navigateBack}
                     onDelete={() => {
                       if (workoutSaving) return;
@@ -1612,6 +1617,7 @@ function AppContent() {
             homeLayout={home}
             active={activeMainTab}
             workoutStartedAt={activeWorkoutStartedAt}
+            restEndsAt={restEndsAt}
             workoutSaving={workoutSaving}
             onSelect={(nextTab) => {
               if (nextTab === 'history' || nextTab === 'progress') openHistorySection(nextTab);
@@ -2367,6 +2373,7 @@ function WorkoutLogger({
   activeStartedAt,
   onClose,
   onDelete,
+  onRestTimerChange,
 }: {
   exercises: Exercise[];
   restoredDraftMovements: DraftMovement[];
@@ -2389,6 +2396,8 @@ function WorkoutLogger({
   activeStartedAt: number | null;
   onClose: () => void;
   onDelete: () => void;
+  /** When the rest ends, or null without one, for the countdown on the tab bar. */
+  onRestTimerChange?: (endsAt: number | null) => void;
 }) {
   const weightUnit = useWeightUnit();
   const restoredDraft = useState(() => (initialWorkout ? null : readActiveWorkoutDraft()))[0];
@@ -2658,7 +2667,7 @@ function WorkoutLogger({
     const interval = window.setInterval(() => {
       const active = activeRestTimerRef.current;
       if (!active) return;
-      const next = Math.max(0, Math.ceil((active.endsAt - Date.now()) / 1000));
+      const next = restSecondsLeft(active.endsAt);
       setRestLeft((current) => {
         if (next === 0 && current > 0) {
           activeRestTimerRef.current = null;
@@ -2932,6 +2941,25 @@ function WorkoutLogger({
     setRestLeft(seconds);
     setRestTotal(seconds);
     setRestPopupOpen(true);
+    onRestTimerChange?.(timer.endsAt);
+    const endpoint = restNotificationEndpointRef.current;
+    if (endpoint) scheduleRestTimerPush(timer, endpoint);
+  }
+
+  /** Adds or takes off rest; taking off all of it ends the rest like Cancel. */
+  function adjustRestTimer(deltaSeconds: number) {
+    const timer = activeRestTimerRef.current;
+    if (!timer) return;
+    const left = restSecondsLeft(timer.endsAt) + deltaSeconds;
+    if (left <= 0) {
+      cancelRestTimer();
+      return;
+    }
+    timer.endsAt = Date.now() + left * 1000;
+    setRestLeft(left);
+    setRestTotal((total) => Math.max(left, total + deltaSeconds));
+    onRestTimerChange?.(timer.endsAt);
+    // Scheduling again replaces this device's pending "Rest complete" notification.
     const endpoint = restNotificationEndpointRef.current;
     if (endpoint) scheduleRestTimerPush(timer, endpoint);
   }
@@ -2941,6 +2969,7 @@ function WorkoutLogger({
     activeRestTimerRef.current = null;
     setRestLeft(0);
     setRestPopupOpen(false);
+    onRestTimerChange?.(null);
     void dismissRestTimerNotifications().catch(() => undefined);
     const endpoint = restNotificationEndpointRef.current;
     if (timer && endpoint) {
@@ -2958,6 +2987,9 @@ function WorkoutLogger({
     if (restTimerEnabled) return;
     cancelRestTimer();
   }, [restTimerEnabled]);
+
+  // A closed workout leaves no rest countdown on the tab bar.
+  useEffect(() => () => onRestTimerChange?.(null), [onRestTimerChange]);
 
   function updateSet(movementKey: string, setKey: string, update: Partial<DraftSet>) {
     const movement = movements.find((item) => item.key === movementKey);
@@ -3523,6 +3555,7 @@ function WorkoutLogger({
               totalSeconds={restTotal}
               onDismiss={() => setRestPopupOpen(false)}
               onCancel={skipRestTimer}
+              onAdjust={adjustRestTimer}
             />
           )}
         </div>
@@ -4014,6 +4047,10 @@ function MovementCard({
     item: DraftSet;
     warning: SetEntryWarning;
   } | null>(null);
+  const barType = cardio ? null : barTypeForExercise(movement.exercise);
+  const [plateSetKey, setPlateSetKey] = useState<string | null>(null);
+  const plateSetIndex = movement.sets.findIndex((item) => item.key === plateSetKey);
+  const plateSet = plateSetIndex < 0 ? null : movement.sets[plateSetIndex];
   const draggingSetKeyRef = useRef<string | null>(null);
   const dragTargetSetKeyRef = useRef<string | null>(null);
   const movementMenuRef = useRef<HTMLDetailsElement>(null);
@@ -4573,7 +4610,11 @@ function MovementCard({
           />
           {cardio && (
             <CardioSetScreenshotUpload
-              onScan={(scan) => onUpdateSet(item.key, cardioSetUpdateFromScan(scan))}
+              onScan={(scan) => {
+                // A scanned screenshot is the finished set, so log it and fold it away.
+                onUpdateSet(item.key, { ...cardioSetUpdateFromScan(scan), completed: true });
+                setOpenOverride(item.key, null);
+              }}
             />
           )}
         </div>
@@ -4647,6 +4688,28 @@ function MovementCard({
           )}
         </div>
         <div className="movement-header-actions" onClick={(event) => event.stopPropagation()}>
+          {barType && (
+            <button
+              type="button"
+              className="plate-calculator-button"
+              aria-label={`Plate calculator for ${movement.exercise.name}`}
+              disabled={movement.sets.length === 0}
+              onClick={() => {
+                closeMovementMenu();
+                // The next set to lift, or the last one once every set is ticked.
+                const next = movement.sets.find((item) => !item.completed) ?? movement.sets.at(-1);
+                if (next) setPlateSetKey(next.key);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M1.5 12h2M20.5 12h2M8.5 12h7" />
+                <rect x="3.5" y="8" width="2.5" height="8" rx="1" />
+                <rect x="6" y="5" width="2.5" height="14" rx="1" />
+                <rect x="15.5" y="5" width="2.5" height="14" rx="1" />
+                <rect x="18" y="8" width="2.5" height="8" rx="1" />
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             className={`exercise-complete-button ${movement.isComplete ? 'active' : ''}`}
@@ -4868,6 +4931,21 @@ function MovementCard({
       <button type="button" className="add-set-button" onClick={onAddSet}>
         ＋ Add set
       </button>
+      {plateSet && barType && (
+        <PlateCalculatorDialog
+          exercise={movement.exercise}
+          barType={barType}
+          setLabel={
+            /^\d+$/.test(setNumbers[plateSetIndex])
+              ? `Set ${setNumbers[plateSetIndex]}`
+              : (SET_KINDS.find((kind) => kind.letter === setNumbers[plateSetIndex])?.label ??
+                'Set')
+          }
+          weightKg={plateSet.weight_kg}
+          onUse={(weightKg) => onUpdateSet(plateSet.key, { weight_kg: weightKg })}
+          onClose={() => setPlateSetKey(null)}
+        />
+      )}
       <input
         className="movement-note"
         value={movement.notes}
@@ -4933,6 +5011,15 @@ function SetEntryConfirmationDialog({
   );
 }
 
+function ScanningLabel() {
+  return (
+    <span className="scanning-label">
+      <span className="scanning-spinner" aria-hidden="true" />
+      Scanning
+    </span>
+  );
+}
+
 function CardioSetScreenshotUpload({ onScan }: { onScan: (scan: CardioScreenshotScan) => void }) {
   const [scanning, setScanning] = useState(false);
   const [status, setStatus] = useState<{ message: string; warning: boolean } | null>(null);
@@ -4961,7 +5048,7 @@ function CardioSetScreenshotUpload({ onScan }: { onScan: (scan: CardioScreenshot
   return (
     <div className="cardio-set-screenshot-upload">
       <label className={scanning ? 'disabled' : ''}>
-        {scanning ? 'Scanning…' : 'Upload screenshot'}
+        {scanning ? <ScanningLabel /> : 'Upload screenshot'}
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
@@ -8005,7 +8092,7 @@ function CardioScreen({
               </small>
             </div>
             <label className={scanning ? 'disabled' : ''}>
-              {scanning ? 'Scanning…' : 'Choose screenshot'}
+              {scanning ? <ScanningLabel /> : 'Choose screenshot'}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/heic,image/heif"

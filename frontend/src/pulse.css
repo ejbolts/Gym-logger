@@ -1328,6 +1328,12 @@ html[data-reduce-motion] .app-tab-items[aria-hidden] {
   color: var(--p-ink);
 }
 
+/* During rest the live dot becomes a timer counting the rest down. */
+.app-tab-start.resting .app-tab-start-bubble,
+.app-tab-start.resting > span:last-child {
+  color: var(--p-accent-text);
+}
+
 /* ───────── Overlay header (live workout, settings, videos) ───────── */
 
 .overlay-screen-header::before {
@@ -3717,9 +3723,37 @@ html.edge-swipe-ready .edge-swipe-indicator {
   padding-bottom: calc(7rem + env(safe-area-inset-bottom));
 }
 
+/* The time sits centred between -30s and +30s, with Cancel and × at the edges. */
 .rest-timer-toast {
-  padding-block: 0.625rem 0.75rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.5rem 0.625rem;
   animation-name: rest-timer-toast-in;
+}
+
+.undo-toast .rest-timer-toast-cancel {
+  justify-self: start;
+  padding: 0 0.375rem;
+  font-size: 0.875rem;
+}
+
+.rest-timer-toast .undo-toast-close {
+  justify-self: end;
+}
+
+.rest-timer-toast .rest-timer-toast-adjust {
+  min-width: 3rem;
+  min-height: 2.25rem;
+  padding: 0 0.375rem;
+  border: 1px solid color-mix(in srgb, var(--p-accent) 35%, transparent);
+  border-radius: 999px;
+  background: var(--p-accent-soft);
+  color: var(--p-accent-text);
+  font-size: 0.875rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The rest popup draws its own bar from the time left, so it also works with reduced motion. */
@@ -3727,34 +3761,30 @@ html.edge-swipe-ready .edge-swipe-indicator {
   display: none;
 }
 
-.undo-toast > .rest-timer-toast-icon {
-  width: 2.25rem;
-  height: 2.25rem;
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--p-accent-soft);
-  color: var(--p-accent-text);
-}
-
-.rest-timer-toast-icon .pulse-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
 .undo-toast > .rest-timer-toast-copy {
+  min-width: 4.25rem;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.1rem;
+  text-align: center;
 }
 
 .rest-timer-toast-copy small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   color: var(--p-muted);
   font-size: 0.6875rem;
   font-weight: 750;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.rest-timer-toast-copy small .pulse-icon {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  color: var(--p-accent-text);
 }
 
 .rest-timer-toast-copy strong {
@@ -3780,6 +3810,27 @@ html.edge-swipe-ready .edge-swipe-indicator {
   background: var(--p-accent);
   transform-origin: left;
   transition: transform 1s linear;
+}
+
+/* Narrow phones keep Cancel clear of -30s. */
+@media (max-width: 359px) {
+  .rest-timer-toast {
+    padding-inline: 0.375rem;
+  }
+
+  .undo-toast .rest-timer-toast-cancel {
+    padding: 0 0.25rem;
+  }
+
+  .rest-timer-toast .rest-timer-toast-adjust {
+    min-width: 2.625rem;
+    padding: 0 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .undo-toast > .rest-timer-toast-copy {
+    min-width: 3.75rem;
+  }
 }
 
 @keyframes rest-timer-toast-in {

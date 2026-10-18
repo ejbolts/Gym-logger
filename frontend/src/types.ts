@@ -682,6 +682,9 @@ export interface SharedProfileSummary {
   /** Workouts in the last 30 days. */
   recent_workout_count: number | null;
   last_workout_date: string | null;
+  /** Shared cardio sessions and weight and volume PRs, as counted on the member's Today. */
+  cardio_count?: number | null;
+  record_count?: number | null;
   shares: {
     notes: boolean;
     body_weight: boolean;

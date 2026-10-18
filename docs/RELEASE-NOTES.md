@@ -22,25 +22,9 @@
 
 *Import totals stand out in green before you save, for every app's export.*
 
-![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.8.0-admin-feedback-badge.png)
+![Today Up next card with the dimmer Empty shortcut beside Start workout](screenshots/releases/0.8.0-empty-workout.png)
 
-*Open feedback is counted in the profile badge on Today.*
-
-![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.8.0-admin-feedback-inbox.png)
-
-*Resolve or reopen each message from the admin console.*
-
-![Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar](screenshots/releases/0.8.0-rest-timer-popup.png)
-
-*The rest timer counts down in a popup while you train.*
-
-![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.8.0-rest-timer-header.png)
-
-*After dismissing the popup, the countdown stays beside the live time.*
-
-![What you share with Workouts + cardio and Profile photo marked Always, and switches for machine photos, body weight, goals and notes](screenshots/releases/0.8.0-share-workouts-cardio.png)
-
-*Cardio is now shared together with your workouts.*
+*Start a blank workout from Empty, even when the suggested type has no previous session.*
 
 - Release previews show feature screenshots before the change bullets, including
   expanded earlier versions. Written release notes also lead with feature media.
@@ -83,6 +67,14 @@
 
 ### Review and resolve feedback as an administrator
 
+![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.8.0-admin-feedback-badge.png)
+
+*Open feedback is counted in the profile badge on Today.*
+
+![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.8.0-admin-feedback-inbox.png)
+
+*Resolve or reopen each message from the admin console.*
+
 - New feedback appears in the badge on an administrator's profile picture on **Today**,
   added to any follow requests. Profile shows how many messages are waiting and a
   **Review feedback** button that opens the admin console.
@@ -92,9 +84,25 @@
 
 ### Rest timer popup
 
+![Workout logger with the rest timer popup at the bottom: Cancel, -30s, the 2:59 rest countdown centred, +30s and a dismiss button, above a countdown bar](screenshots/releases/0.8.0-rest-timer-popup.png)
+
+*The rest countdown sits centred between -30s and +30s buttons.*
+
+![Bottom navigation with a timer icon and 2:57 rest countdown in place of the live workout dot](screenshots/releases/0.8.0-rest-timer-tab-bar.png)
+
+*Away from the workout, the tab bar counts down your rest.*
+
+![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.8.0-rest-timer-header.png)
+
+*After dismissing the popup, the countdown stays beside the live time.*
+
 - Completing a set opens a **rest timer popup** at the bottom of the workout, in the same
-  style as the app's other popups. It shows the time left, and a bar along its bottom edge
+  style as the app's other popups. The time left is centred, and a bar along its bottom edge
   shrinks slowly from right to left over the rest period.
+- Tap **-30s** or **+30s** either side of the time to shorten or extend the rest. Taking off
+  all the time left ends the rest, and rest-complete notifications follow the new time.
+- While resting, leaving the workout turns the live button in the bottom navigation into a
+  timer icon counting down the rest. It returns to the live workout time when the rest ends.
 - Tap **×** to dismiss the popup. The countdown keeps running beside the live workout
   time, and tapping it there opens the popup again. **Cancel** stops the rest timer.
 - The popup sits clear of the workout header, and the page leaves room so **Finish
@@ -102,11 +110,74 @@
 
 ### Cardio is shared with your workouts
 
+![What you share with Workouts + cardio and Profile photo marked Always, and switches for machine photos, body weight, goals and notes](screenshots/releases/0.8.0-share-workouts-cardio.png)
+
+*Cardio is now shared together with your workouts.*
+
 - In **Profile > What you share**, workouts and cardio are now one always-shared item,
   **Workouts + cardio**, and the separate **Cardio sessions** switch has been removed.
 - If you had **Cardio sessions** off, anyone who can see your profile now sees your recent
   cardio sessions (time, distance, calories and heart rate). Cardio notes are still shared
   only when **Notes** is on. Make your profile private to stop sharing altogether.
+
+### Plate calculator for barbell, EZ-bar and trap-bar lifts
+
+![Plate calculator for 100 kg on an Olympic bar, with a red 25 kg and yellow 15 kg plate drawn on each side, bar choices and coloured plate buttons](screenshots/releases/0.8.0-plate-calculator.png)
+
+*See which plates to load on each side, drawn on the bar in standard plate colours.*
+
+![Plate calculator in pounds for a trap bar deadlift: 305 lb on a 55 lb trap bar with 45, 45, 25 and 10 lb plates per side](screenshots/releases/0.8.0-plate-calculator-trap-lb.png)
+
+*Pound users get pound plates and bars, here on a trap bar.*
+
+![Barbell Bench Press header with the new barbell button beside the finish tick](screenshots/releases/0.8.0-plate-calculator-button.png)
+
+*Open it from the barbell button on the exercise.*
+
+- Barbell, EZ-bar and trap-bar exercises have a **barbell button** in their header. It opens the
+  plate calculator for the next set to lift, or the last set once every set is ticked.
+- The calculator shows the plates for each side, heaviest nearest the collar, using
+  **25, 20, 15, 10, 5 and 2.5 kg** plates or **45, 35, 25, 10, 5 and 2.5 lb** plates to match
+  your weight unit. Plates use standard colours: red 25 kg, blue 20 kg or 45 lb, yellow 15 kg or
+  35 lb, green 10 kg or 25 lb, and white 5 kg or 10 lb; the smallest are grey.
+- Bars start at the usual weight for the exercise: **Olympic bar 20 kg / 45 lb**, **EZ bar
+  10 kg / 25 lb** and **trap bar 25 kg / 55 lb**. EZ and trap bars vary by brand, so you can
+  switch bars or type your bar's weight; the choice is remembered for each exercise.
+- Step the total by a pair of the smallest plates, or tap plates to add pairs and tap one on the
+  bar to remove it. A weight that can't be loaded exactly shows the nearest weight below and how
+  much is missing. **Use** copies the total into the set.
+
+### Cardio screenshots log the set
+
+![Cycling set row while a screenshot uploads, with a spinning circle beside the word Scanning](screenshots/releases/0.8.0-cardio-scanning.png)
+
+*A spinner shows while the screenshot is read.*
+
+![Cycling set logged from a screenshot as 30:00, 4.2 km and 8.4 km/h with a green tick](screenshots/releases/0.8.0-cardio-scan-logged.png)
+
+*The scanned set is filled in and ticked off.*
+
+- Uploading a screenshot for a cardio set fills in its details and ticks the set off, so it
+  folds away like any logged set. Tap the set to correct anything the scan missed.
+- While a screenshot is being read, the upload button shows a spinning circle beside
+  **Scanning**, on both workout sets and the Cardio page.
+
+### Friends show workouts, cardio and PRs
+
+![Friends card on Today with each friend's workouts, cardio sessions and PRs beside matching calendar, heart and trophy icons](screenshots/releases/0.8.0-friend-totals.png)
+
+*Each friend's totals use the same icons as your profile on Today.*
+
+- The **Friends** card on **Today** shows each friend's total **workouts**, **cardio** sessions
+  and **PRs**, replacing the exercise and set counts from their latest workout. The latest
+  workout's name and date are still shown. On phones the totals sit under the name.
+
+### Start an empty workout from Today
+
+- The dimmer **Empty** part of the **Start workout** button is always available while no workout
+  is active, including when there is no previous session for the suggested workout type.
+  It starts a fresh workout without copying exercises; Start workout still uses a previous
+  session when one is available.
 
 ## 0.7.0
 

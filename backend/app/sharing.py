@@ -14,7 +14,7 @@ not returned in shared profiles. Videos and sample data are never shared.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import Annotated, Literal
+from typing import Annotated, Literal, NamedTuple
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -36,6 +36,7 @@ from .models import (
     Exercise,
     MachinePhoto,
     PersonalRecord,
+    PersonalRecordType,
     ProfileFollow,
     ProfileSharing,
     TrainingWorkout,
@@ -111,6 +112,9 @@ class SharedProfileSummary(BaseModel):
     workout_count: int | None = None
     recent_workout_count: int | None = None
     last_workout_date: date | None = None
+    # Shared cardio sessions and weight and volume PRs, as counted on the member's Today.
+    cardio_count: int | None = None
+    record_count: int | None = None
     shares: SharedContent | None = None
 
 
@@ -260,8 +264,17 @@ def photo_url(user: User) -> str | None:
     return f"/api/sharing/profiles/{user.id}/photo?v={version}"
 
 
-def workout_stats(db: Session, user_ids: list[str]) -> dict[str, tuple[int, int, date | None]]:
-    """Per account: shared workouts, those in the last 30 days, and the latest workout date."""
+class ActivityStats(NamedTuple):
+    workouts: int = 0
+    recent_workouts: int = 0
+    last_workout_date: date | None = None
+    cardio_sessions: int = 0
+    records: int = 0
+
+
+def workout_stats(db: Session, user_ids: list[str]) -> dict[str, ActivityStats]:
+    """Per account: shared workouts, those in the last 30 days, the latest workout date, and
+    totals of shared cardio sessions and weight and volume PRs, as counted on Today."""
     if not user_ids:
         return {}
     cutoff = date.today() - timedelta(days=RECENT_DAYS)
@@ -275,7 +288,42 @@ def workout_stats(db: Session, user_ids: list[str]) -> dict[str, tuple[int, int,
         .where(TrainingWorkout.user_id.in_(user_ids), TrainingWorkout.is_sample.is_(False))
         .group_by(TrainingWorkout.user_id)
     )
-    return {user_id: (count, recent or 0, latest) for user_id, count, recent, latest in rows}
+    workouts = {user_id: (count, recent or 0, latest) for user_id, count, recent, latest in rows}
+    cardio = dict(
+        db.execute(
+            select(CardioSession.user_id, func.count(CardioSession.id))
+            .where(
+                CardioSession.user_id.in_(user_ids),
+                or_(
+                    CardioSession.source_workout_id.is_(None),
+                    CardioSession.source_workout_id.not_in(sample_workout_ids()),
+                ),
+            )
+            .group_by(CardioSession.user_id)
+        ).all()
+    )
+    records = dict(
+        db.execute(
+            select(PersonalRecord.user_id, func.count(PersonalRecord.id))
+            .where(
+                PersonalRecord.user_id.in_(user_ids),
+                PersonalRecord.value > 0,
+                PersonalRecord.record_type.in_(
+                    [PersonalRecordType.WEIGHT, PersonalRecordType.REPS_AT_WEIGHT]
+                ),
+                PersonalRecord.workout_id.not_in(sample_workout_ids()),
+            )
+            .group_by(PersonalRecord.user_id)
+        ).all()
+    )
+    return {
+        user_id: ActivityStats(
+            *workouts.get(user_id, (0, 0, None)),
+            cardio_sessions=cardio.get(user_id, 0),
+            records=records.get(user_id, 0),
+        )
+        for user_id in user_ids
+    }
 
 
 def profile_summary(
@@ -284,10 +332,10 @@ def profile_summary(
     sharing: ProfileSharing,
     follow: ProfileFollow | None,
     follower: ProfileFollow | None,
-    stats: tuple[int, int, date | None] | None,
+    stats: ActivityStats | None,
 ) -> SharedProfileSummary:
     viewable = can_view(viewer, member, sharing, follow)
-    count, recent, latest = stats or (0, 0, None)
+    stats = stats or ActivityStats()
     return SharedProfileSummary(
         id=member.id,
         display_name=member.display_name,
@@ -308,9 +356,11 @@ def profile_summary(
             else None
         ),
         can_view=viewable,
-        workout_count=count if viewable else None,
-        recent_workout_count=recent if viewable else None,
-        last_workout_date=latest if viewable else None,
+        workout_count=stats.workouts if viewable else None,
+        recent_workout_count=stats.recent_workouts if viewable else None,
+        last_workout_date=stats.last_workout_date if viewable else None,
+        cardio_count=stats.cardio_sessions if viewable else None,
+        record_count=stats.records if viewable else None,
         shares=(
             SharedContent(
                 notes=sharing.share_notes,
