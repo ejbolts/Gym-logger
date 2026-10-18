@@ -42,6 +42,10 @@ import type {
   SharedWorkoutPage,
   SharingChoices,
   SharingConnections,
+  SharingNotifications,
+  FriendFeedItem,
+  WorkoutReactionKind,
+  WorkoutReactions,
   SharingSettings,
   FollowStatus,
   TrackedWorkout,
@@ -242,7 +246,24 @@ export const api = {
     unfollow: (userId: string) =>
       request<void>(`/api/sharing/follows/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
     connections: () => request<SharingConnections>('/api/sharing/followers'),
-    notifications: () => request<SharingConnections>('/api/sharing/notifications'),
+    notifications: () => request<SharingNotifications>('/api/sharing/notifications'),
+    feed: () =>
+      request<{ items: FriendFeedItem[] }>('/api/sharing/feed').then((page) => page.items),
+    react: (workoutId: string, reaction: WorkoutReactionKind) =>
+      request<WorkoutReactions>(`/api/sharing/workouts/${encodeURIComponent(workoutId)}/reaction`, {
+        method: 'PUT',
+        headers: jsonHeaders,
+        body: JSON.stringify({ reaction }),
+      }),
+    removeReaction: (workoutId: string) =>
+      request<WorkoutReactions>(`/api/sharing/workouts/${encodeURIComponent(workoutId)}/reaction`, {
+        method: 'DELETE',
+      }),
+    dismissReaction: (workoutId: string, userId: string, since: string) =>
+      request<void>(
+        `/api/sharing/reactions/${encodeURIComponent(workoutId)}/${encodeURIComponent(userId)}/dismiss`,
+        { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ since }) },
+      ),
     dismissNotification: (userId: string, since: string) =>
       request<void>(`/api/sharing/notifications/${encodeURIComponent(userId)}/dismiss`, {
         method: 'POST',

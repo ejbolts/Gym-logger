@@ -719,6 +719,31 @@ export interface SharingConnections {
   followers: SharingConnection[];
 }
 
+export type WorkoutReactionKind = 'strong' | 'fire' | 'clap' | 'trophy';
+
+export interface WorkoutReactions {
+  counts: Array<{ reaction: WorkoutReactionKind; count: number }>;
+  yours: WorkoutReactionKind | null;
+}
+
+/** One of the newest workouts across the members you follow. */
+export interface FriendFeedItem {
+  friend: Pick<SharingConnection, 'id' | 'display_name' | 'profile_photo_url'>;
+  workout: TrackedWorkout;
+  reactions: WorkoutReactions;
+}
+
+/** A reaction to one of your workouts; `since` is when it was given. */
+export interface ReactionNotice extends SharingConnection {
+  workout_id: string;
+  workout_name: string;
+  reaction: WorkoutReactionKind;
+}
+
+export interface SharingNotifications extends SharingConnections {
+  reactions?: ReactionNotice[];
+}
+
 export interface SharedBodyMeasurement {
   measurement_date: string;
   weight_kg: number;

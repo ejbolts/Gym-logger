@@ -3,11 +3,12 @@ import { api } from './api';
 import { authErrorMessage } from './authForm';
 import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
+import { reactionEmoji } from './friendFeedData';
 import { ProfileAvatar } from './ProfileAvatar';
-import type { SharingConnection, SharingConnections } from './types';
+import type { ReactionNotice, SharingConnection, SharingNotifications } from './types';
 import './FollowNotifications.css';
 
-/** Requests remain actionable; new-follower notices can be dismissed independently. */
+/** Requests remain actionable; new-follower and reaction notices can be dismissed independently. */
 export function FollowNotifications({
   active,
   onOpenFriends,
@@ -15,7 +16,7 @@ export function FollowNotifications({
   active: boolean;
   onOpenFriends: () => void;
 }) {
-  const [items, setItems] = useState<SharingConnections | null>(null);
+  const [items, setItems] = useState<SharingNotifications | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,7 +66,24 @@ export function FollowNotifications({
     }
   }
 
-  const count = (items?.requests.length ?? 0) + (items?.followers.length ?? 0);
+  async function dismissReaction(notice: ReactionNotice) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.sharing.dismissReaction(notice.workout_id, notice.id, notice.since);
+      setItems(await api.sharing.notifications());
+    } catch (reason) {
+      setError(authErrorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const count =
+    (items?.requests.length ?? 0) +
+    (items?.followers.length ?? 0) +
+    (items?.reactions?.length ?? 0);
   return (
     <>
       <button
@@ -97,7 +115,8 @@ export function FollowNotifications({
           {!items && !error && <p role="status">Loading notifications…</p>}
           {items && count === 0 && (
             <p className="shared-card-empty">
-              You're all caught up. Follow requests and new followers will appear here.
+              You're all caught up. Follow requests, new followers and reactions to your workouts
+              will appear here.
             </p>
           )}
           <ul className="follow-notification-list">
@@ -142,6 +161,26 @@ export function FollowNotifications({
                     disabled={busy}
                     aria-label={`Dismiss notification from ${person.display_name}`}
                     onClick={() => void respond(person, 'dismiss')}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </li>
+            ))}
+            {items?.reactions?.map((notice) => (
+              <li key={`reaction-${notice.workout_id}-${notice.id}`}>
+                <ProfileAvatar className="profile-avatar" user={{ ...notice, username: '' }} />
+                <div>
+                  <strong>{notice.display_name}</strong>
+                  <p>
+                    Reacted <span>{reactionEmoji(notice.reaction)}</span> to {notice.workout_name}
+                  </p>
+                  <button
+                    type="button"
+                    className="profile-secondary"
+                    disabled={busy}
+                    aria-label={`Dismiss ${notice.display_name}'s reaction to ${notice.workout_name}`}
+                    onClick={() => void dismissReaction(notice)}
                   >
                     Dismiss
                   </button>

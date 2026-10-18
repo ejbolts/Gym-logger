@@ -24,6 +24,7 @@ HomeSection = Literal[
     "daily-check-in",
     "records",
     "friends",
+    "friend-feed",
 ]
 SECTION_IDS = list(get_args(HomeSection))
 LAYOUT_KEY = "home_layout"

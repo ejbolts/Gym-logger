@@ -10,15 +10,15 @@ Use it in your browser or add it to your phone's Home Screen for an app-like exp
 
 ## Your training at a glance
 
-**Today** brings together your weekly activity, training calendar, muscle-group set totals, cardio goal, body-weight trend and recent personal records. It also suggests a next workout based on previous sessions and lets you resume one already in progress.
+**Home** brings together your weekly activity, training calendar, muscle-group set totals, cardio goal, body-weight trend and recent personal records. It also suggests a next workout based on previous sessions and lets you resume one already in progress.
 
 Customise the dashboard by rearranging cards, hiding sections you do not need and restoring them later. Your layout is saved to your account.
 
 <p>
-  <a href="docs/screenshots/readme/today.png"><img src="docs/screenshots/readme/today.png" alt="Today dashboard with the next workout, activity calendar, cardio goal and body-weight trend" width="360"></a>
+  <a href="docs/screenshots/readme/today.png"><img src="docs/screenshots/readme/today.png" alt="Home dashboard with the next workout, activity calendar, cardio goal and body-weight trend" width="360"></a>
 </p>
 
-*Today: your next workout and training dashboard. Select the screenshot to view it full size.*
+*Home: your next workout and training dashboard. Select the screenshot to view it full size.*
 
 ## Log strength workouts
 
@@ -78,7 +78,7 @@ configures Google once for the installation; users do not need API keys or crede
 
 Sign in with a username and password, personalise your name and profile photo, and keep your profile **Private** or choose **Friends only** or **Public** sharing within the app's sharing community.
 
-Shared profiles include workouts and your profile photo. You choose separately whether to share machine photos, body measurements, goals, cardio and notes. Friends-only profiles require approval before followers can see your training. Search shared accounts by display name, username or the account UUID shown on Profile. Shared profiles do not display usernames or uploaded videos.
+Shared profiles include workouts and your profile photo. You choose separately whether to share machine photos, body measurements, goals, cardio and notes. Friends-only profiles require approval before followers can see your training. **Friends’ workouts** on Home shows the newest workouts from people you follow; react with 💪, 🔥, 👏 or 🏆, and reactions to your own workouts appear under the notification bell. Search shared accounts by display name, username or the account UUID shown on Profile. Shared profiles do not display usernames or uploaded videos.
 
 Administrators can manage accounts, registration, video access and private app feedback from the admin console.
 

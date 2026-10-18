@@ -85,6 +85,13 @@ export const HOME_SECTIONS = [
     icon: 'user',
     size: 'full',
   },
+  {
+    id: 'friend-feed',
+    title: 'Friends’ workouts',
+    description: 'Newest workouts to react to',
+    icon: 'heart',
+    size: 'full',
+  },
 ] as const satisfies ReadonlyArray<{
   id: string;
   title: string;

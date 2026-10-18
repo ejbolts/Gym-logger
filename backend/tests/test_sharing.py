@@ -557,7 +557,11 @@ def test_existing_accounts_without_choices_stay_private(client):
 def test_follow_notifications_are_scoped_dismissible_and_not_duplicated(client, other_client):
     target = client.user["id"]
     follower = other_client.user["id"]
-    assert client.get("/api/sharing/notifications").json() == {"requests": [], "followers": []}
+    assert client.get("/api/sharing/notifications").json() == {
+        "requests": [],
+        "followers": [],
+        "reactions": [],
+    }
     assert other_client.post(f"/api/sharing/follows/{target}").json()["status"] == "accepted"
     # A retry does not create another event.
     other_client.post(f"/api/sharing/follows/{target}")
@@ -594,7 +598,11 @@ def test_friends_only_search_request_and_notification_approval(client, other_cli
     assert [item["id"] for item in notices["requests"]] == [follower]
     assert notices["followers"] == []
     assert client.post(f"/api/sharing/followers/{follower}").status_code == 204
-    assert client.get("/api/sharing/notifications").json() == {"requests": [], "followers": []}
+    assert client.get("/api/sharing/notifications").json() == {
+        "requests": [],
+        "followers": [],
+        "reactions": [],
+    }
     assert other_client.get(f"/api/sharing/profiles/{target}").json()["can_view"] is True
     other_client.delete(f"/api/sharing/follows/{target}")
     other_client.post(f"/api/sharing/follows/{target}")

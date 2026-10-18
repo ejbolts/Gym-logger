@@ -231,6 +231,7 @@ import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
 import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
 import { FriendsActivityCard } from './FriendsActivity';
+import { FriendFeedCard } from './FriendFeed';
 import { SettingsSearch } from './SettingsSearch';
 import { ColourThemePanel } from './ColourThemePanel';
 import {
@@ -1207,7 +1208,9 @@ function AppContent() {
       })
     : null;
 
-  function openSharedProfile(profile: SharedProfileSummary) {
+  function openSharedProfile(
+    profile: Pick<SharedProfileSummary, 'id' | 'display_name'> & { is_you?: boolean },
+  ) {
     setSharedProfile((current) => ({
       id: profile.id,
       name: profile.is_you ? 'Your shared profile' : profile.display_name,
@@ -1386,6 +1389,15 @@ function AppContent() {
                   friendsActivity={
                     user ? (
                       <FriendsActivityCard
+                        active={tab === 'dashboard'}
+                        onOpenFriend={openSharedProfile}
+                        onOpenFriends={() => setTab('profile')}
+                      />
+                    ) : undefined
+                  }
+                  friendFeed={
+                    user ? (
+                      <FriendFeedCard
                         active={tab === 'dashboard'}
                         onOpenFriend={openSharedProfile}
                         onOpenFriends={() => setTab('profile')}

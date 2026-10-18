@@ -15,8 +15,9 @@ not returned in shared profiles. Videos and sample data are never shared.
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import date, datetime, timedelta
-from typing import Annotated, Literal, NamedTuple
+from typing import Annotated, Literal, NamedTuple, get_args
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -45,6 +46,7 @@ from .models import (
     User,
     WorkoutCategory,
     WorkoutMovement,
+    WorkoutReaction,
     movement_machine_photos,
     utc_now,
 )
@@ -69,6 +71,8 @@ sharing_router = APIRouter(
 PRIVATE, FOLLOWERS, PUBLIC = "private", "followers", "public"
 PENDING, ACCEPTED = "pending", "accepted"
 MAX_WORKOUT_PAGE = 50
+FEED_SIZE = 5
+MAX_REACTION_NOTICES = 20
 RECENT_CARDIO_SESSIONS = 20
 RECENT_DAYS = 30
 
@@ -201,6 +205,51 @@ class ConnectionRead(BaseModel):
 class ConnectionsRead(BaseModel):
     requests: list[ConnectionRead]
     followers: list[ConnectionRead]
+
+
+Reaction = Literal["strong", "fire", "clap", "trophy"]
+
+
+class ReactionChoice(BaseModel):
+    reaction: Reaction
+
+
+class ReactionCount(BaseModel):
+    reaction: Reaction
+    count: int
+
+
+class WorkoutReactions(BaseModel):
+    counts: list[ReactionCount]
+    yours: Reaction | None = None
+
+
+class FeedFriend(BaseModel):
+    id: str
+    display_name: str
+    profile_photo_url: str | None
+
+
+class FriendFeedItem(BaseModel):
+    friend: FeedFriend
+    workout: TrainingWorkoutRead
+    reactions: WorkoutReactions
+
+
+class FriendFeedRead(BaseModel):
+    items: list[FriendFeedItem]
+
+
+class ReactionNotice(ConnectionRead):
+    """A follower's reaction to one of your workouts; ``since`` is when they reacted."""
+
+    workout_id: str
+    workout_name: str
+    reaction: Reaction
+
+
+class NotificationsRead(ConnectionsRead):
+    reactions: list[ReactionNotice] = []
 
 
 def sharing_choices(db: Session, user_id: str) -> ProfileSharing:
@@ -810,6 +859,114 @@ def unfollow_member(user_id: str, user: CurrentUser, db: Db) -> None:
     db.commit()
 
 
+def reaction_summaries(
+    db: Session, viewer_id: str, workout_ids: list[str]
+) -> dict[str, WorkoutReactions]:
+    """Reaction totals for each workout, plus the viewer's own reaction."""
+    summaries = {workout_id: WorkoutReactions(counts=[]) for workout_id in workout_ids}
+    counts: dict[str, Counter[str]] = {workout_id: Counter() for workout_id in workout_ids}
+    rows = (
+        db.execute(
+            select(WorkoutReaction.workout_id, WorkoutReaction.user_id, WorkoutReaction.reaction)
+            .join(User, User.id == WorkoutReaction.user_id)
+            .where(WorkoutReaction.workout_id.in_(workout_ids), User.disabled_at.is_(None))
+        ).all()
+        if workout_ids
+        else []
+    )
+    for workout_id, user_id, reaction in rows:
+        counts[workout_id][reaction] += 1
+        if user_id == viewer_id:
+            summaries[workout_id].yours = reaction
+    for workout_id, counter in counts.items():
+        summaries[workout_id].counts = [
+            ReactionCount(reaction=reaction, count=counter[reaction])
+            for reaction in get_args(Reaction)
+            if counter[reaction]
+        ]
+    return summaries
+
+
+@sharing_router.get("/feed", response_model=FriendFeedRead)
+def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
+    """The newest workouts from members you follow, across all of them."""
+    require_sharing(db, user)
+    followed = select(ProfileFollow.followee_id).where(
+        ProfileFollow.follower_id == user.id, ProfileFollow.status == ACCEPTED
+    )
+    rows = db.execute(
+        select(TrainingWorkout, User, ProfileSharing)
+        .join(User, User.id == TrainingWorkout.user_id)
+        .join(ProfileSharing, ProfileSharing.user_id == TrainingWorkout.user_id)
+        .where(
+            TrainingWorkout.user_id.in_(followed),
+            TrainingWorkout.is_sample.is_(False),
+            User.disabled_at.is_(None),
+            ProfileSharing.visibility != PRIVATE,
+        )
+        .options(*workout_options())
+        .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
+        .limit(FEED_SIZE)
+    ).all()
+    reactions = reaction_summaries(db, user.id, [workout.id for workout, _, _ in rows])
+    return FriendFeedRead(
+        items=[
+            FriendFeedItem(
+                friend=FeedFriend(
+                    id=member.id,
+                    display_name=member.display_name,
+                    profile_photo_url=photo_url(member),
+                ),
+                workout=shared_workout(workout, sharing),
+                reactions=reactions[workout.id],
+            )
+            for workout, member, sharing in rows
+        ]
+    )
+
+
+def reactable_workout(db: Session, user: User, workout_id: str) -> TrainingWorkout:
+    """Another member's real workout that ``user`` is allowed to see."""
+    workout = db.get(TrainingWorkout, workout_id)
+    if workout is None or workout.is_sample or workout.user_id in (None, user.id):
+        raise api_error(404, "workout_not_found", "That workout is not shared with you.")
+    viewable_member(db, user, workout.user_id)
+    return workout
+
+
+@sharing_router.put("/workouts/{workout_id}/reaction", response_model=WorkoutReactions)
+def react_to_workout(
+    workout_id: str, payload: ReactionChoice, user: CurrentUser, db: Db
+) -> WorkoutReactions:
+    workout = reactable_workout(db, user, workout_id)
+    reaction = db.get(WorkoutReaction, (workout.id, user.id))
+    if reaction is None:
+        db.add(WorkoutReaction(workout_id=workout.id, user_id=user.id, reaction=payload.reaction))
+    elif reaction.reaction != payload.reaction:
+        # A changed reaction is new to the owner again.
+        reaction.reaction = payload.reaction
+        reaction.created_at = utc_now()
+        reaction.notification_seen = False
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another tab reacted first; that reaction stands.
+        db.rollback()
+    return reaction_summaries(db, user.id, [workout.id])[workout.id]
+
+
+@sharing_router.delete("/workouts/{workout_id}/reaction", response_model=WorkoutReactions)
+def remove_workout_reaction(workout_id: str, user: CurrentUser, db: Db) -> WorkoutReactions:
+    workout = reactable_workout(db, user, workout_id)
+    db.execute(
+        delete(WorkoutReaction).where(
+            WorkoutReaction.workout_id == workout.id, WorkoutReaction.user_id == user.id
+        )
+    )
+    db.commit()
+    return reaction_summaries(db, user.id, [workout.id])[workout.id]
+
+
 @sharing_router.get("/followers", response_model=ConnectionsRead)
 def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
     rows = db.execute(
@@ -833,8 +990,8 @@ def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
     )
 
 
-@sharing_router.get("/notifications", response_model=ConnectionsRead)
-def follow_notifications(user: CurrentUser, db: Db) -> ConnectionsRead:
+@sharing_router.get("/notifications", response_model=NotificationsRead)
+def follow_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
     connections = list_followers(user, db)
     unread = set(
         db.scalars(
@@ -845,14 +1002,55 @@ def follow_notifications(user: CurrentUser, db: Db) -> ConnectionsRead:
             )
         )
     )
-    return ConnectionsRead(
+    reactions = db.execute(
+        select(WorkoutReaction, User, TrainingWorkout.name)
+        .join(User, User.id == WorkoutReaction.user_id)
+        .join(TrainingWorkout, TrainingWorkout.id == WorkoutReaction.workout_id)
+        .where(
+            TrainingWorkout.user_id == user.id,
+            WorkoutReaction.notification_seen.is_(False),
+            User.disabled_at.is_(None),
+        )
+        .order_by(WorkoutReaction.created_at.desc())
+        .limit(MAX_REACTION_NOTICES)
+    ).all()
+    return NotificationsRead(
         requests=connections.requests,
         followers=[person for person in connections.followers if person.id in unread],
+        reactions=[
+            ReactionNotice(
+                id=member.id,
+                display_name=member.display_name,
+                profile_photo_url=photo_url(member),
+                since=as_utc(reaction.created_at),
+                workout_id=reaction.workout_id,
+                workout_name=workout_name,
+                reaction=reaction.reaction,
+            )
+            for reaction, member, workout_name in reactions
+        ],
     )
 
 
 class NotificationDismiss(BaseModel):
     since: datetime
+
+
+@sharing_router.post("/reactions/{workout_id}/{user_id}/dismiss", status_code=204)
+def dismiss_reaction_notification(
+    workout_id: str, user_id: str, payload: NotificationDismiss, user: CurrentUser, db: Db
+) -> None:
+    reaction = db.get(WorkoutReaction, (workout_id, user_id))
+    workout = db.get(TrainingWorkout, workout_id)
+    # Match the reaction the client saw, so a newer reaction from the same member stays unread.
+    if (
+        reaction is not None
+        and workout is not None
+        and workout.user_id == user.id
+        and as_utc(reaction.created_at) == as_utc(payload.since)
+    ):
+        reaction.notification_seen = True
+        db.commit()
 
 
 @sharing_router.post("/notifications/{user_id}/dismiss", status_code=204)

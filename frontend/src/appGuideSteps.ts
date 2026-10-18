@@ -14,7 +14,7 @@ export function appGuideSteps(videosAllowed: boolean): AppGuideStep[] {
     {
       title: 'Your training, at a glance',
       description:
-        'Today brings together your week, training calendar and suggested next session. Come back here to see how you are doing.',
+        'Home brings together your week, training calendar and suggested next session. Come back here to see how you are doing.',
       target: 'today',
       tab: 'dashboard',
       icon: 'home',
@@ -54,7 +54,7 @@ export function appGuideSteps(videosAllowed: boolean): AppGuideStep[] {
     {
       title: 'Keep cardio in the picture',
       description:
-        'Open Cardio from this Today card. Log sessions and machine metrics, and compare your time, distance and energy across date ranges.',
+        'Open Cardio from this Home card. Log sessions and machine metrics, and compare your time, distance and energy across date ranges.',
       target: 'cardio',
       tab: 'dashboard',
       icon: 'heart',

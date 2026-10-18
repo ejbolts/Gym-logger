@@ -655,3 +655,93 @@
     grid-column: 2;
   }
 }
+
+/* Home's feed of friends' newest workouts, each with reaction buttons */
+
+.home-section-content > .friend-feed {
+  justify-content: flex-start;
+}
+
+.home-section-content > .pulse-card.friend-feed > .friend-feed-list {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+.friend-feed-list {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.friend-feed-list li {
+  padding: 0.625rem 0;
+}
+
+.friend-feed-list li + li {
+  border-top: 1px solid var(--p-line);
+}
+
+.friend-feed-workout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--p-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.friend-feed-workout .shared-profile-avatar.small {
+  font-size: 0.875rem;
+}
+
+.friend-feed-workout .record-copy {
+  overflow-wrap: anywhere;
+}
+
+.friend-feed-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.5rem 0 0 3.15rem;
+}
+
+.friend-feed-reactions button {
+  min-width: 2.75rem;
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3125rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
+  padding: 0 0.625rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.friend-feed-reactions button b {
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.friend-feed-reactions button.is-yours {
+  border-color: var(--p-accent);
+  background: var(--p-accent-soft);
+  color: var(--p-ink);
+}
+
+.friend-feed-reactions button:disabled {
+  cursor: progress;
+}
+
+.friend-feed > .inline-error {
+  margin: 0.5rem 0 0;
+}

@@ -30,6 +30,14 @@
 
 *See a sample profile shows the names you've typed on a profile card.*
 
+![Home's Friends' workouts section listing recent workouts from Jordan Preview and Alex Preview, each with 💪 🔥 👏 🏆 reaction buttons and the chosen reactions highlighted](screenshots/releases/0.8.1-friends-workouts.png)
+
+*Friends' workouts on Home: react to the newest workouts from people you follow.*
+
+![Notifications showing Alex Preview reacted 💪 to Full body, with a Dismiss button](screenshots/releases/0.8.1-reaction-notification.png)
+
+*Reactions to your workouts appear under the notification bell.*
+
 - Open **Settings > Workout types** to add your own types and choose their colours, such as **Arms**, **Legs**, **Limbs** or **Torso**.
 - Remove built-in or custom types from new workouts and restore them later. Saved workouts retain their type and colour.
 - Types stay with workout drafts, history, calendar dots and filters, shared profiles, CSV imports/exports and account backups.
@@ -45,6 +53,13 @@
 - **See a sample profile**, below **Create account**, shows a profile card with the name and
   username typed so far, or **Sam Sample** until they're filled in. The workouts, cardio and PRs
   are examples, and a key shows where each name appears.
+- **Home** has a **Friends' workouts** section showing the five newest workouts across everyone
+  you follow. React with 💪, 🔥, 👏 or 🏆; tapping your reaction again removes it, and choosing
+  another replaces it. Tap a workout to open that friend's profile. Rearrange or hide the section
+  with the other Home cards.
+- Reactions to your workouts appear under the **Notifications** bell with who reacted and to which
+  workout. Dismiss them there; a changed reaction appears again.
+- The **Today** tab is now called **Home**, matching its house icon.
 
 ## 0.8.0
 

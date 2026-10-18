@@ -820,6 +820,7 @@ ACCOUNT_TABLES = {
     "youtube_oauth_states",
     # Created only by signed-in accounts (user_id is required), so never legacy data.
     "workout_types",
+    "workout_reactions",
 }
 
 

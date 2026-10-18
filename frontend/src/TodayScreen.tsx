@@ -129,6 +129,8 @@ export interface TodayScreenProps {
   calendar?: ReactNode;
   /** The Friends card; omitted outside the signed-in app. */
   friendsActivity?: ReactNode;
+  /** Friends' newest workouts with reactions; omitted outside the signed-in app. */
+  friendFeed?: ReactNode;
   today?: string;
 }
 
@@ -163,6 +165,7 @@ export function TodayScreen({
   openFeedback = 0,
   calendar,
   friendsActivity,
+  friendFeed,
   today = localDate(),
 }: TodayScreenProps) {
   const weightUnit = useWeightUnit();
@@ -569,6 +572,7 @@ export function TodayScreen({
       </section>
     ),
     friends: friendsActivity ?? null,
+    'friend-feed': friendFeed ?? null,
   };
 
   return (
@@ -579,7 +583,7 @@ export function TodayScreen({
           day: 'numeric',
           month: 'long',
         })}
-        title="Today"
+        title="Home"
         onOpenSettings={onOpenSettings}
         actions={
           <>
