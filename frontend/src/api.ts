@@ -166,6 +166,13 @@ export const api = {
   },
   admin: {
     feedback: () => request<AppFeedback[]>('/api/admin/feedback'),
+    feedbackSummary: () => request<{ open: number }>('/api/admin/feedback/summary'),
+    setFeedbackResolved: (feedbackId: string, resolved: boolean) =>
+      request<AppFeedback>(`/api/admin/feedback/${encodeURIComponent(feedbackId)}`, {
+        method: 'PATCH',
+        headers: jsonHeaders,
+        body: JSON.stringify({ resolved }),
+      }),
     users: () => request<AdminUser[]>('/api/admin/users'),
     setUserDisabled: (userId: string, disabled: boolean) =>
       request<AdminUser>(`/api/admin/users/${encodeURIComponent(userId)}`, {

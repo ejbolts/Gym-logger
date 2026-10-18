@@ -284,12 +284,42 @@ function DangerZone() {
   );
 }
 
+/** Points an administrator from the profile badge to feedback waiting in the admin console. */
+export function FeedbackReviewPanel({
+  openFeedback,
+  onOpenAdmin,
+}: {
+  openFeedback: number;
+  onOpenAdmin: () => void;
+}) {
+  return (
+    <section className="settings-panel panel" aria-labelledby="profile-feedback-title">
+      <header>
+        <div>
+          <p className="section-kicker">ADMIN</p>
+          <h2 id="profile-feedback-title">
+            {openFeedback} feedback {openFeedback === 1 ? 'message' : 'messages'} to review
+          </h2>
+        </div>
+      </header>
+      <p>Read and resolve what members sent from Settings or the app guide.</p>
+      <button type="button" className="profile-secondary" onClick={onOpenAdmin}>
+        Review feedback
+      </button>
+    </section>
+  );
+}
+
 export function ProfileScreen({
   active,
   onOpenProfile,
+  openFeedback = 0,
+  onOpenAdmin,
 }: {
   active: boolean;
   onOpenProfile: (profile: SharedProfileSummary) => void;
+  openFeedback?: number;
+  onOpenAdmin?: () => void;
 }) {
   const { user, updateUser } = useUserSession();
   const [sharingVersion, setSharingVersion] = useState(0);
@@ -300,6 +330,9 @@ export function ProfileScreen({
     <section className="settings-screen profile-screen content-page" data-settings-page="profile">
       <SettingsSearch />
       <ProfileIdentity user={user} onSaved={updateUser} />
+      {onOpenAdmin && openFeedback > 0 && (
+        <FeedbackReviewPanel openFeedback={openFeedback} onOpenAdmin={onOpenAdmin} />
+      )}
       <ProfileSharingPanel onSaved={() => setSharingVersion((version) => version + 1)} />
       <FriendsPanel active={active} refreshKey={sharingVersion} onOpenProfile={onOpenProfile} />
       <PasswordForm />

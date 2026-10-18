@@ -14,6 +14,23 @@
 
 *Open the existing workout CSV guide directly from Settings.*
 
+### Review and resolve feedback as an administrator
+
+- New feedback appears in the badge on an administrator's profile picture on **Today**,
+  added to any follow requests. Profile shows how many messages are waiting and a
+  **Review feedback** button that opens the admin console.
+- In the admin console, **App feedback** counts open messages and lists them before
+  resolved ones. **Resolve** marks a message as handled, with who resolved it and when;
+  **Reopen** returns it to the open list. Feedback stays private to administrators.
+
+![Today header with a red badge showing 3 on the profile picture](screenshots/releases/0.7.1-admin-feedback-badge.png)
+
+*Open feedback is counted in the profile badge on Today.*
+
+![App feedback in the admin console with 2 open messages, one resolved message with a Reopen button, and Resolve buttons on the others](screenshots/releases/0.7.1-admin-feedback-inbox.png)
+
+*Resolve or reopen each message from the admin console.*
+
 ## 0.7.0
 
 17 October 2026

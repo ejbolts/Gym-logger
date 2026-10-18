@@ -3,7 +3,12 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
-import { loadFriendWorkouts, useFollowRequestCount } from './friendsActivityData';
+import {
+  loadFriendWorkouts,
+  useFollowRequestCount,
+  profileButtonLabel,
+  useOpenFeedbackCount,
+} from './friendsActivityData';
 import type { SharedProfileSummary } from './types';
 
 const friend: SharedProfileSummary = {
@@ -108,5 +113,38 @@ describe('Today friends activity', () => {
     const calls = choices.mock.calls.length;
     window.dispatchEvent(new Event('focus'));
     expect(choices).toHaveBeenCalledTimes(calls);
+  });
+
+  it('counts open feedback for administrators only', async () => {
+    const summary = vi.spyOn(api.admin, 'feedbackSummary').mockResolvedValue({ open: 4 });
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    function Badge({ isAdmin }: { isAdmin: boolean }) {
+      return <span>{useOpenFeedbackCount(true, isAdmin)}</span>;
+    }
+    try {
+      await act(async () => root.render(<Badge isAdmin={false} />));
+      expect(container.textContent).toBe('0');
+      expect(summary).not.toHaveBeenCalled();
+      await act(async () => root.render(<Badge isAdmin />));
+      expect(container.textContent).toBe('4');
+      summary.mockResolvedValue({ open: 1 });
+      await act(async () => window.dispatchEvent(new Event('focus')));
+      expect(container.textContent).toBe('1');
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+      summary.mockRestore();
+    }
+  });
+
+  it('describes waiting requests and feedback on the profile button', () => {
+    expect(profileButtonLabel('Ethan', 0, 0)).toBe('Profile: Ethan');
+    expect(profileButtonLabel('Ethan', 1, 0)).toBe('Profile: Ethan, 1 follow request');
+    expect(profileButtonLabel(undefined, 2, 1)).toBe(
+      'Profile, 2 follow requests, 1 feedback message to review',
+    );
+    expect(profileButtonLabel('Ethan', 0, 3)).toBe('Profile: Ethan, 3 feedback messages to review');
   });
 });

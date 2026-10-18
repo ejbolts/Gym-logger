@@ -127,6 +127,13 @@ class AppFeedback(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now(), index=True
     )
+    # Open feedback has no resolution; administrators can resolve it and reopen it again.
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    resolved_by_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
 
 
 class ProfileSharing(Base):

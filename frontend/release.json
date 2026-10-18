@@ -1,10 +1,11 @@
 {
   "version": "0.7.1",
   "date": "2026-10-18",
-  "title": "Find the workout import guide in Settings",
-  "summary": "Open the existing workout CSV guide directly from Workout data in Settings.",
+  "title": "Import guide in Settings and a feedback inbox for admins",
+  "summary": "Open the workout CSV guide from Settings. Administrators see new feedback on their profile picture and can resolve it in the admin console.",
   "changes": [
-    "Settings > Workout data now has a Show guide button beside the CSV import and export actions. It opens the same three-page guide used during onboarding, including the CSV template and file chooser."
+    "Settings > Workout data now has a Show guide button beside the CSV import and export actions. It opens the same three-page guide used during onboarding, including the CSV template and file chooser.",
+    "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages."
   ],
   "image": {
     "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/99075a77dab58f7f5d6ca542a4ddb9f88b74cf19/docs/screenshots/releases/0.7.1-settings-import-guide.png",
