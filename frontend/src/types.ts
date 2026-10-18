@@ -646,11 +646,10 @@ export interface AppFeedback {
 /** Who can see a profile: nobody, followers its owner approves ("Friends only"), or everyone. */
 export type ProfileVisibility = 'private' | 'followers' | 'public';
 
-/** Who can see the profile and what it shares beyond its workouts and profile photo. */
+/** Who can see the profile and what it shares beyond its workouts, cardio and profile photo. */
 export interface SharingChoices {
   visibility: ProfileVisibility;
   share_notes: boolean;
-  share_cardio: boolean;
   share_body_weight: boolean;
   share_goals: boolean;
   share_machine_photos: boolean;
@@ -685,7 +684,6 @@ export interface SharedProfileSummary {
   last_workout_date: string | null;
   shares: {
     notes: boolean;
-    cardio: boolean;
     body_weight: boolean;
     goals: boolean;
     machine_photos: boolean;

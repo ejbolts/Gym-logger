@@ -156,6 +156,8 @@ class ProfileSharing(Base):
     )
     visibility: Mapped[str] = mapped_column(String(20), default="private", server_default="private")
     share_notes: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # No longer read: cardio is always shared with workouts. Kept so existing databases and
+    # account backups keep their schema.
     share_cardio: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     share_body_weight: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     share_goals: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")

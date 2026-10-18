@@ -97,6 +97,18 @@
 - The popup sits clear of the workout header, and the page leaves room so **Finish
   workout** stays reachable.
 
+### Cardio is shared with your workouts
+
+![What you share with Workouts + cardio and Profile photo marked Always, and switches for machine photos, body weight, goals and notes](screenshots/releases/0.8.0-share-workouts-cardio.png)
+
+*Cardio is now shared together with your workouts.*
+
+- In **Profile > What you share**, workouts and cardio are now one always-shared item,
+  **Workouts + cardio**, and the separate **Cardio sessions** switch has been removed.
+- If you had **Cardio sessions** off, anyone who can see your profile now sees your recent
+  cardio sessions (time, distance, calories and heart rate). Cardio notes are still shared
+  only when **Notes** is on. Make your profile private to stop sharing altogether.
+
 ## 0.7.0
 
 17 October 2026

@@ -24,16 +24,15 @@ export function followSinceLabel(label: string, since?: string | null): string {
     : label;
 }
 
-/** What a viewable profile shares: workouts always, then the optional parts its owner chose. */
+/** What a viewable profile shares: workouts and cardio always, then the optional parts chosen. */
 export function sharedParts(profile: SharedProfileSummary): string[] {
   const shares = profile.shares;
   if (!shares) return [];
   return [
-    'Workouts',
+    'Workouts + cardio',
     ...(shares.machine_photos ? ['Machine photos'] : []),
     ...(shares.body_weight ? ['Body weight'] : []),
     ...(shares.goals ? ['Goals'] : []),
-    ...(shares.cardio ? ['Cardio'] : []),
     ...(shares.notes ? ['Notes'] : []),
   ];
 }

@@ -3,7 +3,8 @@
 Each account chooses who can see its profile: nobody (``private``, the default), followers it
 approves (``followers``, shown as "Friends only"), or every sharing member (``public``). Only
 accounts that share their own profile can see or follow others. A shared profile always includes
-its workouts and profile photo; notes, cardio, body weight, goals and machine photos are optional.
+its workouts, cardio sessions and profile photo; notes, body weight, goals and machine photos are
+optional.
 
 Private, disabled and missing profiles all answer "not found". A friends-only profile shows only
 its name and photo until its owner approves a follow request. Usernames can be searched but are
@@ -71,13 +72,12 @@ FollowStatus = Literal["none", "pending", "accepted"]
 
 
 class SharingChoices(BaseModel):
-    """Who can see the profile, and what it shares beyond its workouts and profile photo."""
+    """Who can see the profile, and what it shares beyond its workouts, cardio and photo."""
 
     model_config = ConfigDict(from_attributes=True)
 
     visibility: Visibility = PRIVATE
     share_notes: bool = False
-    share_cardio: bool = False
     share_body_weight: bool = False
     share_goals: bool = False
     share_machine_photos: bool = False
@@ -89,7 +89,6 @@ class SharingRead(SharingChoices):
 
 class SharedContent(BaseModel):
     notes: bool
-    cardio: bool
     body_weight: bool
     goals: bool
     machine_photos: bool
@@ -201,7 +200,6 @@ def sharing_choices(db: Session, user_id: str) -> ProfileSharing:
         user_id=user_id,
         visibility=PRIVATE,
         share_notes=False,
-        share_cardio=False,
         share_body_weight=False,
         share_goals=False,
         share_machine_photos=False,
@@ -316,7 +314,6 @@ def profile_summary(
         shares=(
             SharedContent(
                 notes=sharing.share_notes,
-                cardio=sharing.share_cardio,
                 body_weight=sharing.share_body_weight,
                 goals=sharing.share_goals,
                 machine_photos=sharing.share_machine_photos,
@@ -551,7 +548,8 @@ def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfile
         **summary.model_dump(),
         body_weight=body_weight,
         goals=shared_goals(db, member.id) if sharing.share_goals else None,
-        cardio_sessions=shared_cardio(db, member.id, sharing) if sharing.share_cardio else None,
+        # Cardio is shared with workouts; its notes still follow the notes choice.
+        cardio_sessions=shared_cardio(db, member.id, sharing),
     )
 
 
