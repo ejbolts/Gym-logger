@@ -2,9 +2,10 @@ import type { WorkoutImportOptions } from './types';
 import './workoutImportSource.css';
 
 export const IMPORT_APPS = [
-  { id: 'strengthlevel', name: 'Strength Level' },
-  { id: 'hevy', name: 'Hevy' },
-  { id: 'strong', name: 'Strong' },
+  { id: 'strengthlevel', name: 'Strength Level', icon: '/import-apps/strengthlevel.png' },
+  { id: 'hevy', name: 'Hevy', icon: '/import-apps/hevy.png' },
+  { id: 'strong', name: 'Strong', icon: '/import-apps/strong.png' },
+  { id: 'gym', name: 'Gym Logger', icon: '/icon-192.png' },
 ] as const;
 
 export function WorkoutImportSource({
@@ -28,20 +29,11 @@ export function WorkoutImportSource({
             disabled={disabled}
             onClick={() => onChange({ ...value, source: app.id })}
           >
-            <img src={`/import-apps/${app.id}.png`} alt="" width="40" height="40" />
+            <img src={app.icon} alt="" width="40" height="40" />
             <span>{app.name}</span>
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        className="csv-guide-link workout-import-own-file"
-        aria-pressed={value.source === 'gym'}
-        disabled={disabled}
-        onClick={() => onChange({ ...value, source: 'gym' })}
-      >
-        {value.source === 'gym' ? '✓ ' : ''}Gym Logger / own spreadsheet
-      </button>
       <p className="workout-import-source-hint" aria-live="polite">
         {value.source === 'strengthlevel' &&
           'Choose your original Strength Level CSV. Weights, reps, warmups and body weight are read directly. Rows on the same date form one workout.'}

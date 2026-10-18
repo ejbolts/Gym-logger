@@ -138,7 +138,7 @@ describe('workout CSV review flow', () => {
     expect(markup).toContain('1 existing date will be kept');
   });
 
-  it('shows the three app logos and accessible selected source controls', () => {
+  it('shows all four app logos and accessible selected source controls', () => {
     const markup = renderToStaticMarkup(
       <WorkoutImportSource value={{ ...options, source: 'hevy' }} onChange={vi.fn()} />,
     );
@@ -148,6 +148,8 @@ describe('workout CSV review flow', () => {
     expect(markup).toContain('aria-label="Import from app"');
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('Strength Level');
+    expect(markup).toContain('/icon-192.png');
+    expect(markup).toContain('Gym Logger');
   });
 
   it('file selection only previews; Cancel never invokes the save callback', async () => {
