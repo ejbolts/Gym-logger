@@ -400,10 +400,6 @@ button.pulse-card:hover {
 
 /* ───────── Today ───────── */
 
-.next-session {
-  border-top: 3px solid var(--next-session-colour, var(--p-accent));
-}
-
 .next-session-tag {
   display: flex;
   align-items: center;

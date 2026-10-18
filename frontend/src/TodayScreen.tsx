@@ -285,17 +285,7 @@ export function TodayScreen({
     ) : null,
     'next-workout':
       workoutStartedAt === null ? (
-        <section
-          className="pulse-card next-session"
-          aria-labelledby="next-session-title"
-          style={
-            recommendation
-              ? ({
-                  '--next-session-colour': categoryColors[recommendation.category],
-                } as CSSProperties)
-              : undefined
-          }
-        >
+        <section className="pulse-card next-session" aria-labelledby="next-session-title">
           <p className="next-session-tag">
             {recommendation && (
               <i
