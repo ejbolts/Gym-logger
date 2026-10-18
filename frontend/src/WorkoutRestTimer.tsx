@@ -61,20 +61,27 @@ export function WorkoutRestTimer({
   );
 }
 
+/** How much each popup button takes off or adds to the rest. */
+export const REST_ADJUST_SECONDS = 30;
+
 /**
- * The rest countdown as a popup. Dismissing it keeps the timer running beside the live workout
- * time; cancelling stops the rest timer.
+ * The rest countdown as a popup, centred between buttons that take off or add 30 seconds.
+ * Dismissing it keeps the timer running beside the live workout time; cancelling stops the
+ * rest timer.
  */
 export function RestTimerToast({
   seconds,
   totalSeconds,
   onDismiss,
   onCancel,
+  onAdjust,
 }: {
   seconds: number;
   totalSeconds: number;
   onDismiss: () => void;
   onCancel: () => void;
+  /** Adds (positive) or takes off (negative) seconds; taking off all the rest left ends it. */
+  onAdjust: (seconds: number) => void;
 }) {
   const formattedTime = formatSeconds(seconds);
   return (
@@ -83,20 +90,36 @@ export function RestTimerToast({
       role="timer"
       aria-label={`Rest timer ${formattedTime}`}
     >
-      <span className="rest-timer-toast-icon" aria-hidden="true">
-        <Icon name="timer" />
-      </span>
-      <span className="rest-timer-toast-copy">
-        <small>Rest</small>
-        <strong>{formattedTime}</strong>
-      </span>
       <button
-        className="undo-toast-action"
+        className="undo-toast-action rest-timer-toast-cancel"
         type="button"
         aria-label="Cancel rest timer"
         onClick={onCancel}
       >
         Cancel
+      </button>
+      <button
+        className="rest-timer-toast-adjust"
+        type="button"
+        aria-label={`Take ${REST_ADJUST_SECONDS} seconds off the rest`}
+        onClick={() => onAdjust(-REST_ADJUST_SECONDS)}
+      >
+        −{REST_ADJUST_SECONDS}s
+      </button>
+      <span className="rest-timer-toast-copy">
+        <small>
+          <Icon name="timer" />
+          Rest
+        </small>
+        <strong>{formattedTime}</strong>
+      </span>
+      <button
+        className="rest-timer-toast-adjust"
+        type="button"
+        aria-label={`Add ${REST_ADJUST_SECONDS} seconds to the rest`}
+        onClick={() => onAdjust(REST_ADJUST_SECONDS)}
+      >
+        +{REST_ADJUST_SECONDS}s
       </button>
       <button
         className="undo-toast-close"

@@ -133,7 +133,7 @@ import {
   type ProgressMetric,
 } from './progressChart';
 import { restTimerPreferenceEnabled, saveRestTimerPreference } from './restTimerPreference';
-import { cancelRestTimerPushSchedule } from './restTimer';
+import { cancelRestTimerPushSchedule, restSecondsLeft } from './restTimer';
 import {
   disablePhonePushNotifications,
   dismissRestTimerNotifications,
@@ -610,6 +610,8 @@ function AppContent() {
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [completionRecords, setCompletionRecords] = useState<PersonalRecord[]>([]);
   const [restTimerEnabled, setRestTimerEnabled] = useState(restTimerPreferenceEnabled);
+  // The live workout's rest end, so the tab bar can count it down away from the workout.
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [reduceMotion, setReduceMotion] = useState(reduceMotionPreference);
   const [navDirection, setNavDirection] = useState<'forward' | 'back'>('forward');
   const [bodyTrendPreference, setBodyTrendPreference] = useState(loadBodyTrendPreference);
@@ -1433,6 +1435,7 @@ function AppContent() {
                       setMessage('Your inactive workout passed its time limit and was auto-saved.')
                     }
                     activeStartedAt={activeWorkoutStartedAt}
+                    onRestTimerChange={editingWorkout ? undefined : setRestEndsAt}
                     onClose={navigateBack}
                     onDelete={() => {
                       if (workoutSaving) return;
@@ -1612,6 +1615,7 @@ function AppContent() {
             homeLayout={home}
             active={activeMainTab}
             workoutStartedAt={activeWorkoutStartedAt}
+            restEndsAt={restEndsAt}
             workoutSaving={workoutSaving}
             onSelect={(nextTab) => {
               if (nextTab === 'history' || nextTab === 'progress') openHistorySection(nextTab);
@@ -2367,6 +2371,7 @@ function WorkoutLogger({
   activeStartedAt,
   onClose,
   onDelete,
+  onRestTimerChange,
 }: {
   exercises: Exercise[];
   restoredDraftMovements: DraftMovement[];
@@ -2389,6 +2394,8 @@ function WorkoutLogger({
   activeStartedAt: number | null;
   onClose: () => void;
   onDelete: () => void;
+  /** When the rest ends, or null without one, for the countdown on the tab bar. */
+  onRestTimerChange?: (endsAt: number | null) => void;
 }) {
   const weightUnit = useWeightUnit();
   const restoredDraft = useState(() => (initialWorkout ? null : readActiveWorkoutDraft()))[0];
@@ -2658,7 +2665,7 @@ function WorkoutLogger({
     const interval = window.setInterval(() => {
       const active = activeRestTimerRef.current;
       if (!active) return;
-      const next = Math.max(0, Math.ceil((active.endsAt - Date.now()) / 1000));
+      const next = restSecondsLeft(active.endsAt);
       setRestLeft((current) => {
         if (next === 0 && current > 0) {
           activeRestTimerRef.current = null;
@@ -2932,6 +2939,25 @@ function WorkoutLogger({
     setRestLeft(seconds);
     setRestTotal(seconds);
     setRestPopupOpen(true);
+    onRestTimerChange?.(timer.endsAt);
+    const endpoint = restNotificationEndpointRef.current;
+    if (endpoint) scheduleRestTimerPush(timer, endpoint);
+  }
+
+  /** Adds or takes off rest; taking off all of it ends the rest like Cancel. */
+  function adjustRestTimer(deltaSeconds: number) {
+    const timer = activeRestTimerRef.current;
+    if (!timer) return;
+    const left = restSecondsLeft(timer.endsAt) + deltaSeconds;
+    if (left <= 0) {
+      cancelRestTimer();
+      return;
+    }
+    timer.endsAt = Date.now() + left * 1000;
+    setRestLeft(left);
+    setRestTotal((total) => Math.max(left, total + deltaSeconds));
+    onRestTimerChange?.(timer.endsAt);
+    // Scheduling again replaces this device's pending "Rest complete" notification.
     const endpoint = restNotificationEndpointRef.current;
     if (endpoint) scheduleRestTimerPush(timer, endpoint);
   }
@@ -2941,6 +2967,7 @@ function WorkoutLogger({
     activeRestTimerRef.current = null;
     setRestLeft(0);
     setRestPopupOpen(false);
+    onRestTimerChange?.(null);
     void dismissRestTimerNotifications().catch(() => undefined);
     const endpoint = restNotificationEndpointRef.current;
     if (timer && endpoint) {
@@ -2958,6 +2985,9 @@ function WorkoutLogger({
     if (restTimerEnabled) return;
     cancelRestTimer();
   }, [restTimerEnabled]);
+
+  // A closed workout leaves no rest countdown on the tab bar.
+  useEffect(() => () => onRestTimerChange?.(null), [onRestTimerChange]);
 
   function updateSet(movementKey: string, setKey: string, update: Partial<DraftSet>) {
     const movement = movements.find((item) => item.key === movementKey);
@@ -3523,6 +3553,7 @@ function WorkoutLogger({
               totalSeconds={restTotal}
               onDismiss={() => setRestPopupOpen(false)}
               onCancel={skipRestTimer}
+              onAdjust={adjustRestTimer}
             />
           )}
         </div>

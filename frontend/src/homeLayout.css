@@ -390,9 +390,9 @@
   .home-section-content .record-list strong {
     white-space: normal;
   }
-  .home-section-content .friend-activity-meta {
-    white-space: normal;
-    overflow-wrap: anywhere;
+  .home-section-content .friend-activity-totals {
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
   }
 }
 /* Three adjacent controls still fit cards in the original three-column stat row. */

@@ -11,7 +11,9 @@
     "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date.",
     "Settings > Workouts & bodyweight has a Show guide button beside the import actions. It opens the same import guide used during onboarding.",
     "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages.",
-    "Completing a set opens a rest timer popup at the bottom of the workout with the time left and a bar that shrinks from right to left. Tap × to dismiss it and keep the countdown beside the live workout time, where tapping the time opens the popup again; Cancel stops the rest timer.",
+    "Completing a set opens a rest timer popup at the bottom of the workout with the time left centred between -30s and +30s buttons and a bar that shrinks from right to left. Tap × to dismiss it and keep the countdown beside the live workout time, where tapping the time opens the popup again; Cancel stops the rest timer.",
+    "While resting, leaving the workout turns the live button in the bottom navigation into a timer counting down the rest.",
+    "The Friends card on Today shows each friend's total workouts, cardio sessions and PRs with the same icons as your profile, instead of exercises and sets.",
     "Profile sharing now shares cardio together with workouts as Workouts + cardio, so the separate Cardio sessions switch is gone. If you had it off, anyone who can see your profile now sees your recent cardio sessions; cardio notes still follow the Notes switch.",
     "Today always shows the dimmer Empty shortcut beside Start workout, including when the suggested workout has no previous session to copy. Empty starts a fresh workout without copied exercises."
   ],

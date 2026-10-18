@@ -85,17 +85,25 @@
 
 ### Rest timer popup
 
-![Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar](screenshots/releases/0.8.0-rest-timer-popup.png)
+![Workout logger with the rest timer popup at the bottom: Cancel, -30s, the 2:59 rest countdown centred, +30s and a dismiss button, above a countdown bar](screenshots/releases/0.8.0-rest-timer-popup.png)
 
-*The rest timer counts down in a popup while you train.*
+*The rest countdown sits centred between -30s and +30s buttons.*
+
+![Bottom navigation with a timer icon and 2:57 rest countdown in place of the live workout dot](screenshots/releases/0.8.0-rest-timer-tab-bar.png)
+
+*Away from the workout, the tab bar counts down your rest.*
 
 ![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.8.0-rest-timer-header.png)
 
 *After dismissing the popup, the countdown stays beside the live time.*
 
 - Completing a set opens a **rest timer popup** at the bottom of the workout, in the same
-  style as the app's other popups. It shows the time left, and a bar along its bottom edge
+  style as the app's other popups. The time left is centred, and a bar along its bottom edge
   shrinks slowly from right to left over the rest period.
+- Tap **-30s** or **+30s** either side of the time to shorten or extend the rest. Taking off
+  all the time left ends the rest, and rest-complete notifications follow the new time.
+- While resting, leaving the workout turns the live button in the bottom navigation into a
+  timer icon counting down the rest. It returns to the live workout time when the rest ends.
 - Tap **×** to dismiss the popup. The countdown keeps running beside the live workout
   time, and tapping it there opens the popup again. **Cancel** stops the rest timer.
 - The popup sits clear of the workout header, and the page leaves room so **Finish
@@ -112,6 +120,16 @@
 - If you had **Cardio sessions** off, anyone who can see your profile now sees your recent
   cardio sessions (time, distance, calories and heart rate). Cardio notes are still shared
   only when **Notes** is on. Make your profile private to stop sharing altogether.
+
+### Friends show workouts, cardio and PRs
+
+![Friends card on Today with each friend's workouts, cardio sessions and PRs beside matching calendar, heart and trophy icons](screenshots/releases/0.8.0-friend-totals.png)
+
+*Each friend's totals use the same icons as your profile on Today.*
+
+- The **Friends** card on **Today** shows each friend's total **workouts**, **cardio** sessions
+  and **PRs**, replacing the exercise and set counts from their latest workout. The latest
+  workout's name and date are still shown. On phones the totals sit under the name.
 
 ### Start an empty workout from Today
 

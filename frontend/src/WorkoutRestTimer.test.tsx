@@ -50,14 +50,22 @@ describe('workout header rest timer', () => {
 });
 
 describe('rest timer popup', () => {
-  it('shows the time left with Cancel, Dismiss and a bar sized to the rest remaining', () => {
+  it('centres the time left between -30s and +30s, with Cancel, Dismiss and a progress bar', () => {
     const markup = renderToStaticMarkup(
-      <RestTimerToast seconds={45} totalSeconds={180} onDismiss={vi.fn()} onCancel={vi.fn()} />,
+      <RestTimerToast
+        seconds={45}
+        totalSeconds={180}
+        onDismiss={vi.fn()}
+        onCancel={vi.fn()}
+        onAdjust={vi.fn()}
+      />,
     );
 
     expect(markup).toContain('role="timer"');
     expect(markup).toContain('aria-label="Rest timer 0:45"');
-    expect(markup).toContain('<small>Rest</small><strong>0:45</strong>');
+    expect(markup).toMatch(
+      /aria-label="Take 30 seconds off the rest">−30s<\/button><span class="rest-timer-toast-copy"><small><svg[^>]*>.*?<\/svg>Rest<\/small><strong>0:45<\/strong><\/span><button class="rest-timer-toast-adjust" type="button" aria-label="Add 30 seconds to the rest">\+30s</,
+    );
     expect(markup).toContain('aria-label="Cancel rest timer"');
     expect(markup).toContain(
       'aria-label="Dismiss rest timer popup and show it beside the live time"',
@@ -65,10 +73,11 @@ describe('rest timer popup', () => {
     expect(markup).toContain('transform:scaleX(0.25)');
   });
 
-  it('calls back separately when cancelled or dismissed', async () => {
+  it('calls back separately when cancelled, dismissed or adjusted', async () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     const onCancel = vi.fn();
     const onDismiss = vi.fn();
+    const onAdjust = vi.fn();
     const container = document.createElement('div');
     document.body.append(container);
     const root = createRoot(container);
@@ -80,6 +89,7 @@ describe('rest timer popup', () => {
             totalSeconds={90}
             onDismiss={onDismiss}
             onCancel={onCancel}
+            onAdjust={onAdjust}
           />,
         ),
       );
@@ -87,6 +97,10 @@ describe('rest timer popup', () => {
         container.querySelector<HTMLButtonElement>(`button[aria-label^="${label}"]`)!;
       await act(async () => button('Dismiss').click());
       expect(onDismiss).toHaveBeenCalledTimes(1);
+      expect(onCancel).not.toHaveBeenCalled();
+      await act(async () => button('Take 30 seconds').click());
+      await act(async () => button('Add 30 seconds').click());
+      expect(onAdjust.mock.calls).toEqual([[-30], [30]]);
       expect(onCancel).not.toHaveBeenCalled();
       await act(async () => button('Cancel').click());
       expect(onCancel).toHaveBeenCalledTimes(1);

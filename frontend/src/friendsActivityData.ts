@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
-import { plural } from './sharedProfileDisplay';
 import type { SharedProfileSummary, TrackedWorkout } from './types';
 
 const FRIENDS_SHOWN = 5;
@@ -36,12 +35,23 @@ export async function loadFriendWorkouts(
   );
 }
 
-export function friendWorkoutSummary(workout: TrackedWorkout): string {
-  const sets = workout.movements.reduce(
-    (total, movement) => total + movement.sets.filter((item) => item.completed).length,
-    0,
-  );
-  return [plural(workout.movements.length, 'exercise'), plural(sets, 'set')].join(' · ');
+/** A friend's Workouts, Cardio and PRs totals, matching the stats on your own Today profile. */
+export function friendActivityTotals(friend: SharedProfileSummary) {
+  return [
+    {
+      key: 'workouts',
+      icon: 'calendar',
+      value: friend.workout_count,
+      label: ['workout', 'workouts'],
+    },
+    {
+      key: 'cardio',
+      icon: 'heart',
+      value: friend.cardio_count,
+      label: ['cardio session', 'cardio sessions'],
+    },
+    { key: 'records', icon: 'trophy', value: friend.record_count, label: ['PR', 'PRs'] },
+  ] as const;
 }
 
 /**

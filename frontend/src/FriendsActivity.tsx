@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { api, ApiError } from './api';
 import { ProfileAvatar } from './ProfileAvatar';
 import {
-  friendWorkoutSummary,
+  friendActivityTotals,
   loadFriendWorkouts,
   type FriendWorkout,
 } from './friendsActivityData';
+import { Icon } from './Icon';
 import { shortDate } from './trainingSummary';
 import type { SharedProfileSummary } from './types';
 
@@ -97,14 +98,31 @@ export function FriendsActivityCard({
                       : `Last workout ${shortDate(friend.last_workout_date!)}`}
                   </small>
                 </span>
-                {workout && (
-                  <small className="friend-activity-meta">{friendWorkoutSummary(workout)}</small>
-                )}
+                <FriendActivityTotals friend={friend} />
               </button>
             </li>
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+function FriendActivityTotals({ friend }: { friend: SharedProfileSummary }) {
+  const totals = friendActivityTotals(friend);
+  const description = totals
+    .map(({ value, label }) => `${value ?? 0} ${value === 1 ? label[0] : label[1]}`)
+    .join(', ');
+  return (
+    <span className="friend-activity-totals" role="img" aria-label={description}>
+      {totals.map(({ key, icon, value }) => (
+        <span key={key}>
+          <span className={`today-profile-icon ${key}`} aria-hidden="true">
+            <Icon name={icon} />
+          </span>
+          <b className="num">{value == null ? '–' : value.toLocaleString()}</b>
+        </span>
+      ))}
+    </span>
   );
 }
