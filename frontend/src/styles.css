@@ -4448,7 +4448,7 @@ body:has(.popup-dialog[open]) {
   color: #d7d4d0;
 }
 
-.overlay-header-copy .workout-rest-timer > strong {
+.overlay-header-copy .workout-rest-timer strong {
   overflow: visible;
   color: #e7e4e0;
   font-size: 0.76rem;
@@ -4474,8 +4474,27 @@ body:has(.popup-dialog[open]) {
   line-height: 1;
 }
 
-.workout-rest-timer > button:hover,
-.workout-rest-timer > button:focus-visible {
+/* Tapping the time reopens the rest popup; the red × still skips the rest. */
+.workout-rest-timer > .workout-rest-timer-show {
+  width: auto;
+  height: auto;
+  min-height: 1.5rem;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 0.15rem;
+  background: transparent;
+  color: inherit;
+}
+
+.workout-rest-timer > .workout-rest-timer-show:hover,
+.workout-rest-timer > .workout-rest-timer-show:focus-visible {
+  outline: 2px solid var(--p-accent);
+  outline-offset: 1px;
+  background: transparent;
+}
+
+.workout-rest-timer > button:not(.workout-rest-timer-show):hover,
+.workout-rest-timer > button:not(.workout-rest-timer-show):focus-visible {
   outline: 2px solid rgb(255 107 120 / 35%);
   outline-offset: 1px;
   background: rgb(126 33 43 / 72%);

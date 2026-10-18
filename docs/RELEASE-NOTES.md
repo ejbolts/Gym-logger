@@ -4,6 +4,24 @@
 
 18 October 2026
 
+### Rest timer popup
+
+- Completing a set opens a **rest timer popup** at the bottom of the workout, in the same
+  style as the app's other popups. It shows the time left, and a bar along its bottom edge
+  shrinks slowly from right to left over the rest period.
+- Tap **×** to dismiss the popup. The countdown keeps running beside the live workout
+  time, and tapping it there opens the popup again. **Cancel** stops the rest timer.
+- The popup sits clear of the workout header, and the page leaves room so **Finish
+  workout** stays reachable.
+
+![Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar](screenshots/releases/0.7.1-rest-timer-popup.png)
+
+*The rest timer counts down in a popup while you train.*
+
+![Workout header showing Live 0:07 followed by the 2:56 rest countdown and its red skip button](screenshots/releases/0.7.1-rest-timer-header.png)
+
+*After dismissing the popup, the countdown stays beside the live time.*
+
 ### Find the workout import guide in Settings
 
 - **Settings > Workout data** now has a **Show guide** button beside the CSV import and

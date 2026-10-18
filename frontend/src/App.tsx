@@ -229,7 +229,7 @@ import {
 import { useFollowRequestCount, useOpenFeedbackCount } from './friendsActivityData';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
-import { WorkoutHeaderMeta } from './WorkoutRestTimer';
+import { RestTimerToast, WorkoutHeaderMeta } from './WorkoutRestTimer';
 import {
   clearActiveWorkoutDraft,
   readActiveWorkoutDraft,
@@ -2540,6 +2540,9 @@ function WorkoutLogger({
       : Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
   );
   const [restLeft, setRestLeft] = useState(0);
+  // The rest popup shows each new timer; dismissing it moves the countdown beside the live time.
+  const [restTotal, setRestTotal] = useState(0);
+  const [restPopupOpen, setRestPopupOpen] = useState(false);
   const restNotificationEndpointRef = useRef<string | null>(null);
   const activeRestTimerRef = useRef<{
     id: string;
@@ -2943,6 +2946,8 @@ function WorkoutLogger({
     };
     activeRestTimerRef.current = timer;
     setRestLeft(seconds);
+    setRestTotal(seconds);
+    setRestPopupOpen(true);
     const endpoint = restNotificationEndpointRef.current;
     if (endpoint) scheduleRestTimerPush(timer, endpoint);
   }
@@ -2951,6 +2956,7 @@ function WorkoutLogger({
     const timer = activeRestTimerRef.current;
     activeRestTimerRef.current = null;
     setRestLeft(0);
+    setRestPopupOpen(false);
     void dismissRestTimerNotifications().catch(() => undefined);
     const endpoint = restNotificationEndpointRef.current;
     if (timer && endpoint) {
@@ -3193,8 +3199,13 @@ function WorkoutLogger({
     !initialWorkout && !resumedWorkoutId,
   );
 
+  const restActive = restTimerEnabled && restLeft > 0;
+
   return (
-    <section className="logger-screen content-page" inert={saving}>
+    <section
+      className={`logger-screen content-page ${restActive && restPopupOpen ? 'has-rest-popup' : ''}`}
+      inert={saving}
+    >
       {prToastEntries.length > 0 && (
         <PrToast key={`pr-toast-${prToastId}`} entries={prToastEntries} onClose={closePrToast} />
       )}
@@ -3211,8 +3222,9 @@ function WorkoutLogger({
                 ? formatDuration(displayedDurationSeconds)
                 : `Live ${formatDuration(elapsed)}`
             }
-            restSeconds={restTimerEnabled && restLeft > 0 ? restLeft : null}
+            restSeconds={restActive && !restPopupOpen ? restLeft : null}
             onSkipRest={skipRestTimer}
+            onShowRest={() => setRestPopupOpen(true)}
           />
         }
         onBack={onClose}
@@ -3498,24 +3510,37 @@ function WorkoutLogger({
         ))}
       </div>
 
-      {undoDeletion && (
-        <div
-          className="undo-toast"
-          role="status"
-          style={{ '--undo-toast-duration': `${UNDO_TOAST_MS}ms` } as CSSProperties}
-        >
-          <span>Set deleted</span>
-          <button className="undo-toast-action" type="button" onClick={undoSetDeletion}>
-            Undo
-          </button>
-          <button
-            className="undo-toast-close"
-            type="button"
-            onClick={() => setUndoDeletion(null)}
-            aria-label="Dismiss set deletion notification"
-          >
-            <Icon name="close" />
-          </button>
+      {(undoDeletion || (restActive && restPopupOpen)) && (
+        // Popups that stay up while you train sit at the bottom, clear of the workout header.
+        <div className="logger-bottom-toasts">
+          {undoDeletion && (
+            <div
+              className="undo-toast"
+              role="status"
+              style={{ '--undo-toast-duration': `${UNDO_TOAST_MS}ms` } as CSSProperties}
+            >
+              <span>Set deleted</span>
+              <button className="undo-toast-action" type="button" onClick={undoSetDeletion}>
+                Undo
+              </button>
+              <button
+                className="undo-toast-close"
+                type="button"
+                onClick={() => setUndoDeletion(null)}
+                aria-label="Dismiss set deletion notification"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+          )}
+          {restActive && restPopupOpen && (
+            <RestTimerToast
+              seconds={restLeft}
+              totalSeconds={restTotal}
+              onDismiss={() => setRestPopupOpen(false)}
+              onCancel={skipRestTimer}
+            />
+          )}
         </div>
       )}
       <button className="add-exercise-button" type="button" onClick={openExercisePicker}>
