@@ -22,6 +22,10 @@
 
 *Import totals stand out in green before you save, for every app's export.*
 
+![Today Up next card with the dimmer Empty shortcut beside Start workout](screenshots/releases/0.8.0-empty-workout.png)
+
+*Start a blank workout from Empty, even when the suggested type has no previous session.*
+
 - Release previews show feature screenshots before the change bullets, including
   expanded earlier versions. Written release notes also lead with feature media.
 - Choose **Strength Level**, **Hevy**, **Strong** or **Gym Logger** in
@@ -108,6 +112,13 @@
 - If you had **Cardio sessions** off, anyone who can see your profile now sees your recent
   cardio sessions (time, distance, calories and heart rate). Cardio notes are still shared
   only when **Notes** is on. Make your profile private to stop sharing altogether.
+
+### Start an empty workout from Today
+
+- The dimmer **Empty** part of the **Start workout** button is always available while no workout
+  is active, including when there is no previous session for the suggested workout type.
+  It starts a fresh workout without copying exercises; Start workout still uses a previous
+  session when one is available.
 
 ## 0.7.0
 
