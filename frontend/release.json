@@ -9,8 +9,8 @@
     "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages."
   ],
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/99075a77dab58f7f5d6ca542a4ddb9f88b74cf19/docs/screenshots/releases/0.7.1-settings-import-guide.png",
-    "alt": "Workout data in Settings with the Show guide button beside the CSV import and export actions."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f8f2cfe16445a66a07aa52072ac33e500c82f21f/docs/screenshots/releases/0.7.1-rest-timer-popup.png",
+    "alt": "Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar."
   },
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#071"
 }
