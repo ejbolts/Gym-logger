@@ -1385,6 +1385,7 @@ function AppContent() {
                   onOpenProfile={user ? () => setTab('profile') : undefined}
                   profileLabel={user?.display_name}
                   profilePhotoUrl={user?.profile_photo_url}
+                  profile={user ?? undefined}
                   followRequests={followRequests}
                   friendsActivity={
                     user ? (
