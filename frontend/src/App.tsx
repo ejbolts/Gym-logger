@@ -87,6 +87,8 @@ import {
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { NotificationDialog } from './NotificationDialog';
 import { PopupDialog } from './PopupDialog';
+import { PlateCalculatorDialog } from './PlateCalculator';
+import { barTypeForExercise } from './plateLoading';
 import { ExerciseMuscleHelp } from './ExerciseMuscleHelp';
 import {
   MachineFilterBanner,
@@ -4045,6 +4047,10 @@ function MovementCard({
     item: DraftSet;
     warning: SetEntryWarning;
   } | null>(null);
+  const barType = cardio ? null : barTypeForExercise(movement.exercise);
+  const [plateSetKey, setPlateSetKey] = useState<string | null>(null);
+  const plateSetIndex = movement.sets.findIndex((item) => item.key === plateSetKey);
+  const plateSet = plateSetIndex < 0 ? null : movement.sets[plateSetIndex];
   const draggingSetKeyRef = useRef<string | null>(null);
   const dragTargetSetKeyRef = useRef<string | null>(null);
   const movementMenuRef = useRef<HTMLDetailsElement>(null);
@@ -4678,6 +4684,28 @@ function MovementCard({
           )}
         </div>
         <div className="movement-header-actions" onClick={(event) => event.stopPropagation()}>
+          {barType && (
+            <button
+              type="button"
+              className="plate-calculator-button"
+              aria-label={`Plate calculator for ${movement.exercise.name}`}
+              disabled={movement.sets.length === 0}
+              onClick={() => {
+                closeMovementMenu();
+                // The next set to lift, or the last one once every set is ticked.
+                const next = movement.sets.find((item) => !item.completed) ?? movement.sets.at(-1);
+                if (next) setPlateSetKey(next.key);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M1.5 12h2M20.5 12h2M8.5 12h7" />
+                <rect x="3.5" y="8" width="2.5" height="8" rx="1" />
+                <rect x="6" y="5" width="2.5" height="14" rx="1" />
+                <rect x="15.5" y="5" width="2.5" height="14" rx="1" />
+                <rect x="18" y="8" width="2.5" height="8" rx="1" />
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             className={`exercise-complete-button ${movement.isComplete ? 'active' : ''}`}
@@ -4899,6 +4927,21 @@ function MovementCard({
       <button type="button" className="add-set-button" onClick={onAddSet}>
         ＋ Add set
       </button>
+      {plateSet && barType && (
+        <PlateCalculatorDialog
+          exercise={movement.exercise}
+          barType={barType}
+          setLabel={
+            /^\d+$/.test(setNumbers[plateSetIndex])
+              ? `Set ${setNumbers[plateSetIndex]}`
+              : (SET_KINDS.find((kind) => kind.letter === setNumbers[plateSetIndex])?.label ??
+                'Set')
+          }
+          weightKg={plateSet.weight_kg}
+          onUse={(weightKg) => onUpdateSet(plateSet.key, { weight_kg: weightKg })}
+          onClose={() => setPlateSetKey(null)}
+        />
+      )}
       <input
         className="movement-note"
         value={movement.notes}

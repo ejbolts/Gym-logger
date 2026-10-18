@@ -121,6 +121,33 @@
   cardio sessions (time, distance, calories and heart rate). Cardio notes are still shared
   only when **Notes** is on. Make your profile private to stop sharing altogether.
 
+### Plate calculator for barbell, EZ-bar and trap-bar lifts
+
+![Plate calculator for 100 kg on an Olympic bar, with a red 25 kg and yellow 15 kg plate drawn on each side, bar choices and coloured plate buttons](screenshots/releases/0.8.0-plate-calculator.png)
+
+*See which plates to load on each side, drawn on the bar in standard plate colours.*
+
+![Plate calculator in pounds for a trap bar deadlift: 305 lb on a 55 lb trap bar with 45, 45, 25 and 10 lb plates per side](screenshots/releases/0.8.0-plate-calculator-trap-lb.png)
+
+*Pound users get pound plates and bars, here on a trap bar.*
+
+![Barbell Bench Press header with the new barbell button beside the finish tick](screenshots/releases/0.8.0-plate-calculator-button.png)
+
+*Open it from the barbell button on the exercise.*
+
+- Barbell, EZ-bar and trap-bar exercises have a **barbell button** in their header. It opens the
+  plate calculator for the next set to lift, or the last set once every set is ticked.
+- The calculator shows the plates for each side, heaviest nearest the collar, using
+  **25, 20, 15, 10, 5 and 2.5 kg** plates or **45, 35, 25, 10, 5 and 2.5 lb** plates to match
+  your weight unit. Plates use standard colours: red 25 kg, blue 20 kg or 45 lb, yellow 15 kg or
+  35 lb, green 10 kg or 25 lb, and white 5 kg or 10 lb; the smallest are grey.
+- Bars start at the usual weight for the exercise: **Olympic bar 20 kg / 45 lb**, **EZ bar
+  10 kg / 25 lb** and **trap bar 25 kg / 55 lb**. EZ and trap bars vary by brand, so you can
+  switch bars or type your bar's weight; the choice is remembered for each exercise.
+- Step the total by a pair of the smallest plates, or tap plates to add pairs and tap one on the
+  bar to remove it. A weight that can't be loaded exactly shows the nearest weight below and how
+  much is missing. **Use** copies the total into the set.
+
 ### Friends show workouts, cardio and PRs
 
 ![Friends card on Today with each friend's workouts, cardio sessions and PRs beside matching calendar, heart and trophy icons](screenshots/releases/0.8.0-friend-totals.png)
