@@ -53,6 +53,15 @@
 - Gym Logger's own CSV export remains a completed-set history format, rather than a
   full backup of imported notes, RPE or cardio details.
 
+### Find the import guide in Settings
+
+![Workout data in Settings with the Show guide button beside the import actions](screenshots/releases/0.8.0-settings-show-guide.png)
+
+*Open the import guide directly from Settings.*
+
+- **Settings > Workouts & bodyweight** has a **Show guide** button beside the import
+  actions. It opens the same import guide used during onboarding.
+
 ## 0.7.0
 
 17 October 2026

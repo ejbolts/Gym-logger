@@ -6869,6 +6869,9 @@ function SettingsScreen({
             onGuideOpenChange={onCsvGuideOpenChange}
             onSourceChange={setWorkoutImportSource}
           />
+          <button type="button" onClick={() => onCsvGuideOpenChange(true)}>
+            Show guide
+          </button>
           {workoutImportSource === 'gym' && (
             <button type="button" onClick={() => setExportOpen(true)}>
               ↓ Export data
