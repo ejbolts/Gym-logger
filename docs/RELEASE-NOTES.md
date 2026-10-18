@@ -1,5 +1,19 @@
 # Gym Logger release notes
 
+## 0.7.1
+
+18 October 2026
+
+### Find the workout import guide in Settings
+
+- **Settings > Workout data** now has a **Show guide** button beside the CSV import and
+  export actions. It opens the existing three-page guide, with the same CSV template
+  download and file chooser used during onboarding.
+
+![Workout data in Settings with the Show guide button beside the CSV import and export actions](screenshots/releases/0.7.1-settings-import-guide.png)
+
+*Open the existing workout CSV guide directly from Settings.*
+
 ## 0.7.0
 
 17 October 2026

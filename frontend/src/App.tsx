@@ -7006,6 +7006,9 @@ function SettingsScreen({
           onChange={setWorkoutExportRange}
         />
         <div className="settings-actions">
+          <button type="button" onClick={() => onCsvGuideOpenChange(true)}>
+            Show guide
+          </button>
           <WorkoutCsvImport
             onImport={onImportWorkouts}
             guideOpen={csvGuideOpen}

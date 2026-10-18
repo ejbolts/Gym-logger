@@ -54,9 +54,10 @@ it('compacts the current notes and expands earlier versions independently', asyn
   expect(document.body.textContent).toContain(metadata.summary);
 
   const toggle = button('Hide changes');
+  const showChanges = `Show ${metadata.changes.length} ${metadata.changes.length === 1 ? 'change' : 'changes'}`;
   await act(async () => toggle.click());
   expect(toggle.getAttribute('aria-expanded')).toBe('false');
-  expect(toggle.textContent).toBe(`Show ${metadata.changes.length} changes`);
+  expect(toggle.textContent).toBe(showChanges);
   expect(current.hasAttribute('hidden')).toBe(true);
   expect(current.querySelectorAll('li')).toHaveLength(0);
   expect(document.body.textContent).toContain(metadata.summary);
@@ -93,7 +94,7 @@ it('compacts the current notes and expands earlier versions independently', asyn
   const olderToggle = versionToggle(older.version);
   expect(olderToggle.getAttribute('aria-expanded')).toBe('false');
 
-  await act(async () => button(`Show ${metadata.changes.length} changes`).click());
+  await act(async () => button(showChanges).click());
   expect(current.querySelectorAll('li')).toHaveLength(metadata.changes.length);
   await act(async () => latestToggle.click());
   expect(details.hidden).toBe(true);
