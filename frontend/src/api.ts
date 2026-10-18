@@ -242,6 +242,13 @@ export const api = {
     unfollow: (userId: string) =>
       request<void>(`/api/sharing/follows/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
     connections: () => request<SharingConnections>('/api/sharing/followers'),
+    notifications: () => request<SharingConnections>('/api/sharing/notifications'),
+    dismissNotification: (userId: string, since: string) =>
+      request<void>(`/api/sharing/notifications/${encodeURIComponent(userId)}/dismiss`, {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify({ since }),
+      }),
     approveFollower: (userId: string) =>
       request<void>(`/api/sharing/followers/${encodeURIComponent(userId)}`, { method: 'POST' }),
     removeFollower: (userId: string) =>

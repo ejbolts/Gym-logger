@@ -1,10 +1,12 @@
 """Profile sharing and following between members.
 
-Each account chooses who can see its profile: nobody (``private``, the default), followers it
+Each account chooses who can see its profile: nobody (``private``), followers it
 approves (``followers``, shown as "Friends only"), or every sharing member (``public``). Only
 accounts that share their own profile can see or follow others. A shared profile always includes
 its workouts, cardio sessions and profile photo; notes, body weight, goals and machine photos are
 optional.
+
+New accounts start public; existing accounts retain their choices, including private defaults.
 
 Private, disabled and missing profiles all answer "not found". A friends-only profile shows only
 its name and photo until its owner approves a follow request. Usernames can be searched but are
@@ -831,6 +833,43 @@ def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
     )
 
 
+@sharing_router.get("/notifications", response_model=ConnectionsRead)
+def follow_notifications(user: CurrentUser, db: Db) -> ConnectionsRead:
+    connections = list_followers(user, db)
+    unread = set(
+        db.scalars(
+            select(ProfileFollow.follower_id).where(
+                ProfileFollow.followee_id == user.id,
+                ProfileFollow.status == ACCEPTED,
+                ProfileFollow.notification_seen.is_(False),
+            )
+        )
+    )
+    return ConnectionsRead(
+        requests=connections.requests,
+        followers=[person for person in connections.followers if person.id in unread],
+    )
+
+
+class NotificationDismiss(BaseModel):
+    since: datetime
+
+
+@sharing_router.post("/notifications/{user_id}/dismiss", status_code=204)
+def dismiss_follow_notification(
+    user_id: str, payload: NotificationDismiss, user: CurrentUser, db: Db
+) -> None:
+    follow = find_follow(db, user_id, user.id)
+    # Match the event the client saw so a later re-follow cannot be dismissed by a stale tab.
+    if (
+        follow is not None
+        and follow.status == ACCEPTED
+        and as_utc(follow.accepted_at or follow.created_at) == as_utc(payload.since)
+    ):
+        follow.notification_seen = True
+        db.commit()
+
+
 @sharing_router.post("/followers/{user_id}", status_code=204)
 def approve_follower(user_id: str, user: CurrentUser, db: Db) -> None:
     follow = find_follow(db, user_id, user.id)
@@ -839,6 +878,8 @@ def approve_follower(user_id: str, user: CurrentUser, db: Db) -> None:
     if follow.status == PENDING:
         follow.status = ACCEPTED
         follow.accepted_at = utc_now()
+        # The owner just approved this request, so it needs no second notification.
+        follow.notification_seen = True
         db.commit()
 
 

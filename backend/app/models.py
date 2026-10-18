@@ -187,6 +187,7 @@ class ProfileFollow(Base):
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notification_seen: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
 
 class ServerSetting(Base):

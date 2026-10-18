@@ -4,21 +4,33 @@
 
 19 October 2026
 
-### Custom workout types
+### Workout types and friend notifications
 
 ![Settings Workout types with built-in types plus custom Arms, Legs, Limbs and Torso, colour controls and Add type](screenshots/releases/0.8.1-workout-types.png)
 
 *Add your own types and colours in Settings. Remove hides a type from new workouts; Restore brings it back.*
 
-![Consistency calendar with coloured Arms, Legs, Limbs and Torso dots and filter buttons, retaining weekly set totals](screenshots/releases/0.8.1-custom-type-calendar.png)
+![Today with a notification bell beside the profile picture and a seven-column calendar with custom workout types](screenshots/releases/0.8.1-custom-type-calendar.png)
 
 *Saved workouts keep their custom type in the calendar, including after that type is removed.*
+
+![Notifications showing a follow request with Approve and Decline buttons](screenshots/releases/0.8.1-follow-notifications.png)
+
+*Use the bell beside your profile picture to respond to requests and dismiss new-follower notices.*
+
+![A searchable friends-only account with a pending follow request and a Cancel request button](screenshots/releases/0.8.1-friends-only-search.png)
+
+*Friends-only accounts remain discoverable; their training stays hidden while a request is pending.*
 
 - Open **Settings > Workout types** to add your own types and choose their colours, such as **Arms**, **Legs**, **Limbs** or **Torso**.
 - Remove built-in or custom types from new workouts and restore them later. Saved workouts retain their type and colour.
 - Types stay with workout drafts, history, calendar dots and filters, shared profiles, CSV imports/exports and account backups.
+- The calendar now has seven day columns without the weekly **Sets** column, restoring the other calendar change from PR #68.
+- New accounts start **Public** to members who share. Existing accounts keep their current settings, including older accounts without saved sharing choices. Notes, body weight, goals and machine photos remain opt-in.
+- **Friends only** accounts remain searchable by name, username or full account UUID. Their workouts stay hidden until they approve a follow request.
+- A **Notifications** bell beside the top profile picture shows pending follow requests and new followers. Approve or decline requests there; dismissing a new-follower notice keeps the follower. Existing followers do not generate upgrade notifications.
 - This patch restores the custom workout types feature from PR #68, whose earlier merge did not reach the application release.
-- The upgrade follows the existing feedback migration and adds the optional workout-type link without rebuilding the saved-workouts table.
+- The upgrade adds workout types and a dismissed-notification flag without rebuilding the saved-workouts table or changing existing account visibility.
 
 ## 0.8.0
 

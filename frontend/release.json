@@ -1,16 +1,19 @@
 {
   "version": "0.8.1",
   "date": "2026-10-19",
-  "title": "Custom workout types",
-  "summary": "Add your own workout types and colours in Settings, and keep them with your saved workouts. This restores the feature that missed the earlier release.",
+  "title": "Workout types and friend notifications",
+  "summary": "Custom workout types return, the calendar has more room, and a new notification bell keeps follow requests and new followers together.",
   "changes": [
     "Settings > Workout types lets each account add named workout types with their own colours, such as Arms, Legs, Limbs or Torso.",
     "Remove built-in or custom types from new workouts and restore them later. Saved workouts keep their type and colour.",
-    "Custom types work in workout drafts, history, calendar dots and filters, shared profiles, CSV import/export and account backups."
+    "Custom types work in workout drafts, history, calendar dots and filters, shared profiles, CSV import/export and account backups.",
+    "The calendar uses seven day columns without the weekly Sets column.",
+    "New accounts start public. Existing accounts keep their privacy settings; friends-only profiles stay searchable and require approval to view workouts.",
+    "A bell beside your profile picture shows follow requests and new followers. Approve or decline requests and dismiss new-follower notices there."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#081",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/a883b3715a505d048f88a39a02ee445b004172ce/docs/screenshots/releases/0.8.1-workout-types.png",
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/8a85f7e6f4393da024c52dbbad3a009485d24606/docs/screenshots/releases/0.8.1-workout-types.png",
     "alt": "Settings Workout types with custom Arms, Legs, Limbs and Torso, their colours and the Add type controls."
   }
 }

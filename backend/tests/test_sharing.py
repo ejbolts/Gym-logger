@@ -111,9 +111,9 @@ def add_training_history(test_client: TestClient) -> dict:
     return {"workout": workout.json(), "photo": photo, "sample_only_photo": sample_only_photo}
 
 
-def test_sharing_starts_private_and_keeps_choices(client):
+def test_new_accounts_start_public_and_keep_choices(client):
     assert client.get("/api/sharing").json() == {
-        "visibility": "private",
+        "visibility": "public",
         **NOTHING_EXTRA,
         "pending_requests": 0,
     }
@@ -166,6 +166,7 @@ def test_people_search_matches_names_and_exact_uuid_without_wildcards(client, ot
 
 def test_people_search_keeps_profile_permissions(client, other_client):
     share(client)
+    share(other_client, "private")
     target_id = other_client.user["id"]
     terms = (target_id, other_client.user["username"], other_client.user["display_name"])
     for term in terms:
@@ -183,6 +184,7 @@ def test_people_search_keeps_profile_permissions(client, other_client):
 
 def test_private_members_neither_see_others_nor_appear(client, other_client):
     share(client)
+    share(other_client, "private")
     response = other_client.get("/api/sharing/profiles")
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "sharing_required"
@@ -543,3 +545,58 @@ def test_cardio_choice_is_no_longer_part_of_sharing(client, other_client):
     view = profile(other_client, client).json()
     assert "cardio" not in view["shares"]
     assert len(view["cardio_sessions"]) == 1
+
+
+def test_existing_accounts_without_choices_stay_private(client):
+    with SessionLocal() as db:
+        db.delete(db.get(ProfileSharing, client.user["id"]))
+        db.commit()
+    assert client.get("/api/sharing").json()["visibility"] == "private"
+
+
+def test_follow_notifications_are_scoped_dismissible_and_not_duplicated(client, other_client):
+    target = client.user["id"]
+    follower = other_client.user["id"]
+    assert client.get("/api/sharing/notifications").json() == {"requests": [], "followers": []}
+    assert other_client.post(f"/api/sharing/follows/{target}").json()["status"] == "accepted"
+    # A retry does not create another event.
+    other_client.post(f"/api/sharing/follows/{target}")
+    notices = client.get("/api/sharing/notifications").json()
+    assert [item["id"] for item in notices["followers"]] == [follower]
+    assert other_client.get("/api/sharing/notifications").json()["followers"] == []
+    event = notices["followers"][0]
+    assert (
+        client.post(
+            f"/api/sharing/notifications/{follower}/dismiss", json={"since": event["since"]}
+        ).status_code
+        == 204
+    )
+    assert client.get("/api/sharing/notifications").json()["followers"] == []
+    assert len(client.get("/api/sharing/followers").json()["followers"]) == 1
+    other_client.delete(f"/api/sharing/follows/{target}")
+    other_client.post(f"/api/sharing/follows/{target}")
+    # A stale dismissal cannot consume the new follow.
+    client.post(f"/api/sharing/notifications/{follower}/dismiss", json={"since": event["since"]})
+    assert len(client.get("/api/sharing/notifications").json()["followers"]) == 1
+
+
+def test_friends_only_search_request_and_notification_approval(client, other_client):
+    share(client, "followers")
+    target = client.user["id"]
+    follower = other_client.user["id"]
+    for term in (client.user["display_name"], client.user["username"], target):
+        found = other_client.get("/api/sharing/profiles", params={"q": term}).json()
+        owner = next(item for item in found if item["id"] == target)
+        assert owner["can_view"] is False and owner["workout_count"] is None
+    assert other_client.post(f"/api/sharing/follows/{target}").json()["status"] == "pending"
+    assert other_client.get(f"/api/sharing/profiles/{target}/workouts").status_code == 403
+    notices = client.get("/api/sharing/notifications").json()
+    assert [item["id"] for item in notices["requests"]] == [follower]
+    assert notices["followers"] == []
+    assert client.post(f"/api/sharing/followers/{follower}").status_code == 204
+    assert client.get("/api/sharing/notifications").json() == {"requests": [], "followers": []}
+    assert other_client.get(f"/api/sharing/profiles/{target}").json()["can_view"] is True
+    other_client.delete(f"/api/sharing/follows/{target}")
+    other_client.post(f"/api/sharing/follows/{target}")
+    assert client.delete(f"/api/sharing/followers/{follower}").status_code == 204
+    assert client.get("/api/sharing/notifications").json()["requests"] == []

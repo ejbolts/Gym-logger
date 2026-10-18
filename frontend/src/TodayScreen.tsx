@@ -123,6 +123,7 @@ export interface TodayScreenProps {
   profile?: Pick<User, 'display_name' | 'username' | 'profile_photo_url' | 'created_at'>;
   /** Follow requests waiting for approval, shown as a count on the profile button. */
   followRequests?: number;
+  notifications?: ReactNode;
   /** Unresolved app feedback, shown to administrators beside follow requests. */
   openFeedback?: number;
   calendar?: ReactNode;
@@ -158,6 +159,7 @@ export function TodayScreen({
   profilePhotoUrl,
   profile,
   followRequests = 0,
+  notifications,
   openFeedback = 0,
   calendar,
   friendsActivity,
@@ -594,6 +596,7 @@ export function TodayScreen({
             >
               <Icon name="edit" />
             </button>
+            {notifications}
             {onOpenProfile && (
               <button
                 className="icon-button-pulse profile-button"

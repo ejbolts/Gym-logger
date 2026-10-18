@@ -1,0 +1,45 @@
+.follow-notification-button {
+  position: relative;
+}
+.follow-notifications {
+  width: min(28rem, calc(100vw - 2rem));
+}
+.follow-notification-list {
+  list-style: none;
+  padding: 0 1rem;
+  margin: 1rem 0;
+}
+.follow-notification-list li {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--p-line);
+}
+.follow-notification-list li > .profile-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+}
+.follow-notification-list li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.follow-notification-list p {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--p-ink-2);
+}
+.follow-notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.follow-notification-actions > button {
+  width: auto;
+  flex: 0 1 auto;
+  padding: 0.6rem 0.75rem;
+  white-space: nowrap;
+}
+.follow-notifications > .profile-secondary {
+  margin: 0 1rem 1rem;
+  width: calc(100% - 2rem);
+}

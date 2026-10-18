@@ -254,6 +254,9 @@ def create_user(
         db.add(user)
         try:
             db.flush()
+            # Only newly created accounts start public. Missing choices on older accounts
+            # continue to mean private; never widen an existing member's visibility.
+            db.add(ProfileSharing(user_id=user.id, visibility="public"))
             if first_user:
                 claim_legacy_data(db, user)
             # A unique starting revision stops one account's cached snapshot from ever being

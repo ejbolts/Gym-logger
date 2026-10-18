@@ -239,7 +239,8 @@ import {
   type SettingsDestination,
   type SettingsJump,
 } from './settingsNavigation';
-import { useFollowRequestCount, useOpenFeedbackCount } from './friendsActivityData';
+import { useOpenFeedbackCount } from './friendsActivityData';
+import { FollowNotifications } from './FollowNotifications';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { RestTimerToast, WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -578,7 +579,6 @@ function AppContent() {
   });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const home = useHomeLayout(tab === 'dashboard');
-  const followRequests = useFollowRequestCount(tab === 'dashboard', Boolean(user));
   const openFeedback = useOpenFeedbackCount(tab === 'dashboard' || tab === 'profile', isAdmin);
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
@@ -1374,7 +1374,14 @@ function AppContent() {
                   profileLabel={user?.display_name}
                   profilePhotoUrl={user?.profile_photo_url}
                   profile={user ?? undefined}
-                  followRequests={followRequests}
+                  notifications={
+                    user ? (
+                      <FollowNotifications
+                        active={tab === 'dashboard'}
+                        onOpenFriends={() => setTab('profile')}
+                      />
+                    ) : undefined
+                  }
                   openFeedback={openFeedback}
                   friendsActivity={
                     user ? (
@@ -2003,18 +2010,12 @@ function WorkoutCalendar({
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
               <span key={`${day}-${index}`}>{day}</span>
             ))}
-            <span className="calendar-week-total-heading">Sets</span>
           </div>
           <div className="calendar-days">
             {/* Every month keeps all six week rows, so months share one height and the ones
                 scrolled out of view can skip layout without the calendar changing height. */}
             {Array.from({ length: 6 }, (_, row) => month.cells.slice(row * 7, row * 7 + 7)).map(
               (week, row) => {
-                const weekSets = week.reduce(
-                  (total, day) =>
-                    day ? total + (map.get(localCalendarDate(day))?.set_count ?? 0) : total,
-                  0,
-                );
                 return (
                   <Fragment key={`row-${row}`}>
                     {week.map((day, index) => {
@@ -2081,7 +2082,6 @@ function WorkoutCalendar({
                         </button>
                       );
                     })}
-                    <span className="calendar-week-total num">{weekSets || ''}</span>
                   </Fragment>
                 );
               },
