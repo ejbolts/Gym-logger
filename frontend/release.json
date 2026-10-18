@@ -16,7 +16,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b35cd8993317869b4d390b4b555b4cbab3174d45/docs/screenshots/releases/0.8.0-app-import.png",
-    "alt": "Workout and bodyweight import guide with four logo choices: Strength Level, Hevy, Strong and Gym Logger, with Gym Logger selected."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/dbd1610ade4f4a9645d0a4aeb0441b40bc8bc454/docs/screenshots/releases/0.8.0-app-import.jpg",
+    "alt": "Single-page import guide with four app choices and a Choose CSV file button, shown on a phone."
   }
 }
