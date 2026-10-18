@@ -60,7 +60,7 @@ def register_user(
     display_name: str = "Owner",
     password: str = TEST_PASSWORD,
 ) -> dict:
-    """Register through the API so the client's cookie jar holds a real session."""
+    """Register, then explicitly sign in so authenticated fixtures have a real session."""
     response = test_client.post(
         "/api/auth/register",
         json={
@@ -71,6 +71,10 @@ def register_user(
         },
     )
     assert response.status_code == 201, response.text
+    signed_in = test_client.post(
+        "/api/auth/login", json={"username": username, "password": password}
+    )
+    assert signed_in.status_code == 200, signed_in.text
     return response.json()
 
 

@@ -387,7 +387,6 @@ def auth_config(db: DbDependency, settings: AppSettings) -> AuthConfigRead:
 def register(
     payload: RegisterRequest,
     request: Request,
-    response: Response,
     db: DbDependency,
     settings: AppSettings,
     throttle: Throttle,
@@ -423,8 +422,6 @@ def register(
         raise api_error(
             409, "username_taken", "An account with that username already exists."
         ) from error
-    token = create_user_session(db, user, settings, request.headers.get("user-agent"))
-    set_session_cookie(response, token, settings)
     return user_to_read(db, user, settings)
 
 

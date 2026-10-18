@@ -149,7 +149,7 @@ def test_login_upgrades_a_hash_made_with_older_cost_settings(client):
 # --- register / login / logout / me ---
 
 
-def test_register_signs_in_and_me_returns_the_user(anonymous_client):
+def test_register_requires_explicit_login_before_access(anonymous_client):
     response = anonymous_client.post(
         "/api/auth/register",
         json={
@@ -176,7 +176,17 @@ def test_register_signs_in_and_me_returns_the_user(anonymous_client):
     assert body["display_name"] == "Lee Lifter"
     assert body["is_admin"] is True
     assert body["can_upload_videos"] is True
-    cookie = response.headers["set-cookie"].lower()
+    assert "set-cookie" not in response.headers
+    assert SESSION_COOKIE not in anonymous_client.cookies
+    assert anonymous_client.get("/api/auth/me").status_code == 401
+    assert anonymous_client.get("/api/exercises").status_code == 401
+    with SessionLocal() as db:
+        assert db.scalar(select(func.count(UserSession.id))) == 0
+    assert login(anonymous_client, "lifter", "wrong password").status_code == 401
+    assert anonymous_client.get("/api/auth/me").status_code == 401
+    signed_in = login(anonymous_client, "lifter")
+    assert signed_in.status_code == 200
+    cookie = signed_in.headers["set-cookie"].lower()
     assert f"{SESSION_COOKIE}=" in cookie
     assert "httponly" in cookie
     assert "samesite=lax" in cookie
@@ -203,6 +213,9 @@ def test_secure_cookie_flag_follows_setting():
                 "invite_code": TEST_INVITE_CODE,
             },
         )
+        assert response.status_code == 201
+        assert "set-cookie" not in response.headers
+        response = login(secure_client, "aaa")
         assert "secure" in response.headers["set-cookie"].lower()
 
 

@@ -6,6 +6,14 @@
 
 ### Friends, profiles and a more personal Home
 
+- Creating an account returns to **Sign in** with cleared credentials and an **Account
+  created** message. Registration does not start a session; enter your username and
+  password to access the app. The new-account tour starts after successful login.
+
+![Sign-in form after account creation, showing the Account created confirmation and empty username and password fields](screenshots/releases/0.7.0-signup-requires-login.png)
+
+*New accounts return to Sign in and require their credentials before entering the app.*
+
 - Tap the question mark beside an exercise in the picker, workout logger or Progress
   header to see its muscle credits per working set. The popup separates direct work
   from partial assistance and uses the same credits as weekly muscle totals.
