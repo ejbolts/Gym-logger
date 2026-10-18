@@ -4,7 +4,7 @@
 
 19 October 2026
 
-### Workout types and friend notifications
+### Workout types, friends and account setup
 
 ![Settings Workout types with built-in types plus custom Arms, Legs, Limbs and Torso, colour controls and Add type](screenshots/releases/0.8.1-workout-types.png)
 
@@ -22,6 +22,14 @@
 
 *Friends-only accounts remain discoverable; their training stays hidden while a request is pending.*
 
+![Create account form with the Name and Username help open: Name doesn't need to be unique, Username must be unique, and both can be changed in Profile](screenshots/releases/0.8.1-account-help.png)
+
+*Tap ? beside Name or Username to see what each is for and which must be unique. The form also explains the default public profile visibility.*
+
+![Sample profile popup showing Jordan Reyes and @jordan.r outlined on a profile card with example workouts, cardio and PRs](screenshots/releases/0.8.1-sample-profile.png)
+
+*See a sample profile shows the names you've typed on a profile card.*
+
 - Open **Settings > Workout types** to add your own types and choose their colours, such as **Arms**, **Legs**, **Limbs** or **Torso**.
 - Remove built-in or custom types from new workouts and restore them later. Saved workouts retain their type and colour.
 - Types stay with workout drafts, history, calendar dots and filters, shared profiles, CSV imports/exports and account backups.
@@ -31,6 +39,12 @@
 - A **Notifications** bell beside the top profile picture shows pending follow requests and new followers. Approve or decline requests there; dismissing a new-follower notice keeps the follower. Existing followers do not generate upgrade notifications.
 - This patch restores the custom workout types feature from PR #68, whose earlier merge did not reach the application release.
 - The upgrade adds workout types and a dismissed-notification flag without rebuilding the saved-workouts table or changing existing account visibility.
+- When creating an account, **?** beside **Name** and **Username** explains each one. Name is
+  your display name and doesn't need to be unique. Username is how you sign in and how friends
+  find you as @handle, so it must be unique. Both can be changed any time in **Profile**.
+- **See a sample profile**, below **Create account**, shows a profile card with the name and
+  username typed so far, or **Sam Sample** until they're filled in. The workouts, cardio and PRs
+  are examples, and a key shows where each name appears.
 
 ## 0.8.0
 
