@@ -81,7 +81,6 @@ describe('Today friends activity', () => {
       visibility: 'followers',
       pending_requests: 2,
       share_notes: false,
-      share_cardio: false,
       share_body_weight: false,
       share_goals: false,
       share_machine_photos: false,

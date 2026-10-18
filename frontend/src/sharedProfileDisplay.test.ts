@@ -9,7 +9,6 @@ import type { SharedProfileSummary } from './types';
 
 const nothingExtra = {
   notes: false,
-  cardio: false,
   body_weight: false,
   goals: false,
   machine_photos: false,
@@ -53,13 +52,13 @@ describe('shared profile display', () => {
     expect(followSinceLabel('Following', 'invalid')).toBe('Following');
   });
   it('always lists workouts, then only the parts the owner chose to share', () => {
-    expect(sharedParts(profile)).toEqual(['Workouts']);
+    expect(sharedParts(profile)).toEqual(['Workouts + cardio']);
     expect(
       sharedParts({
         ...profile,
-        shares: { notes: true, cardio: true, body_weight: true, goals: true, machine_photos: true },
+        shares: { notes: true, body_weight: true, goals: true, machine_photos: true },
       }),
-    ).toEqual(['Workouts', 'Machine photos', 'Body weight', 'Goals', 'Cardio', 'Notes']);
+    ).toEqual(['Workouts + cardio', 'Machine photos', 'Body weight', 'Goals', 'Notes']);
     expect(sharedParts(friendsOnly)).toEqual([]);
   });
 

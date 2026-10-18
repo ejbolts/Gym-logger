@@ -12,7 +12,6 @@ let container: HTMLDivElement;
 const friendsOnly: SharingSettings = {
   visibility: 'followers',
   share_notes: false,
-  share_cardio: false,
   share_body_weight: false,
   share_goals: false,
   share_machine_photos: false,

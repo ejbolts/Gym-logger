@@ -12,7 +12,6 @@ from app.models import ProfileFollow, ProfileSharing, TrainingWorkout, User
 
 NOTHING_EXTRA = {
     "share_notes": False,
-    "share_cardio": False,
     "share_body_weight": False,
     "share_goals": False,
     "share_machine_photos": False,
@@ -320,14 +319,17 @@ def test_shared_profile_includes_only_the_chosen_parts(client, other_client):
     assert view["workout_count"] == 1 and view["recent_workout_count"] == 1
     assert view["last_workout_date"] == date.today().isoformat()
     assert view["shares"] == {
-        key: False for key in ("notes", "cardio", "body_weight", "goals", "machine_photos")
+        key: False for key in ("notes", "body_weight", "goals", "machine_photos")
     }
     # The profile photo is always shared.
     assert other_client.get(view["profile_photo_url"]).headers["cache-control"] == (
         "private, no-cache"
     )
     assert view["body_weight"] is None and view["goals"] is None
-    assert view["cardio_sessions"] is None
+    # Cardio is shared with workouts, without its notes unless notes are shared.
+    [cardio] = view["cardio_sessions"]
+    assert cardio["activity_type"] == "Bike" and cardio["duration_minutes"] == 40
+    assert cardio["notes"] is None
     photo_path = f"/api/sharing/profiles/{owner_id}/machine-photos/{history['photo']['id']}"
     assert other_client.get(photo_path).status_code == 404
 
@@ -519,3 +521,14 @@ def test_disabled_and_deleted_accounts_are_not_shared(client, other_client):
         assert db.scalar(select(func.count()).select_from(ProfileSharing)) == 2
         assert db.scalar(select(func.count()).select_from(ProfileFollow)) == 0
     third.close()
+
+
+def test_cardio_choice_is_no_longer_part_of_sharing(client, other_client):
+    add_training_history(client)
+    # An older app may still send the removed choice; it is ignored rather than rejected.
+    saved = share(client, "public", share_cardio=False)
+    assert "share_cardio" not in saved
+    share(other_client, "public")
+    view = profile(other_client, client).json()
+    assert "cardio" not in view["shares"]
+    assert len(view["cardio_sessions"]) == 1

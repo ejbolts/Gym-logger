@@ -22,6 +22,18 @@
 
 *After dismissing the popup, the countdown stays beside the live time.*
 
+### Cardio is shared with your workouts
+
+- In **Profile > What you share**, workouts and cardio are now one always-shared item,
+  **Workouts + cardio**, and the separate **Cardio sessions** switch has been removed.
+- If you had **Cardio sessions** off, anyone who can see your profile now sees your recent
+  cardio sessions (time, distance, calories and heart rate). Cardio notes are still shared
+  only when **Notes** is on. Make your profile private to stop sharing altogether.
+
+![What you share with Workouts + cardio and Profile photo marked Always, and switches for machine photos, body weight, goals and notes](screenshots/releases/0.7.1-share-workouts-cardio.png)
+
+*Cardio is now shared together with your workouts.*
+
 ### Find the workout import guide in Settings
 
 - **Settings > Workout data** now has a **Show guide** button beside the CSV import and

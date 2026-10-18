@@ -1,10 +1,11 @@
 {
   "version": "0.7.1",
   "date": "2026-10-18",
-  "title": "Rest timer popup, import guide in Settings and a feedback inbox",
-  "summary": "The rest timer now counts down in a popup with a shrinking bar. Open the workout CSV guide from Settings, and administrators can review and resolve feedback.",
+  "title": "Rest timer popup, cardio shared with workouts and more",
+  "summary": "The rest timer counts down in a popup, cardio is shared together with your workouts, the CSV guide opens from Settings, and administrators can resolve feedback.",
   "changes": [
     "Completing a set opens a rest timer popup at the bottom of the workout with the time left and a bar that shrinks from right to left. Tap × to dismiss it and keep the countdown beside the live workout time, where tapping the time opens the popup again; Cancel stops the rest timer.",
+    "Profile sharing now shares cardio together with workouts as Workouts + cardio, so the separate Cardio sessions switch is gone. If you had it off, anyone who can see your profile now sees your recent cardio sessions; cardio notes still follow the Notes switch.",
     "Settings > Workout data now has a Show guide button beside the CSV import and export actions. It opens the same three-page guide used during onboarding, including the CSV template and file chooser.",
     "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages."
   ],

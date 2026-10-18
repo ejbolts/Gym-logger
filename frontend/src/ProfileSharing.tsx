@@ -19,7 +19,10 @@ const VISIBILITY_OPTIONS: Array<{ value: ProfileVisibility; description: string 
 ];
 
 const ALWAYS_SHARED = [
-  { label: 'Workouts', description: 'Exercises, sets, dates and durations' },
+  {
+    label: 'Workouts + cardio',
+    description: 'Exercises, sets, dates and durations, plus cardio time, distance and heart rate',
+  },
   { label: 'Profile photo', description: 'Shown with your name, even before someone follows you' },
 ];
 
@@ -38,11 +41,6 @@ const SHARING_OPTIONS: Array<{ key: OptionalChoice; label: string; description: 
     key: 'share_goals',
     label: 'Goals',
     description: 'Your body-weight goal and weekly Zone 2 cardio target',
-  },
-  {
-    key: 'share_cardio',
-    label: 'Cardio sessions',
-    description: 'Recent sessions with time, distance, calories and heart rate',
   },
   {
     key: 'share_notes',
@@ -68,7 +66,6 @@ const STATUS_TOAST_MS = 5000;
 const PRIVATE_DEFAULTS: SharingChoices = {
   visibility: 'private',
   share_notes: false,
-  share_cardio: false,
   share_body_weight: false,
   share_goals: false,
   share_machine_photos: false,
@@ -78,7 +75,6 @@ function choicesFrom(settings: SharingSettings): SharingChoices {
   return {
     visibility: settings.visibility,
     share_notes: settings.share_notes,
-    share_cardio: settings.share_cardio,
     share_body_weight: settings.share_body_weight,
     share_goals: settings.share_goals,
     share_machine_photos: settings.share_machine_photos,
