@@ -36,6 +36,7 @@ import { useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
 import {
   formatWeight,
+  formatWeightNumber,
   recordDisplayValue,
   weightFromKg,
   weightToKg,
@@ -305,16 +306,20 @@ export function TodayScreen({
           {template ? (
             <>
               <ul className="next-session-exercises">
-                {template.exercises.slice(0, 4).map(({ exercise, summary }) => (
+                {template.exercises.slice(0, 6).map(({ exercise, topSet, summary }) => (
                   <li key={exercise.id}>
-                    <span>{exercise.name}</span>
-                    <b className="num">{summary}</b>
+                    <span title={exercise.name}>{exercise.name}</span>
+                    <b className="num" title={summary}>
+                      {exercise.kind !== 'cardio' && topSet
+                        ? `${formatWeightNumber(topSet.weight_kg ?? 0, weightUnit)}×${topSet.reps ?? '–'}`
+                        : summary}
+                    </b>
                   </li>
                 ))}
               </ul>
-              {template.exercises.length > 4 && (
+              {template.exercises.length > 6 && (
                 <p className="next-session-more">
-                  +{template.exercises.length - 4} more from last time
+                  +{template.exercises.length - 6} more from last time
                 </p>
               )}
             </>

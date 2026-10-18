@@ -146,11 +146,11 @@ function renderToday(
 
 describe('App startup', () => {
   it.each([
-    ['kg', '100 kg × 6'],
-    ['lb', '220.46 lb × 6'],
+    ['kg', '100×6', '100 kg × 6'],
+    ['lb', '220.46×6', '220.46 lb × 6'],
   ] as const)(
     'shows the Home Up next source set in %s while preserving its kg value',
-    (unit, expectedSummary) => {
+    (unit, expectedSummary, fullSummary) => {
       const workout: TrackedWorkout = {
         id: 'source-workout',
         name: 'Pull day',
@@ -210,7 +210,7 @@ describe('App startup', () => {
       const before = structuredClone(workout);
       const markup = renderToday({ workouts: [workout] }, unit);
       expect(markup).toContain('Up next');
-      expect(markup).toContain(`<b class="num">${expectedSummary}</b>`);
+      expect(markup).toContain(`<b class="num" title="${fullSummary}">${expectedSummary}</b>`);
       expect(markup).toContain('<small>Last: Mon 5 Oct</small>');
       expect(markup).toContain('aria-label="Start pull workout"');
       expect(markup).toContain('aria-label="Start empty workout"');
