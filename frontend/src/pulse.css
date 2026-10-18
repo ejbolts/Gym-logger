@@ -4211,13 +4211,12 @@ html[data-reduce-motion] ::backdrop {
 
 /* ───────── History: filter by machine ───────── */
 
-.history-filter-bar {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.75rem;
+.history-calendar-header {
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.history-filter-bar button,
+.history-machine-filter,
 .machine-filter-actions button {
   display: inline-flex;
   align-items: center;
@@ -4232,13 +4231,13 @@ html[data-reduce-motion] ::backdrop {
   font-weight: 600;
 }
 
-.history-filter-bar button:hover,
+.history-machine-filter:hover,
 .machine-filter-actions button:hover {
   border-color: var(--p-accent);
   color: var(--p-ink);
 }
 
-.history-filter-bar svg,
+.history-machine-filter svg,
 .machine-filter-actions svg,
 .machine-filter-eyebrow svg,
 .photo-machine-history svg,

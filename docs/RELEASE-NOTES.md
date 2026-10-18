@@ -6,6 +6,9 @@
 
 ### Friends, profiles and a more personal Home
 
+- History's **Filter by machine** button sits beside **Calendar** in the card header,
+  removing the separate row above the calendar.
+
 - Finishing a new or resumed workout returns to **Today** immediately while the saving
   popup sends it to the server in the background. You can browse the app while it saves.
   If saving fails, the workout reopens with your entries intact so you can retry.
@@ -132,6 +135,11 @@
   **Undo** restores body fat without changing the latest weight or notes.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
+
+<img src="screenshots/releases/0.7.0-history-machine-filter-header.png" alt="History with Filter by machine aligned beside Calendar in the card header, directly below the Workouts and Cardio tabs." width="390">
+
+The machine filter shares the Calendar heading row. Captured at phone width with sample
+workouts in the isolated verification environment.
 
 <img src="screenshots/releases/0.7.0-workout-background-save.png" alt="Today showing Workout finished, the Saving workout changes popup and a Saving footer while a sample workout saves in the background." width="390">
 
