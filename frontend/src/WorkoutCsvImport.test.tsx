@@ -83,6 +83,26 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('workout CSV review flow', () => {
+  it('notifies Settings of source changes from both the cards and guide', () => {
+    const onSourceChange = vi.fn();
+    const nodes = elements(
+      WorkoutCsvImport({
+        onImport: vi.fn(),
+        guideOpen: true,
+        onGuideOpenChange: vi.fn(),
+        onSourceChange,
+      }),
+    );
+    const source = nodes.find((element) => element.type === WorkoutImportSource)!;
+    const guide = nodes.find((element) => element.type === WorkoutCsvGuide)!;
+    for (const selected of ['strengthlevel', 'hevy', 'strong', 'gym']) {
+      (source.props.onChange as (value: unknown) => void)({ ...options, source: selected });
+      expect(onSourceChange).toHaveBeenLastCalledWith(selected);
+    }
+    (guide.props.onOptionsChange as (value: unknown) => void)({ ...options, source: 'hevy' });
+    expect(onSourceChange).toHaveBeenLastCalledWith('hevy');
+  });
+
   it('saves with the source and units used by the preview even if the selector changes', async () => {
     vi.mocked(api.previewWorkoutImport).mockResolvedValue(preview);
     const onImport = vi.fn().mockResolvedValue(undefined);

@@ -5,7 +5,7 @@
   "summary": "Import original Strength Level, Hevy and Strong exports with app-specific choices, clear previews and support for Strong body-weight measurements.",
   "changes": [
     "Release previews highlight the feature screenshot before the change bullets, including expanded earlier versions. Written release notes also put feature media first.",
-    "Choose Strength Level, Hevy, Strong or Gym Logger using four matching logo buttons in Workout data and the import guide. Gym Logger also accepts spreadsheets using the template. Upload other apps' original CSVs without renaming columns.",
+    "Choose Strength Level, Hevy, Strong or Gym Logger using four matching logo buttons in Workout data and the import guide. Only Gym Logger shows the workout export button and date range, and it also accepts spreadsheets using the template. Upload other apps' original CSVs without renaming columns.",
     "Hevy and Strong imports keep workout names and separate sessions, warmups, drop sets, RPE, workout and exercise notes, duration and distance. Strong failed sets are kept; rest-timer rows are skipped. Superset grouping is not transferred.",
     "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
     "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date."

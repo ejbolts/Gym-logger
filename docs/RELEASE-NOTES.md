@@ -12,7 +12,7 @@
 
 ![Workout data in Settings with four app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
 
-*Strong workout exports use the units you select; measurement files supply their own units.*
+*Strong shows import controls only. Select Gym Logger to export workouts or choose an export date range.*
 
 ![Workout import review with the sessions and sets being added highlighted in green](screenshots/releases/0.8.0-import-totals.png)
 
@@ -24,7 +24,8 @@
   **Settings > Workout data** or the import guide. All four options are matching logo
   buttons; Gym Logger replaces the spreadsheet hyperlink and also accepts template-based
   spreadsheets. They form a row on larger screens and two rows on phones. Upload the original CSV;
-  no column renaming is needed. Gym Logger exports and the spreadsheet template still work.
+  no column renaming is needed. The workout export button and export date range appear
+  only when Gym Logger is selected. Gym Logger exports and the spreadsheet template still work.
 - Hevy and Strong keep workout names and separate sessions on one date, warmups,
   drop sets, RPE, workout and exercise notes, workout duration and set duration/distance.
   Strong failed sets are kept. Timed cardio movements also populate Cardio.

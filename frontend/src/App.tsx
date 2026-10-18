@@ -6346,6 +6346,8 @@ function SettingsScreen({
   const workoutDataSection = useRef<HTMLElement>(null);
   const [exportingWorkouts, setExportingWorkouts] = useState(false);
   const [workoutExportRange, setWorkoutExportRange] = useState<TimeRange>('all');
+  const [workoutImportSource, setWorkoutImportSource] =
+    useState<WorkoutImportOptions['source']>('gym');
   const [bodyExportRange, setBodyExportRange] = useState<TimeRange>('all');
   const [importingBodyCsv, setImportingBodyCsv] = useState(false);
   const [exportingBodyCsv, setExportingBodyCsv] = useState(false);
@@ -6999,22 +7001,31 @@ function SettingsScreen({
           </a>
           . Snapshots are created by the server administrator; video files are excluded.
         </p>
-        <ExportTimeFrame
-          label="Workout export time frame"
-          value={workoutExportRange}
-          dates={workoutDates}
-          disabled={exportingWorkouts}
-          onChange={setWorkoutExportRange}
-        />
+        {workoutImportSource === 'gym' && (
+          <ExportTimeFrame
+            label="Workout export time frame"
+            value={workoutExportRange}
+            dates={workoutDates}
+            disabled={exportingWorkouts}
+            onChange={setWorkoutExportRange}
+          />
+        )}
         <div className="settings-actions">
           <WorkoutCsvImport
             onImport={onImportWorkouts}
             guideOpen={csvGuideOpen}
             onGuideOpenChange={onCsvGuideOpenChange}
+            onSourceChange={setWorkoutImportSource}
           />
-          <button type="button" disabled={exportingWorkouts} onClick={() => void exportWorkouts()}>
-            {exportingWorkouts ? 'Exporting…' : '↓ Export workout CSV'}
-          </button>
+          {workoutImportSource === 'gym' && (
+            <button
+              type="button"
+              disabled={exportingWorkouts}
+              onClick={() => void exportWorkouts()}
+            >
+              {exportingWorkouts ? 'Exporting…' : '↓ Export workout CSV'}
+            </button>
+          )}
           {(historySummary?.has_sample_workouts ??
             workouts.some((workout) => workout.is_sample)) && (
             <InlineConfirmButton

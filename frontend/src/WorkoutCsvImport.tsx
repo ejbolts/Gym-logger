@@ -143,11 +143,13 @@ export function WorkoutCsvImport({
   onImport,
   guideOpen = false,
   onGuideOpenChange,
+  onSourceChange,
 }: {
   onImport: (file: File, options?: WorkoutImportOptions) => Promise<void>;
   /** The CSV guide's recommendations, opened from onboarding or Settings. */
   guideOpen?: boolean;
   onGuideOpenChange?: (open: boolean) => void;
+  onSourceChange?: (source: WorkoutImportOptions['source']) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [review, setReview] = useState<{
@@ -164,6 +166,12 @@ export function WorkoutCsvImport({
     weight_unit: unit,
     distance_unit: 'km',
   });
+
+  function changeOptions(value: WorkoutImportOptions) {
+    setOptions(value);
+    setError(null);
+    onSourceChange?.(value.source);
+  }
 
   async function selectFile(file: File, selected = options) {
     setError(null);
@@ -207,10 +215,7 @@ export function WorkoutCsvImport({
     <>
       <WorkoutImportSource
         value={options}
-        onChange={(value) => {
-          setOptions(value);
-          setError(null);
-        }}
+        onChange={changeOptions}
         disabled={previewing || saving}
       />
       <input
@@ -241,7 +246,7 @@ export function WorkoutCsvImport({
       {guideOpen && onGuideOpenChange && (
         <WorkoutCsvGuide
           options={options}
-          onOptionsChange={setOptions}
+          onOptionsChange={changeOptions}
           onClose={() => onGuideOpenChange(false)}
           onFileSelected={(file, selected) => {
             onGuideOpenChange(false);
