@@ -3,13 +3,14 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
+import { FriendsActivityCard } from './FriendsActivity';
 import {
   loadFriendWorkouts,
   useFollowRequestCount,
   profileButtonLabel,
   useOpenFeedbackCount,
 } from './friendsActivityData';
-import type { SharedProfileSummary } from './types';
+import type { SharedProfileSummary, TrackedWorkout } from './types';
 
 const friend: SharedProfileSummary = {
   id: 'friend',
@@ -135,6 +136,49 @@ describe('Today friends activity', () => {
       await act(async () => root.unmount());
       container.remove();
       summary.mockRestore();
+    }
+  });
+
+  it("shows each friend's Workouts, Cardio and PRs totals instead of exercises and sets", async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    vi.spyOn(api.sharing, 'profiles').mockResolvedValue([
+      { ...friend, workout_count: 1_036, cardio_count: 1, record_count: 30 },
+    ]);
+    vi.spyOn(api.sharing, 'workouts').mockResolvedValue({
+      total: 1,
+      personal_records: [],
+      workouts: [
+        {
+          id: 'latest',
+          name: 'Upper strength',
+          workout_date: '2026-10-17',
+          movements: [],
+        } as unknown as TrackedWorkout,
+      ],
+    });
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () =>
+        root.render(<FriendsActivityCard active onOpenFriend={vi.fn()} onOpenFriends={vi.fn()} />),
+      );
+      const row = container.querySelector('.friend-activity-list li')!;
+      expect(row.textContent).toContain('Upper strength');
+      const totals = row.querySelector('.friend-activity-totals')!;
+      expect(totals.getAttribute('aria-label')).toBe('1036 workouts, 1 cardio session, 30 PRs');
+      expect(
+        [...totals.querySelectorAll('.today-profile-icon')].map((icon) => icon.className),
+      ).toEqual([
+        'today-profile-icon workouts',
+        'today-profile-icon cardio',
+        'today-profile-icon records',
+      ]);
+      expect(totals.textContent).toBe(`${(1036).toLocaleString()}130`);
+      expect(row.textContent).not.toMatch(/exercise|\bsets?\b/);
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
     }
   });
 

@@ -8,7 +8,7 @@ from sqlalchemy import func, select, update
 from test_auth import named, upload_photo
 
 from app.database import SessionLocal
-from app.models import ProfileFollow, ProfileSharing, TrainingWorkout, User
+from app.models import PersonalRecord, ProfileFollow, ProfileSharing, TrainingWorkout, User
 
 NOTHING_EXTRA = {
     "share_notes": False,
@@ -318,6 +318,17 @@ def test_shared_profile_includes_only_the_chosen_parts(client, other_client):
     view = profile(other_client, client).json()
     assert view["workout_count"] == 1 and view["recent_workout_count"] == 1
     assert view["last_workout_date"] == date.today().isoformat()
+    # Friends see the cardio and PR totals shown on the owner's Today.
+    assert view["cardio_count"] == 1
+    with SessionLocal() as db:
+        records = db.scalars(
+            select(PersonalRecord).where(
+                PersonalRecord.user_id == owner_id,
+                PersonalRecord.value > 0,
+                PersonalRecord.record_type.in_(["weight", "reps_at_weight"]),
+            )
+        ).all()
+    assert view["record_count"] == len(records) > 0
     assert view["shares"] == {
         key: False for key in ("notes", "body_weight", "goals", "machine_photos")
     }

@@ -339,6 +339,34 @@ describe('App startup', () => {
     expect(live).toContain('aria-label="Resume active workout"');
     expect(live).toContain('2:05');
     expect(live).not.toContain('aria-current="page"');
+
+    // Away from the workout, the live dot becomes a timer counting the rest down.
+    const resting = renderToStaticMarkup(
+      <AppTabBar
+        active="dashboard"
+        workoutStartedAt={Date.now() - 125_000}
+        restEndsAt={Date.now() + 90_500}
+        onSelect={vi.fn()}
+        onStart={vi.fn()}
+      />,
+    );
+    expect(resting).toContain('class="app-tab app-tab-start live resting"');
+    expect(resting).toContain('aria-label="Resume active workout, rest 1:31 left"');
+    expect(resting).toContain('<span class="num">1:31</span>');
+    expect(resting).not.toContain('live-dot');
+    expect(resting).not.toContain('2:05');
+
+    const restOver = renderToStaticMarkup(
+      <AppTabBar
+        active="dashboard"
+        workoutStartedAt={Date.now() - 125_000}
+        restEndsAt={Date.now() - 1_000}
+        onSelect={vi.fn()}
+        onStart={vi.fn()}
+      />,
+    );
+    expect(restOver).toContain('aria-label="Resume active workout"');
+    expect(restOver).toContain('live-dot');
   });
 
   it.each([

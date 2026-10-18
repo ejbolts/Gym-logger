@@ -1,6 +1,8 @@
 import type { MainTab } from './appNavigation';
 import { Icon, type IconName } from './Icon';
 import { formatElapsed, useElapsedSeconds } from './elapsed';
+import { useRestCountdown } from './restTimer';
+import { formatSeconds } from './utils';
 import type { useHomeLayout } from './useHomeLayout';
 
 const TABS: Array<{ tab: MainTab; label: string; icon: IconName }> = [
@@ -13,6 +15,7 @@ const TABS: Array<{ tab: MainTab; label: string; icon: IconName }> = [
 export function AppTabBar({
   active,
   workoutStartedAt,
+  restEndsAt = null,
   workoutSaving = false,
   onSelect,
   onStart,
@@ -20,12 +23,16 @@ export function AppTabBar({
 }: {
   active: MainTab | null;
   workoutStartedAt: number | null;
+  /** While the live workout's rest runs, the button shows a timer counting it down. */
+  restEndsAt?: number | null;
   workoutSaving?: boolean;
   onSelect: (tab: MainTab) => void;
   onStart: () => void;
   homeLayout?: ReturnType<typeof useHomeLayout>;
 }) {
   const live = workoutStartedAt !== null && !workoutSaving;
+  const restLeft = useRestCountdown(live ? restEndsAt : null);
+  const resting = restLeft > 0;
   const editing = Boolean(homeLayout?.editing);
   const busy = Boolean(homeLayout?.saving || homeLayout?.dragging);
   const renderTab = ({ tab, label, icon }: (typeof TABS)[number]) => (
@@ -51,16 +58,24 @@ export function AppTabBar({
         {TABS.slice(0, 2).map(renderTab)}
         <button
           type="button"
-          className={`app-tab app-tab-start ${live ? 'live' : ''}`}
+          className={`app-tab app-tab-start ${live ? 'live' : ''}${resting ? ' resting' : ''}`}
           data-guide-target="start"
           aria-label={
-            workoutSaving ? 'Saving workout' : live ? 'Resume active workout' : 'Start workout'
+            workoutSaving
+              ? 'Saving workout'
+              : resting
+                ? `Resume active workout, rest ${formatSeconds(restLeft)} left`
+                : live
+                  ? 'Resume active workout'
+                  : 'Start workout'
           }
           disabled={workoutSaving}
           onClick={onStart}
         >
           <span className="app-tab-start-bubble">
-            {live ? (
+            {resting ? (
+              <Icon name="timer" />
+            ) : live ? (
               <i className="live-dot" aria-hidden="true" />
             ) : (
               <Icon name={workoutSaving ? 'check' : 'plus'} />
@@ -69,6 +84,8 @@ export function AppTabBar({
           <span>
             {workoutSaving ? (
               'Saving'
+            ) : resting ? (
+              <span className="num">{formatSeconds(restLeft)}</span>
             ) : live ? (
               <LiveElapsed startedAt={workoutStartedAt} />
             ) : (
