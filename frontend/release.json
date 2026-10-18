@@ -1,17 +1,22 @@
 {
-  "version": "0.7.1",
+  "version": "0.8.0",
   "date": "2026-10-18",
-  "title": "Rest timer popup, cardio shared with workouts and more",
-  "summary": "The rest timer counts down in a popup, cardio is shared together with your workouts, the CSV guide opens from Settings, and administrators can resolve feedback.",
+  "title": "Bring your training from other apps, plus a rest timer popup",
+  "summary": "Import Strength Level, Hevy and Strong exports with clear previews, watch your rest count down in a popup, share cardio together with workouts, open the import guide from Settings, and let administrators resolve feedback.",
   "changes": [
+    "Release previews highlight the feature screenshot before the change bullets, including expanded earlier versions. Written release notes also put feature media first.",
+    "Choose Strength Level, Hevy, Strong or Gym Logger using four matching logo buttons in Workouts & bodyweight and the import guide. Workouts and bodyweight share one import section with full-width upload controls for external apps. Gym Logger accepts workout or bodyweight CSVs and template spreadsheets. Its Export data popup lets you choose workouts, bodyweight or both and a date range. Upload other apps' original CSVs without renaming columns.",
+    "Hevy and Strong imports keep workout names and separate sessions, warmups, drop sets, RPE, workout and exercise notes, duration and distance. Strong failed sets are kept; rest-timer rows are skipped. Superset grouping is not transferred.",
+    "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
+    "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date.",
+    "Settings > Workouts & bodyweight has a Show guide button beside the import actions. It opens the same import guide used during onboarding.",
+    "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages.",
     "Completing a set opens a rest timer popup at the bottom of the workout with the time left and a bar that shrinks from right to left. Tap × to dismiss it and keep the countdown beside the live workout time, where tapping the time opens the popup again; Cancel stops the rest timer.",
-    "Profile sharing now shares cardio together with workouts as Workouts + cardio, so the separate Cardio sessions switch is gone. If you had it off, anyone who can see your profile now sees your recent cardio sessions; cardio notes still follow the Notes switch.",
-    "Settings > Workout data now has a Show guide button beside the CSV import and export actions. It opens the same three-page guide used during onboarding, including the CSV template and file chooser.",
-    "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages."
+    "Profile sharing now shares cardio together with workouts as Workouts + cardio, so the separate Cardio sessions switch is gone. If you had it off, anyone who can see your profile now sees your recent cardio sessions; cardio notes still follow the Notes switch."
   ],
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f8f2cfe16445a66a07aa52072ac33e500c82f21f/docs/screenshots/releases/0.7.1-rest-timer-popup.png",
-    "alt": "Workout logger with the rest timer popup at the bottom showing 2:16 left, a Cancel button, a dismiss button and a partly shrunk countdown bar."
-  },
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#071"
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b35cd8993317869b4d390b4b555b4cbab3174d45/docs/screenshots/releases/0.8.0-app-import.png",
+    "alt": "Workout and bodyweight import guide with four logo choices: Strength Level, Hevy, Strong and Gym Logger, with Gym Logger selected."
+  }
 }

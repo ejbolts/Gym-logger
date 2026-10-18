@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 import { WorkoutCsvImport, WorkoutImportReview } from './WorkoutCsvImport';
+import { WorkoutImportSource } from './WorkoutImportSource';
+import { WorkoutCsvGuide } from './WorkoutCsvGuide';
 import type { CsvImportPreview } from './types';
 
 // Drive the component's real event handlers without introducing a DOM test dependency.
@@ -26,6 +28,9 @@ vi.mock('react-dom', async (importOriginal) => ({
   createPortal: (children: ReactNode) => children,
 }));
 vi.mock('./api', () => ({ api: { previewWorkoutImport: vi.fn() } }));
+vi.mock('./trainingPreferencesContext', () => ({ useWeightUnit: () => 'kg' }));
+
+const options = { source: 'gym', weight_unit: 'kg', distance_unit: 'km' } as const;
 
 const preview: CsvImportPreview = {
   sessions: [
@@ -78,12 +83,101 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('workout CSV review flow', () => {
+  it('notifies Settings of source changes from both the cards and guide', () => {
+    const onSourceChange = vi.fn();
+    const nodes = elements(
+      WorkoutCsvImport({
+        onImport: vi.fn(),
+        guideOpen: true,
+        onGuideOpenChange: vi.fn(),
+        onSourceChange,
+      }),
+    );
+    const source = nodes.find((element) => element.type === WorkoutImportSource)!;
+    const guide = nodes.find((element) => element.type === WorkoutCsvGuide)!;
+    for (const selected of ['strengthlevel', 'hevy', 'strong', 'gym']) {
+      (source.props.onChange as (value: unknown) => void)({ ...options, source: selected });
+      expect(onSourceChange).toHaveBeenLastCalledWith(selected);
+    }
+    (guide.props.onOptionsChange as (value: unknown) => void)({ ...options, source: 'hevy' });
+    expect(onSourceChange).toHaveBeenLastCalledWith('hevy');
+  });
+
+  it('saves with the source and units used by the preview even if the selector changes', async () => {
+    vi.mocked(api.previewWorkoutImport).mockResolvedValue(preview);
+    const onImport = vi.fn().mockResolvedValue(undefined);
+    const selected = { source: 'strong', weight_unit: 'lb', distance_unit: 'mi' } as const;
+    const source = render(onImport).find((element) => element.type === WorkoutImportSource)!;
+    (source.props.onChange as (value: unknown) => void)(selected);
+    const file = { name: 'strong.csv' } as File;
+    select(render(onImport), file);
+    await vi.waitFor(() => expect(api.previewWorkoutImport).toHaveBeenCalledWith(file, selected));
+    const changed = render(onImport).find((element) => element.type === WorkoutImportSource)!;
+    (changed.props.onChange as (value: unknown) => void)(options);
+    const review = render(onImport).find((element) => element.type === WorkoutImportReview)!;
+    (review.props.onSave as () => void)();
+    await vi.waitFor(() => expect(onImport).toHaveBeenCalledWith(file, selected));
+  });
+
+  it('uses the source chosen in the guide when its file is selected', async () => {
+    vi.mocked(api.previewWorkoutImport).mockResolvedValue(preview);
+    hooks.cursor = 0;
+    const onImport = vi.fn();
+    const nodes = elements(
+      WorkoutCsvImport({ onImport, guideOpen: true, onGuideOpenChange: vi.fn() }),
+    );
+    const guide = nodes.find((element) => element.type === WorkoutCsvGuide)!;
+    const selected = { ...options, source: 'hevy' } as const;
+    const file = { name: 'hevy.csv' } as File;
+    (guide.props.onFileSelected as (file: File, value: unknown) => void)(file, selected);
+    await vi.waitFor(() => expect(api.previewWorkoutImport).toHaveBeenCalledWith(file, selected));
+    expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it('can save a measurements-only import and shows counts without requiring workouts', () => {
+    const dialog = WorkoutImportReview({
+      fileName: 'measurements.csv',
+      preview: {
+        ...preview,
+        workouts_to_create: 0,
+        sets_to_import: 0,
+        body_measurements_to_create: 2,
+        body_measurements_to_skip: 1,
+      },
+      saving: false,
+      error: null,
+      onCancel: vi.fn(),
+      onSave: vi.fn(),
+    });
+    const save = elements(dialog).find(
+      (element) => element.type === 'button' && element.props.children === 'Save import',
+    )!;
+    expect(save.props.disabled).toBe(false);
+    const markup = renderToStaticMarkup(dialog);
+    expect(markup).toContain('2 body-weight check-ins');
+    expect(markup).toContain('1 existing date will be kept');
+  });
+
+  it('shows all four app logos and accessible selected source controls', () => {
+    const markup = renderToStaticMarkup(
+      <WorkoutImportSource value={{ ...options, source: 'hevy' }} onChange={vi.fn()} />,
+    );
+    for (const source of ['strengthlevel', 'hevy', 'strong']) {
+      expect(markup).toContain(`/import-apps/${source}.png`);
+    }
+    expect(markup).toContain('aria-label="Import from app"');
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain('Strength Level');
+    expect(markup).toContain('/icon-192.png');
+    expect(markup).toContain('Gym Logger');
+  });
+
   it('file selection only previews; Cancel never invokes the save callback', async () => {
     vi.mocked(api.previewWorkoutImport).mockResolvedValue(preview);
     const onImport = vi.fn().mockResolvedValue(undefined);
     const file = { name: 'history.csv' } as File;
     select(render(onImport), file);
-    await vi.waitFor(() => expect(api.previewWorkoutImport).toHaveBeenCalledWith(file));
+    await vi.waitFor(() => expect(api.previewWorkoutImport).toHaveBeenCalledWith(file, options));
     const review = render(onImport).find((element) => element.type === WorkoutImportReview)!;
     expect(review.props.preview).toEqual(preview);
     expect(onImport).not.toHaveBeenCalled();
@@ -104,7 +198,7 @@ describe('workout CSV review flow', () => {
     const review = render(onImport).find((element) => element.type === WorkoutImportReview)!;
     (review.props.onSave as () => void)();
     await vi.waitFor(() => expect(hooks.values[3]).toBe('Nothing was saved.'));
-    expect(onImport).toHaveBeenCalledWith(file);
+    expect(onImport).toHaveBeenCalledWith(file, options);
     const failed = render(onImport).find((element) => element.type === WorkoutImportReview)!;
     expect(failed.props.error).toBe('Nothing was saved.');
     (failed.props.onSave as () => void)();
@@ -136,7 +230,7 @@ describe('workout CSV review flow', () => {
         onSave={vi.fn()}
       />,
     );
-    expect(markup).toContain('Review workout import');
+    expect(markup).toContain('Review import');
     expect(markup).toContain('1 session');
     expect(markup).toContain('2 sets');
     expect(markup).toContain('New exercises: Safety Test Press');
