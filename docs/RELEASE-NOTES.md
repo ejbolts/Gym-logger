@@ -6,13 +6,13 @@
 
 ### Bring your training from other apps
 
-![Workout import guide with Strength Level, Hevy, Strong and Gym Logger logo choices](screenshots/releases/0.8.0-app-import.png)
+![Show guide directly below the Workouts and bodyweight title, above the app choices](screenshots/releases/0.8.0-settings-show-guide.jpg)
 
-*Choose the app that created your CSV, then review the import before saving.*
+*Show guide replaces the small description under the title; import and export stay together below.*
 
-![Workout data in Settings with four app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
+![One-page import guide with four app choices and a Choose CSV file button](screenshots/releases/0.8.0-app-import.jpg)
 
-*One section handles workouts and bodyweight. External apps have a full-width import button; Gym Logger also offers Export data.*
+*Choose the matching app and its original CSV from one simple popup.*
 
 ![Gym Logger export popup with workout history, bodyweight check-ins and a shared date range](screenshots/releases/0.8.0-export-data.png)
 
@@ -59,12 +59,11 @@
 
 ### Find the import guide in Settings
 
-![Workout data in Settings with the Show guide button beside the import actions](screenshots/releases/0.8.0-settings-show-guide.png)
-
-*Open the import guide directly from Settings.*
-
-- **Settings > Workouts & bodyweight** has a **Show guide** button beside the import
-  actions. It opens the same import guide used during onboarding.
+- **Show guide** sits directly below the **Workouts & bodyweight** title, replacing the small
+  description and clearing the import/export row. The same single-page popup opens during onboarding.
+- Select the source app and choose its original CSV directly from the guide. The long column
+  explanations, example tables and Next/Back pages are removed. Strong unit choices and Gym Logger
+  spreadsheet template downloads remain available; review and save still happen afterwards.
 
 ### Review and resolve feedback as an administrator
 

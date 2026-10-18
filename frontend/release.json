@@ -9,7 +9,7 @@
     "Hevy and Strong imports keep workout names and separate sessions, warmups, drop sets, RPE, workout and exercise notes, duration and distance. Strong failed sets are kept; rest-timer rows are skipped. Superset grouping is not transferred.",
     "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
     "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date.",
-    "Settings > Workouts & bodyweight has a Show guide button beside the import actions. It opens the same import guide used during onboarding.",
+    "Show guide sits directly below the Workouts & bodyweight title, replacing the small description and keeping the import/export row tidy. The guide is one page: select the app, choose its original CSV, then review before saving. Gym Logger keeps its spreadsheet template link.",
     "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages.",
     "Completing a set opens a rest timer popup at the bottom of the workout with the time left centred between -30s and +30s buttons and a bar that shrinks from right to left. Tap × to dismiss it and keep the countdown beside the live workout time, where tapping the time opens the popup again; Cancel stops the rest timer.",
     "While resting, leaving the workout turns the live button in the bottom navigation into a timer counting down the rest.",
@@ -21,7 +21,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b35cd8993317869b4d390b4b555b4cbab3174d45/docs/screenshots/releases/0.8.0-app-import.png",
-    "alt": "Workout and bodyweight import guide with four logo choices: Strength Level, Hevy, Strong and Gym Logger, with Gym Logger selected."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/dbd1610ade4f4a9645d0a4aeb0441b40bc8bc454/docs/screenshots/releases/0.8.0-app-import.jpg",
+    "alt": "Single-page import guide with four app choices and a Choose CSV file button, shown on a phone."
   }
 }
