@@ -37,7 +37,8 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
     id: 'training',
     title: 'Training preferences',
     page: 'settings',
-    keywords: 'weight units kg lb kilograms pounds week starts schedule',
+    keywords:
+      'weight units kg lb kilograms pounds week starts schedule weekly muscle sets goal warmups',
     selector: '#training-preferences-title',
   },
   {

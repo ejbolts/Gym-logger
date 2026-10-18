@@ -377,6 +377,7 @@ export interface TrainingPreferences {
   preferred_weight_unit: 'kg' | 'lb';
   week_start: 'monday' | 'sunday' | 'saturday';
   zone2_goal_minutes: number;
+  weekly_muscle_set_goal: number;
 }
 
 export interface Zone2Week {

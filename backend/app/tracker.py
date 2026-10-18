@@ -1069,10 +1069,17 @@ def training_preferences(db: Session, user_id: str) -> TrainingPreferencesRead:
         zone2_goal = max(1, int(get_setting(db, user_id, "zone2_goal_minutes", "150")))
     except ValueError:
         zone2_goal = 150
+    try:
+        muscle_set_goal = int(get_setting(db, user_id, "weekly_muscle_set_goal", "10"))
+        if not 1 <= muscle_set_goal <= 1000:
+            muscle_set_goal = 10
+    except ValueError:
+        muscle_set_goal = 10
     return TrainingPreferencesRead(
         preferred_weight_unit=unit,
         week_start=week_start_value,
         zone2_goal_minutes=zone2_goal,
+        weekly_muscle_set_goal=muscle_set_goal,
     )
 
 
@@ -1131,6 +1138,8 @@ def update_training_preferences(
     set_setting(db, user.id, "preferred_weight_unit", payload.preferred_weight_unit)
     set_setting(db, user.id, "week_start", payload.week_start)
     set_setting(db, user.id, "zone2_goal_minutes", str(payload.zone2_goal_minutes))
+    if payload.weekly_muscle_set_goal is not None:
+        set_setting(db, user.id, "weekly_muscle_set_goal", str(payload.weekly_muscle_set_goal))
     db.flush()
     rebuild_personal_records(db, user.id)
     db.commit()

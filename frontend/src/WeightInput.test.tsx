@@ -28,7 +28,12 @@ function Form({ initialKg, onSave }: { initialKg: number; onSave: (kg: number | 
   return (
     <TrainingPreferencesContext.Provider
       value={{
-        preferences: { preferred_weight_unit: unit, week_start: 'monday', zone2_goal_minutes: 150 },
+        preferences: {
+          preferred_weight_unit: unit,
+          week_start: 'monday',
+          zone2_goal_minutes: 150,
+          weekly_muscle_set_goal: 10,
+        },
         error: null,
         applySaved: vi.fn(),
       }}

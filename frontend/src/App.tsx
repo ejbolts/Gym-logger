@@ -6440,6 +6440,15 @@ function SettingsScreen({
     setSavingTrainingPreferences(true);
     setTrainingPreferencesStatus(null);
     setTrainingPreferencesError(null);
+    if (
+      !Number.isInteger(trainingPreferences.weekly_muscle_set_goal) ||
+      trainingPreferences.weekly_muscle_set_goal < 1 ||
+      trainingPreferences.weekly_muscle_set_goal > 1000
+    ) {
+      setTrainingPreferencesError('Enter a weekly muscle set goal between 1 and 1,000 whole sets.');
+      setSavingTrainingPreferences(false);
+      return;
+    }
     try {
       const saved = await api.updateTrainingPreferences(trainingPreferences);
       setTrainingPreferences(saved);
@@ -6726,7 +6735,7 @@ function SettingsScreen({
             <h2 id="training-preferences-title">Training preferences</h2>
           </div>
         </header>
-        <p>Choose the units and weekly schedule used throughout the app.</p>
+        <p>Choose your units, weekly schedule and set goal.</p>
         {trainingPreferences && (
           <div className="training-preferences-grid">
             <label>
@@ -6762,6 +6771,24 @@ function SettingsScreen({
                 <option value="saturday">Saturday</option>
               </select>
             </label>
+            <label>
+              Weekly sets per muscle
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                step="1"
+                value={trainingPreferences.weekly_muscle_set_goal || ''}
+                aria-describedby="muscle-set-goal-help"
+                onChange={(event) => {
+                  setTrainingPreferences({
+                    ...trainingPreferences,
+                    weekly_muscle_set_goal: Number(event.target.value),
+                  });
+                  setTrainingPreferencesStatus(null);
+                }}
+              />
+            </label>
             <button
               type="button"
               disabled={savingTrainingPreferences}
@@ -6771,6 +6798,10 @@ function SettingsScreen({
             </button>
           </div>
         )}
+        <p id="muscle-set-goal-help">
+          Default: 10 working sets per muscle each week. Warmups do not count. The dotted line on
+          Today’s Sets per muscle bars marks this goal.
+        </p>
         {trainingPreferencesStatus && (
           <p className="training-preference-status" role="status">
             {trainingPreferencesStatus}

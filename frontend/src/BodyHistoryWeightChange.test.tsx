@@ -63,6 +63,7 @@ async function render(
             preferred_weight_unit: unit,
             week_start: 'monday',
             zone2_goal_minutes: 150,
+            weekly_muscle_set_goal: 10,
           },
           error: null,
           applySaved: vi.fn(),

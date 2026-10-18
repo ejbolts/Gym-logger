@@ -515,10 +515,11 @@ class TrainingPreferencesUpdate(BaseModel):
     preferred_weight_unit: Literal["kg", "lb"]
     week_start: Literal["monday", "sunday", "saturday"]
     zone2_goal_minutes: int = Field(ge=1, le=10_080)
+    weekly_muscle_set_goal: int | None = Field(default=None, ge=1, le=1000)
 
 
 class TrainingPreferencesRead(TrainingPreferencesUpdate):
-    pass
+    weekly_muscle_set_goal: int = 10
 
 
 class WorkoutTypeColors(BaseModel):
