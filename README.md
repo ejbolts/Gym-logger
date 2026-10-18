@@ -78,7 +78,7 @@ configures Google once for the installation; users do not need API keys or crede
 
 Sign in with a username and password, personalise your name and profile photo, and keep your profile **Private** or choose **Friends only** or **Public** sharing within the app's sharing community.
 
-Shared profiles include workouts and your profile photo. You choose separately whether to share machine photos, body measurements, goals, cardio and notes. Friends-only profiles require approval before followers can see your training. **Friends’ workouts** on Home shows the newest workouts from people you follow; react with 💪, 🔥, 👏 or 🏆, and reactions to your own workouts appear under the notification bell. Search shared accounts by display name, username or the account UUID shown on Profile. Shared profiles do not display usernames or uploaded videos.
+Shared profiles include workouts and your profile photo. You choose separately whether to share machine photos, body measurements, goals, cardio and notes. Friends-only profiles require approval before followers can see your training. **Friends’ workouts** on Home shows the newest workouts from people you follow; react with 👍, ❤️, 💪, 🔥, 👏 or 🏆, and reactions to your own workouts appear under the notification bell. Search shared accounts by display name, username or the account UUID shown on Profile. Shared profiles do not display usernames or uploaded videos.
 
 Administrators can manage accounts, registration, video access and private app feedback from the admin console.
 

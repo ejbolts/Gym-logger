@@ -207,7 +207,7 @@ class ConnectionsRead(BaseModel):
     followers: list[ConnectionRead]
 
 
-Reaction = Literal["strong", "fire", "clap", "trophy"]
+Reaction = Literal["like", "love", "strong", "fire", "clap", "trophy"]
 
 
 class ReactionChoice(BaseModel):

@@ -190,7 +190,7 @@ class ProfileFollow(Base):
     notification_seen: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
 
-WORKOUT_REACTIONS = ("strong", "fire", "clap", "trophy")
+WORKOUT_REACTIONS = ("like", "love", "strong", "fire", "clap", "trophy")
 
 
 class WorkoutReaction(Base):
@@ -199,7 +199,8 @@ class WorkoutReaction(Base):
     __tablename__ = "workout_reactions"
     __table_args__ = (
         CheckConstraint(
-            "reaction IN ('strong', 'fire', 'clap', 'trophy')", name="workout_reaction_known"
+            "reaction IN ('like', 'love', 'strong', 'fire', 'clap', 'trophy')",
+            name="workout_reaction_known",
         ),
     )
 

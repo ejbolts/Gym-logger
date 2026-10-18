@@ -30,7 +30,8 @@ def upgrade() -> None:
         ),
         sa.Column("notification_seen", sa.Boolean(), nullable=False, server_default="0"),
         sa.CheckConstraint(
-            "reaction IN ('strong', 'fire', 'clap', 'trophy')", name="workout_reaction_known"
+            "reaction IN ('like', 'love', 'strong', 'fire', 'clap', 'trophy')",
+            name="workout_reaction_known",
         ),
     )
     op.create_index("ix_workout_reactions_user_id", "workout_reactions", ["user_id"])

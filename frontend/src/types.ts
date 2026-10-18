@@ -719,7 +719,7 @@ export interface SharingConnections {
   followers: SharingConnection[];
 }
 
-export type WorkoutReactionKind = 'strong' | 'fire' | 'clap' | 'trophy';
+export type WorkoutReactionKind = 'like' | 'love' | 'strong' | 'fire' | 'clap' | 'trophy';
 
 export interface WorkoutReactions {
   counts: Array<{ reaction: WorkoutReactionKind; count: number }>;

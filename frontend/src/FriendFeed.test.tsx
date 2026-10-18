@@ -86,6 +86,27 @@ it('reacts to a friend workout, switches reaction and removes it', async () => {
   expect(remove).toHaveBeenCalledWith('w1');
   expect(button('Fire, 2').getAttribute('aria-pressed')).toBe('false');
 
+  // Like and love lead the six reactions.
+  const group = host.querySelector('.friend-feed-reactions')!;
+  expect([...group.querySelectorAll('button')].map((item) => item.textContent)).toEqual([
+    '👍',
+    '❤️',
+    '💪',
+    '🔥2',
+    '👏',
+    '🏆',
+  ]);
+  react.mockResolvedValueOnce({
+    counts: [
+      { reaction: 'love', count: 1 },
+      { reaction: 'fire', count: 2 },
+    ],
+    yours: 'love',
+  });
+  await act(async () => button('Love').click());
+  expect(react).toHaveBeenLastCalledWith('w1', 'love');
+  expect(button('Love, 1').getAttribute('aria-pressed')).toBe('true');
+
   await act(async () => host.querySelector<HTMLButtonElement>('.friend-feed-workout')!.click());
   expect(openFriend).toHaveBeenCalledWith(item.friend);
 });

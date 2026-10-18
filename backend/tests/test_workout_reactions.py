@@ -119,6 +119,14 @@ def test_reactions_are_one_per_member_and_notify_the_owner(client, other_client,
     client.post(dismiss, json={"since": stale["since"]})
     assert len(client.get("/api/sharing/notifications").json()["reactions"]) == 2
 
+    # Like and love are reactions too, listed before the others.
+    other_client.put(url, json={"reaction": "love"})
+    assert third_client.put(url, json={"reaction": "like"}).json() == {
+        "counts": [{"reaction": "like", "count": 1}, {"reaction": "love", "count": 1}],
+        "yours": "like",
+    }
+    third_client.put(url, json={"reaction": "fire"})
+
     assert other_client.delete(url).json() == {
         "counts": [{"reaction": "fire", "count": 1}],
         "yours": None,

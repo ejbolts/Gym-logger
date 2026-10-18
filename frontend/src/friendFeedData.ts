@@ -3,6 +3,8 @@ import { formatMinutesDuration } from './utils';
 
 export const REACTIONS: ReadonlyArray<{ kind: WorkoutReactionKind; emoji: string; label: string }> =
   [
+    { kind: 'like', emoji: '👍', label: 'Like' },
+    { kind: 'love', emoji: '❤️', label: 'Love' },
     { kind: 'strong', emoji: '💪', label: 'Strong' },
     { kind: 'fire', emoji: '🔥', label: 'Fire' },
     { kind: 'clap', emoji: '👏', label: 'Applause' },

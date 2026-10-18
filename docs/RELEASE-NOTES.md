@@ -30,7 +30,7 @@
 
 *See a sample profile shows the names you've typed on a profile card.*
 
-![Home's Friends' workouts section listing recent workouts from Jordan Preview and Alex Preview, each with 💪 🔥 👏 🏆 reaction buttons and the chosen reactions highlighted](screenshots/releases/0.8.1-friends-workouts.png)
+![Home's Friends' workouts section listing recent workouts from Jordan Preview and Alex Preview, each with 👍 ❤️ 💪 🔥 👏 🏆 reaction buttons and the chosen reactions highlighted](screenshots/releases/0.8.1-friends-workouts.png)
 
 *Friends' workouts on Home: react to the newest workouts from people you follow.*
 
@@ -54,7 +54,7 @@
   username typed so far, or **Sam Sample** until they're filled in. The workouts, cardio and PRs
   are examples, and a key shows where each name appears.
 - **Home** has a **Friends' workouts** section showing the five newest workouts across everyone
-  you follow. React with 💪, 🔥, 👏 or 🏆; tapping your reaction again removes it, and choosing
+  you follow. React with 👍, ❤️, 💪, 🔥, 👏 or 🏆; tapping your reaction again removes it, and choosing
   another replaces it. Tap a workout to open that friend's profile. Rearrange or hide the section
   with the other Home cards.
 - Reactions to your workouts appear under the **Notifications** bell with who reacted and to which
