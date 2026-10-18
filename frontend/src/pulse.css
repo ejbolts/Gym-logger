@@ -681,6 +681,10 @@ button.pulse-card:hover {
 }
 
 .muscle-bars {
+  --muscle-label-width: 6.5rem;
+  --muscle-value-width: 2.25rem;
+  --muscle-gap: 0.625rem;
+  position: relative;
   display: grid;
   gap: 0.375rem;
   margin: 0;
@@ -690,10 +694,39 @@ button.pulse-card:hover {
 
 .muscle-bars li {
   display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr) 2.25rem;
+  grid-template-columns: var(--muscle-label-width) minmax(0, 1fr) var(--muscle-value-width);
   align-items: center;
-  gap: 0.625rem;
+  gap: var(--muscle-gap);
   font-size: 0.8125rem;
+}
+
+.muscle-bars::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(
+    var(--muscle-label-width) + var(--muscle-gap) +
+      (100% - var(--muscle-label-width) - var(--muscle-value-width) - 2 * var(--muscle-gap)) *
+      var(--muscle-goal-ratio)
+  );
+  border-left: 2px dotted var(--p-ink);
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+
+.muscle-set-goal-key {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  color: var(--p-ink-2);
+  font-size: 0.75rem;
+}
+
+.muscle-set-goal-key > span {
+  width: 1rem;
+  border-top: 2px dotted var(--p-ink);
 }
 
 .muscle-bars li > span:first-child {

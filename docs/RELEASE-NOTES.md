@@ -6,6 +6,11 @@
 
 ### Friends, profiles and a more personal Home
 
+- **Sets per muscle** on Today has a dotted line across the bars for your weekly goal.
+  Change **Weekly sets per muscle** in **Settings > Training preferences**. The default is
+  **10 working sets per muscle each week**; warmups do not count. The scale keeps the goal
+  visible even when all muscle totals are below it.
+
 - History's **Filter by machine** button sits beside **Calendar** in the card header,
   removing the separate row above the calendar.
 
@@ -135,6 +140,15 @@
   **Undo** restores body fat without changing the latest weight or notes.
 
 The deployed 0.6.5 announcement is preserved in Earlier versions.
+
+<img src="screenshots/releases/0.7.0-weekly-muscle-set-goal.png" alt="Sets per muscle with a dotted vertical weekly-goal line at 10 sets: Pectorals has 12 working sets above the goal, while the other muscles remain below it." width="692">
+
+The weekly goal uses the same scale as every muscle bar. Captured with synthetic sample
+workouts in the isolated verification environment; warmups and unfinished sets are excluded.
+
+<img src="screenshots/releases/0.7.0-weekly-muscle-set-goal-settings.png" alt="Training preferences on a phone with Weekly sets per muscle set to 10, a Save preferences button, and an explanation that warmups do not count." width="362">
+
+Save one weekly working-set goal for every muscle in Training preferences. The default is 10.
 
 <img src="screenshots/releases/0.7.0-history-machine-filter-header.png" alt="History with Filter by machine aligned beside Calendar in the card header, directly below the Workouts and Cardio tabs." width="390">
 

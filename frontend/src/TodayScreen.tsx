@@ -30,7 +30,7 @@ import type {
   WorkoutTypeColors,
 } from './types';
 import { localDate } from './utils';
-import { useWeightUnit } from './trainingPreferencesContext';
+import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
 import {
   formatWeight,
@@ -149,6 +149,7 @@ export function TodayScreen({
   today = localDate(),
 }: TodayScreenProps) {
   const weightUnit = useWeightUnit();
+  const muscleSetGoal = useTrainingPreferences().preferences?.weekly_muscle_set_goal ?? 10;
   const weekStartDay = weekStartDayFrom(data?.weekly_sets?.week_start ?? data?.zone2?.week_start);
   const weeks = useMemo(
     () => weeklyTrainingTotals(workouts, today, weekStartDay, 12),
@@ -185,7 +186,7 @@ export function TodayScreen({
   const untrainedMuscles = (data?.weekly_sets?.muscle_groups ?? []).filter(
     (muscle) => muscle.raw_sets <= 0,
   ).length;
-  const maxMuscleSets = Math.max(...muscles.map((muscle) => muscle.raw_sets), 1);
+  const maxMuscleSets = Math.max(...muscles.map((muscle) => muscle.raw_sets), muscleSetGoal * 1.15);
   const zone2 = data?.zone2 ?? null;
   const cardioMinutes = data?.cardio_minutes_this_week ?? zone2?.completed_minutes ?? null;
   const zone2DaysLeft = zone2 ? Math.max(0, daysBetween(today, zone2.week_end) + 1) : null;
@@ -371,8 +372,15 @@ export function TodayScreen({
           <h2 id="muscle-sets-title">Sets per muscle</h2>
           <span>This week · working sets</span>
         </header>
+        <p className="muscle-set-goal-key">
+          <span aria-hidden="true" /> Weekly goal: {muscleSetGoal} sets per muscle
+        </p>
         {muscles.length ? (
-          <ul className="muscle-bars">
+          <ul
+            className="muscle-bars"
+            aria-label={`Working sets per muscle; weekly goal: ${muscleSetGoal} sets`}
+            style={{ '--muscle-goal-ratio': muscleSetGoal / maxMuscleSets } as CSSProperties}
+          >
             {muscles.slice(0, 8).map((muscle, index) => (
               <li key={muscle.muscle_group}>
                 <span>{muscle.muscle_group}</span>

@@ -6245,10 +6245,14 @@ body,
 
 .training-preferences-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
   gap: 0.5rem;
   margin-top: 0.8rem;
+}
+
+.training-preferences-grid > button {
+  justify-self: start;
 }
 
 .training-preferences-grid label {
