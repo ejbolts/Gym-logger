@@ -86,6 +86,7 @@ import {
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { NotificationDialog } from './NotificationDialog';
 import { PopupDialog } from './PopupDialog';
+import { ExerciseMuscleHelp } from './ExerciseMuscleHelp';
 import {
   MachineFilterBanner,
   MachineFilterPicker,
@@ -4594,6 +4595,7 @@ function MovementCard({
             >
               {movement.exercise.name}
             </button>
+            <ExerciseMuscleHelp exercise={movement.exercise} />
             <button
               type="button"
               className="movement-expand-toggle"
@@ -5502,6 +5504,7 @@ function ExercisePicker({
           </span>
           {selected && <b className="exercise-option-selected">✓</b>}
         </button>
+        <ExerciseMuscleHelp exercise={exercise} />
         <button
           type="button"
           className={`exercise-favorite-button ${exercise.is_favorite ? 'active' : ''}`}
@@ -6018,14 +6021,17 @@ function ProgressScreen({
         title={selectedExercise?.name ?? 'Progress'}
         onOpenSettings={onOpenSettings}
         actions={
-          <button
-            className="icon-button-pulse"
-            type="button"
-            aria-label="Select exercise"
-            onClick={() => setPickerRequest((request) => request + 1)}
-          >
-            <Icon name="search" />
-          </button>
+          <>
+            {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
+            <button
+              className="icon-button-pulse"
+              type="button"
+              aria-label="Select exercise"
+              onClick={() => setPickerRequest((request) => request + 1)}
+            >
+              <Icon name="search" />
+            </button>
+          </>
         }
       />
       <section className="progress-controls">
