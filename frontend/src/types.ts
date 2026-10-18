@@ -639,6 +639,8 @@ export interface AppFeedback {
   username: string;
   message: string;
   created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
 }
 
 /** Who can see a profile: nobody, followers its owner approves ("Friends only"), or everyone. */

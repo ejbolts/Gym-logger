@@ -228,7 +228,7 @@ import {
   type SettingsDestination,
   type SettingsJump,
 } from './settingsNavigation';
-import { useFollowRequestCount } from './friendsActivityData';
+import { useFollowRequestCount, useOpenFeedbackCount } from './friendsActivityData';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -576,6 +576,7 @@ function AppContent() {
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const home = useHomeLayout(tab === 'dashboard');
   const followRequests = useFollowRequestCount(tab === 'dashboard', Boolean(user));
+  const openFeedback = useOpenFeedbackCount(tab === 'dashboard' || tab === 'profile', isAdmin);
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
   const currentTabRef = useRef(tab);
@@ -1372,6 +1373,7 @@ function AppContent() {
                   profilePhotoUrl={user?.profile_photo_url}
                   profile={user ?? undefined}
                   followRequests={followRequests}
+                  openFeedback={openFeedback}
                   friendsActivity={
                     user ? (
                       <FriendsActivityCard
@@ -1567,7 +1569,12 @@ function AppContent() {
           )}
           {user && (tab === 'profile' || visitedTabs.has('profile')) && (
             <CachedTabPanel active={tab === 'profile'}>
-              <ProfileScreen active={tab === 'profile'} onOpenProfile={openSharedProfile} />
+              <ProfileScreen
+                active={tab === 'profile'}
+                onOpenProfile={openSharedProfile}
+                openFeedback={openFeedback}
+                onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
+              />
             </CachedTabPanel>
           )}
           {user &&

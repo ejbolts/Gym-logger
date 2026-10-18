@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from conftest import make_user
 from sqlalchemy import delete, func, select
 
 from app.account_backups import ACCOUNT_ROWS
@@ -70,3 +71,57 @@ def test_feedback_storage_cap_still_allows_safe_retry(client):
     assert client.post("/api/feedback", json=payload()).status_code == 429
     assert client.post("/api/feedback", json=first).json()["id"] == first_id
     assert ACCOUNT_ROWS["app_feedback"] is None
+
+
+def test_admin_resolves_and_reopens_feedback(client, other_client):
+    first = other_client.post("/api/feedback", json=payload("First")).json()["id"]
+    second = other_client.post("/api/feedback", json=payload("Second")).json()["id"]
+    summary = client.get("/api/admin/feedback/summary")
+    assert summary.headers["cache-control"] == "no-store"
+    assert summary.json() == {"open": 2}
+
+    resolved = client.patch(f"/api/admin/feedback/{second}", json={"resolved": True})
+    assert resolved.status_code == 200
+    assert resolved.headers["cache-control"] == "no-store"
+    assert resolved.json()["resolved_by"] == client.user["username"]
+    resolved_at = resolved.json()["resolved_at"]
+    assert resolved_at is not None
+    # A retried resolve keeps the original time instead of moving it.
+    again = client.patch(f"/api/admin/feedback/{second}", json={"resolved": True}).json()
+    assert again["resolved_at"] == resolved_at
+    assert client.get("/api/admin/feedback/summary").json() == {"open": 1}
+    # Open feedback is listed before resolved feedback, even when it is older.
+    listed = client.get("/api/admin/feedback").json()
+    assert [item["id"] for item in listed] == [first, second]
+    assert listed[0]["resolved_at"] is None and listed[0]["resolved_by"] is None
+
+    reopened = client.patch(f"/api/admin/feedback/{second}", json={"resolved": False}).json()
+    assert reopened["resolved_at"] is None and reopened["resolved_by"] is None
+    assert client.get("/api/admin/feedback/summary").json() == {"open": 2}
+
+
+def test_only_admins_can_resolve_or_count_feedback(client, other_client):
+    feedback_id = other_client.post("/api/feedback", json=payload()).json()["id"]
+    assert other_client.get("/api/admin/feedback/summary").status_code == 403
+    assert (
+        other_client.patch(f"/api/admin/feedback/{feedback_id}", json={"resolved": True})
+    ).status_code == 403
+    missing = client.patch("/api/admin/feedback/missing", json={"resolved": True})
+    assert missing.status_code == 404
+    assert client.get("/api/admin/feedback/summary").json() == {"open": 1}
+
+
+def test_deleting_the_resolving_admin_keeps_the_resolution(client, other_client):
+    feedback_id = other_client.post("/api/feedback", json=payload()).json()["id"]
+    admin_id = make_user("second-admin", is_admin=True)
+    with SessionLocal() as db:
+        item = db.get(AppFeedback, feedback_id)
+        item.resolved_at = item.created_at
+        item.resolved_by_id = admin_id
+        db.commit()
+        db.execute(delete(User).where(User.id == admin_id))
+        db.commit()
+    listed = client.get("/api/admin/feedback").json()
+    assert listed[0]["resolved_at"] is not None
+    assert listed[0]["resolved_by"] is None
+    assert client.get("/api/admin/feedback/summary").json() == {"open": 0}

@@ -9,7 +9,8 @@
     "Hevy and Strong imports keep workout names and separate sessions, warmups, drop sets, RPE, workout and exercise notes, duration and distance. Strong failed sets are kept; rest-timer rows are skipped. Superset grouping is not transferred.",
     "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
     "Review sessions, sets, new exercises, body-weight totals and warnings before saving. The totals being added stand out in green for every import source. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date.",
-    "Settings > Workouts & bodyweight has a Show guide button beside the import actions. It opens the same import guide used during onboarding."
+    "Settings > Workouts & bodyweight has a Show guide button beside the import actions. It opens the same import guide used during onboarding.",
+    "Administrators see unresolved feedback in the badge on their profile picture on Today, alongside follow requests. Profile links to the admin console, where each message has Resolve and Reopen buttons and the App feedback card counts open messages."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
   "image": {

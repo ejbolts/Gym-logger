@@ -38,6 +38,8 @@ export interface AdminScreenViewProps {
   savingSetting: boolean;
   savingLimits: boolean;
   busyUserId: string | null;
+  busyFeedbackId?: string | null;
+  onFeedbackResolvedChange?: (item: AppFeedback, resolved: boolean) => void;
   onVideoUploadsChange: (mode: VideoUploadMode) => void;
   onSaveLimits: (values: AccountLimits) => void;
   onRegistrationChange: (open: boolean) => void;
@@ -342,6 +344,41 @@ function UserRow({
   );
 }
 
+function FeedbackRow({
+  item,
+  busy,
+  onResolvedChange,
+}: {
+  item: AppFeedback;
+  busy: boolean;
+  onResolvedChange?: (item: AppFeedback, resolved: boolean) => void;
+}) {
+  const resolved = item.resolved_at !== null;
+  return (
+    <li className={resolved ? 'is-resolved' : undefined}>
+      <strong>@{item.username}</strong>
+      <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time>
+      <p>{item.message}</p>
+      {resolved && (
+        <small className="admin-feedback-resolution">
+          Resolved{item.resolved_by && ` by @${item.resolved_by}`} ·{' '}
+          <time dateTime={item.resolved_at!}>{new Date(item.resolved_at!).toLocaleString()}</time>
+        </small>
+      )}
+      {onResolvedChange && (
+        <button
+          type="button"
+          className={resolved ? 'profile-secondary' : 'profile-primary'}
+          disabled={busy}
+          onClick={() => onResolvedChange(item, !resolved)}
+        >
+          {busy ? 'Saving…' : resolved ? 'Reopen' : 'Resolve'}
+        </button>
+      )}
+    </li>
+  );
+}
+
 export function AdminScreenView({
   feedback,
   currentUserId,
@@ -355,6 +392,8 @@ export function AdminScreenView({
   savingSetting,
   savingLimits,
   busyUserId,
+  busyFeedbackId = null,
+  onFeedbackResolvedChange,
   onVideoUploadsChange,
   onRegistrationChange,
   onSaveLimits,
@@ -362,6 +401,7 @@ export function AdminScreenView({
   onRefresh,
 }: AdminScreenViewProps) {
   const disabledCount = users?.filter((user) => user.disabled_at !== null).length ?? 0;
+  const openFeedback = feedback?.filter((item) => item.resolved_at === null).length ?? 0;
   return (
     <section className="settings-screen admin-screen content-page">
       <div aria-live="polite" aria-atomic="true">
@@ -401,19 +441,21 @@ export function AdminScreenView({
               <p className="section-kicker">FROM YOUR USERS</p>
               <h2 id="admin-feedback-title">App feedback</h2>
             </div>
+            {openFeedback > 0 && <span className="sharing-state is-on">{openFeedback} open</span>}
           </header>
           <p>
             {feedback.length
-              ? 'Latest 100 messages, newest first. Feedback is private to administrators.'
+              ? 'Open messages first, then the latest resolved ones. Feedback is private to administrators.'
               : 'No feedback yet. Messages sent from Settings or the app guide will appear here.'}
           </p>
           <ul className="admin-feedback-list">
             {feedback.map((item) => (
-              <li key={item.id}>
-                <strong>@{item.username}</strong>
-                <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time>
-                <p>{item.message}</p>
-              </li>
+              <FeedbackRow
+                key={item.id}
+                item={item}
+                busy={busyFeedbackId === item.id}
+                onResolvedChange={onFeedbackResolvedChange}
+              />
             ))}
           </ul>
         </section>
@@ -466,6 +508,7 @@ export function AdminScreen({ active }: { active: boolean }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [savingSetting, setSavingSetting] = useState(false);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [busyFeedbackId, setBusyFeedbackId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -558,6 +601,29 @@ export function AdminScreen({ active }: { active: boolean }) {
     }
   }
 
+  async function changeFeedbackResolved(target: AppFeedback, resolved: boolean) {
+    if (busyFeedbackId) return;
+    setBusyFeedbackId(target.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const updated = await api.admin.setFeedbackResolved(target.id, resolved);
+      // Keep the row where it is until the next refresh, so it doesn't jump away mid-review.
+      setFeedback((current) =>
+        current ? current.map((row) => (row.id === updated.id ? updated : row)) : current,
+      );
+      setNotice(
+        resolved
+          ? `Resolved feedback from @${updated.username}.`
+          : `Reopened feedback from @${updated.username}.`,
+      );
+    } catch (reason) {
+      setError(authErrorMessage(reason));
+    } finally {
+      setBusyFeedbackId(null);
+    }
+  }
+
   if (!user?.is_admin) return null;
 
   return (
@@ -574,6 +640,8 @@ export function AdminScreen({ active }: { active: boolean }) {
       savingSetting={savingSetting}
       savingLimits={savingLimits}
       busyUserId={busyUserId}
+      busyFeedbackId={busyFeedbackId}
+      onFeedbackResolvedChange={(item, resolved) => void changeFeedbackResolved(item, resolved)}
       onVideoUploadsChange={(mode) => void saveSettings({ video_uploads: mode })}
       onSaveLimits={(values) => void saveLimits(values)}
       onRegistrationChange={(open) => void saveSettings({ allow_registration: open })}

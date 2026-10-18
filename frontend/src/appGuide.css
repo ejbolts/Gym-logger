@@ -182,6 +182,28 @@ body:has(.app-guide[open]) .tracker-content > .cached-tab-panel:not([hidden]) > 
   color: var(--p-muted);
   font-size: 0.75rem;
 }
+.admin-feedback-list li.is-resolved > strong,
+.admin-feedback-list li.is-resolved > p {
+  opacity: 0.7;
+}
+.admin-feedback-list .admin-feedback-resolution {
+  display: block;
+  margin-bottom: 0.65rem;
+  color: var(--p-good);
+  font-size: 0.75rem;
+}
+.admin-feedback-resolution time {
+  display: inline;
+  margin: 0;
+  color: inherit;
+}
+.admin-feedback-list li > button {
+  width: auto;
+  min-width: 7rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.875rem;
+}
 
 @media (max-height: 600px) {
   .app-guide {

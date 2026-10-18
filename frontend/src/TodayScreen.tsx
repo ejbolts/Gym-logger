@@ -34,6 +34,7 @@ import type {
 import { localDate } from './utils';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
+import { profileButtonLabel } from './friendsActivityData';
 import {
   formatWeight,
   formatWeightNumber,
@@ -121,6 +122,8 @@ export interface TodayScreenProps {
   profile?: Pick<User, 'display_name' | 'username' | 'profile_photo_url' | 'created_at'>;
   /** Follow requests waiting for approval, shown as a count on the profile button. */
   followRequests?: number;
+  /** Unresolved app feedback, shown to administrators beside follow requests. */
+  openFeedback?: number;
   calendar?: ReactNode;
   /** The Friends card; omitted outside the signed-in app. */
   friendsActivity?: ReactNode;
@@ -154,6 +157,7 @@ export function TodayScreen({
   profilePhotoUrl,
   profile,
   followRequests = 0,
+  openFeedback = 0,
   calendar,
   friendsActivity,
   today = localDate(),
@@ -593,15 +597,11 @@ export function TodayScreen({
                 className="icon-button-pulse profile-button"
                 type="button"
                 onClick={onOpenProfile}
-                aria-label={`${profileLabel ? `Profile: ${profileLabel}` : 'Profile'}${
-                  followRequests > 0
-                    ? `, ${followRequests} follow ${followRequests === 1 ? 'request' : 'requests'}`
-                    : ''
-                }`}
+                aria-label={profileButtonLabel(profileLabel, followRequests, openFeedback)}
               >
-                {followRequests > 0 && (
+                {followRequests + openFeedback > 0 && (
                   <span className="profile-request-badge" aria-hidden="true">
-                    {followRequests > 9 ? '9+' : followRequests}
+                    {followRequests + openFeedback > 9 ? '9+' : followRequests + openFeedback}
                   </span>
                 )}
                 {profileLabel ? (

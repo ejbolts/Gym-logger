@@ -158,11 +158,53 @@ describe('AdminScreenView', () => {
           username: 'tester',
           message: '<script>alert(1)</script>',
           created_at: '2026-10-11T01:00:00Z',
+          resolved_at: null,
+          resolved_by: null,
         },
       ],
     });
     expect(markup).toContain('@tester');
     expect(markup).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(markup).not.toContain('<script>');
+  });
+
+  it('counts open feedback and offers to resolve or reopen each message', () => {
+    const base = {
+      username: 'tester',
+      message: 'More cardio help',
+      created_at: '2026-10-11T01:00:00Z',
+    };
+    const markup = view({
+      onFeedbackResolvedChange: vi.fn(),
+      busyFeedbackId: 'saving',
+      feedback: [
+        { ...base, id: 'open', resolved_at: null, resolved_by: null },
+        { ...base, id: 'saving', resolved_at: null, resolved_by: null },
+        { ...base, id: 'done', resolved_at: '2026-10-12T01:00:00Z', resolved_by: 'owner' },
+      ],
+    });
+    expect(markup).toContain('2 open');
+    expect(markup.match(/>Resolve</g)).toHaveLength(1);
+    expect(markup).toMatch(/disabled="">Saving…</);
+    expect(markup).toContain('class="is-resolved"');
+    expect(markup).toContain('Resolved by @owner');
+    expect(markup).toMatch(/class="profile-secondary">Reopen</);
+  });
+
+  it('hides the open count once everything is resolved', () => {
+    const markup = view({
+      feedback: [
+        {
+          id: 'done',
+          username: 'tester',
+          message: 'Thanks',
+          created_at: '2026-10-11T01:00:00Z',
+          resolved_at: '2026-10-12T01:00:00Z',
+          resolved_by: null,
+        },
+      ],
+    });
+    expect(markup).not.toContain(' open<');
+    expect(markup).toContain('Resolved ·');
   });
 });
