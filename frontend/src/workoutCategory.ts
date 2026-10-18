@@ -1,4 +1,4 @@
-import type { Exercise, WorkoutCategory } from './types';
+import type { Exercise, WorkoutCategory, WorkoutType } from './types';
 
 type CategorizedExercise = Pick<Exercise, 'category'>;
 
@@ -21,7 +21,18 @@ export function finalizeWorkoutIdentity(
   currentCategory: WorkoutCategory,
   currentName: string,
   inferFromExercises: boolean,
+  workoutType?: Pick<WorkoutType, 'name'> | null,
 ): { category: WorkoutCategory; name: string } {
+  if (workoutType) {
+    const trimmedName = currentName.trim();
+    return {
+      category: currentCategory,
+      name:
+        !trimmedName || trimmedName === workoutNameForCategory(currentCategory)
+          ? `${workoutType.name} workout`
+          : trimmedName,
+    };
+  }
   const category = inferFromExercises
     ? (inferWorkoutCategory(exercises) ?? currentCategory)
     : currentCategory;

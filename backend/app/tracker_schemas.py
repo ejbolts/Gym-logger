@@ -150,10 +150,42 @@ class WorkoutMovementCreate(BaseModel):
         return value
 
 
+class WorkoutTypeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    color: str
+    is_custom: bool
+    archived: bool
+
+
+class WorkoutTypeCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    color: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def clean_name(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+
+class WorkoutTypeUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=40)
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+    archived: bool | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def clean_name(cls, value: str | None) -> str | None:
+        return value.strip() if isinstance(value, str) else value
+
+
 class TrainingWorkoutCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     workout_date: date
     category: WorkoutCategory
+    workout_type_id: str | None = Field(default=None, max_length=36)
     notes: str | None = Field(default=None, max_length=10_000)
     duration_minutes: int | None = Field(default=None, ge=0, le=1_440)
     start_time: time | None = None
@@ -233,6 +265,8 @@ class TrainingWorkoutRead(BaseModel):
     name: str
     workout_date: date
     category: WorkoutCategory
+    workout_type_id: str | None = None
+    workout_type: WorkoutTypeRead | None = None
     notes: str | None
     duration_minutes: int | None
     start_time: time | None
@@ -292,6 +326,8 @@ class CalendarWorkoutRead(BaseModel):
     id: str
     name: str
     category: WorkoutCategory
+    workout_type_id: str | None = None
+    workout_type: WorkoutTypeRead | None = None
     duration_minutes: int | None
     exercises: list[CalendarExerciseRead]
 
@@ -299,6 +335,7 @@ class CalendarWorkoutRead(BaseModel):
 class HeatmapDay(BaseModel):
     workout_date: date
     categories: list[WorkoutCategory]
+    workout_types: list[WorkoutTypeRead] = []
     workout_count: int
     set_count: int
     workouts: list[CalendarWorkoutRead]

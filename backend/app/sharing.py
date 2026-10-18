@@ -1,10 +1,12 @@
 """Profile sharing and following between members.
 
-Each account chooses who can see its profile: nobody (``private``, the default), followers it
+Each account chooses who can see its profile: nobody (``private``), followers it
 approves (``followers``, shown as "Friends only"), or every sharing member (``public``). Only
 accounts that share their own profile can see or follow others. A shared profile always includes
 its workouts, cardio sessions and profile photo; notes, body weight, goals and machine photos are
 optional.
+
+New accounts start public; existing accounts retain their choices, including private defaults.
 
 Private, disabled and missing profiles all answer "not found". A friends-only profile shows only
 its name and photo until its owner approves a follow request. Usernames can be searched but are
@@ -52,9 +54,11 @@ from .tracker_schemas import (
     MachinePhotoRead,
     PersonalRecordRead,
     TrainingWorkoutRead,
+    WorkoutTypeRead,
     Zone2WeekRead,
 )
 from .training_metrics import start_of_week
+from .workout_types import workout_type_catalog
 
 Db = Annotated[Session, Depends(get_db)]
 sharing_router = APIRouter(
@@ -180,6 +184,7 @@ class SharedExerciseOption(BaseModel):
 class SharedWorkoutFiltersRead(BaseModel):
     exercises: list[SharedExerciseOption]
     machines: list[MachinePhotoRead]
+    workout_types: list[WorkoutTypeRead] = []
 
 
 class FollowRead(BaseModel):
@@ -611,6 +616,7 @@ def list_shared_workouts(
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=MAX_WORKOUT_PAGE)] = 10,
     category: WorkoutCategory | None = None,
+    workout_type_id: str | None = None,
     exercise_id: str | None = None,
     machine_photo_id: str | None = None,
     start_date: date | None = None,
@@ -620,8 +626,11 @@ def list_shared_workouts(
     if start_date and end_date and start_date > end_date:
         raise api_error(422, "invalid_date_range", "From date must not be after To date.")
     owned = [TrainingWorkout.user_id == member.id, TrainingWorkout.is_sample.is_(False)]
-    if category:
+    if workout_type_id:
+        owned.append(TrainingWorkout.workout_type_id == workout_type_id)
+    elif category:
         owned.append(TrainingWorkout.category == category)
+        owned.append(TrainingWorkout.workout_type_id.is_(None))
     if exercise_id:
         owned.append(TrainingWorkout.movements.any(WorkoutMovement.exercise_id == exercise_id))
     if machine_photo_id:
@@ -697,9 +706,15 @@ def shared_workout_filters(user_id: str, user: CurrentUser, db: Db) -> SharedWor
             item.thumbnail_url = f"{base}?variant=thumbnail"
             item.full_url = f"{base}?variant=full"
             machines.append(item)
+    used_type_ids = set(db.scalars(select(TrainingWorkout.workout_type_id).where(*owned)))
     return SharedWorkoutFiltersRead(
         exercises=[SharedExerciseOption(id=row.id, name=row.name) for row in exercises],
         machines=machines,
+        workout_types=[
+            item
+            for item in workout_type_catalog(db, member.id)
+            if not item.is_custom or item.id in used_type_ids
+        ],
     )
 
 
@@ -818,6 +833,43 @@ def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
     )
 
 
+@sharing_router.get("/notifications", response_model=ConnectionsRead)
+def follow_notifications(user: CurrentUser, db: Db) -> ConnectionsRead:
+    connections = list_followers(user, db)
+    unread = set(
+        db.scalars(
+            select(ProfileFollow.follower_id).where(
+                ProfileFollow.followee_id == user.id,
+                ProfileFollow.status == ACCEPTED,
+                ProfileFollow.notification_seen.is_(False),
+            )
+        )
+    )
+    return ConnectionsRead(
+        requests=connections.requests,
+        followers=[person for person in connections.followers if person.id in unread],
+    )
+
+
+class NotificationDismiss(BaseModel):
+    since: datetime
+
+
+@sharing_router.post("/notifications/{user_id}/dismiss", status_code=204)
+def dismiss_follow_notification(
+    user_id: str, payload: NotificationDismiss, user: CurrentUser, db: Db
+) -> None:
+    follow = find_follow(db, user_id, user.id)
+    # Match the event the client saw so a later re-follow cannot be dismissed by a stale tab.
+    if (
+        follow is not None
+        and follow.status == ACCEPTED
+        and as_utc(follow.accepted_at or follow.created_at) == as_utc(payload.since)
+    ):
+        follow.notification_seen = True
+        db.commit()
+
+
 @sharing_router.post("/followers/{user_id}", status_code=204)
 def approve_follower(user_id: str, user: CurrentUser, db: Db) -> None:
     follow = find_follow(db, user_id, user.id)
@@ -826,6 +878,8 @@ def approve_follower(user_id: str, user: CurrentUser, db: Db) -> None:
     if follow.status == PENDING:
         follow.status = ACCEPTED
         follow.accepted_at = utc_now()
+        # The owner just approved this request, so it needs no second notification.
+        follow.notification_seen = True
         db.commit()
 
 

@@ -4,16 +4,41 @@
 
 19 October 2026
 
-### Clearer account creation
+### Workout types, friends and account setup
+
+![Settings Workout types with built-in types plus custom Arms, Legs, Limbs and Torso, colour controls and Add type](screenshots/releases/0.8.1-workout-types.png)
+
+*Add your own types and colours in Settings. Remove hides a type from new workouts; Restore brings it back.*
+
+![Today with a notification bell beside the profile picture and a seven-column calendar with custom workout types](screenshots/releases/0.8.1-custom-type-calendar.png)
+
+*Saved workouts keep their custom type in the calendar, including after that type is removed.*
+
+![Notifications showing a follow request with Approve and Decline buttons](screenshots/releases/0.8.1-follow-notifications.png)
+
+*Use the bell beside your profile picture to respond to requests and dismiss new-follower notices.*
+
+![A searchable friends-only account with a pending follow request and a Cancel request button](screenshots/releases/0.8.1-friends-only-search.png)
+
+*Friends-only accounts remain discoverable; their training stays hidden while a request is pending.*
 
 ![Create account form with the Name and Username help open: Name doesn't need to be unique, Username must be unique, and both can be changed in Profile](screenshots/releases/0.8.1-account-help.png)
 
-*Tap ? beside Name or Username to see what each is for and which must be unique.*
+*Tap ? beside Name or Username to see what each is for and which must be unique. The form also explains the default public profile visibility.*
 
 ![Sample profile popup showing Jordan Reyes and @jordan.r outlined on a profile card with example workouts, cardio and PRs](screenshots/releases/0.8.1-sample-profile.png)
 
 *See a sample profile shows the names you've typed on a profile card.*
 
+- Open **Settings > Workout types** to add your own types and choose their colours, such as **Arms**, **Legs**, **Limbs** or **Torso**.
+- Remove built-in or custom types from new workouts and restore them later. Saved workouts retain their type and colour.
+- Types stay with workout drafts, history, calendar dots and filters, shared profiles, CSV imports/exports and account backups.
+- The calendar now has seven day columns without the weekly **Sets** column, restoring the other calendar change from PR #68.
+- New accounts start **Public** to members who share. Existing accounts keep their current settings, including older accounts without saved sharing choices. Notes, body weight, goals and machine photos remain opt-in.
+- **Friends only** accounts remain searchable by name, username or full account UUID. Their workouts stay hidden until they approve a follow request.
+- A **Notifications** bell beside the top profile picture shows pending follow requests and new followers. Approve or decline requests there; dismissing a new-follower notice keeps the follower. Existing followers do not generate upgrade notifications.
+- This patch restores the custom workout types feature from PR #68, whose earlier merge did not reach the application release.
+- The upgrade adds workout types and a dismissed-notification flag without rebuilding the saved-workouts table or changing existing account visibility.
 - When creating an account, **?** beside **Name** and **Username** explains each one. Name is
   your display name and doesn't need to be unique. Username is how you sign in and how friends
   find you as @handle, so it must be unique. Both can be changed any time in **Profile**.
@@ -124,7 +149,7 @@
   all the time left ends the rest, and rest-complete notifications follow the new time.
 - While resting, leaving the workout turns the live button in the bottom navigation into a
   timer icon counting down the rest. It returns to the live workout time when the rest ends.
-- Tap **×** to dismiss the popup. The countdown keeps running beside the live workout
+- Tap **Ã—** to dismiss the popup. The countdown keeps running beside the live workout
   time, and tapping it there opens the popup again. **Cancel** stops the rest timer.
 - The popup sits clear of the workout header, and the page leaves room so **Finish
   workout** stays reachable.
@@ -333,7 +358,7 @@
 - The exercise picker's footer labels wrap on narrow screens. **Create super set** is now
   **Add super set**, and the selected exercise count no longer has parentheses.
 - The Videos page drops its top **New upload** shortcut. Sets per muscle no longer shows
-  **RPE logged on …% of sets**; the untrained-muscle summary remains.
+  **RPE logged on â€¦% of sets**; the untrained-muscle summary remains.
 - The compact **Friends** card keeps its list below the heading instead of centring one
   friend in the spare space. It shows the latest workout from up to five followed friends;
   the refreshed sample preview shows multiple people together.
@@ -529,7 +554,7 @@ the installation's Google client.
 
 16 October 2026
 
-This release combines PRs #48–#54.
+This release combines PRs #48â€“#54.
 
 ### Faster start with long histories
 
@@ -818,7 +843,7 @@ The heaviest-set summary now keeps weight and reps from the same logged set. Cap
 
 - Choose the **pencil icon** on **Today** to arrange the actual Home cards directly. Cards gently wiggle like iOS Home Screen icons, with a **drag handle at the top right** and a **minus button at the top left**. Drag a handle with a mouse or touch, or focus it and use the keyboard arrow keys. Minus hides its card; **Add sections** restores hidden cards in their saved positions. This replaces the separate reorder list. It includes the individual weekly stat boxes, next workout, consistency calendar, muscle sets, cardio goal, bodyweight trend, daily check-in and recent records. Card actions are disabled while editing, and both system and in-app reduced-motion settings turn off the wiggle.
 - **Save layout** keeps the arrangement in your account across devices and sign-ins. **Cancel** discards edits, and **Reset layout** restores the original order with every section visible before saving. Save failures keep your edits for retry. An active workout's **Resume** card always stays visible even when the next-workout section is hidden. Hiding cards does not delete data or remove the other navigation tabs. Layout preferences use existing account settings and backups; no database migration is required.
-- The **History** calendar header no longer shows "Sets per week · swipe for earlier months". Month scrolling and weekly set totals remain available.
+- The **History** calendar header no longer shows "Sets per week Â· swipe for earlier months". Month scrolling and weekly set totals remain available.
 
 <img src="screenshots/releases/0.5.3-home-layout.png" alt="Today in edit mode with the actual workout and stat cards, minus buttons at the top left, drag handles at the top right, Save layout, Cancel and Add sections." width="390">
 
@@ -883,7 +908,7 @@ The illustrated announcement in the isolated mobile verification environment, us
 11 October 2026
 
 - Create accounts and sign in with a **username and password**. Account emails are no longer collected or stored in the active users table.
-- Usernames ignore letter case and use 3–32 ASCII letters, numbers, dots, underscores or hyphens, starting with a letter or number. The separate display name remains available.
+- Usernames ignore letter case and use 3â€“32 ASCII letters, numbers, dots, underscores or hyphens, starting with a letter or number. The separate display name remains available.
 - Profile, the admin console, account backup metadata and administrative commands now identify accounts by username. CLI commands use `--username` instead of `--email`.
 - Existing accounts keep their IDs, passwords, sessions, preferences and workout history. Migration `0030_username_accounts` assigns usernames from the part of the old email before `@`, sanitizes unsupported characters and adds numeric suffixes for collisions. Short or unusable names become `user`. Administrators can run `python -m app.manage list-users` to see assignments.
 - Invite codes, registration controls and push notifications continue to work. The server's Web Push contact mailbox is separate from accounts and stays configured.
@@ -899,7 +924,7 @@ Username-based account creation in v0.3.0, captured with empty fields in the iso
 
 - A **What's new** pop-up shows the deployed version, a short list of changes and a link to these GitHub notes when you sign in, reopen the app or reconnect after an update.
 - Dismiss a version once per account and browser. Later releases appear automatically; local and production addresses remember dismissal independently. First-time users see the current release too.
-- Open **Settings → What's new → View changes** to read the announcement again, including during local development.
+- Open **Settings â†’ What's new â†’ View changes** to read the announcement again, including during local development.
 - Announcements wait while the workout or video upload screen is open, and while the app is loading or showing a completion/message dialog.
 
 ## Publishing the next announcement

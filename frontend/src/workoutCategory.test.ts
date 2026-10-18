@@ -10,6 +10,17 @@ const exercises = (...categories: WorkoutCategory[]) =>
   categories.map((category) => ({ category }));
 
 describe('automatic workout category', () => {
+  it.each(['Arms', 'Legs', 'Limbs', 'Torso'])(
+    'preserves %s instead of inferring an exercise category',
+    (name) => {
+      expect(
+        finalizeWorkoutIdentity(exercises('pull', 'lower', 'cardio'), 'other', '', true, { name }),
+      ).toEqual({ category: 'other', name: `${name} workout` });
+      expect(
+        finalizeWorkoutIdentity(exercises('pull'), 'other', 'My session', true, { name }),
+      ).toEqual({ category: 'other', name: 'My session' });
+    },
+  );
   it('uses a focused type when one exercise family clearly dominates', () => {
     expect(inferWorkoutCategory(exercises('pull', 'pull', 'push'))).toBe('pull');
     expect(inferWorkoutCategory(exercises('push', 'push', 'pull'))).toBe('push');
