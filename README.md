@@ -37,7 +37,7 @@ Choose kilograms or pounds for weight entry and display.
 
 **Progress** shows per-exercise charts and personal records. A **Weight PR** celebrates a heavier completed working set; a **Volume PR** celebrates more reps in a set at a weight you have used before. You can also follow estimated one-rep max and weekly muscle-group set totals.
 
-Import existing workout set history from CSV, review it before saving, or export your completed sets. A built-in CSV guide shows the columns and one-row-per-set layout and offers a template; files you make yourself need only date, exercise and reps columns, plus weight for weighted sets. Workout CSVs are for set history rather than a full backup of notes, photos, videos and other account data.
+Import original **Strength Level**, **Hevy** or **Strong** workout CSVs: choose the app in **Settings > Workout data**, select its export, then review before saving. Strong body-weight measurement exports work there too and keep existing check-ins. You can also import a spreadsheet or export your completed sets. A built-in CSV guide shows the columns and one-row-per-set layout and offers a template; files you make yourself need only date, exercise and reps columns, plus weight for weighted sets. Workout CSVs are for set history rather than a full backup of notes, photos, videos and other account data.
 
 <p>
   <a href="docs/screenshots/readme/progress.png"><img src="docs/screenshots/readme/progress.png" alt="Exercise progress screen with estimated one-rep max, personal records and previous sessions" width="360"></a>

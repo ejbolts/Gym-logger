@@ -57,6 +57,7 @@ import type {
   WorkoutInput,
   WorkoutRecommendation,
   WorkoutSetInput,
+  WorkoutImportOptions,
 } from './types';
 import {
   BODY_TREND_DURATION_OPTIONS,
@@ -1042,9 +1043,9 @@ function AppContent() {
     }
   }
 
-  async function importWorkoutCsv(file: File) {
+  async function importWorkoutCsv(file: File, options?: WorkoutImportOptions) {
     const result = await withBackgroundActivity('Importing workouts…', async () => {
-      const imported = await api.importWorkouts(file);
+      const imported = await api.importWorkouts(file, options);
       await refreshData({ activityLabel: null });
       return imported;
     });
@@ -6333,7 +6334,7 @@ function SettingsScreen({
   onReduceMotionChange: (reduced: boolean) => void;
   bodyTrendPreference: BodyTrendPreference;
   onBodyTrendPreferenceChange: (preference: BodyTrendPreference) => void;
-  onImportWorkouts: (file: File) => Promise<void>;
+  onImportWorkouts: (file: File, options?: WorkoutImportOptions) => Promise<void>;
   csvGuideOpen: boolean;
   onCsvGuideOpenChange: (open: boolean) => void;
   onExportWorkouts: (range: DateRange) => Promise<void>;
@@ -6976,9 +6977,9 @@ function SettingsScreen({
           </div>
         </header>
         <p>
-          Import or export completed workout set data for your chosen time frame. All time includes
-          all completed sets. CSV does not include RPE, rest, duration, notes, photos, supersets or
-          goals.{' '}
+          Bring your workouts from Strength Level, Hevy or Strong: choose the app, then its CSV
+          export. Review everything before saving. Gym Logger exports contain completed set history;
+          photos, videos, supersets and goals are not transferred.{' '}
           <button
             type="button"
             className="csv-guide-link"

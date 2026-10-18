@@ -17,6 +17,7 @@ import type {
   Clip,
   CsvImportResult,
   CsvImportPreview,
+  WorkoutImportOptions,
   DashboardData,
   Exercise,
   ExerciseCreateInput,
@@ -465,14 +466,16 @@ export const api = {
     }),
   exportWorkouts: (range: DateRange = {}) =>
     requestBlob(`/api/workouts/export.csv${dateRangeQuery(range)}`),
-  importWorkouts: (file: File) => {
+  importWorkouts: (file: File, options?: WorkoutImportOptions) => {
     const form = new FormData();
     form.append('file', file, file.name);
+    if (options) Object.entries(options).forEach(([key, value]) => form.append(key, value));
     return request<CsvImportResult>('/api/workouts/import', { method: 'POST', body: form });
   },
-  previewWorkoutImport: (file: File) => {
+  previewWorkoutImport: (file: File, options?: WorkoutImportOptions) => {
     const form = new FormData();
     form.append('file', file, file.name);
+    if (options) Object.entries(options).forEach(([key, value]) => form.append(key, value));
     return request<CsvImportPreview>('/api/workouts/import/preview', {
       method: 'POST',
       body: form,

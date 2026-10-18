@@ -1,5 +1,40 @@
 # Gym Logger release notes
 
+## 0.8.0
+
+18 October 2026
+
+### Bring your training from other apps
+
+- Choose **Strength Level**, **Hevy** or **Strong** in **Settings > Workout data** or
+  the import guide. Each option includes the app's logo. Upload the original CSV;
+  no column renaming is needed. Gym Logger exports and the spreadsheet template still work.
+- Hevy and Strong keep workout names and separate sessions on one date, warmups,
+  drop sets, RPE, workout and exercise notes, workout duration and set duration/distance.
+  Strong failed sets are kept. Timed cardio movements also populate Cardio.
+  Strong rest-timer rows are skipped; superset grouping is not transferred.
+- For Strong workouts, choose the weight and distance units used in the export.
+  Strong body-weight measurement files read their own units and add missing check-ins
+  without replacing existing entries. Multiple readings on one date use their median.
+  Other measurement types and source labels are not imported.
+- Strength Level retains weights, reps, warmups, percentiles and body weights;
+  date-only rows form one session per date. Unsupported columns are listed as warnings.
+- Review sessions, sets, exercises, body-weight totals and warnings before **Save import**.
+  Identical sessions are skipped; invalid files save nothing. Exercise names match the
+  library where recognised; other names become custom exercises. Weights keep the
+  source app's per-dumbbell and assisted-load conventions. Negative loads are rejected
+  because Gym Logger cannot represent them safely.
+- Gym Logger's own CSV export remains a completed-set history format, rather than a
+  full backup of imported notes, RPE or cardio details.
+
+![Workout import guide with Strength Level, Hevy and Strong logo choices](screenshots/releases/0.8.0-app-import.png)
+
+*Choose the app that created your CSV, then review the import before saving.*
+
+![Workout data in Settings with the three app logos and Strong weight and distance unit controls](screenshots/releases/0.8.0-settings-app-import.png)
+
+*Strong workout exports use the units you select; measurement files supply their own units.*
+
 ## 0.7.0
 
 17 October 2026
