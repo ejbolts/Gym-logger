@@ -121,6 +121,7 @@ export function AuthScreen({
   const [inviteRevealed, setInviteRevealed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
 
   const screenRef = useRef<HTMLElement>(null);
@@ -172,6 +173,7 @@ export function AuthScreen({
     if (submitting || next === mode) return;
     setMode(next);
     setError(null);
+    setNotice(null);
     setFieldErrors({});
   }
 
@@ -180,6 +182,7 @@ export function AuthScreen({
     if (submitting) return;
     setSubmitting(true);
     setError(null);
+    setNotice(null);
     setFieldErrors({});
     const result = await submitAuthForm(
       mode,
@@ -190,6 +193,17 @@ export function AuthScreen({
       if (mode === 'create-account') {
         queueHomeScreenGuide(result.user.id);
         queueAppGuide(result.user.id);
+        setMode('sign-in');
+        setDisplayName('');
+        setUsername('');
+        setPassword('');
+        setInviteCode('');
+        setShowPassword(false);
+        setInviteRevealed(false);
+        setNotice('Account created. Sign in with your username and password.');
+        setSubmitting(false);
+        window.requestAnimationFrame(() => document.getElementById(ids.username)?.focus());
+        return;
       }
       shellTopRef.current =
         screenRef.current?.querySelector('.auth-shell')?.getBoundingClientRect().top ?? null;
@@ -259,6 +273,12 @@ export function AuthScreen({
             <p className="auth-note">
               New accounts are closed on this server. Ask whoever runs it for access, then sign in
               here.
+            </p>
+          )}
+
+          {notice && (
+            <p className="auth-note" role="status">
+              {notice}
             </p>
           )}
 
