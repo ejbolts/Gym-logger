@@ -9,5 +9,9 @@
     "Choose the weight and distance units used by a Strong workout export. Strong measurement CSVs use their own units, add missing body-weight dates, and keep existing check-ins. Multiple measurements on one date use their median.",
     "Review sessions, sets, new exercises, body-weight totals and warnings before saving. Identical sessions are skipped and malformed files save nothing. Strength Level's date-only rows form one session per date."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#080",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/2663018a2531bb8ebf8a718607442503686b3ba1/docs/screenshots/releases/0.8.0-app-import.png",
+    "alt": "Workout import guide with Strength Level, Hevy and Strong logos, Hevy selected, and a summary of supported data."
+  }
 }
