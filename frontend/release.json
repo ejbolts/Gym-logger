@@ -9,5 +9,9 @@
     "Profile > Friends > Followers now has Block with a ? explanation. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.",
     "Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/eec1d16d59575d4977e063a660dfc19682aae335/docs/screenshots/releases/0.8.6-emoji-reactions.png",
+    "alt": "Single-emoji heart reactions on shared workouts, with a newer workout above previously reacted sessions."
+  }
 }
