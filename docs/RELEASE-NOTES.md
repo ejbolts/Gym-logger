@@ -10,9 +10,9 @@
 
 *Selected reactions use the same single-emoji button on Home and shared workouts.*
 
-![Followers with Block and question-mark help explaining profile, data and recent activity protection](screenshots/releases/0.8.6-block-followers.png)
+![Followers with Block buttons and question-mark help beside the follower count](screenshots/releases/0.8.6-block-followers.png)
 
-*Block a follower from Profile. The question mark explains the effect; blocked accounts can be unblocked later.*
+*Block a follower from Profile. The question mark beside the follower count explains the effect; blocked accounts can be unblocked later.*
 
 ![Friends on Home ordered by their newest workouts](screenshots/releases/0.8.6-latest-friends.png)
 
@@ -20,7 +20,7 @@
 
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
 - Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session.
-- Profile > Friends > Followers now has Block with a ? explanation. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.
+- Profile > Friends > Followers now has Block, with a ? explanation beside the follower count. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.
 - Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows.
 
 ## 0.8.5

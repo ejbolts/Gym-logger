@@ -81,7 +81,7 @@ it('explains blocking and moves a blocked follower out of Following/Followers in
   expect(
     document.querySelector('[aria-label="Remove Alex Sample from your followers"]'),
   ).toBeNull();
-  await click('About blocking Alex Sample');
+  await click('About blocking');
   const dialog = document.querySelector('dialog[open]');
   expect(dialog?.textContent).toContain('profile, data and recent activity');
   await click('Close About blocking');

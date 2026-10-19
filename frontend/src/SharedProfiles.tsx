@@ -218,12 +218,14 @@ function FriendGroup({
   title,
   count,
   emptyText,
+  help,
   highlighted = false,
   children,
 }: {
   title: string;
   count?: number;
   emptyText: string;
+  help?: ReactNode;
   highlighted?: boolean;
   children: ReactNode[];
 }) {
@@ -232,6 +234,7 @@ function FriendGroup({
       <h3>
         {title}
         {count !== undefined && <span>{count}</span>}
+        {help}
       </h3>
       {children.length === 0 ? (
         <p className="shared-card-empty">{emptyText}</p>
@@ -567,6 +570,17 @@ export function FriendsPanel({
             title="Followers"
             count={connections?.followers.length ?? 0}
             emptyText="Nobody follows you yet."
+            help={
+              <button
+                type="button"
+                className="friend-block-help"
+                aria-label="About blocking"
+                aria-haspopup="dialog"
+                onClick={() => setBlockHelpOpen(true)}
+              >
+                <span aria-hidden="true">?</span>
+              </button>
+            }
           >
             {(connections?.followers ?? []).map((person) => (
               <FriendRow
@@ -575,26 +589,15 @@ export function FriendsPanel({
                 detail={followSinceLabel('Follows you', person.since)}
                 onOpen={openFor(person.id)}
                 actions={
-                  <>
-                    <button
-                      type="button"
-                      className="profile-secondary"
-                      disabled={busyId !== null}
-                      aria-label={`Block ${person.display_name}`}
-                      onClick={() => void respond(person, 'block')}
-                    >
-                      Block
-                    </button>
-                    <button
-                      type="button"
-                      className="friend-block-help"
-                      aria-label={`About blocking ${person.display_name}`}
-                      aria-haspopup="dialog"
-                      onClick={() => setBlockHelpOpen(true)}
-                    >
-                      <span aria-hidden="true">?</span>
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    className="profile-secondary"
+                    disabled={busyId !== null}
+                    aria-label={`Block ${person.display_name}`}
+                    onClick={() => void respond(person, 'block')}
+                  >
+                    Block
+                  </button>
                 }
               />
             ))}
