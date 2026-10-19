@@ -17,10 +17,15 @@ export interface BodyHistorySummary {
   count: number;
 }
 
-interface BodyHistoryGoal {
+export interface BodyHistoryGoal {
+  start_date: string;
   start_weight_kg: number;
   target_weight_kg: number;
+  created_at?: string;
 }
+
+/** Maintain goals keep the same start and target weight; the others move towards the target. */
+export type BodyGoalKind = 'loss' | 'gain' | 'maintain';
 
 export interface BodyHistoryWeightChange {
   direction: 'up' | 'down';
@@ -28,7 +33,8 @@ export interface BodyHistoryWeightChange {
   current_kg: number;
   previous_kg: number;
   status: 'favorable' | 'unfavorable' | 'neutral';
-  goalDirection: 'loss' | 'gain' | null;
+  /** The goal in force on the newer row's date, if any. */
+  goalDirection: BodyGoalKind | null;
 }
 
 function weightDirection(current: number, previous: number): 'up' | 'down' | null {
@@ -39,14 +45,66 @@ function weightDirection(current: number, previous: number): 'up' | 'down' | nul
   return current > previous ? 'up' : 'down';
 }
 
-/** Compare newest-first history before pagination, using stored kg rather than display units. */
-export function bodyHistoryWithWeightChanges<T extends { weight_kg: number }>(
-  history: T[],
+export function bodyGoalKind(
+  goal: Pick<BodyHistoryGoal, 'start_weight_kg' | 'target_weight_kg'>,
+): BodyGoalKind {
+  const direction = weightDirection(goal.target_weight_kg, goal.start_weight_kg);
+  return direction === 'down' ? 'loss' : direction === 'up' ? 'gain' : 'maintain';
+}
+
+/** The goal set most recently on or before a date; it stays in force until another replaces it. */
+export function bodyGoalOn<G extends BodyHistoryGoal>(goals: G[], date: string): G | null {
+  let current: G | null = null;
+  for (const goal of goals) {
+    if (goal.start_date > date) continue;
+    if (
+      !current ||
+      goal.start_date > current.start_date ||
+      (goal.start_date === current.start_date &&
+        (goal.created_at ?? '') > (current.created_at ?? ''))
+    ) {
+      current = goal;
+    }
+  }
+  return current;
+}
+
+function changeStatus(
   goal: BodyHistoryGoal | null,
-): (T & { weight_change: BodyHistoryWeightChange | null })[] {
-  const goalDirection = goal ? weightDirection(goal.target_weight_kg, goal.start_weight_kg) : null;
+  direction: 'up' | 'down',
+  current: number,
+  previous: number,
+): BodyHistoryWeightChange['status'] {
+  if (!goal) return 'neutral';
+  const kind = bodyGoalKind(goal);
+  if (kind !== 'maintain') {
+    return direction === (kind === 'loss' ? 'down' : 'up') ? 'favorable' : 'unfavorable';
+  }
+  // Maintaining rewards moving back towards the target weight from either side.
+  const distance = weightDirection(
+    Math.abs(current - goal.target_weight_kg),
+    Math.abs(previous - goal.target_weight_kg),
+  );
+  return distance === 'down' ? 'favorable' : distance === 'up' ? 'unfavorable' : 'neutral';
+}
+
+/**
+ * Compare newest-first history before pagination, using stored kg rather than display units.
+ * Each change is judged against the goal in force on the newer row's date, and `goal_change`
+ * marks the oldest row under a goal that differs from the row below it.
+ */
+export function bodyHistoryWithWeightChanges<
+  T extends { weight_kg: number },
+  G extends BodyHistoryGoal,
+>(
+  history: T[],
+  goals: G[],
+  dateOf: (entry: T) => string,
+): (T & { weight_change: BodyHistoryWeightChange | null; goal_change: G | null })[] {
+  const entryGoals = history.map((entry) => bodyGoalOn(goals, dateOf(entry)));
   return history.map((entry, index) => {
     const previous = history[index + 1];
+    const goal = entryGoals[index];
     const direction = previous ? weightDirection(entry.weight_kg, previous.weight_kg) : null;
     return {
       ...entry,
@@ -55,15 +113,11 @@ export function bodyHistoryWithWeightChanges<T extends { weight_kg: number }>(
             direction,
             current_kg: entry.weight_kg,
             previous_kg: previous.weight_kg,
-            status: goalDirection
-              ? direction === goalDirection
-                ? 'favorable'
-                : 'unfavorable'
-              : 'neutral',
-            goalDirection:
-              goalDirection === 'down' ? 'loss' : goalDirection === 'up' ? 'gain' : null,
+            status: changeStatus(goal, direction, entry.weight_kg, previous.weight_kg),
+            goalDirection: goal ? bodyGoalKind(goal) : null,
           }
         : null,
+      goal_change: previous && goal && goal !== entryGoals[index + 1] ? goal : null,
     };
   });
 }

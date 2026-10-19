@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  bodyGoalKind,
+  bodyGoalOn,
   bodyHistoryWithWeightChanges,
   summarizeBodyHistory,
   weightChangeAmount,
@@ -53,14 +55,28 @@ describe('bodyweight history summaries', () => {
 });
 
 describe('bodyweight history changes', () => {
-  const cut = { start_weight_kg: 90, target_weight_kg: 80 };
-  const bulk = { start_weight_kg: 80, target_weight_kg: 90 };
-  const history = [82, 83, 82].map((weight_kg) => ({ weight_kg }));
+  const goal = (start_date: string, start_weight_kg: number, target_weight_kg: number) => ({
+    start_date,
+    start_weight_kg,
+    target_weight_kg,
+  });
+  const cut = [goal('2026-01-01', 90, 80)];
+  const bulk = [goal('2026-01-01', 80, 90)];
+  const dated = (weights: number[], first = '2026-10-20') =>
+    weights.map((weight_kg, index) => {
+      const day = new Date(`${first}T00:00:00Z`);
+      day.setUTCDate(day.getUTCDate() - index);
+      return { measurement_date: day.toISOString().slice(0, 10), weight_kg };
+    });
+  const byDate = (entry: { measurement_date: string }) => entry.measurement_date;
+  const history = dated([82, 83, 82]);
   const down = { direction: 'down', current_kg: 82, previous_kg: 83 } as const;
   const up = { direction: 'up', current_kg: 83, previous_kg: 82 } as const;
 
   it('marks losses favorably and gains unfavorably for a cutting goal', () => {
-    expect(bodyHistoryWithWeightChanges(history, cut).map((entry) => entry.weight_change)).toEqual([
+    expect(
+      bodyHistoryWithWeightChanges(history, cut, byDate).map((entry) => entry.weight_change),
+    ).toEqual([
       { ...down, status: 'favorable', goalDirection: 'loss' },
       { ...up, status: 'unfavorable', goalDirection: 'loss' },
       null,
@@ -68,38 +84,86 @@ describe('bodyweight history changes', () => {
   });
 
   it('reverses the goal status for a bulking goal without reversing arrow direction', () => {
-    expect(bodyHistoryWithWeightChanges(history, bulk).map((entry) => entry.weight_change)).toEqual(
-      [
-        { ...down, status: 'unfavorable', goalDirection: 'gain' },
-        { ...up, status: 'favorable', goalDirection: 'gain' },
-        null,
-      ],
-    );
+    expect(
+      bodyHistoryWithWeightChanges(history, bulk, byDate).map((entry) => entry.weight_change),
+    ).toEqual([
+      { ...down, status: 'unfavorable', goalDirection: 'gain' },
+      { ...up, status: 'favorable', goalDirection: 'gain' },
+      null,
+    ]);
   });
 
-  it.each([null, { start_weight_kg: 82, target_weight_kg: 82 }])(
-    'shows neutral direction when no directional goal exists: %s',
-    (goal) => {
-      expect(bodyHistoryWithWeightChanges(history, goal)[0].weight_change).toEqual({
+  it('shows neutral direction before any goal has started', () => {
+    for (const goals of [[], [goal('2026-12-01', 90, 80)]]) {
+      expect(bodyHistoryWithWeightChanges(history, goals, byDate)[0].weight_change).toEqual({
         ...down,
         status: 'neutral',
         goalDirection: null,
       });
-    },
-  );
+    }
+  });
 
-  it('omits arrows for ties, floating-point aggregate noise, missing or invalid comparisons', () => {
-    const entries = [82, 82, 82 + Number.EPSILON * 82, Number.NaN, 80].map((weight_kg) => ({
-      weight_kg,
-    }));
-    expect(bodyHistoryWithWeightChanges(entries, cut).map((entry) => entry.weight_change)).toEqual([
+  it('judges each change by the goal in force on the newer row and marks where goals change', () => {
+    const cutThenBulk = [goal('2026-09-01', 90, 82), goal('2026-10-18', 82, 86)];
+    const rows = bodyHistoryWithWeightChanges(dated([84, 84.5, 84.2, 83.6]), cutThenBulk, byDate);
+    // 20 and 19 Oct fall under the bulk, 18 Oct is its first day and 17 Oct is still the cut.
+    expect(rows.map((row) => row.weight_change?.status ?? null)).toEqual([
+      'unfavorable',
+      'favorable',
+      'favorable',
       null,
+    ]);
+    expect(rows.map((row) => row.weight_change?.goalDirection ?? null)).toEqual([
+      'gain',
+      'gain',
+      'gain',
       null,
-      null,
+    ]);
+    expect(rows.map((row) => row.goal_change)).toEqual([null, null, cutThenBulk[1], null]);
+  });
+
+  it('marks the first goal against earlier check-ins but not below the oldest row', () => {
+    const first = [goal('2026-10-19', 84, 80)];
+    const rows = bodyHistoryWithWeightChanges(dated([83, 84, 85]), first, byDate);
+    expect(rows.map((row) => row.goal_change)).toEqual([null, first[0], null]);
+    expect(rows[1].weight_change?.status).toBe('favorable');
+    expect(rows[2].weight_change).toBeNull();
+    const onlyGoalRows = bodyHistoryWithWeightChanges(dated([83, 84]), cut, byDate);
+    expect(onlyGoalRows.map((row) => row.goal_change)).toEqual([null, null]);
+  });
+
+  it('uses the latest goal set on the same day', () => {
+    const sameDay = [
+      { ...goal('2026-10-01', 84, 80), created_at: '2026-10-01T08:00:00Z' },
+      { ...goal('2026-10-01', 84, 88), created_at: '2026-10-01T09:00:00Z' },
+    ];
+    expect(bodyHistoryWithWeightChanges(history, sameDay, byDate)[0].weight_change).toMatchObject({
+      status: 'unfavorable',
+      goalDirection: 'gain',
+    });
+  });
+
+  it('rewards moving back towards the target weight for a maintain goal', () => {
+    const maintain = [goal('2026-01-01', 83, 83)];
+    const rows = bodyHistoryWithWeightChanges(dated([83.2, 83.6, 82.5, 82.5]), maintain, byDate);
+    expect(rows.map((row) => row.weight_change?.status ?? null)).toEqual([
+      'favorable',
+      'unfavorable',
       null,
       null,
     ]);
-    expect(bodyHistoryWithWeightChanges([], cut)).toEqual([]);
+    expect(rows[0].weight_change?.goalDirection).toBe('maintain');
+    // 83.5 and 82.5 kg are equally far from 83 kg, so crossing the target is neutral.
+    const crossing = bodyHistoryWithWeightChanges(dated([83.5, 82.5]), maintain, byDate);
+    expect(crossing[0].weight_change?.status).toBe('neutral');
+  });
+
+  it('omits arrows for ties, floating-point aggregate noise, missing or invalid comparisons', () => {
+    const entries = dated([82, 82, 82 + Number.EPSILON * 82, Number.NaN, 80]);
+    expect(
+      bodyHistoryWithWeightChanges(entries, cut, byDate).map((entry) => entry.weight_change),
+    ).toEqual([null, null, null, null, null]);
+    expect(bodyHistoryWithWeightChanges([], cut, byDate)).toEqual([]);
   });
 
   it('compares adjacent available period statistics rather than individual measurements', () => {
@@ -114,6 +178,7 @@ describe('bodyweight history changes', () => {
         const rows = bodyHistoryWithWeightChanges(
           summarizeBodyHistory(entries, period, statistic),
           cut,
+          (summary) => summary.end_date,
         );
         expect(rows.map((row) => row.weight_kg)).toEqual([85, 84, 86]);
         expect(rows.map((row) => row.weight_change?.status ?? null)).toEqual([
@@ -126,8 +191,8 @@ describe('bodyweight history changes', () => {
   });
 
   it('retains the comparison across a page boundary and does not modify source weights', () => {
-    const entries = Array.from({ length: 10 }, (_, index) => ({ weight_kg: 80 + index / 10 }));
-    const rows = bodyHistoryWithWeightChanges(entries, cut);
+    const entries = dated(Array.from({ length: 10 }, (_, index) => 80 + index / 10));
+    const rows = bodyHistoryWithWeightChanges(entries, cut, byDate);
     expect(rows.slice(0, 8)[7].weight_change).toEqual({
       direction: 'down',
       current_kg: 80.7,
@@ -137,7 +202,22 @@ describe('bodyweight history changes', () => {
     });
     expect(rows.slice(8)[0].weight_change?.status).toBe('favorable');
     expect(rows.at(-1)?.weight_change).toBeNull();
-    expect(entries[0]).toEqual({ weight_kg: 80 });
+    expect(entries[0]).toEqual({ measurement_date: '2026-10-20', weight_kg: 80 });
+  });
+});
+
+describe('bodyweight goal kinds', () => {
+  it('treats an unchanged target as maintaining and finds the goal in force on a date', () => {
+    expect(bodyGoalKind({ start_weight_kg: 84, target_weight_kg: 84 })).toBe('maintain');
+    expect(bodyGoalKind({ start_weight_kg: 84, target_weight_kg: 80 })).toBe('loss');
+    expect(bodyGoalKind({ start_weight_kg: 80, target_weight_kg: 84 })).toBe('gain');
+    const goals = [
+      { start_date: '2026-09-01', start_weight_kg: 90, target_weight_kg: 82 },
+      { start_date: '2026-10-17', start_weight_kg: 82, target_weight_kg: 86 },
+    ];
+    expect(bodyGoalOn(goals, '2026-08-31')).toBeNull();
+    expect(bodyGoalOn(goals, '2026-10-16')).toBe(goals[0]);
+    expect(bodyGoalOn(goals, '2026-10-17')).toBe(goals[1]);
   });
 });
 

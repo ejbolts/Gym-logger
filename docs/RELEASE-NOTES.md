@@ -4,19 +4,26 @@
 
 20 October 2026
 
-### See how much your weight changed
+### See how much your weight changed, goal by goal
 
-![Avg Monthly bodyweight history with a green down arrow and the amount lost beside each month, such as 2.2 and 0.5](screenshots/releases/0.8.6-weight-change-monthly.png)
+![Avg Monthly bodyweight history with the amount changed beside each arrow and dotted lines marking Gain to 86 kg, Maintain 88 kg and Lose to 85 kg goals](screenshots/releases/0.8.6-weight-change-monthly.png)
 
-*Avg Monthly shows how much each month's average changed from the month before.*
+*Each month shows how much its average changed, coloured by the goal you had then. Dotted lines mark where each goal began.*
 
-![Daily bodyweight history with green losses and red gains beside each check-in, such as ↓ 0.2 and ↑ 0.3](screenshots/releases/0.8.6-weight-change-daily.png)
+![Daily bodyweight history with a Maintain 83.3 kg line above a Gain to 86 kg line, and red or green amounts beside each check-in](screenshots/releases/0.8.6-weight-change-daily.png)
 
-*Daily compares each check-in with the one before it; colours follow your weight goal.*
+*Daily compares each check-in with the one before it, judged against the goal in force on that day.*
+
+![Add bodyweight goal popup with Lose, Gain and Maintain choices, Maintain selected and the current 83.3 kg filled in](screenshots/releases/0.8.6-maintain-goal.png)
+
+*Choose Lose, Gain or Maintain when you set a goal.*
 
 - Each up or down arrow in Body history now shows the amount gained or lost compared with the row below, such as ↓ 0.5.
 - Daily compares with your previous check-in; Avg Week and Avg Monthly compare with the previous week or month that has check-ins.
 - Amounts use your weight unit and match the rounded weights shown, so they add up when you compare two rows.
+- Arrow colours now follow the goal you had at the time, so older rows keep their meaning after you set a new goal. Weeks and months use the goal in place on their last day.
+- A dotted line marks where each new goal started, with its direction, target and start date, such as Gain to 86 kg · from 16 Oct.
+- Goals can now be Lose, Gain or Maintain. Maintain starts from your current weight; green means you moved back towards it and red means you drifted further away.
 
 ## 0.8.5
 

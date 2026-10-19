@@ -35,6 +35,8 @@ const PATHS = {
   filter: 'M4 6.5h16M7 12h10M10 17.5h4',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5a7.5 7.5 0 0 1 15 0',
   pulse: 'M3 12.5h4l2.5-6.5 5 13 2.5-6.5h4',
+  // Two level lines, for a maintain-weight goal.
+  level: 'M5.5 9.5h13M5.5 14.5h13',
   heart: 'M20.5 5.5a5 5 0 0 0-7 0L12 7l-1.5-1.5a5 5 0 0 0-7 7L12 21l8.5-8.5a5 5 0 0 0 0-7z',
   // A smiling face with a plus, for adding a reaction.
   react:

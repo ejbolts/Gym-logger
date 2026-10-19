@@ -1,10 +1,20 @@
 import { Icon } from './Icon';
 import {
+  bodyGoalKind,
   weightChangeAmount,
+  type BodyHistoryGoal,
   type BodyHistoryWeightChange as WeightChange,
 } from './bodyMeasurementHistory';
-import type { WeightUnit } from './weightUnits';
+import { formatWeight, type WeightUnit } from './weightUnits';
 import './bodyMeasurementHistory.css';
+
+function goalComparison(change: WeightChange): string {
+  if (!change.goalDirection || change.status === 'neutral') return '';
+  if (change.goalDirection === 'maintain') {
+    return `; ${change.status === 'favorable' ? 'closer to' : 'further from'} maintenance weight`;
+  }
+  return `; ${change.status === 'favorable' ? 'in line with' : 'opposite to'} weight-${change.goalDirection} goal`;
+}
 
 export function BodyHistoryWeightChange({
   change,
@@ -23,11 +33,7 @@ export function BodyHistoryWeightChange({
 }) {
   if (!change) return null;
   const amount = weightChangeAmount(change, unit, decimals, fixed);
-  const label = `Weight ${change.direction === 'up' ? 'increased' : 'decreased'} by ${amount} ${unit} since ${comparison}${
-    change.goalDirection
-      ? `; ${change.status === 'favorable' ? 'in line with' : 'opposite to'} weight-${change.goalDirection} goal`
-      : ''
-  }`;
+  const label = `Weight ${change.direction === 'up' ? 'increased' : 'decreased'} by ${amount} ${unit} since ${comparison}${goalComparison(change)}`;
   return (
     <span
       className={`body-history-weight-change ${change.status}`}
@@ -40,5 +46,43 @@ export function BodyHistoryWeightChange({
         {amount}
       </span>
     </span>
+  );
+}
+
+/** A dotted rule under the oldest row of a new goal, naming the goal and when it started. */
+export function BodyHistoryGoalDivider({
+  goal,
+  unit,
+}: {
+  goal: BodyHistoryGoal & { target_weight_kg: number };
+  unit: WeightUnit;
+}) {
+  const kind = bodyGoalKind(goal);
+  const target = formatWeight(goal.target_weight_kg, unit, 1);
+  const name =
+    kind === 'maintain'
+      ? `Maintain ${target}`
+      : `${kind === 'loss' ? 'Lose' : 'Gain'} to ${target}`;
+  const start = new Date(`${goal.start_date}T12:00:00`);
+  const date = new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+    ...(start.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }),
+  }).format(start);
+  return (
+    <div
+      className={`body-history-goal-divider ${kind}`}
+      role="separator"
+      aria-label={`New goal from ${date}: ${name}`}
+    >
+      <span className="body-history-goal-name" aria-hidden="true">
+        <Icon name={kind === 'maintain' ? 'level' : kind === 'loss' ? 'down' : 'up'} />
+        {name}
+      </span>
+      <span className="body-history-goal-dots" aria-hidden="true" />
+      <span className="body-history-goal-date" aria-hidden="true">
+        from {date}
+      </span>
+    </div>
   );
 }
