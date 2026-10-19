@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import type { UndoBodyweightCheckIn } from './bodyweightCheckIn';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
+import { MuscleSetsCard } from './MuscleSetsCard';
 import { formatMemberSince } from './profileDisplay';
 import { HomeLayoutSections } from './HomeLayoutSections';
 import type { useHomeLayout } from './useHomeLayout';
@@ -29,6 +30,7 @@ import type {
   PersonalRecord,
   TrackedWorkout,
   User,
+  WeeklyMuscleContribution,
   WorkoutTypeColors,
 } from './types';
 import { localDate } from './utils';
@@ -108,6 +110,7 @@ export interface TodayScreenProps {
   onStartEmpty: () => void;
   onResumeWorkout: () => void;
   onOpenHistory: () => void;
+  onOpenWorkout?: (contribution: WeeklyMuscleContribution) => void | Promise<void>;
   onOpenProgress: (exerciseId?: string) => void;
   onOpenCardio: () => void;
   onOpenBody: () => void;
@@ -149,6 +152,7 @@ export function TodayScreen({
   onStartEmpty,
   onResumeWorkout,
   onOpenHistory,
+  onOpenWorkout,
   onOpenProgress,
   onOpenCardio,
   onOpenBody,
@@ -200,13 +204,6 @@ export function TodayScreen({
   const averageWorkouts = averageOf(history.map((week) => week.workouts));
   const averageCardioSessions = averageOf(history.map((week) => week.cardioSessions));
   const trainingDays = grid.flat().filter((day) => day.workouts > 0).length;
-  const muscles = (data?.weekly_sets?.muscle_groups ?? [])
-    .filter((muscle) => muscle.raw_sets > 0)
-    .sort((left, right) => right.raw_sets - left.raw_sets);
-  const untrainedMuscles = (data?.weekly_sets?.muscle_groups ?? []).filter(
-    (muscle) => muscle.raw_sets <= 0,
-  ).length;
-  const maxMuscleSets = Math.max(...muscles.map((muscle) => muscle.raw_sets), muscleSetGoal * 1.15);
   const zone2 = data?.zone2 ?? null;
   const cardioMinutes = data?.cardio_minutes_this_week ?? zone2?.completed_minutes ?? null;
   const zone2DaysLeft = zone2 ? Math.max(0, daysBetween(today, zone2.week_end) + 1) : null;
@@ -443,44 +440,11 @@ export function TodayScreen({
       </section>
     ),
     'muscle-sets': (
-      <section className="pulse-card" aria-labelledby="muscle-sets-title">
-        <header className="pulse-card-header">
-          <h2 id="muscle-sets-title">Sets per muscle</h2>
-          <span>This week · working sets</span>
-        </header>
-        <p className="muscle-set-goal-key">
-          <span aria-hidden="true" /> Weekly goal: {muscleSetGoal} sets per muscle
-        </p>
-        {muscles.length ? (
-          <ul
-            className="muscle-bars"
-            aria-label={`Working sets per muscle; weekly goal: ${muscleSetGoal} sets`}
-            style={{ '--muscle-goal-ratio': muscleSetGoal / maxMuscleSets } as CSSProperties}
-          >
-            {muscles.slice(0, 8).map((muscle, index) => (
-              <li key={muscle.muscle_group}>
-                <span>{muscle.muscle_group}</span>
-                <span className="muscle-bar-track">
-                  <i
-                    style={
-                      {
-                        width: `${(muscle.raw_sets / maxMuscleSets) * 100}%`,
-                        '--d': `${index * 45}ms`,
-                      } as CSSProperties
-                    }
-                  />
-                </span>
-                <b className="num">{Number(muscle.raw_sets.toFixed(1))}</b>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="pulse-empty-line">No working sets logged yet this week.</p>
-        )}
-        {muscles.length > 0 && untrainedMuscles > 0 && (
-          <p className="pulse-footnote">{untrainedMuscles} muscles not trained yet</p>
-        )}
-      </section>
+      <MuscleSetsCard
+        weeklySets={data?.weekly_sets}
+        goal={muscleSetGoal}
+        onOpenWorkout={onOpenWorkout}
+      />
     ),
     zone2: (
       <button type="button" className="pulse-card pulse-mini" onClick={onOpenCardio}>

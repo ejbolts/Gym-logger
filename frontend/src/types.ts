@@ -310,11 +310,25 @@ export interface WorkoutRecommendation {
   muscle_frequency: MuscleFrequency[];
 }
 
+export interface WeeklyMuscleContribution {
+  workout_id: string;
+  workout_name: string;
+  workout_date: string;
+  movement_id: string;
+  exercise_id: string;
+  exercise_name: string;
+  working_sets: number;
+  credit_per_set: number;
+  set_credits: number;
+}
+
 export interface WeeklyMuscleSets {
   muscle_group: string;
   raw_sets: number;
   effective_sets: number;
   average_rpe: number | null;
+  /** Absent in dashboards cached before the muscle contribution sheet was added. */
+  contributions?: WeeklyMuscleContribution[];
 }
 
 export interface WeeklySets {

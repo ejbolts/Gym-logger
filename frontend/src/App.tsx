@@ -48,6 +48,7 @@ import type {
   CardioSession,
   CardioSessionInput,
   DashboardData,
+  WeeklyMuscleContribution,
   Exercise,
   ExerciseCreateInput,
   ExerciseHistoryBaseline,
@@ -641,6 +642,8 @@ function AppContent() {
     opened: number;
   } | null>(null);
   const [historyExerciseId, setHistoryExerciseId] = useState<string | null>(null);
+  const [historyMovementId, setHistoryMovementId] = useState<string | null>(null);
+  const [historyOpenCount, setHistoryOpenCount] = useState(0);
   const sectionFromTab = historySectionForTab(tab);
   const [lastHistorySection, setLastHistorySection] = useState<HistorySection>(
     sectionFromTab ?? 'history',
@@ -1221,7 +1224,60 @@ function AppContent() {
   function openHistorySection(section: HistorySection, exerciseId: string | null = null) {
     setHistoryOpenId(null);
     setHistoryExerciseId(exerciseId);
+    setHistoryMovementId(null);
     setTab(section);
+  }
+
+  function openSavedWorkout(
+    workoutId: string,
+    exerciseId: string | null,
+    movementId: string | null = null,
+  ) {
+    setHistoryOpenId(workoutId);
+    setHistoryExerciseId(exerciseId);
+    setHistoryMovementId(movementId);
+    setHistoryOpenCount((count) => count + 1);
+    setTab('history');
+  }
+
+  async function openMuscleWorkout(contribution: WeeklyMuscleContribution) {
+    if (
+      !workouts.some(
+        (workout) =>
+          workout.id === contribution.workout_id &&
+          workout.movements.some(
+            (movement) =>
+              movement.id === contribution.movement_id &&
+              movement.exercise.id === contribution.exercise_id,
+          ),
+      )
+    ) {
+      // The dashboard can refresh before the local workout snapshot catches up.
+      const snapshot = await api.listOlderHistory(
+        contribution.workout_date,
+        contribution.workout_date,
+      );
+      const workout = snapshot.workouts.find((item) => item.id === contribution.workout_id);
+      if (!workout)
+        throw new Error('That workout is no longer available. Refresh Home and try again.');
+      if (
+        !workout.movements.some(
+          (movement) =>
+            movement.id === contribution.movement_id &&
+            movement.exercise.id === contribution.exercise_id,
+        )
+      ) {
+        throw new Error('That exercise has changed. Refresh Home and try again.');
+      }
+      setWorkouts((current) =>
+        [workout, ...current.filter((item) => item.id !== workout.id)].sort(
+          (left, right) =>
+            right.workout_date.localeCompare(left.workout_date) ||
+            right.created_at.localeCompare(left.created_at),
+        ),
+      );
+    }
+    openSavedWorkout(contribution.workout_id, contribution.exercise_id, contribution.movement_id);
   }
 
   return (
@@ -1365,6 +1421,7 @@ function AppContent() {
                   onStartEmpty={() => startWorkout()}
                   onResumeWorkout={() => setTab('log')}
                   onOpenHistory={() => openHistorySection('history')}
+                  onOpenWorkout={openMuscleWorkout}
                   onOpenProgress={(exerciseId) =>
                     openHistorySection('progress', exerciseId ?? null)
                   }
@@ -1506,7 +1563,7 @@ function AppContent() {
           {!loading && historyGroupVisited && (
             <CachedTabPanel active={sectionFromTab !== null}>
               <HistoryScreen
-                key={`${historyOpenId ?? 'history'}-${historyExerciseId ?? 'all'}`}
+                key={`${historyOpenId ?? 'history'}-${historyExerciseId ?? 'all'}-${historyMovementId ?? 'any'}-${historyOpenCount}`}
                 workouts={workouts}
                 categoryColors={workoutTypeColors}
                 measurements={measurements}
@@ -1521,12 +1578,9 @@ function AppContent() {
                 onSectionChange={(section) => setTab(section)}
                 onOpenSettings={() => setTab('settings')}
                 onOpenExercise={(exerciseId) => openHistorySection('progress', exerciseId)}
-                onOpenWorkout={(workoutId, exerciseId) => {
-                  setHistoryOpenId(workoutId);
-                  setHistoryExerciseId(exerciseId);
-                  setTab('history');
-                }}
+                onOpenWorkout={openSavedWorkout}
                 initialExerciseId={historyExerciseId}
+                initialMovementId={historyMovementId}
                 weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
                 heatmap={dashboard?.heatmap ?? []}
                 historySummary={historySummary}
@@ -8523,6 +8577,7 @@ function HistoryScreen({
   onOpenExercise,
   onOpenWorkout,
   initialExerciseId,
+  initialMovementId,
   weekStartDay,
   heatmap,
   historySummary,
@@ -8549,6 +8604,7 @@ function HistoryScreen({
   onOpenExercise: (exerciseId: string) => void;
   onOpenWorkout: (workoutId: string, exerciseId: string | null) => void;
   initialExerciseId: string | null;
+  initialMovementId: string | null;
   weekStartDay: number;
   heatmap: DashboardData['heatmap'];
   historySummary: WorkoutHistorySummary | null;
@@ -8569,6 +8625,9 @@ function HistoryScreen({
   });
   const [targetExerciseId, setTargetExerciseId] = useState<string | null>(
     initialOpenId ? initialExerciseId : null,
+  );
+  const [targetMovementId, setTargetMovementId] = useState<string | null>(
+    initialOpenId ? initialMovementId : null,
   );
   const [expandedPhoto, setExpandedPhoto] = useState<MachinePhoto | null>(null);
   const [machineFilter, setMachineFilter] = useState<MachineFilter | null>(null);
@@ -8643,6 +8702,7 @@ function HistoryScreen({
   }, [machineFilterId]);
 
   function filterByMachine(filter: MachineFilter) {
+    setTargetMovementId(null);
     setMachinePickerOpen(false);
     setExpandedPhoto(null);
     setMachineHistoryError(null);
@@ -8653,6 +8713,7 @@ function HistoryScreen({
   }
 
   function clearMachineFilter() {
+    setTargetMovementId(null);
     setMachineFilter(null);
     setMachineHistory(null);
     setMachineHistoryError(null);
@@ -8669,6 +8730,7 @@ function HistoryScreen({
         open={openId === workout.id}
         summaryRef={openId === workout.id ? openWorkoutSummaryRef : null}
         targetExerciseId={targetExerciseId}
+        targetMovementId={targetMovementId}
         targetExerciseRef={targetExerciseRef}
         categoryColor={
           workout.workout_type_id
@@ -8684,6 +8746,7 @@ function HistoryScreen({
         machineFilterId={machineFilterId}
         showYear={machineFilter !== null}
         onToggle={() => {
+          setTargetMovementId(null);
           setTargetExerciseId(machineFilter ? machineFilter.photo.exercise_id : null);
           setOpenId((current) => (current === workout.id ? null : workout.id));
         }}
@@ -8969,6 +9032,7 @@ function HistoryWorkoutCard({
   open,
   summaryRef,
   targetExerciseId,
+  targetMovementId = null,
   targetExerciseRef,
   categoryColor,
   records,
@@ -8990,6 +9054,7 @@ function HistoryWorkoutCard({
   open: boolean;
   summaryRef: RefObject<HTMLButtonElement | null> | null;
   targetExerciseId: string | null;
+  targetMovementId?: string | null;
   targetExerciseRef: RefObject<HTMLDivElement | null>;
   categoryColor: string;
   records: number;
@@ -9089,7 +9154,9 @@ function HistoryWorkoutCard({
             </span>
           </div>
           {workout.movements.map((movement) => {
-            const targeted = targetExerciseId === movement.exercise.id;
+            const targeted = targetMovementId
+              ? targetMovementId === movement.id
+              : targetExerciseId === movement.exercise.id;
             const best = topWorkingSet(movement.sets);
             return (
               <div

@@ -13,7 +13,13 @@ import {
 } from './workoutDraft';
 import { isStrengthPrEligible } from './workoutPr';
 import { createWorkoutSet } from './workoutSets';
-import type { DashboardData, Exercise, TrackedWorkout, WorkoutInput } from './types';
+import type {
+  DashboardData,
+  Exercise,
+  TrackedWorkout,
+  WorkoutInput,
+  WeeklyMuscleContribution,
+} from './types';
 
 vi.mock('./api', async (importOriginal) => {
   const original = await importOriginal<typeof import('./api')>();
@@ -95,6 +101,159 @@ function storedDraft(overrides: Partial<ActiveWorkoutDraft> = {}): ActiveWorkout
 async function mount() {
   await act(async () => root.render(<App />));
 }
+
+describe('muscle contribution workout links', () => {
+  const contribution: WeeklyMuscleContribution = {
+    workout_id: 'saved-upper',
+    workout_name: 'Saved upper body',
+    workout_date: '2026-10-19',
+    movement_id: 'second-row',
+    exercise_id: 'row',
+    exercise_name: 'Cable row',
+    working_sets: 1,
+    credit_per_set: 0.5,
+    set_credits: 0.5,
+  };
+  function savedWorkout(): TrackedWorkout {
+    return {
+      id: contribution.workout_id,
+      name: contribution.workout_name,
+      workout_date: contribution.workout_date,
+      category: 'upper',
+      notes: null,
+      duration_minutes: 30,
+      start_time: null,
+      end_time: null,
+      is_sample: true,
+      created_at: '2026-10-19T10:00:00Z',
+      updated_at: '2026-10-19T10:00:00Z',
+      movements: ['first-bench', 'second-row'].map((id, index) => ({
+        id,
+        order_index: index,
+        notes: index ? 'Second appearance' : 'First appearance',
+        exercise: index ? row : bench,
+        machine_photos: [],
+        superset_group_id: null,
+        superset_name: null,
+        sets: [
+          {
+            id: `${id}-set`,
+            order_index: 0,
+            reps: 8,
+            weight_kg: index ? 90 : 80,
+            rpe: 8,
+            rest_seconds: 180,
+            duration_seconds: null,
+            distance_km: null,
+            incline_percent: null,
+            speed_kph: null,
+            bodyweight_kg: null,
+            percentile: null,
+            warmup: false,
+            set_type: 'normal',
+            failed: false,
+            target_reps: null,
+            notes: null,
+            completed: true,
+          },
+        ],
+      })),
+    };
+  }
+  async function openSheet() {
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Exercises contributing to Biceps"]')!
+        .click(),
+    );
+  }
+  async function openExercise() {
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('.muscle-contribution-list button')!.click(),
+    );
+    await act(async () => new Promise((resolve) => window.setTimeout(resolve, 30)));
+  }
+  beforeEach(() => {
+    window.history.replaceState(null, '', '#dashboard');
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+    vi.mocked(api.dashboard).mockResolvedValue({
+      recommendation: null,
+      weekly_sets: {
+        week_start: '2026-10-19',
+        week_end: '2026-10-25',
+        muscle_groups: [
+          {
+            muscle_group: 'Biceps',
+            raw_sets: 0.5,
+            effective_sets: 0.5,
+            average_rpe: 8,
+            contributions: [contribution],
+          },
+        ],
+      },
+    } as unknown as DashboardData);
+  });
+  it('opens the source workout read-only at the chosen exercise, including on a second opening', async () => {
+    const anotherWorkout = {
+      ...savedWorkout(),
+      id: 'newer-upper',
+      name: 'Another saved session',
+      created_at: '2026-10-19T12:00:00Z',
+    };
+    vi.mocked(api.listWorkouts).mockResolvedValue([anotherWorkout, savedWorkout()]);
+    await mount();
+    await openSheet();
+    await openExercise();
+    expect(window.location.hash).toBe('#history');
+    expect(document.querySelector('dialog')).toBeNull();
+    expect(container.querySelector('.history-card.open')?.textContent).toContain(
+      'Saved upper body',
+    );
+    const firstTarget = container.querySelector('.targeted-exercise')!;
+    expect(container.querySelectorAll('.targeted-exercise')).toHaveLength(1);
+    expect(firstTarget.textContent).toContain('Second appearance');
+    expect(document.activeElement).toBe(firstTarget);
+    expect(container.querySelector('.logger-screen')).toBeNull();
+    const home = [...container.querySelectorAll<HTMLButtonElement>('nav button')].find(
+      (button) => button.textContent?.trim() === 'Home',
+    )!;
+    await act(async () => home.click());
+    await openSheet();
+    await openExercise();
+    const secondTarget = container.querySelector('.targeted-exercise')!;
+    expect(secondTarget).not.toBe(firstTarget);
+    expect(document.activeElement).toBe(secondTarget);
+    expect(api.createWorkout).not.toHaveBeenCalled();
+    expect(api.updateWorkout).not.toHaveBeenCalled();
+  });
+  it('loads the source day if the dashboard is newer than the local workout snapshot', async () => {
+    const load = vi
+      .spyOn(api, 'listOlderHistory')
+      .mockResolvedValue({ workouts: [savedWorkout()], heatmap: [] });
+    await mount();
+    await openSheet();
+    await openExercise();
+    expect(load).toHaveBeenCalledWith('2026-10-19', '2026-10-19');
+    expect(container.querySelector('.targeted-exercise')?.textContent).toContain(
+      'Second appearance',
+    );
+    expect(window.location.hash).toBe('#history');
+    expect(api.createWorkout).not.toHaveBeenCalled();
+    expect(api.updateWorkout).not.toHaveBeenCalled();
+  });
+  it('keeps the sheet open with a useful message when a linked workout was removed', async () => {
+    vi.spyOn(api, 'listOlderHistory').mockResolvedValue({ workouts: [], heatmap: [] });
+    await mount();
+    await openSheet();
+    await openExercise();
+    expect(window.location.hash).toBe('#dashboard');
+    expect(document.querySelector('dialog [role="alert"]')?.textContent).toContain(
+      'no longer available',
+    );
+    expect(api.createWorkout).not.toHaveBeenCalled();
+    expect(api.updateWorkout).not.toHaveBeenCalled();
+  });
+});
 
 function retry() {
   const button = [...container.querySelectorAll('button')].find(
