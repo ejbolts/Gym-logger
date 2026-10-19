@@ -9,5 +9,9 @@
     "Rest choices include 0:30 and 0:00 (no rest). Choosing 0:00 removes the rest and offers Undo.",
     "After Undo expires, edit the set, choose Rest after set and save with the tick to add its rest back. Removed rests stay removed when the workout is saved or reopened."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/ad0ca454cd41efa22d3f881dbbad523ebc8366eb/docs/screenshots/releases/0.8.6-rest-settings.png",
+    "alt": "Settings with the Show rest times switch directly below Rest timer, so between-set rows and automatic countdowns can be controlled separately."
+  }
 }
