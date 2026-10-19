@@ -8,5 +8,9 @@
     "Daily compares with your previous check-in; Avg Week and Avg Monthly compare with the previous week or month that has check-ins.",
     "Amounts use your weight unit and match the rounded weights shown, so they add up when you compare two rows."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/c3be5824a16cd11b9bb57c9def08553a69232f88/docs/screenshots/releases/0.8.6-weight-change-monthly.png",
+    "alt": "Avg Monthly bodyweight history with a green down arrow and the amount lost beside each month, such as 2.2 and 0.5."
+  }
 }
