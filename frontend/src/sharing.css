@@ -774,6 +774,55 @@
   margin: 0.5rem 0 0;
 }
 
+.history-card:has(.history-card-social) {
+  overflow: visible;
+}
+.shared-workouts .history-week-list:has(.friend-react-picker) {
+  overflow: visible;
+}
+.history-card-social {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.875rem 0.625rem;
+}
+.shared-workout-reaction-summary {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+.shared-workout-reaction-summary > span {
+  font-size: 0.9375rem;
+}
+.friend-react-button.is-labelled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  width: auto;
+  min-width: 5rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  padding: 0 0.625rem;
+  font-size: 0.8125rem;
+}
+.friend-react-button.is-labelled .pulse-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+.history-card-social .friend-react-picker {
+  right: 0.625rem;
+  bottom: calc(100% + 0.25rem);
+  width: max-content;
+  max-width: calc(100% - 1.25rem);
+}
+.friend-react-error {
+  width: 100%;
+  margin: 0.25rem;
+  font-size: 0.75rem;
+}
+
 @container (max-width: 280px) {
   .friend-activity-open .shared-profile-avatar.small {
     display: none;

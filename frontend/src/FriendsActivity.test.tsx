@@ -3,7 +3,6 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { api, ApiError } from './api';
-import { FollowNotifications } from './FollowNotifications';
 import { FriendsActivityCard } from './FriendsActivity';
 import { friendSession, nextReaction, reactionSummary, relativeDay } from './friendFeedData';
 import type { FriendFeedItem, TrackedWorkout } from './types';
@@ -203,28 +202,4 @@ it('explains the card when your profile is private, nobody is followed or friend
     await render();
     expect(host.textContent).toContain(message);
   }
-});
-
-it('lists reactions to your workouts in notifications and dismisses them', async () => {
-  const notice = {
-    id: 'friend',
-    display_name: 'Sample Friend',
-    profile_photo_url: null,
-    since: '2026-10-19T08:00:00Z',
-    workout_id: 'w9',
-    workout_name: 'Leg day',
-    reaction: 'love' as const,
-  };
-  const load = vi
-    .spyOn(api.sharing, 'notifications')
-    .mockResolvedValue({ requests: [], followers: [], reactions: [notice] });
-  const dismiss = vi.spyOn(api.sharing, 'dismissReaction').mockResolvedValue(undefined);
-  await act(async () => root.render(<FollowNotifications active onOpenFriends={vi.fn()} />));
-  await act(async () => button('Notifications, 1 unread').click());
-  expect(document.querySelector('dialog')?.textContent).toContain('Reacted ❤️ to Leg day');
-
-  load.mockResolvedValue({ requests: [], followers: [], reactions: [] });
-  await act(async () => button("Dismiss Sample Friend's reaction to Leg day").click());
-  expect(dismiss).toHaveBeenCalledWith('w9', 'friend', notice.since);
-  expect(button('Notifications').getAttribute('aria-label')).toBe('Notifications');
 });

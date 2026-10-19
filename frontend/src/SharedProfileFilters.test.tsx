@@ -23,6 +23,13 @@ const profile: SharedProfile = {
   body_weight: null,
   goals: null,
   cardio_sessions: null,
+  training_time: {
+    workout_minutes: 213,
+    workout_count: 4,
+    cardio_minutes: 80,
+    cardio_count: 3,
+    total_minutes: 273,
+  },
 };
 const workout: TrackedWorkout = {
   id: 'first',
@@ -60,10 +67,13 @@ beforeEach(async () => {
       <SharedProfileScreen
         profileId="friend"
         onChooseSharing={() => {}}
-        renderWorkouts={({ workouts }) => (
+        renderWorkouts={({ workouts, renderWorkoutAction }) => (
           <ul>
             {workouts.map((item) => (
-              <li key={item.id}>{item.name}</li>
+              <li key={item.id}>
+                {item.name}
+                {renderWorkoutAction?.(item)}
+              </li>
             ))}
           </ul>
         )}
@@ -148,4 +158,38 @@ describe('shared history filtering', () => {
     expect(container.textContent).toContain('No workouts match these filters.');
     expect(container.textContent).not.toContain('Late old result');
   });
+});
+
+it('shows lifetime time separately from history filters and reacts on a shared workout', async () => {
+  expect(container.querySelector('.profile-training-time')?.textContent).toContain('3h 33min');
+  expect(container.querySelector('.profile-training-time')?.textContent).toContain('1h 20min');
+  expect(container.querySelector('.profile-training-time')?.textContent).toContain('4h 33min');
+  const react = vi
+    .spyOn(api.sharing, 'react')
+    .mockResolvedValue({ counts: [{ reaction: 'love', count: 1 }], yours: 'love' });
+  const remove = vi
+    .spyOn(api.sharing, 'removeReaction')
+    .mockResolvedValue({ counts: [], yours: null });
+  await act(async () =>
+    container.querySelector<HTMLButtonElement>('.friend-react-button')!.click(),
+  );
+  await act(async () =>
+    [...container.querySelectorAll<HTMLButtonElement>('.friend-react-picker button')]
+      .find((b) => b.getAttribute('aria-label') === 'Love')!
+      .click(),
+  );
+  expect(react).toHaveBeenCalledWith('first', 'love');
+  expect(container.querySelector('.friend-react-button')?.textContent).toContain('Love');
+  await act(async () =>
+    container.querySelector<HTMLButtonElement>('.friend-react-button')!.click(),
+  );
+  await act(async () =>
+    [...container.querySelectorAll<HTMLButtonElement>('.friend-react-picker button')]
+      .find((b) => b.getAttribute('aria-label') === 'Love')!
+      .click(),
+  );
+  expect(remove).toHaveBeenCalledWith('first');
+  await chooseType('push');
+  expect(container.querySelector('.profile-training-time')?.textContent).toContain('4h 33min');
+  expect(container.querySelector('.friend-react-button')).toBeNull();
 });

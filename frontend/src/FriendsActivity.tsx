@@ -1,17 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, ApiError } from './api';
-import { authErrorMessage } from './authForm';
-import {
-  friendSession,
-  nextReaction,
-  reactionEmoji,
-  reactionSummary,
-  REACTIONS,
-  relativeDay,
-} from './friendFeedData';
-import { Icon } from './Icon';
+import { friendSession, reactionSummary, relativeDay } from './friendFeedData';
+import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { ProfileAvatar } from './ProfileAvatar';
-import type { FriendFeedItem, WorkoutReactionKind, WorkoutReactions } from './types';
+import type { FriendFeedItem, WorkoutReactions } from './types';
 import { localDate } from './utils';
 
 type ActivityState =
@@ -34,10 +26,6 @@ export function FriendsActivityCard({
 }) {
   const [state, setState] = useState<ActivityState>({ kind: 'loading' });
   const [picking, setPicking] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const picker = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     // Refreshed whenever Home is shown, so new sessions, follows and reactions appear.
@@ -61,29 +49,6 @@ export function FriendsActivityCard({
     };
   }, [active]);
 
-  useEffect(() => {
-    if (!picking) return;
-    const selected = picker.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');
-    (selected ?? picker.current?.querySelector<HTMLButtonElement>('button'))?.focus();
-    function close(returnFocus: boolean) {
-      setPicking(null);
-      if (returnFocus) trigger.current?.focus();
-    }
-    function onPointerDown(event: PointerEvent) {
-      const target = event.target as Node;
-      if (!picker.current?.contains(target) && !trigger.current?.contains(target)) close(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') close(true);
-    }
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [picking]);
-
   function updateReactions(workoutId: string, reactions: WorkoutReactions) {
     setState((current) =>
       current.kind === 'ready'
@@ -95,27 +60,6 @@ export function FriendsActivityCard({
           }
         : current,
     );
-  }
-
-  async function react(item: FriendFeedItem, chosen: WorkoutReactionKind) {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const next = nextReaction(item.reactions.yours, chosen);
-      updateReactions(
-        item.workout.id,
-        next
-          ? await api.sharing.react(item.workout.id, next)
-          : await api.sharing.removeReaction(item.workout.id),
-      );
-      setPicking(null);
-      trigger.current?.focus();
-    } catch (reason) {
-      setError(authErrorMessage(reason));
-    } finally {
-      setBusy(false);
-    }
   }
 
   return (
@@ -146,7 +90,6 @@ export function FriendsActivityCard({
             const session = friendSession(item.workout);
             const summary = reactionSummary(item.reactions.counts);
             const open = picking === item.workout.id;
-            const yours = item.reactions.yours;
             const subject = `${item.friend.display_name}’s ${item.workout.name}`;
             return (
               <li key={item.workout.id} className={open ? 'is-picking' : undefined}>
@@ -185,60 +128,22 @@ export function FriendsActivityCard({
                     </span>
                   </span>
                 </button>
-                <button
-                  type="button"
-                  className={`friend-react-button${yours ? ' is-yours' : ''}`}
-                  aria-label={
-                    yours
-                      ? `Your reaction to ${subject}: ${REACTIONS.find((entry) => entry.kind === yours)?.label}. Change reaction`
-                      : `React to ${subject}`
+                <WorkoutReactionControl
+                  workoutId={item.workout.id}
+                  subject={subject}
+                  reactions={item.reactions}
+                  open={open}
+                  onOpenChange={(value) =>
+                    setPicking((current) =>
+                      value ? item.workout.id : current === item.workout.id ? null : current,
+                    )
                   }
-                  aria-expanded={open}
-                  aria-haspopup="true"
-                  onClick={(event) => {
-                    trigger.current = event.currentTarget;
-                    setError(null);
-                    setPicking(open ? null : item.workout.id);
-                  }}
-                >
-                  {yours ? (
-                    <span aria-hidden="true">{reactionEmoji(yours)}</span>
-                  ) : (
-                    <Icon name="react" />
-                  )}
-                </button>
-                {open && (
-                  <div
-                    ref={picker}
-                    className="friend-react-picker"
-                    role="group"
-                    aria-label={`Choose a reaction to ${subject}`}
-                    aria-busy={busy}
-                  >
-                    {REACTIONS.map(({ kind, emoji, label }) => (
-                      <button
-                        key={kind}
-                        type="button"
-                        aria-label={label}
-                        aria-pressed={yours === kind}
-                        title={label}
-                        disabled={busy}
-                        onClick={() => void react(item, kind)}
-                      >
-                        <span aria-hidden="true">{emoji}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  onChange={(value) => updateReactions(item.workout.id, value)}
+                />
               </li>
             );
           })}
         </ul>
-      )}
-      {error && (
-        <p className="inline-error" role="alert">
-          {error}
-        </p>
       )}
     </section>
   );

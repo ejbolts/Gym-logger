@@ -1,3 +1,4 @@
+import type { NotificationReadReference } from './types';
 import type {
   SharedWorkoutFilters,
   SharedWorkoutFilterOptions,
@@ -248,6 +249,12 @@ export const api = {
       request<void>(`/api/sharing/follows/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
     connections: () => request<SharingConnections>('/api/sharing/followers'),
     notifications: () => request<SharingNotifications>('/api/sharing/notifications'),
+    markNotificationsRead: (items: NotificationReadReference[]) =>
+      request<void>('/api/sharing/notifications/read', {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify({ items }),
+      }),
     feed: () => request<FriendFeed>('/api/sharing/feed'),
     react: (workoutId: string, reaction: WorkoutReactionKind) =>
       request<WorkoutReactions>(`/api/sharing/workouts/${encodeURIComponent(workoutId)}/reaction`, {

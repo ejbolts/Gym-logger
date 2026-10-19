@@ -119,6 +119,7 @@ def test_reactions_are_one_per_member_and_notify_the_owner(client, other_client,
     assert [
         item["display_name"]
         for item in client.get("/api/sharing/notifications").json()["reactions"]
+        if not item["is_read"]
     ] == ["Third"]
     other_client.put(url, json={"reaction": "clap"})
     client.post(dismiss, json={"since": stale["since"]})
@@ -160,3 +161,81 @@ def test_reactions_respect_profile_access(client, other_client):
     # Deleting the workout removes its reactions and notifications.
     assert client.delete(f"/api/workouts/{workout['id']}").status_code == 204
     assert client.get("/api/sharing/notifications").json()["reactions"] == []
+
+
+def test_shared_profile_totals_follow_access_and_ignore_history_filters(client, other_client):
+    share(client, "followers")
+    target = client.user["id"]
+    workout = log_workout(client, "Training", 0)
+    profile_url = f"/api/sharing/profiles/{target}"
+    assert other_client.get(profile_url).json()["training_time"] is None
+    other_client.post(f"/api/sharing/follows/{target}")
+    assert other_client.get(profile_url).json()["training_time"] is None
+    client.post(f"/api/sharing/followers/{other_client.user['id']}")
+    own = client.get("/api/training-time").json()
+    assert other_client.get(profile_url).json()["training_time"] == own
+    assert own["workout_count"] == 1
+    reaction_url = f"/api/sharing/workouts/{workout['id']}/reaction"
+    other_client.put(reaction_url, json={"reaction": "love"})
+    page = other_client.get(profile_url + "/workouts").json()
+    assert page["reactions"] == {
+        workout["id"]: {"counts": [{"reaction": "love", "count": 1}], "yours": "love"}
+    }
+    assert (
+        other_client.get(profile_url + "/workouts", params={"category": "pull"}).json()["reactions"]
+        == {}
+    )
+    assert other_client.get(profile_url).json()["training_time"] == own
+    share(client, "private")
+    assert other_client.get(profile_url).status_code == 404
+
+
+def test_opening_notifications_reads_exact_events_and_keeps_requests_actionable(
+    client, other_client, third_client
+):
+    share(client, "followers")
+    target = client.user["id"]
+    other_client.post(f"/api/sharing/follows/{target}")
+    notice = client.get("/api/sharing/notifications").json()["requests"][0]
+    reference = {"kind": "request", "id": notice["id"], "since": notice["since"]}
+    assert (
+        client.post("/api/sharing/notifications/read", json={"items": [reference]}).status_code
+        == 204
+    )
+    requests = client.get("/api/sharing/notifications").json()["requests"]
+    assert len(requests) == 1 and requests[0]["is_read"] is True
+    assert other_client.get(f"/api/sharing/profiles/{target}").json()["can_view"] is False
+    client.post(f"/api/sharing/followers/{other_client.user['id']}")
+    workout = log_workout(client, "Leg day", 0)
+    reaction_url = f"/api/sharing/workouts/{workout['id']}/reaction"
+    other_client.put(reaction_url, json={"reaction": "love"})
+    notice = client.get("/api/sharing/notifications").json()["reactions"][0]
+    reference = {
+        "kind": "reaction",
+        "id": notice["id"],
+        "since": notice["since"],
+        "workout_id": workout["id"],
+    }
+    # Another account cannot mark the workout owner's event read.
+    third_client.post("/api/sharing/notifications/read", json={"items": [reference]})
+    assert client.get("/api/sharing/notifications").json()["reactions"][0]["is_read"] is False
+    client.post("/api/sharing/notifications/read", json={"items": [reference]})
+    assert client.get("/api/sharing/notifications").json()["reactions"][0]["is_read"] is True
+    other_client.put(reaction_url, json={"reaction": "fire"})
+    client.post("/api/sharing/notifications/read", json={"items": [reference]})
+    assert client.get("/api/sharing/notifications").json()["reactions"][0]["is_read"] is False
+    # New followers are read in the same bulk request as workout reactions.
+    share(client, "public")
+    third_client.post(f"/api/sharing/follows/{target}")
+    follower = next(
+        item
+        for item in client.get("/api/sharing/notifications").json()["followers"]
+        if item["id"] == third_client.user["id"]
+    )
+    client.post(
+        "/api/sharing/notifications/read",
+        json={"items": [{"kind": "follower", "id": follower["id"], "since": follower["since"]}]},
+    )
+    assert all(
+        item["is_read"] for item in client.get("/api/sharing/notifications").json()["followers"]
+    )

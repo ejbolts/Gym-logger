@@ -721,6 +721,8 @@ export interface SharingConnection {
   display_name: string;
   profile_photo_url: string | null;
   since: string;
+  /** Present on notification snapshots; read notices remain available in the bell. */
+  is_read?: boolean;
 }
 
 export interface SharingConnections {
@@ -759,6 +761,13 @@ export interface SharingNotifications extends SharingConnections {
   reactions?: ReactionNotice[];
 }
 
+export interface NotificationReadReference {
+  kind: 'request' | 'follower' | 'reaction';
+  id: string;
+  since: string;
+  workout_id?: string;
+}
+
 export interface SharedBodyMeasurement {
   measurement_date: string;
   weight_kg: number;
@@ -793,12 +802,14 @@ export interface SharedProfile extends SharedProfileSummary {
   body_weight: SharedBodyMeasurement[] | null;
   goals: SharedGoals | null;
   cardio_sessions: SharedCardioSession[] | null;
+  training_time?: TrainingTime | null;
 }
 
 export interface SharedWorkoutPage {
   total: number;
   workouts: TrackedWorkout[];
   personal_records: PersonalRecord[];
+  reactions?: Record<string, WorkoutReactions>;
 }
 
 export interface SharedWorkoutFilters {
