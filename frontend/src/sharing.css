@@ -864,3 +864,18 @@
     white-space: normal;
   }
 }
+
+.friends-activity-more {
+  display: block;
+  margin: 0.35rem auto 0;
+  border: 0;
+  padding: 0.35rem 0.75rem;
+  background: none;
+  color: var(--p-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.friends-activity-more:hover {
+  color: var(--p-ink-2);
+}

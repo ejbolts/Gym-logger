@@ -19,7 +19,7 @@
 *One latest workout per friend, refreshed while Home stays visible and when you return.*
 
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
-- Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session.
+- Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session. When you follow more friends than the card shows, **+N more** below the list opens **Friends**.
 - Profile > Friends > Followers now has Block, with an outlined ? icon beside the follower count that explains blocking. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.
 - Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows.
 

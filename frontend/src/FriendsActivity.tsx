@@ -164,6 +164,11 @@ export function FriendsActivityCard({
           })}
         </ul>
       )}
+      {state.kind === 'ready' && state.items.length > 0 && state.following > state.items.length && (
+        <button type="button" className="friends-activity-more" onClick={onOpenFriends}>
+          +{state.following - state.items.length} more
+        </button>
+      )}
     </section>
   );
 }
