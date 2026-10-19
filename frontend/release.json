@@ -13,7 +13,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/c3be5824a16cd11b9bb57c9def08553a69232f88/docs/screenshots/releases/0.8.6-weight-change-monthly.png",
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/36c1dbcda64a18c3d4d346caa06d2ba3aceb7526/docs/screenshots/releases/0.8.6-weight-change-monthly.png",
     "alt": "Avg Monthly bodyweight history with the amount changed beside each arrow and dotted lines marking Gain to 86 kg, Maintain 88 kg and Lose to 85 kg goals."
   }
 }
