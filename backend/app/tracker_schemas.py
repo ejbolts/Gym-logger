@@ -619,6 +619,16 @@ class DashboardRead(BaseModel):
     history: WorkoutHistorySummaryRead | None = None
 
 
+class TrainingTimeRead(BaseModel):
+    """Lifetime logged minutes. ``total_minutes`` counts cardio done inside a workout once."""
+
+    workout_minutes: int
+    workout_count: int
+    cardio_minutes: int
+    cardio_count: int
+    total_minutes: int
+
+
 class ProgressPoint(BaseModel):
     workout_date: date
     workout_id: str

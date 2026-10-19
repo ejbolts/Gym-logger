@@ -136,6 +136,13 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
     selector: '.profile-identity .profile-account-id code',
   },
   {
+    id: 'training-time',
+    title: 'Time trained',
+    page: 'profile',
+    keywords: 'total hours minutes duration workouts cardio combined exercise stats',
+    selector: '#profile-training-time-title',
+  },
+  {
     id: 'sharing',
     title: 'Profile sharing',
     page: 'profile',

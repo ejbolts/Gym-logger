@@ -328,6 +328,15 @@ export interface WeeklySets {
   muscle_groups: WeeklyMuscleSets[];
 }
 
+/** Lifetime minutes on Profile; `total_minutes` counts cardio inside a workout once. */
+export interface TrainingTime {
+  workout_minutes: number;
+  workout_count: number;
+  cardio_minutes: number;
+  cardio_count: number;
+  total_minutes: number;
+}
+
 export interface DashboardData {
   workouts_this_week: number;
   sets_this_week: number;

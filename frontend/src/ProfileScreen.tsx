@@ -3,6 +3,7 @@ import { api, ApiError } from './api';
 import { authErrorMessage, MIN_PASSWORD_LENGTH, validateNewPassword } from './authForm';
 import { CollapsibleSection } from './CollapsibleSection';
 import { ProfileIdentity } from './ProfileIdentity';
+import { ProfileTrainingTime } from './ProfileTrainingTime';
 import { SettingsSearch } from './SettingsSearch';
 import { useSettingsPageJump } from './settingsNavigation';
 import { ProfileSharingPanel } from './ProfileSharing';
@@ -330,6 +331,7 @@ export function ProfileScreen({
     <section className="settings-screen profile-screen content-page" data-settings-page="profile">
       <SettingsSearch />
       <ProfileIdentity user={user} onSaved={updateUser} />
+      <ProfileTrainingTime active={active} />
       {onOpenAdmin && openFeedback > 0 && (
         <FeedbackReviewPanel openFeedback={openFeedback} onOpenAdmin={onOpenAdmin} />
       )}
