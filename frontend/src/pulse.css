@@ -4368,6 +4368,154 @@ button.pulse-card:active,
   animation: tab-pop 380ms var(--ease-out);
 }
 
+/* ───────── Start menu: Cardio, Up next and Empty fan out above Start ───────── */
+
+.start-menu-scrim {
+  position: fixed;
+  z-index: 69;
+  inset: 0;
+  background: rgb(5 6 8 / 50%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  transition: opacity 240ms ease;
+}
+
+.start-menu-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* A zero-size anchor at the centre of the Start bubble; each choice springs out from it. */
+.start-menu {
+  --start-menu-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: fixed;
+  z-index: 71;
+  bottom: calc(var(--p-tab-bar-height) - 1.625rem);
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.start-menu-option {
+  position: absolute;
+  bottom: -1.375rem;
+  left: -3.75rem;
+  width: 7.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3125rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--p-ink);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.3);
+  touch-action: manipulation;
+  transition:
+    transform 240ms var(--ease-out),
+    opacity 140ms ease;
+}
+
+.start-menu.open .start-menu-option {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(var(--start-menu-x), var(--start-menu-y));
+  transition:
+    transform 420ms var(--start-menu-spring),
+    opacity 180ms ease;
+}
+
+.start-menu-option:nth-child(1) {
+  --start-menu-x: -4.625rem;
+  --start-menu-y: -3.5625rem;
+}
+
+.start-menu-option:nth-child(2) {
+  --start-menu-x: 0rem;
+  --start-menu-y: -5.3125rem;
+}
+
+.start-menu-option:nth-child(3) {
+  --start-menu-x: 4.625rem;
+  --start-menu-y: -3.5625rem;
+}
+
+.start-menu.open .start-menu-option:nth-child(2) {
+  transition-delay: 35ms;
+}
+
+.start-menu.open .start-menu-option:nth-child(3) {
+  transition-delay: 70ms;
+}
+
+.start-menu-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--p-accent);
+  color: #fff;
+  box-shadow: 0 8px 22px rgb(57 135 229 / 40%);
+  transition: transform 160ms var(--ease-out);
+}
+
+.start-menu-icon .pulse-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.start-menu-option:active .start-menu-icon {
+  transform: scale(0.9);
+}
+
+.start-menu-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.start-menu-detail {
+  max-width: 100%;
+  overflow: hidden;
+  margin-top: -0.1875rem;
+  color: var(--p-ink-2);
+  font-size: 0.625rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.start-menu-option:focus-visible {
+  outline: none;
+}
+
+.start-menu-option:focus-visible .start-menu-icon {
+  outline: 2px solid var(--p-accent-text);
+  outline-offset: 3px;
+}
+
+/* While the menu is open, Start's + turns into a close × on a quiet bubble. */
+.app-tab-start .pulse-icon {
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.app-tab-start.menu-open .app-tab-start-bubble {
+  background: var(--p-surface-3);
+  box-shadow: 0 0 0 1px var(--p-line-strong);
+}
+
+.app-tab-start.menu-open .pulse-icon,
+.app-tab-start.menu-open:active .pulse-icon {
+  transform: rotate(135deg);
+}
+
 /* Logging feedback */
 .logger-screen .set-details {
   transition: background-color 240ms ease;

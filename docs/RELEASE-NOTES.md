@@ -1,5 +1,21 @@
 # Gym Logger release notes
 
+## 0.8.6
+
+20 October 2026
+
+### Choose how to start from the Start button
+
+![Start menu open above the tab bar with blue Cardio, Up next and Empty buttons; Up next shows Lower body day and Start shows a close cross](screenshots/releases/0.8.6-start-menu.png)
+
+*Tap Start to choose Cardio, your Up next session or an empty workout.*
+
+- Tapping Start opens three blue buttons above it: Cardio, Up next and Empty. The + turns into a × while they're open; tap ×, the dimmed screen or press Escape to close without starting anything.
+- Up next shows the name of your recommended session, such as Lower body day, and starts it pre-filled from your last session of that type, just like Home's Up next card.
+- Cardio starts a cardio workout, pre-filled with the exercises from your last cardio session when you have one.
+- Empty starts a blank workout, as Start did before.
+- During a live workout, Start still takes you straight back to it.
+
 ## 0.8.5
 
 19 October 2026
