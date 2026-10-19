@@ -439,12 +439,6 @@ export function AuthScreen({
               </AuthField>
             )}
 
-            {creating && (
-              <p className="auth-field-hint">
-                New profiles are public to members who share. Your name, photo, workouts and cardio
-                are shared. You can choose Friends only or Private in Profile.
-              </p>
-            )}
             <div className="auth-error-region" aria-live="polite" aria-atomic="true">
               {error && (
                 <p className="inline-error" role="alert">

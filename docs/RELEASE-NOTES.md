@@ -14,10 +14,15 @@
 
 *Remove one rest without deleting its set. Undo restores it while the popup is visible.*
 
+![Create account form with the invite code followed by the account creation button, without the profile-sharing paragraph](screenshots/releases/0.8.6-create-account.png)
+
+*The Create account form is shorter, with the profile-sharing explanation paragraph removed.*
+
 - Show rest times sits beside Rest timer in Settings > Timers & notifications. Hide the rows between sets in the logger without changing saved rests or the automatic countdown setting.
 - Swipe left on an individual rest time to remove it without deleting the set. The temporary popup at the bottom offers Undo.
 - Rest choices include 0:30 and 0:00 (no rest). Choosing 0:00 removes the rest and offers Undo. The compact picker centres the time and keeps both up and down pointers.
 - After Undo expires, edit the set, choose Rest after set and save with the tick to add its rest back. Removed rests stay removed when the workout is saved or reopened.
+- Removed the profile-sharing explanation paragraph from Create account.
 
 ## 0.8.5
 
