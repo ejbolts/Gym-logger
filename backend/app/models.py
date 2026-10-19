@@ -190,6 +190,34 @@ class ProfileFollow(Base):
     notification_seen: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
 
+WORKOUT_REACTIONS = ("like", "love", "strong", "fire", "clap", "trophy")
+
+
+class WorkoutReaction(Base):
+    """One member's reaction to another member's shared workout; reacting again replaces it."""
+
+    __tablename__ = "workout_reactions"
+    __table_args__ = (
+        CheckConstraint(
+            "reaction IN ('like', 'love', 'strong', 'fire', 'clap', 'trophy')",
+            name="workout_reaction_known",
+        ),
+    )
+
+    workout_id: Mapped[str] = mapped_column(
+        ForeignKey("training_workouts.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    reaction: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    # The workout owner's notification, cleared when they dismiss it.
+    notification_seen: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+
+
 class ServerSetting(Base):
     """Deployment-wide switches an admin changes at runtime; unset keys fall back to .env."""
 

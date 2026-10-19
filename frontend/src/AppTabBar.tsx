@@ -6,7 +6,7 @@ import { formatSeconds } from './utils';
 import type { useHomeLayout } from './useHomeLayout';
 
 const TABS: Array<{ tab: MainTab; label: string; icon: IconName }> = [
-  { tab: 'dashboard', label: 'Today', icon: 'home' },
+  { tab: 'dashboard', label: 'Home', icon: 'home' },
   { tab: 'history', label: 'History', icon: 'calendar' },
   { tab: 'progress', label: 'Progress', icon: 'trend' },
   { tab: 'body', label: 'Body', icon: 'body' },

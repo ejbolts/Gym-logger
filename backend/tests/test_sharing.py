@@ -554,10 +554,39 @@ def test_existing_accounts_without_choices_stay_private(client):
     assert client.get("/api/sharing").json()["visibility"] == "private"
 
 
+def test_notifications_ignore_a_follow_removed_after_the_connection_snapshot(
+    client, other_client, monkeypatch
+):
+    from sqlalchemy import delete
+
+    from app import sharing
+    from app.models import ProfileFollow
+
+    other_client.post(f"/api/sharing/follows/{client.user['id']}")
+    original = sharing.list_followers
+
+    def removed_follow(user, db):
+        snapshot = original(user, db)
+        db.execute(delete(ProfileFollow).where(ProfileFollow.followee_id == user.id))
+        db.commit()
+        return snapshot
+
+    monkeypatch.setattr(sharing, "list_followers", removed_follow)
+    assert client.get("/api/sharing/notifications").json() == {
+        "requests": [],
+        "followers": [],
+        "reactions": [],
+    }
+
+
 def test_follow_notifications_are_scoped_dismissible_and_not_duplicated(client, other_client):
     target = client.user["id"]
     follower = other_client.user["id"]
-    assert client.get("/api/sharing/notifications").json() == {"requests": [], "followers": []}
+    assert client.get("/api/sharing/notifications").json() == {
+        "requests": [],
+        "followers": [],
+        "reactions": [],
+    }
     assert other_client.post(f"/api/sharing/follows/{target}").json()["status"] == "accepted"
     # A retry does not create another event.
     other_client.post(f"/api/sharing/follows/{target}")
@@ -571,7 +600,9 @@ def test_follow_notifications_are_scoped_dismissible_and_not_duplicated(client, 
         ).status_code
         == 204
     )
-    assert client.get("/api/sharing/notifications").json()["followers"] == []
+    assert all(
+        item["is_read"] for item in client.get("/api/sharing/notifications").json()["followers"]
+    )
     assert len(client.get("/api/sharing/followers").json()["followers"]) == 1
     other_client.delete(f"/api/sharing/follows/{target}")
     other_client.post(f"/api/sharing/follows/{target}")
@@ -594,7 +625,9 @@ def test_friends_only_search_request_and_notification_approval(client, other_cli
     assert [item["id"] for item in notices["requests"]] == [follower]
     assert notices["followers"] == []
     assert client.post(f"/api/sharing/followers/{follower}").status_code == 204
-    assert client.get("/api/sharing/notifications").json() == {"requests": [], "followers": []}
+    notices = client.get("/api/sharing/notifications").json()
+    assert notices["requests"] == []
+    assert notices["followers"][0]["is_read"] is True
     assert other_client.get(f"/api/sharing/profiles/{target}").json()["can_view"] is True
     other_client.delete(f"/api/sharing/follows/{target}")
     other_client.post(f"/api/sharing/follows/{target}")

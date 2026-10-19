@@ -721,11 +721,51 @@ export interface SharingConnection {
   display_name: string;
   profile_photo_url: string | null;
   since: string;
+  /** Present on notification snapshots; read notices remain available in the bell. */
+  is_read?: boolean;
 }
 
 export interface SharingConnections {
   requests: SharingConnection[];
   followers: SharingConnection[];
+}
+
+export type WorkoutReactionKind = 'like' | 'love' | 'strong' | 'fire' | 'clap' | 'trophy';
+
+export interface WorkoutReactions {
+  counts: Array<{ reaction: WorkoutReactionKind; count: number }>;
+  yours: WorkoutReactionKind | null;
+}
+
+/** A followed member's latest workout or cardio session. */
+export interface FriendFeedItem {
+  friend: Pick<SharingConnection, 'id' | 'display_name' | 'profile_photo_url'>;
+  workout: TrackedWorkout;
+  reactions: WorkoutReactions;
+}
+
+export interface FriendFeed {
+  items: FriendFeedItem[];
+  /** Members you follow who share, including those without a session yet. */
+  following: number;
+}
+
+/** A reaction to one of your workouts; `since` is when it was given. */
+export interface ReactionNotice extends SharingConnection {
+  workout_id: string;
+  workout_name: string;
+  reaction: WorkoutReactionKind;
+}
+
+export interface SharingNotifications extends SharingConnections {
+  reactions?: ReactionNotice[];
+}
+
+export interface NotificationReadReference {
+  kind: 'request' | 'follower' | 'reaction';
+  id: string;
+  since: string;
+  workout_id?: string;
 }
 
 export interface SharedBodyMeasurement {
@@ -762,12 +802,14 @@ export interface SharedProfile extends SharedProfileSummary {
   body_weight: SharedBodyMeasurement[] | null;
   goals: SharedGoals | null;
   cardio_sessions: SharedCardioSession[] | null;
+  training_time?: TrainingTime | null;
 }
 
 export interface SharedWorkoutPage {
   total: number;
   workouts: TrackedWorkout[];
   personal_records: PersonalRecord[];
+  reactions?: Record<string, WorkoutReactions>;
 }
 
 export interface SharedWorkoutFilters {

@@ -1,46 +1,40 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from './api';
+import { friendSession, reactionSummary, relativeDay } from './friendFeedData';
+import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { ProfileAvatar } from './ProfileAvatar';
-import {
-  friendActivityTotals,
-  loadFriendWorkouts,
-  type FriendWorkout,
-} from './friendsActivityData';
-import { Icon } from './Icon';
-import { shortDate } from './trainingSummary';
-import type { SharedProfileSummary } from './types';
+import type { FriendFeedItem, WorkoutReactions } from './types';
+import { localDate } from './utils';
 
 type ActivityState =
   | { kind: 'loading' }
   | { kind: 'locked' }
   | { kind: 'error' }
-  | { kind: 'ready'; friends: FriendWorkout[]; following: number };
+  | { kind: 'ready'; items: FriendFeedItem[]; following: number };
 
-/** Today's Friends card: the latest workout from each friend you follow. */
+/** Home's Friends card: each friend's latest session, with one button to react to it. */
 export function FriendsActivityCard({
   active,
   onOpenFriend,
   onOpenFriends,
+  today = localDate(),
 }: {
   active: boolean;
-  onOpenFriend: (friend: SharedProfileSummary) => void;
+  onOpenFriend: (friend: FriendFeedItem['friend']) => void;
   onOpenFriends: () => void;
+  today?: string;
 }) {
   const [state, setState] = useState<ActivityState>({ kind: 'loading' });
+  const [picking, setPicking] = useState<string | null>(null);
 
   useEffect(() => {
-    // Refreshed whenever Today is shown, so new follows and workouts appear.
+    // Refreshed whenever Home is shown, so new sessions, follows and reactions appear.
     if (!active) return;
     let cancelled = false;
     api.sharing
-      .profiles()
-      .then(async (profiles) => ({ profiles, friends: await loadFriendWorkouts(profiles) }))
-      .then(({ profiles, friends }) => {
-        if (cancelled) return;
-        const following = profiles.filter(
-          (profile) => !profile.is_you && profile.follow_status === 'accepted',
-        ).length;
-        setState({ kind: 'ready', friends, following });
+      .feed()
+      .then((feed) => {
+        if (!cancelled) setState({ kind: 'ready', ...feed });
       })
       .catch((reason: unknown) => {
         if (cancelled) return;
@@ -55,6 +49,19 @@ export function FriendsActivityCard({
     };
   }, [active]);
 
+  function updateReactions(workoutId: string, reactions: WorkoutReactions) {
+    setState((current) =>
+      current.kind === 'ready'
+        ? {
+            ...current,
+            items: current.items.map((item) =>
+              item.workout.id === workoutId ? { ...item, reactions } : item,
+            ),
+          }
+        : current,
+    );
+  }
+
   return (
     <section className="pulse-card friends-activity" aria-labelledby="friends-activity-title">
       <header className="pulse-card-header">
@@ -64,65 +71,80 @@ export function FriendsActivityCard({
         </button>
       </header>
       {state.kind === 'loading' ? (
-        <p className="pulse-empty-line">Loading your friends’ workouts…</p>
+        <p className="pulse-empty-line">Loading your friends’ sessions…</p>
       ) : state.kind === 'locked' ? (
         <p className="pulse-empty-line">
-          Share your profile to follow friends and see their latest workouts here.
+          Share your profile to follow friends and react to their workouts here.
         </p>
       ) : state.kind === 'error' ? (
-        <p className="pulse-empty-line">Friends’ workouts could not be loaded.</p>
-      ) : state.friends.length === 0 ? (
+        <p className="pulse-empty-line">Friends’ sessions could not be loaded.</p>
+      ) : state.items.length === 0 ? (
         <p className="pulse-empty-line">
           {state.following === 0
             ? 'Follow friends from Profile to see their latest workouts here.'
             : 'Your friends have not logged a workout yet.'}
         </p>
       ) : (
-        <ul className="record-list friend-activity-list">
-          {state.friends.map(({ friend, workout }) => (
-            <li key={friend.id}>
-              <button type="button" onClick={() => onOpenFriend(friend)}>
-                <ProfileAvatar
-                  className="shared-profile-avatar small"
-                  user={{
-                    display_name: friend.display_name,
-                    username: '',
-                    profile_photo_url: friend.profile_photo_url,
-                  }}
+        <ul className={`friend-activity-list${picking ? ' is-picking' : ''}`}>
+          {state.items.map((item) => {
+            const session = friendSession(item.workout);
+            const summary = reactionSummary(item.reactions.counts);
+            const open = picking === item.workout.id;
+            const subject = `${item.friend.display_name}’s ${item.workout.name}`;
+            return (
+              <li key={item.workout.id} className={open ? 'is-picking' : undefined}>
+                <button
+                  type="button"
+                  className="friend-activity-open"
+                  onClick={() => onOpenFriend(item.friend)}
+                >
+                  <ProfileAvatar
+                    className="shared-profile-avatar small"
+                    user={{ ...item.friend, username: '' }}
+                  />
+                  <span className="friend-activity-copy">
+                    <b>{item.friend.display_name}</b>
+                    <span className="friend-activity-session">
+                      <span
+                        className={`friend-activity-kind ${session.cardio ? 'cardio' : 'strength'}`}
+                      >
+                        {session.cardio ? 'Cardio' : 'Strength'}
+                      </span>
+                      <span className="friend-activity-title">{session.title}</span>
+                    </span>
+                    <span className="friend-activity-meta">
+                      {[relativeDay(item.workout.workout_date, today), session.detail]
+                        .filter(Boolean)
+                        .join(' · ')}
+                      {summary.total > 0 && (
+                        <span
+                          className="friend-activity-reactions"
+                          aria-label={`${summary.total} ${summary.total === 1 ? 'reaction' : 'reactions'}`}
+                        >
+                          <span aria-hidden="true">{summary.emojis.join('')}</span>
+                          <span aria-hidden="true">{summary.total}</span>
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </button>
+                <WorkoutReactionControl
+                  workoutId={item.workout.id}
+                  subject={subject}
+                  reactions={item.reactions}
+                  open={open}
+                  onOpenChange={(value) =>
+                    setPicking((current) =>
+                      value ? item.workout.id : current === item.workout.id ? null : current,
+                    )
+                  }
+                  onChange={(value) => updateReactions(item.workout.id, value)}
                 />
-                <span className="record-copy">
-                  <b>{friend.display_name}</b>
-                  <small>
-                    {workout
-                      ? `${workout.name} · ${shortDate(workout.workout_date)}`
-                      : `Last workout ${shortDate(friend.last_workout_date!)}`}
-                  </small>
-                </span>
-                <FriendActivityTotals friend={friend} />
-              </button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>
-  );
-}
-
-function FriendActivityTotals({ friend }: { friend: SharedProfileSummary }) {
-  const totals = friendActivityTotals(friend);
-  const description = totals
-    .map(({ value, label }) => `${value ?? 0} ${value === 1 ? label[0] : label[1]}`)
-    .join(', ');
-  return (
-    <span className="friend-activity-totals" role="img" aria-label={description}>
-      {totals.map(({ key, icon, value }) => (
-        <span key={key}>
-          <span className={`today-profile-icon ${key}`} aria-hidden="true">
-            <Icon name={icon} />
-          </span>
-          <b className="num">{value == null ? '–' : value.toLocaleString()}</b>
-        </span>
-      ))}
-    </span>
   );
 }

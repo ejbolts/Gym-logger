@@ -9,6 +9,8 @@ import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileAccountId } from './ProfileAccountId';
 import { SharedWorkoutFilters } from './SharedWorkoutFilters';
+import { TrainingTimeStats } from './TrainingTimeStats';
+import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
 import {
@@ -34,6 +36,7 @@ import type {
   SharingConnection,
   SharingConnections,
   TrackedWorkout,
+  WorkoutReactions,
 } from './types';
 import { formatMinutesDuration } from './utils';
 
@@ -790,6 +793,7 @@ export interface SharedWorkoutListProps {
   workouts: TrackedWorkout[];
   personalRecords: PersonalRecord[];
   onFilterMachine?: (photo: MachinePhoto) => void;
+  renderWorkoutAction?: (workout: TrackedWorkout) => ReactNode;
 }
 
 export function SharedProfileScreen({
@@ -805,6 +809,8 @@ export function SharedProfileScreen({
   const [profile, setProfile] = useState<SharedProfile | null>(null);
   const [workouts, setWorkouts] = useState<TrackedWorkout[]>([]);
   const [records, setRecords] = useState<PersonalRecord[]>([]);
+  const [reactions, setReactions] = useState<Record<string, WorkoutReactions>>({});
+  const [picking, setPicking] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [state, setState] = useState<LoadState>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -856,6 +862,8 @@ export function SharedProfileScreen({
       setProfile(nextProfile);
       setWorkouts(page.workouts);
       setRecords(page.personal_records);
+      setReactions('reactions' in page ? (page.reactions ?? {}) : {});
+      setPicking(null);
       setTotal(page.total);
       setFilterOptions(options);
       setState('ready');
@@ -892,6 +900,7 @@ export function SharedProfileScreen({
         ...page.workouts.filter((item) => !current.some((existing) => existing.id === item.id)),
       ]);
       setRecords((current) => [...current, ...page.personal_records]);
+      setReactions((current) => ({ ...current, ...page.reactions }));
       setTotal(page.total);
     } catch (reason) {
       if (currentQuery.current === requestedQuery) setMoreError(authErrorMessage(reason));
@@ -1009,6 +1018,20 @@ export function SharedProfileScreen({
         </section>
       ) : (
         <>
+          {profile.training_time && (
+            <section
+              className="settings-panel panel profile-training-time"
+              aria-labelledby="shared-training-time-title"
+            >
+              <header>
+                <div>
+                  <p className="section-kicker">ACTIVITY</p>
+                  <h2 id="shared-training-time-title">Time trained</h2>
+                </div>
+              </header>
+              <TrainingTimeStats time={profile.training_time} />
+            </section>
+          )}
           {profile.body_weight && (
             <BodyWeightCard measurements={profile.body_weight} goals={profile.goals} />
           )}
@@ -1047,6 +1070,25 @@ export function SharedProfileScreen({
               renderWorkouts({
                 workouts,
                 personalRecords: records,
+                renderWorkoutAction: profile.is_you
+                  ? undefined
+                  : (workout) => (
+                      <WorkoutReactionControl
+                        workoutId={workout.id}
+                        subject={`${profile.display_name}’s ${workout.name}`}
+                        reactions={reactions[workout.id] ?? { counts: [], yours: null }}
+                        open={picking === workout.id}
+                        showSummary
+                        onOpenChange={(value) =>
+                          setPicking((current) =>
+                            value ? workout.id : current === workout.id ? null : current,
+                          )
+                        }
+                        onChange={(value) =>
+                          setReactions((current) => ({ ...current, [workout.id]: value }))
+                        }
+                      />
+                    ),
                 onFilterMachine: (photo) => {
                   setFilters((current) => ({ ...current, machine_photo_id: photo.id }));
                   setFiltersOpen(true);

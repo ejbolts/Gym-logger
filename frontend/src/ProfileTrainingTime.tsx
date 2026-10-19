@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import type { TrainingTime } from './types';
-import { formatMinutesDuration } from './utils';
-
-function count(value: number, singular: string, plural: string) {
-  return `${value.toLocaleString('en-GB')} ${value === 1 ? singular : plural}`;
-}
+import { TrainingTimeStats } from './TrainingTimeStats';
 
 /** Lifetime time logged on Profile: strength workouts, cardio sessions and both combined. */
 export function ProfileTrainingTime({ active }: { active: boolean }) {
@@ -32,20 +28,6 @@ export function ProfileTrainingTime({ active }: { active: boolean }) {
     };
   }, [active, attempt]);
 
-  const stats = [
-    {
-      label: 'Workouts',
-      minutes: time?.workout_minutes,
-      detail: time && count(time.workout_count, 'workout', 'workouts'),
-    },
-    {
-      label: 'Cardio',
-      minutes: time?.cardio_minutes,
-      detail: time && count(time.cardio_count, 'session', 'sessions'),
-    },
-    { label: 'Combined', minutes: time?.total_minutes, detail: time && 'All exercise' },
-  ];
-
   return (
     <section
       className="settings-panel panel profile-training-time"
@@ -66,23 +48,7 @@ export function ProfileTrainingTime({ active }: { active: boolean }) {
           </button>
         </p>
       ) : (
-        <>
-          <dl className="shared-stat-row">
-            {stats.map((stat) => (
-              <div key={stat.label}>
-                <dt>{stat.label}</dt>
-                <dd className="num">
-                  {stat.minutes === undefined ? '–' : formatMinutesDuration(stat.minutes)}
-                </dd>
-                {stat.detail && <small>{stat.detail}</small>}
-              </div>
-            ))}
-          </dl>
-          <p>
-            Totals use each workout's logged duration and every cardio session. Cardio done during a
-            workout counts once in Combined.
-          </p>
-        </>
+        <TrainingTimeStats time={time} />
       )}
     </section>
   );

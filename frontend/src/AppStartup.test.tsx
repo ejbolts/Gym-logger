@@ -290,7 +290,7 @@ describe('App startup', () => {
   it('shows the recommendation, weekly totals, muscles, Zone 2 and quick check-in on Today', () => {
     const markup = renderToday();
 
-    expect(markup).toContain('<h1>Today</h1>');
+    expect(markup).toContain('<h1>Home</h1>');
     expect(markup).toContain('Up next');
     expect(markup).toContain('Pull day');
     expect(markup).toContain('Workouts</span><strong>4</strong>');

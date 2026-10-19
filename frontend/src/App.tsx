@@ -1207,7 +1207,9 @@ function AppContent() {
       })
     : null;
 
-  function openSharedProfile(profile: SharedProfileSummary) {
+  function openSharedProfile(
+    profile: Pick<SharedProfileSummary, 'id' | 'display_name'> & { is_you?: boolean },
+  ) {
     setSharedProfile((current) => ({
       id: profile.id,
       name: profile.is_you ? 'Your shared profile' : profile.display_name,
@@ -8909,6 +8911,7 @@ function SharedWorkoutHistory({
   workouts,
   personalRecords,
   onFilterMachine,
+  renderWorkoutAction,
   categoryColors,
   weekStartDay,
 }: SharedWorkoutListProps & { categoryColors: WorkoutTypeColors; weekStartDay: number }) {
@@ -8952,6 +8955,7 @@ function SharedWorkoutHistory({
               onExpandPhoto={setExpandedPhoto}
               onFilterMachine={onFilterMachine}
               onToggle={() => setOpenId((current) => (current === workout.id ? null : workout.id))}
+              reactionAction={renderWorkoutAction?.(workout)}
             />
           ))}
         </div>
@@ -8980,6 +8984,7 @@ function HistoryWorkoutCard({
   onResume,
   onEdit,
   onDelete,
+  reactionAction,
 }: {
   workout: TrackedWorkout;
   open: boolean;
@@ -9003,6 +9008,7 @@ function HistoryWorkoutCard({
   onResume?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  reactionAction?: ReactNode;
 }) {
   const weightUnit = useWeightUnit();
   const completedWorkoutSets = workout.movements
@@ -9055,6 +9061,7 @@ function HistoryWorkoutCard({
           <Icon name="chevron-down" />
         </span>
       </button>
+      {reactionAction && <div className="history-card-social">{reactionAction}</div>}
       {open && (
         <div className="history-detail">
           <div className="history-workout-stats" aria-label="Workout totals">

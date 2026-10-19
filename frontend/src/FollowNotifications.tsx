@@ -1,13 +1,18 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { api } from './api';
 import { authErrorMessage } from './authForm';
 import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
+import { reactionEmoji } from './friendFeedData';
+import {
+  markNotificationSnapshotRead,
+  unreadNotificationReferences,
+} from './notificationReadState';
 import { ProfileAvatar } from './ProfileAvatar';
-import type { SharingConnection, SharingConnections } from './types';
+import type { SharingConnection, SharingNotifications } from './types';
 import './FollowNotifications.css';
 
-/** Requests remain actionable; new-follower notices can be dismissed independently. */
+/** Opening the compact inbox reads displayed notices; requests remain actionable. */
 export function FollowNotifications({
   active,
   onOpenFriends,
@@ -15,49 +20,64 @@ export function FollowNotifications({
   active: boolean;
   onOpenFriends: () => void;
 }) {
-  const [items, setItems] = useState<SharingConnections | null>(null);
+  const [items, setItems] = useState<SharingNotifications | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
-    const refresh = () => {
-      if (document.visibilityState === 'hidden') return;
-      void api.sharing
-        .notifications()
-        .then((next) => {
-          if (!cancelled) {
-            setItems(next);
-            setError(null);
-          }
-        })
-        .catch((reason: unknown) => {
-          if (!cancelled) setError(authErrorMessage(reason));
-        });
-    };
-    refresh();
-    const timer = window.setInterval(refresh, 30_000);
-    window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', refresh);
+    let refreshing = false;
+    async function refresh() {
+      if (document.visibilityState === 'hidden' || refreshing) return;
+      refreshing = true;
+      try {
+        const next = await api.sharing.notifications();
+        if (cancelled) return;
+        setItems(next);
+        setError(null);
+        const unread = unreadNotificationReferences(next);
+        if (open && unread.length) {
+          await api.sharing.markNotificationsRead(unread);
+          if (!cancelled)
+            setItems((current) => current && markNotificationSnapshotRead(current, unread));
+        }
+      } catch (reason) {
+        if (!cancelled) setError(authErrorMessage(reason));
+      } finally {
+        refreshing = false;
+      }
+    }
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 30_000);
+    const onFocus = () => void refresh();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
-      window.removeEventListener('focus', refresh);
-      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
     };
-  }, [active, open]);
+  }, [active, open, attempt]);
 
-  async function respond(person: SharingConnection, action: 'approve' | 'decline' | 'dismiss') {
+  async function respond(person: SharingConnection, action: 'approve' | 'decline') {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
       if (action === 'approve') await api.sharing.approveFollower(person.id);
-      else if (action === 'decline') await api.sharing.removeFollower(person.id);
-      else await api.sharing.dismissNotification(person.id, person.since);
-      setItems(await api.sharing.notifications());
+      else await api.sharing.removeFollower(person.id);
+      setItems(
+        (current) =>
+          current && {
+            ...current,
+            requests: current.requests.filter((item) => item.id !== person.id),
+          },
+      );
+      setAttempt((current) => current + 1);
     } catch (reason) {
       setError(authErrorMessage(reason));
     } finally {
@@ -65,7 +85,11 @@ export function FollowNotifications({
     }
   }
 
-  const count = (items?.requests.length ?? 0) + (items?.followers.length ?? 0);
+  const count = items ? unreadNotificationReferences(items).length : 0;
+  const total =
+    (items?.requests.length ?? 0) +
+    (items?.followers.length ?? 0) +
+    (items?.reactions?.length ?? 0);
   return (
     <>
       <button
@@ -85,28 +109,40 @@ export function FollowNotifications({
       {open && (
         <PopupDialog
           title="Notifications"
-          kicker="FRIENDS"
           className="follow-notifications"
           onClose={() => setOpen(false)}
         >
           {error && (
             <p className="inline-error" role="alert">
-              {error}
+              {error}{' '}
+              <button
+                type="button"
+                className="text-link"
+                onClick={() => setAttempt((value) => value + 1)}
+              >
+                Try again
+              </button>
             </p>
           )}
-          {!items && !error && <p role="status">Loading notifications…</p>}
-          {items && count === 0 && (
+          {!items && !error && (
+            <p className="shared-card-empty" role="status">
+              Loading notifications…
+            </p>
+          )}
+          {items && total === 0 && (
             <p className="shared-card-empty">
-              You're all caught up. Follow requests and new followers will appear here.
+              You're all caught up. New followers, follow requests and workout reactions appear
+              here.
             </p>
           )}
           <ul className="follow-notification-list">
             {items?.requests.map((person) => (
               <li key={`request-${person.id}`}>
                 <ProfileAvatar className="profile-avatar" user={{ ...person, username: '' }} />
-                <div>
-                  <strong>{person.display_name}</strong>
-                  <p>Requested to follow you</p>
+                <div className="follow-notification-copy">
+                  <p>
+                    <strong>{person.display_name}</strong> requested to follow you
+                  </p>
                   <div className="follow-notification-actions">
                     <button
                       type="button"
@@ -130,34 +166,43 @@ export function FollowNotifications({
                 </div>
               </li>
             ))}
+            {items?.reactions?.map((notice) => (
+              <li key={`reaction-${notice.workout_id}-${notice.id}`}>
+                <ProfileAvatar className="profile-avatar" user={{ ...notice, username: '' }} />
+                <div className="follow-notification-copy">
+                  <p>
+                    <strong>{notice.display_name}</strong> reacted to <b>{notice.workout_name}</b>
+                  </p>
+                </div>
+                <span
+                  className="follow-notification-emoji"
+                  aria-label={`Reacted ${reactionEmoji(notice.reaction)}`}
+                >
+                  {reactionEmoji(notice.reaction)}
+                </span>
+              </li>
+            ))}
             {items?.followers.map((person) => (
               <li key={`follower-${person.id}`}>
                 <ProfileAvatar className="profile-avatar" user={{ ...person, username: '' }} />
-                <div>
-                  <strong>{person.display_name}</strong>
-                  <p>Started following you</p>
-                  <button
-                    type="button"
-                    className="profile-secondary"
-                    disabled={busy}
-                    aria-label={`Dismiss notification from ${person.display_name}`}
-                    onClick={() => void respond(person, 'dismiss')}
-                  >
-                    Dismiss
-                  </button>
+                <div className="follow-notification-copy">
+                  <p>
+                    <strong>{person.display_name}</strong> started following you
+                  </p>
                 </div>
+                <Icon name="user" />
               </li>
             ))}
           </ul>
           <button
             type="button"
-            className="profile-secondary"
+            className="text-link follow-notification-manage"
             onClick={() => {
               setOpen(false);
               onOpenFriends();
             }}
           >
-            Find people and manage friends
+            Manage friends <Icon name="chevron-right" />
           </button>
         </PopupDialog>
       )}

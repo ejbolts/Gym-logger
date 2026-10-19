@@ -1,0 +1,205 @@
+// @vitest-environment jsdom
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { api, ApiError } from './api';
+import { FriendsActivityCard } from './FriendsActivity';
+import { friendSession, nextReaction, reactionSummary, relativeDay } from './friendFeedData';
+import type { FriendFeedItem, TrackedWorkout } from './types';
+
+const strength = {
+  id: 'w1',
+  name: 'Leg day',
+  workout_date: '2026-10-19',
+  category: 'lower',
+  duration_minutes: 71,
+  movements: [
+    {
+      id: 'm1',
+      exercise: { kind: 'strength' },
+      sets: [{ completed: true }, { completed: true }, { completed: false }],
+    },
+  ],
+} as unknown as TrackedWorkout;
+const cardio = {
+  id: 'w2',
+  name: 'Incline walk',
+  workout_date: '2026-10-18',
+  category: 'cardio',
+  duration_minutes: 35,
+  movements: [
+    {
+      id: 'm2',
+      exercise: { kind: 'cardio' },
+      sets: [{ completed: true, distance_km: 2.75 }],
+    },
+  ],
+} as unknown as TrackedWorkout;
+const jordan: FriendFeedItem = {
+  friend: { id: 'jordan', display_name: 'Jordan Preview', profile_photo_url: null },
+  workout: strength,
+  reactions: {
+    counts: [
+      { reaction: 'like', count: 1 },
+      { reaction: 'love', count: 2 },
+    ],
+    yours: null,
+  },
+};
+const alex: FriendFeedItem = {
+  friend: { id: 'alex', display_name: 'Alex Preview', profile_photo_url: null },
+  workout: cardio,
+  reactions: { counts: [], yours: null },
+};
+
+let root: Root;
+let host: HTMLDivElement;
+beforeEach(() => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+});
+afterEach(async () => {
+  await act(async () => root.unmount());
+  host.remove();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+function button(label: string) {
+  const found = [...document.querySelectorAll('button')].find(
+    (item) => item.getAttribute('aria-label') === label || item.textContent === label,
+  );
+  expect(found, label).toBeTruthy();
+  return found!;
+}
+
+async function render(onOpenFriend = vi.fn()) {
+  await act(async () =>
+    root.render(
+      <FriendsActivityCard
+        active
+        today="2026-10-19"
+        onOpenFriend={onOpenFriend}
+        onOpenFriends={vi.fn()}
+      />,
+    ),
+  );
+}
+
+it('summarises strength and cardio sessions, dates and reactions', () => {
+  expect(friendSession(strength)).toEqual({
+    cardio: false,
+    title: 'Leg day · 1h 11min',
+    detail: '2 sets',
+  });
+  expect(friendSession(cardio)).toEqual({
+    cardio: true,
+    title: 'Incline walk · 35min',
+    detail: '2.8 km',
+  });
+  expect(friendSession({ ...cardio, name: 'Rowing cardio' }).title).toBe('Rowing · 35min');
+  expect(friendSession({ ...strength, name: 'Push cardio' }).title).toBe('Push cardio · 1h 11min');
+  expect(relativeDay('2026-10-19', '2026-10-19')).toBe('Today');
+  expect(relativeDay('2026-10-18', '2026-10-19')).toBe('Yesterday');
+  expect(relativeDay('2026-10-17', '2026-10-19')).toBe('Sat');
+  expect(relativeDay('2026-10-01', '2026-10-19')).toBe('Thu 1 Oct');
+  expect(reactionSummary(jordan.reactions.counts)).toEqual({ emojis: ['❤️', '👍'], total: 3 });
+  expect(nextReaction('fire', 'fire')).toBeNull();
+  expect(nextReaction(null, 'love')).toBe('love');
+});
+
+it("shows each friend's latest session with one reaction button and opens their profile", async () => {
+  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], following: 2 });
+  const openFriend = vi.fn();
+  await render(openFriend);
+
+  const rows = [...host.querySelectorAll('.friend-activity-list li')];
+  expect(rows.map((row) => row.textContent)).toEqual([
+    'JJordan PreviewStrengthLeg day · 1h 11minToday · 2 sets❤️👍3',
+    'AAlex PreviewCardioIncline walk · 35minYesterday · 2.8 km',
+  ]);
+  // One reaction button per friend rather than every reaction.
+  expect(host.querySelectorAll('.friend-react-button')).toHaveLength(2);
+  expect(host.querySelector('.friend-react-picker')).toBeNull();
+
+  await act(async () => host.querySelector<HTMLButtonElement>('.friend-activity-open')!.click());
+  expect(openFriend).toHaveBeenCalledWith(jordan.friend);
+});
+
+it('reacts from the picker, shows your reaction, and removes it when chosen again', async () => {
+  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [alex], following: 1 });
+  const react = vi
+    .spyOn(api.sharing, 'react')
+    .mockResolvedValue({ counts: [{ reaction: 'love', count: 1 }], yours: 'love' });
+  const remove = vi
+    .spyOn(api.sharing, 'removeReaction')
+    .mockResolvedValue({ counts: [], yours: null });
+  await render();
+
+  const trigger = button('React to Alex Preview’s Incline walk');
+  await act(async () => trigger.click());
+  expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  expect(host.querySelectorAll('.friend-react-picker button')).toHaveLength(6);
+  expect(document.activeElement?.getAttribute('aria-label')).toBe('Like');
+
+  await act(async () => button('Love').click());
+  expect(react).toHaveBeenCalledWith('w2', 'love');
+  expect(host.querySelector('.friend-react-picker')).toBeNull();
+  const mine = button('Your reaction to Alex Preview’s Incline walk: Love. Change reaction');
+  expect(mine.textContent).toBe('❤️');
+  expect(document.activeElement).toBe(mine);
+
+  await act(async () => mine.click());
+  expect(button('Love').getAttribute('aria-pressed')).toBe('true');
+  expect(document.activeElement).toBe(button('Love'));
+  await act(async () => button('Love').click());
+  expect(remove).toHaveBeenCalledWith('w2');
+  expect(button('React to Alex Preview’s Incline walk').textContent).not.toContain('❤️');
+});
+
+it('closes the picker with Escape or a tap elsewhere without reacting', async () => {
+  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], following: 2 });
+  const react = vi.spyOn(api.sharing, 'react');
+  await render();
+
+  const trigger = button('React to Jordan Preview’s Leg day');
+  await act(async () => trigger.click());
+  expect(host.querySelector('.friend-activity-list')?.classList).toContain('is-picking');
+  await act(async () =>
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })),
+  );
+  expect(host.querySelector('.friend-react-picker')).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+
+  await act(async () => trigger.click());
+  await act(async () => document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+  expect(host.querySelector('.friend-react-picker')).toBeNull();
+  expect(react).not.toHaveBeenCalled();
+});
+
+it('explains the card when your profile is private, nobody is followed or friends have no sessions', async () => {
+  const feed = vi
+    .spyOn(api.sharing, 'feed')
+    .mockRejectedValueOnce(new ApiError('Share first.', 'sharing_required', 403));
+  await render();
+  expect(host.textContent).toContain('Share your profile to follow friends');
+
+  for (const [following, message] of [
+    [0, 'Follow friends from Profile'],
+    [2, 'Your friends have not logged a workout yet.'],
+  ] as const) {
+    feed.mockResolvedValueOnce({ items: [], following });
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    await render();
+    expect(host.textContent).toContain(message);
+  }
+});
