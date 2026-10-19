@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from './api';
 import { friendSession, reactionSummary, relativeDay } from './friendFeedData';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
@@ -26,26 +26,44 @@ export function FriendsActivityCard({
 }) {
   const [state, setState] = useState<ActivityState>({ kind: 'loading' });
   const [picking, setPicking] = useState<string | null>(null);
+  const refresh = useRef<() => void>(() => undefined);
 
   useEffect(() => {
-    // Refreshed whenever Home is shown, so new sessions, follows and reactions appear.
     if (!active) return;
     let cancelled = false;
-    api.sharing
-      .feed()
-      .then((feed) => {
-        if (!cancelled) setState({ kind: 'ready', ...feed });
-      })
-      .catch((reason: unknown) => {
-        if (cancelled) return;
-        setState(
-          reason instanceof ApiError && reason.code === 'sharing_required'
-            ? { kind: 'locked' }
-            : { kind: 'error' },
-        );
-      });
+    let request = 0;
+    function load() {
+      if (document.visibilityState === 'hidden') return;
+      const current = ++request;
+      api.sharing
+        .feed()
+        .then((feed) => {
+          if (cancelled || current !== request) return;
+          setState({ kind: 'ready', ...feed });
+          setPicking((id) => (feed.items.some((item) => item.workout.id === id) ? id : null));
+        })
+        .catch((reason: unknown) => {
+          if (cancelled || current !== request) return;
+          setState(
+            reason instanceof ApiError && reason.code === 'sharing_required'
+              ? { kind: 'locked' }
+              : { kind: 'error' },
+          );
+        });
+    }
+    refresh.current = load;
+    load();
+    const timer = window.setInterval(load, 30_000);
+    window.addEventListener('focus', load);
+    window.addEventListener('online', load);
+    document.addEventListener('visibilitychange', load);
     return () => {
       cancelled = true;
+      refresh.current = () => undefined;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', load);
+      window.removeEventListener('online', load);
+      document.removeEventListener('visibilitychange', load);
     };
   }, [active]);
 
@@ -60,6 +78,7 @@ export function FriendsActivityCard({
           }
         : current,
     );
+    refresh.current();
   }
 
   return (

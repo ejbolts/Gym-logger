@@ -11,6 +11,7 @@ import { ProfileAccountId } from './ProfileAccountId';
 import { SharedWorkoutFilters } from './SharedWorkoutFilters';
 import { TrainingTimeStats } from './TrainingTimeStats';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
+import { PopupDialog } from './PopupDialog';
 import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
 import {
@@ -387,6 +388,7 @@ export function FriendsPanel({
   const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [blockHelpOpen, setBlockHelpOpen] = useState(false);
 
   useEffect(() => {
     // Refreshed whenever Profile is shown or sharing changes, so follows appear straight away.
@@ -422,15 +424,24 @@ export function FriendsPanel({
     );
   }
 
-  async function respond(person: SharingConnection, action: 'approve' | 'remove') {
+  async function respond(
+    person: SharingConnection,
+    action: 'approve' | 'remove' | 'block' | 'unblock',
+  ) {
     if (busyId) return;
     setBusyId(person.id);
     setActionError(null);
     try {
       if (action === 'approve') await api.sharing.approveFollower(person.id);
+      else if (action === 'block') await api.sharing.blockMember(person.id);
+      else if (action === 'unblock') await api.sharing.unblockMember(person.id);
       else await api.sharing.removeFollower(person.id);
       const next = await api.sharing.connections();
       setConnections(next);
+      if (action === 'block' || action === 'unblock') {
+        if (profiles !== null) setProfiles(await api.sharing.profiles());
+        return;
+      }
       updateProfile(person.id, {
         follows_you: action === 'approve',
         follows_you_since: next.followers.find((item) => item.id === person.id)?.since ?? null,
@@ -564,26 +575,71 @@ export function FriendsPanel({
                 detail={followSinceLabel('Follows you', person.since)}
                 onOpen={openFor(person.id)}
                 actions={
-                  <button
-                    type="button"
-                    className="profile-secondary"
-                    disabled={busyId !== null}
-                    aria-label={`Remove ${person.display_name} from your followers`}
-                    onClick={() => void respond(person, 'remove')}
-                  >
-                    Remove
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="profile-secondary"
+                      disabled={busyId !== null}
+                      aria-label={`Block ${person.display_name}`}
+                      onClick={() => void respond(person, 'block')}
+                    >
+                      Block
+                    </button>
+                    <button
+                      type="button"
+                      className="friend-block-help"
+                      aria-label={`About blocking ${person.display_name}`}
+                      aria-haspopup="dialog"
+                      onClick={() => setBlockHelpOpen(true)}
+                    >
+                      <span aria-hidden="true">?</span>
+                    </button>
+                  </>
                 }
               />
             ))}
           </FriendGroup>
           <PeopleSearch
             active={active}
-            refreshKey={`${refreshKey}:${attempt}`}
+            refreshKey={`${refreshKey}:${attempt}:${connections?.blocked?.map((person) => person.id).join(',') ?? ''}`}
             onOpenProfile={onOpenProfile}
             onFollowChanged={() => setAttempt((count) => count + 1)}
           />
         </>
+      )}
+      {(connections?.blocked?.length ?? 0) > 0 && (
+        <FriendGroup title="Blocked" count={connections!.blocked!.length} emptyText="">
+          {connections!.blocked!.map((person) => (
+            <FriendRow
+              key={person.id}
+              person={person}
+              detail={`Blocked ${longDate(person.since.slice(0, 10))}`}
+              actions={
+                <button
+                  type="button"
+                  className="profile-secondary"
+                  disabled={busyId !== null}
+                  aria-label={`Unblock ${person.display_name}`}
+                  onClick={() => void respond(person, 'unblock')}
+                >
+                  Unblock
+                </button>
+              }
+            />
+          ))}
+        </FriendGroup>
+      )}
+      {blockHelpOpen && (
+        <PopupDialog
+          title="About blocking"
+          className="friend-block-dialog"
+          onClose={() => setBlockHelpOpen(false)}
+        >
+          <p>
+            Blocking stops this person from seeing your profile, data and recent activity. You also
+            stop following each other. You can unblock them in Blocked.
+          </p>
+        </PopupDialog>
       )}
     </CollapsibleSection>
   );

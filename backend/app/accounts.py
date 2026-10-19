@@ -55,6 +55,7 @@ from .models import (
     ExerciseMuscleContribution,
     MachinePhoto,
     PersonalRecord,
+    ProfileBlock,
     ProfileFollow,
     ProfileSharing,
     PushSubscription,
@@ -328,6 +329,9 @@ def delete_account(db: Session, settings: Settings, user: User, app_state=None) 
         delete(ProfileSharing).where(ProfileSharing.user_id == user_id),
         delete(ProfileFollow).where(
             (ProfileFollow.follower_id == user_id) | (ProfileFollow.followee_id == user_id)
+        ),
+        delete(ProfileBlock).where(
+            (ProfileBlock.blocker_id == user_id) | (ProfileBlock.blocked_id == user_id)
         ),
         delete(YouTubeOAuthState).where(YouTubeOAuthState.user_id == user_id),
         delete(YouTubeConnection).where(YouTubeConnection.user_id == user_id),

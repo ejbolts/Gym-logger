@@ -193,6 +193,23 @@ class ProfileFollow(Base):
 WORKOUT_REACTIONS = ("like", "love", "strong", "fire", "clap", "trophy")
 
 
+class ProfileBlock(Base):
+    """An account's persistent block of another member, independent of profile visibility."""
+
+    __tablename__ = "profile_blocks"
+    __table_args__ = (CheckConstraint("blocker_id != blocked_id", name="profile_block_not_self"),)
+
+    blocker_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    blocked_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
 class WorkoutReaction(Base):
     """One member's reaction to another member's shared workout; reacting again replaces it."""
 

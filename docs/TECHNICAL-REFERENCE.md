@@ -47,6 +47,19 @@ Each account chooses who can see its profile in **Profile > Profile sharing**: *
 
 When upgrading an email-based account database, migration `0030_username_accounts` derives usernames from the old address's part before `@`, replaces unsupported characters with hyphens, and adds numeric suffixes for duplicates. Short or unusable names become `user`. Account IDs, passwords, sessions, preferences and workout ownership are preserved. Run `python -m app.manage list-users` after migration to see the assigned usernames. The account email column is removed; rolling back requires the pre-upgrade database backup and previous app version. Existing backup archives stay unchanged; new account snapshots use manifest format 2 with an owner username.
 
+Blocking a member in **Profile > Friends > Followers** prevents shared-profile discovery and
+access in both directions, including profile and machine photos, workout filters, history,
+reactions and recent activity. It removes follows and reactions between those accounts.
+Blocked members remain in the owner's **Blocked** list for unblocking, even while the owner's
+profile is private. Unblocking does not recreate follows. Migration `0039_profile_blocks`
+adds this persistent relationship; run `alembic upgrade head` before serving this frontend.
+Blocks are excluded from account snapshots because they refer to other accounts, and account
+deletion removes blocks in both directions.
+
+Home's Friends card refreshes its latest-workout feed every 30 seconds while visible, on
+focus, when the page becomes visible and on reconnection. Each member contributes one latest
+session, sorted by workout date and creation time; reactions do not affect this order.
+
 ## Project structure
 
 - `frontend/`: React, TypeScript, Vite and `vite-plugin-pwa`; the default screen is the two-row menu with total and weekly stats.

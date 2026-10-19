@@ -1,5 +1,28 @@
 # Gym Logger release notes
 
+## 0.8.6
+
+19 October 2026
+
+### Safer sharing and fresh friend activity
+
+![A selected heart reaction shown as a single emoji on a shared workout](screenshots/releases/0.8.6-emoji-reactions.png)
+
+*Selected reactions use the same single-emoji button on Home and shared workouts.*
+
+![Followers with Block and question-mark help explaining profile, data and recent activity protection](screenshots/releases/0.8.6-block-followers.png)
+
+*Block a follower from Profile. The question mark explains the effect; blocked accounts can be unblocked later.*
+
+![Friends on Home ordered by their newest workouts](screenshots/releases/0.8.6-latest-friends.png)
+
+*One latest workout per friend, refreshed while Home stays visible and when you return.*
+
+- Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
+- Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session.
+- Profile > Friends > Followers now has Block with a ? explanation. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.
+- Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows.
+
 ## 0.8.5
 
 19 October 2026

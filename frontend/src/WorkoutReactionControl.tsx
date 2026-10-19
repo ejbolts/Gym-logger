@@ -99,7 +99,7 @@ export function WorkoutReactionControl({
       <button
         ref={trigger}
         type="button"
-        className={`friend-react-button${yours ? ' is-yours' : ''}${showSummary ? ' is-labelled' : ''}`}
+        className={`friend-react-button${yours ? ' is-yours' : ''}`}
         aria-label={
           yours
             ? `Your reaction to ${subject}: ${selected?.label}. Change reaction`
@@ -113,7 +113,6 @@ export function WorkoutReactionControl({
         }}
       >
         {yours ? <span aria-hidden="true">{reactionEmoji(yours)}</span> : <Icon name="react" />}
-        {showSummary && <span>{selected?.label ?? 'React'}</span>}
       </button>
       {open && (
         <div

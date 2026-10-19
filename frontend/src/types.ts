@@ -728,6 +728,7 @@ export interface SharingConnection {
 export interface SharingConnections {
   requests: SharingConnection[];
   followers: SharingConnection[];
+  blocked?: SharingConnection[];
 }
 
 export type WorkoutReactionKind = 'like' | 'love' | 'strong' | 'fire' | 'clap' | 'trophy';
