@@ -1,10 +1,30 @@
 # Gym Logger release notes
 
-## 0.8.1
+## 0.8.5
 
 19 October 2026
 
-### Workout types, friends and account setup
+### Training time, friend reactions and workout types
+
+![Compact notification popup with a workout reaction and three new followers, without Dismiss buttons](screenshots/releases/0.8.5-compact-notifications.png)
+
+*Opening the bell marks its displayed notices read. Recent notices stay available, and follow requests keep Approve and Decline.*
+
+![Alex Preview shared profile showing workout, cardio and combined time plus React and selected Like buttons on workout cards](screenshots/releases/0.8.5-shared-profile-time-reactions.png)
+
+*See lifetime training time and react to individual workouts directly on a shared profile.*
+
+![Friends on Home showing each friend's latest cardio or strength session with a single reaction button](screenshots/releases/0.8.5-friends-sessions.png)
+
+*One Friends card shows up to five friends, with their latest workout or cardio session.*
+
+![Home's Friends card with each friend's latest strength or cardio session and the reaction picker open above one friend's smiley button](screenshots/releases/0.8.5-friends-reactions.png)
+
+*Friends on Home: tap the smiley beside a friend's latest session and pick a reaction.*
+
+![Profile Time trained panel showing 8h 25min across 8 workouts, 2h 20min across 5 cardio sessions and 10h 10min combined](screenshots/releases/0.8.5-time-trained.png)
+
+*Time trained on Profile adds up workouts, cardio and all exercise combined.*
 
 ![Settings Workout types with built-in types plus custom Arms, Legs, Limbs and Torso, colour controls and Add type](screenshots/releases/0.8.1-workout-types.png)
 
@@ -13,10 +33,6 @@
 ![Today with a notification bell beside the profile picture and a seven-column calendar with custom workout types](screenshots/releases/0.8.1-custom-type-calendar.png)
 
 *Saved workouts keep their custom type in the calendar, including after that type is removed.*
-
-![Notifications showing a follow request with Approve and Decline buttons](screenshots/releases/0.8.1-follow-notifications.png)
-
-*Use the bell beside your profile picture to respond to requests and dismiss new-follower notices.*
 
 ![A searchable friends-only account with a pending follow request and a Cancel request button](screenshots/releases/0.8.1-friends-only-search.png)
 
@@ -36,8 +52,8 @@
 - The calendar now has seven day columns without the weekly **Sets** column, restoring the other calendar change from PR #68.
 - New accounts start **Public** to members who share. Existing accounts keep their current settings, including older accounts without saved sharing choices. Notes, body weight, goals and machine photos remain opt-in.
 - **Friends only** accounts remain searchable by name, username or full account UUID. Their workouts stay hidden until they approve a follow request.
-- A **Notifications** bell beside the top profile picture shows pending follow requests and new followers. Approve or decline requests there; dismissing a new-follower notice keeps the follower. Existing followers do not generate upgrade notifications.
-- This patch restores the custom workout types feature from PR #68, whose earlier merge did not reach the application release.
+- The **Notifications** bell opens a compact list of follow requests, new followers and workout reactions. Displayed notices are marked read automatically, clearing their unread badges without a Dismiss button. Recent notices remain visible; pending requests keep **Approve** and **Decline**. A failed read can be retried, and a newer follow or changed reaction stays unread until viewed.
+- This release restores the custom workout types feature from PR #68, whose earlier merge did not reach the application release.
 - The upgrade adds workout types and a dismissed-notification flag without rebuilding the saved-workouts table or changing existing account visibility.
 - When creating an account, **?** beside **Name** and **Username** explains each one. Name is
   your display name and doesn't need to be unique. Username is how you sign in and how friends
@@ -45,6 +61,18 @@
 - **See a sample profile**, below **Create account**, shows a profile card with the name and
   username typed so far, or **Sam Sample** until they're filled in. The workouts, cardio and PRs
   are examples, and a key shows where each name appears.
+- **Friends** on **Home** now shows each friend's latest workout or cardio session, marked
+  Strength or Cardio, with its duration and sets or distance. Tap the smiley beside it to react
+  with 👍, ❤️, 💪, 🔥, 👏 or 🏆; your reaction then shows on the button, and choosing it again
+  removes it. Tap the friend to open their profile.
+- Reactions to your workouts appear under the **Notifications** bell with who reacted and to which
+  workout. Opening the bell marks them read; a changed reaction appears unread again.
+- On a shared profile, each workout has a compact **React** button beside its reaction count. It opens the same picker as Home; choose another reaction to switch, or choose yours again to remove it. Reactions work on strength and cardio workouts.
+- The **Today** tab is now called **Home**, matching its house icon.
+- Your **Profile** and viewable **shared profiles** have a **Time trained** panel for workouts, cardio
+  sessions and all exercise combined, plus counts. Cardio inside a workout counts once in
+  **Combined**, and sample data is excluded. These lifetime totals stay the same when filtering
+  workout history. Friends-only totals remain hidden until access is approved.
 
 ## 0.8.0
 
