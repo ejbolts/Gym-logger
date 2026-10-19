@@ -1,8 +1,8 @@
 {
-  "version": "0.8.1",
+  "version": "0.8.5",
   "date": "2026-10-19",
-  "title": "Workout types, friends and account setup",
-  "summary": "Custom workout types return with a cleaner calendar, follow notifications, clearer account creation and your total time trained on Profile.",
+  "title": "Training time, friend reactions and workout types",
+  "summary": "Track your total time trained on Profile, react to the latest sessions from friends on Home, and personalise workout types, with a cleaner calendar and clearer account setup.",
   "changes": [
     "Settings > Workout types lets each account add named workout types with their own colours, such as Arms, Legs, Limbs or Torso.",
     "Remove built-in or custom types from new workouts and restore them later. Saved workouts keep their type and colour.",
@@ -12,11 +12,14 @@
     "A bell beside your profile picture shows follow requests and new followers. Approve or decline requests and dismiss new-follower notices there.",
     "Creating an account has a ? beside Name and Username. Name is your display name and doesn't need to be unique; Username is how you sign in and how friends find you as @handle, so it must be unique. Both can be changed any time in Profile.",
     "See a sample profile, under Create account, shows a profile card with the name and username you've typed, or Sam Sample until you type them, with example workouts, cardio and PRs.",
+    "Friends on Home shows each friend's latest workout or cardio session. Tap the smiley to react with 👍, ❤️, 💪, 🔥, 👏 or 🏆; choose your reaction again to remove it.",
+    "Reactions to your own workouts appear under the notification bell, where you can dismiss them.",
+    "The Today tab is now called Home, matching its house icon.",
     "Profile shows Time trained: total hours from workouts, cardio sessions and all exercise combined. Cardio logged during a workout counts once in Combined."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#081",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#085",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/8a85f7e6f4393da024c52dbbad3a009485d24606/docs/screenshots/releases/0.8.1-workout-types.png",
-    "alt": "Settings Workout types with custom Arms, Legs, Limbs and Torso, their colours and the Add type controls."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/d348a8c1385d31e8675d1310b2cc5412a4b52ee7/friend-workout-reactions-20261019/friends-card.png",
+    "alt": "Friends on Home with the latest cardio or strength session from each friend and one reaction button per row."
   }
 }
