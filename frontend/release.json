@@ -7,7 +7,7 @@
     "Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.",
     "Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.",
     "Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.",
-    "Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session.",
+    "Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session. When you follow more friends than the card shows, +N more below the list opens Friends.",
     "Profile > Friends > Followers now has Block, with an outlined ? icon beside the follower count that explains blocking. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.",
     "Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows."
   ],

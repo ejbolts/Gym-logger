@@ -82,14 +82,14 @@ function button(label: string) {
   return found!;
 }
 
-async function render(onOpenFriend = vi.fn()) {
+async function render(onOpenFriend = vi.fn(), onOpenFriends = vi.fn()) {
   await act(async () =>
     root.render(
       <FriendsActivityCard
         active
         today="2026-10-19"
         onOpenFriend={onOpenFriend}
-        onOpenFriends={vi.fn()}
+        onOpenFriends={onOpenFriends}
       />,
     ),
   );
@@ -115,6 +115,16 @@ it('summarises strength and cardio sessions, dates and reactions', () => {
   expect(reactionSummary(jordan.reactions.counts)).toEqual({ emojis: ['❤️', '👍'], total: 3 });
   expect(nextReaction('fire', 'fire')).toBeNull();
   expect(nextReaction(null, 'love')).toBe('love');
+});
+
+it('counts followed friends beyond the card and opens Friends from the count', async () => {
+  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], following: 5 });
+  const openFriends = vi.fn();
+  await render(vi.fn(), openFriends);
+  const more = host.querySelector<HTMLButtonElement>('.friends-activity-more')!;
+  expect(more.textContent).toBe('+3 more');
+  await act(async () => more.click());
+  expect(openFriends).toHaveBeenCalled();
 });
 
 it("shows each friend's latest session with one reaction button and opens their profile", async () => {
