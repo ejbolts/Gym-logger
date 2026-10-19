@@ -5133,14 +5133,6 @@ function MovementCard({
                       <span>rest</span>
                     </label>
                     <i />
-                    <button
-                      type="button"
-                      className="remove-rest-time"
-                      aria-label={`Remove rest after set ${index + 1}`}
-                      onClick={() => removeRest(item)}
-                    >
-                      <Icon name="close" />
-                    </button>
                   </div>
                 </SwipeToDeleteSetRow>
               )}

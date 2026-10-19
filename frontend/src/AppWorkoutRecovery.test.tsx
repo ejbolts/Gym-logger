@@ -189,7 +189,8 @@ describe('rest time controls', () => {
     writeActiveWorkoutDraft(storedDraft());
     await mount();
     expect(restControl()?.value).toBe('180');
-    await click('Remove rest after set 1');
+    expect(container.querySelector('.rest-between button')).toBeNull();
+    await choose('Rest after set 1', '0');
     expect(restControl()).toBeNull();
     expect(container.querySelector('.undo-toast')?.textContent).toContain('Rest time removed');
     expect(container.querySelectorAll('.set-details')).toHaveLength(2);
