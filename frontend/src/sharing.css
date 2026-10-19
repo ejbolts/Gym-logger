@@ -244,7 +244,7 @@
 
 .profile-follow-menu button:hover:not(:disabled),
 .profile-follow-menu button:focus-visible {
-  background: rgb(230 103 103 / 12%);
+  background: var(--p-surface-2);
 }
 
 @media (prefers-reduced-motion: reduce) {
