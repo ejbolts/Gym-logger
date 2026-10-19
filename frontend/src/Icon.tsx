@@ -36,6 +36,9 @@ const PATHS = {
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5a7.5 7.5 0 0 1 15 0',
   pulse: 'M3 12.5h4l2.5-6.5 5 13 2.5-6.5h4',
   heart: 'M20.5 5.5a5 5 0 0 0-7 0L12 7l-1.5-1.5a5 5 0 0 0-7 7L12 21l8.5-8.5a5 5 0 0 0 0-7z',
+  // A smiling face with a plus, for adding a reaction.
+  react:
+    'M16.5 4A8.5 8.5 0 1 0 20.4 9.5M9 10h.01M14.5 10h.01M8.2 14a4.4 4.4 0 0 0 7.6 0M19.5 2v6M16.5 5h6',
   external:
     'M14 3.5h6.5V10M20.5 3.5l-10 10M10 4H5.5A2 2 0 0 0 3.5 6v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4.5',
 } as const;

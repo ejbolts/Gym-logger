@@ -231,7 +231,6 @@ import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
 import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
 import { FriendsActivityCard } from './FriendsActivity';
-import { FriendFeedCard } from './FriendFeed';
 import { SettingsSearch } from './SettingsSearch';
 import { ColourThemePanel } from './ColourThemePanel';
 import {
@@ -1389,15 +1388,6 @@ function AppContent() {
                   friendsActivity={
                     user ? (
                       <FriendsActivityCard
-                        active={tab === 'dashboard'}
-                        onOpenFriend={openSharedProfile}
-                        onOpenFriends={() => setTab('profile')}
-                      />
-                    ) : undefined
-                  }
-                  friendFeed={
-                    user ? (
-                      <FriendFeedCard
                         active={tab === 'dashboard'}
                         onOpenFriend={openSharedProfile}
                         onOpenFriends={() => setTab('profile')}

@@ -726,11 +726,17 @@ export interface WorkoutReactions {
   yours: WorkoutReactionKind | null;
 }
 
-/** One of the newest workouts across the members you follow. */
+/** A followed member's latest workout or cardio session. */
 export interface FriendFeedItem {
   friend: Pick<SharingConnection, 'id' | 'display_name' | 'profile_photo_url'>;
   workout: TrackedWorkout;
   reactions: WorkoutReactions;
+}
+
+export interface FriendFeed {
+  items: FriendFeedItem[];
+  /** Members you follow who share, including those without a session yet. */
+  following: number;
 }
 
 /** A reaction to one of your workouts; `since` is when it was given. */

@@ -127,10 +127,8 @@ export interface TodayScreenProps {
   /** Unresolved app feedback, shown to administrators beside follow requests. */
   openFeedback?: number;
   calendar?: ReactNode;
-  /** The Friends card; omitted outside the signed-in app. */
+  /** The Friends card with friends' latest sessions; omitted outside the signed-in app. */
   friendsActivity?: ReactNode;
-  /** Friends' newest workouts with reactions; omitted outside the signed-in app. */
-  friendFeed?: ReactNode;
   today?: string;
 }
 
@@ -165,7 +163,6 @@ export function TodayScreen({
   openFeedback = 0,
   calendar,
   friendsActivity,
-  friendFeed,
   today = localDate(),
 }: TodayScreenProps) {
   const weightUnit = useWeightUnit();
@@ -572,7 +569,6 @@ export function TodayScreen({
       </section>
     ),
     friends: friendsActivity ?? null,
-    'friend-feed': friendFeed ?? null,
   };
 
   return (

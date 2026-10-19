@@ -237,7 +237,10 @@ class FriendFeedItem(BaseModel):
 
 
 class FriendFeedRead(BaseModel):
+    """Each followed member's latest session, plus how many members you follow."""
+
     items: list[FriendFeedItem]
+    following: int
 
 
 class ReactionNotice(ConnectionRead):
@@ -889,21 +892,39 @@ def reaction_summaries(
 
 @sharing_router.get("/feed", response_model=FriendFeedRead)
 def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
-    """The newest workouts from members you follow, across all of them."""
+    """Home's Friends card: the latest session from each member you follow, most recent first."""
     require_sharing(db, user)
-    followed = select(ProfileFollow.followee_id).where(
-        ProfileFollow.follower_id == user.id, ProfileFollow.status == ACCEPTED
-    )
-    rows = db.execute(
-        select(TrainingWorkout, User, ProfileSharing)
-        .join(User, User.id == TrainingWorkout.user_id)
-        .join(ProfileSharing, ProfileSharing.user_id == TrainingWorkout.user_id)
+    followed = (
+        select(ProfileFollow.followee_id)
+        .join(User, User.id == ProfileFollow.followee_id)
+        .join(ProfileSharing, ProfileSharing.user_id == ProfileFollow.followee_id)
         .where(
-            TrainingWorkout.user_id.in_(followed),
-            TrainingWorkout.is_sample.is_(False),
+            ProfileFollow.follower_id == user.id,
+            ProfileFollow.status == ACCEPTED,
             User.disabled_at.is_(None),
             ProfileSharing.visibility != PRIVATE,
         )
+    )
+    following = db.scalar(select(func.count()).select_from(followed.subquery())) or 0
+    newest = (
+        select(
+            TrainingWorkout.id,
+            func.row_number()
+            .over(
+                partition_by=TrainingWorkout.user_id,
+                order_by=(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc()),
+            )
+            .label("position"),
+        )
+        .where(TrainingWorkout.user_id.in_(followed), TrainingWorkout.is_sample.is_(False))
+        .subquery()
+    )
+    rows = db.execute(
+        select(TrainingWorkout, User, ProfileSharing)
+        .join(newest, newest.c.id == TrainingWorkout.id)
+        .join(User, User.id == TrainingWorkout.user_id)
+        .join(ProfileSharing, ProfileSharing.user_id == TrainingWorkout.user_id)
+        .where(newest.c.position == 1)
         .options(*workout_options())
         .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
         .limit(FEED_SIZE)
@@ -921,7 +942,8 @@ def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
                 reactions=reactions[workout.id],
             )
             for workout, member, sharing in rows
-        ]
+        ],
+        following=following,
     )
 
 

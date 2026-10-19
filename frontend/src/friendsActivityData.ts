@@ -1,58 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
-import type { SharedProfileSummary, TrackedWorkout } from './types';
-
-const FRIENDS_SHOWN = 5;
-
-export interface FriendWorkout {
-  friend: SharedProfileSummary;
-  workout: TrackedWorkout | null;
-}
-
-/** Friends you follow and can see, most recently active first, each with their latest workout. */
-export async function loadFriendWorkouts(
-  profiles: SharedProfileSummary[],
-): Promise<FriendWorkout[]> {
-  const friends = profiles
-    .filter(
-      (profile) =>
-        !profile.is_you &&
-        profile.follow_status === 'accepted' &&
-        profile.can_view &&
-        profile.last_workout_date !== null,
-    )
-    .sort((left, right) => right.last_workout_date!.localeCompare(left.last_workout_date!))
-    .slice(0, FRIENDS_SHOWN);
-  return Promise.all(
-    friends.map(async (friend) => {
-      try {
-        const page = await api.sharing.workouts(friend.id, 0, 1);
-        return { friend, workout: page.workouts[0] ?? null };
-      } catch {
-        return { friend, workout: null };
-      }
-    }),
-  );
-}
-
-/** A friend's Workouts, Cardio and PRs totals, matching the stats on your own Today profile. */
-export function friendActivityTotals(friend: SharedProfileSummary) {
-  return [
-    {
-      key: 'workouts',
-      icon: 'calendar',
-      value: friend.workout_count,
-      label: ['workout', 'workouts'],
-    },
-    {
-      key: 'cardio',
-      icon: 'heart',
-      value: friend.cardio_count,
-      label: ['cardio session', 'cardio sessions'],
-    },
-    { key: 'records', icon: 'trophy', value: friend.record_count, label: ['PR', 'PRs'] },
-  ] as const;
-}
 
 /**
  * A count from the server, refreshed whenever `active` turns on or the app regains focus.

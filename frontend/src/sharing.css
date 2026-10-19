@@ -588,101 +588,39 @@
   margin: 0.5rem 0 0;
 }
 
-/* Today's Friends card */
+/* Home's Friends card: each friend's latest session and a reaction button */
 
 .home-section-content > .friends-activity {
   justify-content: flex-start;
 }
 
-.friends-activity .friend-activity-list {
-  margin-top: 0.75rem;
-  flex: 0 0 auto;
-}
-
-.friend-activity-list .shared-profile-avatar.small {
-  font-size: 0.875rem;
-}
-
-.friend-activity-list .record-copy {
-  overflow-wrap: anywhere;
-}
-
-/* Each friend's Workouts, Cardio and PRs totals, using the Today profile's icons. */
-.friend-activity-totals {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  color: var(--p-ink-2);
-  font-size: 0.8125rem;
-  white-space: nowrap;
-}
-
-.friend-activity-totals > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3125rem;
-}
-
-.friend-activity-totals .today-profile-icon {
-  width: 1.375rem;
-  height: 1.375rem;
-  border-radius: 7px;
-}
-
-.friend-activity-totals .today-profile-icon .pulse-icon {
-  width: 0.8125rem;
-  height: 0.8125rem;
-}
-
-.friend-activity-totals b {
-  font-weight: 700;
-}
-
-/* On phones the totals sit under the name so long names keep their room. */
-@media (max-width: 480px) {
-  .friend-activity-list button {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.375rem 0.75rem;
-  }
-
-  .friend-activity-list .shared-profile-avatar {
-    grid-row: span 2;
-  }
-
-  .friend-activity-totals {
-    grid-column: 2;
-  }
-}
-
-/* Home's feed of friends' newest workouts, each with reaction buttons */
-
-.home-section-content > .friend-feed {
-  justify-content: flex-start;
-}
-
-.home-section-content > .pulse-card.friend-feed > .friend-feed-list {
-  margin-top: 0.75rem;
-  margin-bottom: 0;
-}
-
-.friend-feed-list {
+.friend-activity-list {
   margin: 0.75rem 0 0;
   padding: 0;
   list-style: none;
 }
 
-.friend-feed-list li {
+.friend-activity-list li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.625rem 0;
+  transition: opacity 160ms ease;
 }
 
-.friend-feed-list li + li {
+.friend-activity-list li + li {
   border-top: 1px solid var(--p-line);
 }
 
-.friend-feed-workout {
-  width: 100%;
+/* While choosing a reaction, the other friends fade back. */
+.friend-activity-list.is-picking li:not(.is-picking) {
+  opacity: 0.35;
+}
+
+.friend-activity-open {
+  min-width: 0;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -695,54 +633,164 @@
   cursor: pointer;
 }
 
-.friend-feed-workout .shared-profile-avatar.small {
+.friend-activity-open .shared-profile-avatar.small {
   font-size: 0.875rem;
 }
 
-.friend-feed-workout .record-copy {
-  overflow-wrap: anywhere;
-}
-
-/* Six equal buttons across the card, so a phone fits every reaction on one row. */
-.friend-feed-reactions {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.375rem;
-  margin-top: 0.5rem;
-}
-
-.friend-feed-reactions button {
+.friend-activity-copy {
   min-width: 0;
-  min-height: 2.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  border: 1px solid var(--p-line-strong);
-  border-radius: 999px;
-  padding: 0 0.25rem;
-  background: var(--p-surface-2);
-  color: var(--p-ink-2);
-  font: inherit;
-  font-size: 0.9375rem;
-  cursor: pointer;
+  display: grid;
+  gap: 0.125rem;
 }
 
-.friend-feed-reactions button b {
+.friend-activity-copy b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-activity-session {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--p-ink-2);
   font-size: 0.8125rem;
+}
+
+.friend-activity-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-activity-kind {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 0.0625rem 0.4375rem;
+  font-size: 0.6875rem;
   font-weight: 650;
 }
 
-.friend-feed-reactions button.is-yours {
-  border-color: var(--p-accent);
+.friend-activity-kind.strength {
   background: var(--p-accent-soft);
-  color: var(--p-ink);
+  color: var(--p-accent-text);
 }
 
-.friend-feed-reactions button:disabled {
+.friend-activity-kind.cardio {
+  background: color-mix(in srgb, var(--p-good) 15%, transparent);
+  color: var(--p-good);
+}
+
+.friend-activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.friend-activity-reactions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--p-ink-2);
+}
+
+.friend-react-button {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 50%;
+  padding: 0;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.friend-react-button .pulse-icon {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.friend-react-button.is-yours,
+.friend-react-button[aria-expanded='true'] {
+  border-color: var(--p-accent);
+  background: var(--p-accent-soft);
+}
+
+/* The picker opens above the button; in a narrow card it wraps onto two rows. */
+.friend-react-picker {
+  position: absolute;
+  z-index: 5;
+  right: -0.25rem;
+  bottom: calc(100% - 0.375rem);
+  max-width: calc(100% + 0.5rem);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.125rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 1.5rem;
+  padding: 0.3125rem;
+  background: var(--p-surface-3);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 55%);
+}
+
+.friend-react-picker button {
+  width: 2.375rem;
+  height: 2.375rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.friend-react-picker button:hover,
+.friend-react-picker button:focus-visible {
+  background: var(--p-surface-2);
+}
+
+.friend-react-picker button[aria-pressed='true'] {
+  background: var(--p-accent-soft);
+  outline: 1px solid var(--p-accent);
+}
+
+.friend-react-picker button:disabled {
   cursor: progress;
 }
 
-.friend-feed > .inline-error {
+.friends-activity > .inline-error {
   margin: 0.5rem 0 0;
+}
+
+@container (max-width: 280px) {
+  .friend-activity-open .shared-profile-avatar.small {
+    display: none;
+  }
+  .friend-activity-copy b {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .friend-activity-session {
+    display: grid;
+    justify-items: start;
+    gap: 0.25rem;
+  }
+  .friend-activity-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
 }

@@ -43,7 +43,7 @@ import type {
   SharingChoices,
   SharingConnections,
   SharingNotifications,
-  FriendFeedItem,
+  FriendFeed,
   WorkoutReactionKind,
   WorkoutReactions,
   SharingSettings,
@@ -247,8 +247,7 @@ export const api = {
       request<void>(`/api/sharing/follows/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
     connections: () => request<SharingConnections>('/api/sharing/followers'),
     notifications: () => request<SharingNotifications>('/api/sharing/notifications'),
-    feed: () =>
-      request<{ items: FriendFeedItem[] }>('/api/sharing/feed').then((page) => page.items),
+    feed: () => request<FriendFeed>('/api/sharing/feed'),
     react: (workoutId: string, reaction: WorkoutReactionKind) =>
       request<WorkoutReactions>(`/api/sharing/workouts/${encodeURIComponent(workoutId)}/reaction`, {
         method: 'PUT',

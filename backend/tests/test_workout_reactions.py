@@ -35,41 +35,46 @@ def third_client(client):
     third.close()
 
 
-def test_feed_lists_the_newest_workouts_across_people_you_follow(
-    client, other_client, third_client
-):
+def test_feed_shows_each_followed_members_latest_session(client, other_client, third_client):
     share(other_client, "public")
     share(third_client, "followers")
     for days_ago in range(4):
-        log_workout(other_client, f"Other {days_ago}", days_ago * 2, notes="Private note")
-        log_workout(third_client, f"Third {days_ago}", days_ago * 2 + 1)
+        log_workout(other_client, f"Other {days_ago}", days_ago * 2 + 1, notes="Private note")
+        log_workout(third_client, f"Third {days_ago}", days_ago * 2)
     log_workout(client, "Mine", 0)
 
-    # Nobody followed yet; public profiles still need a follow to appear in the feed.
-    assert client.get("/api/sharing/feed").json() == {"items": []}
+    # Nobody followed yet; public profiles still need a follow to appear.
+    assert client.get("/api/sharing/feed").json() == {"items": [], "following": 0}
     client.post(f"/api/sharing/follows/{other_client.user['id']}")
     client.post(f"/api/sharing/follows/{third_client.user['id']}")
-    # The friends-only request is still pending, so only Other's workouts appear.
-    names = [item["workout"]["name"] for item in client.get("/api/sharing/feed").json()["items"]]
-    assert names == ["Other 0", "Other 1", "Other 2", "Other 3"]
+    # The friends-only request is still pending, so only Other appears.
+    feed = client.get("/api/sharing/feed").json()
+    assert [item["workout"]["name"] for item in feed["items"]] == ["Other 0"]
+    assert feed["following"] == 1
 
     third_client.post(f"/api/sharing/followers/{client.user['id']}")
-    feed = client.get("/api/sharing/feed").json()["items"]
-    assert [item["workout"]["name"] for item in feed] == [
-        "Other 0",
-        "Third 0",
-        "Other 1",
-        "Third 1",
-        "Other 2",
-    ]
-    assert feed[0]["friend"] == {
+    feed = client.get("/api/sharing/feed").json()
+    # One latest session per friend, most recent first.
+    assert [item["workout"]["name"] for item in feed["items"]] == ["Third 0", "Other 0"]
+    assert feed["following"] == 2
+    other = feed["items"][1]
+    assert other["friend"] == {
         "id": other_client.user["id"],
         "display_name": "Other",
         "profile_photo_url": None,
     }
     # Notes stay hidden unless the owner shares them.
-    assert feed[0]["workout"]["notes"] is None
-    assert feed[0]["reactions"] == {"counts": [], "yours": None}
+    assert other["workout"]["notes"] is None
+    assert other["reactions"] == {"counts": [], "yours": None}
+
+
+def test_feed_counts_friends_without_sessions_and_hides_private_ones(client, other_client):
+    share(other_client, "public")
+    client.post(f"/api/sharing/follows/{other_client.user['id']}")
+    assert client.get("/api/sharing/feed").json() == {"items": [], "following": 1}
+    log_workout(other_client, "First", 0)
+    share(other_client, "private")
+    assert client.get("/api/sharing/feed").json() == {"items": [], "following": 0}
 
 
 def test_private_members_cannot_load_the_feed(client):
