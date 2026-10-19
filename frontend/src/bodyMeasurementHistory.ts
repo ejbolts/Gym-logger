@@ -1,4 +1,5 @@
 import type { BodyTrendStatistic } from './bodyTrend';
+import { weightFromKg, type WeightUnit } from './weightUnits';
 
 export type BodyHistoryPeriod = 'week' | 'month';
 
@@ -23,6 +24,9 @@ interface BodyHistoryGoal {
 
 export interface BodyHistoryWeightChange {
   direction: 'up' | 'down';
+  /** The compared weights in kg, so the amount can be shown in the row's own units and rounding. */
+  current_kg: number;
+  previous_kg: number;
   status: 'favorable' | 'unfavorable' | 'neutral';
   goalDirection: 'loss' | 'gain' | null;
 }
@@ -49,6 +53,8 @@ export function bodyHistoryWithWeightChanges<T extends { weight_kg: number }>(
       weight_change: direction
         ? {
             direction,
+            current_kg: entry.weight_kg,
+            previous_kg: previous.weight_kg,
             status: goalDirection
               ? direction === goalDirection
                 ? 'favorable'
@@ -59,6 +65,28 @@ export function bodyHistoryWithWeightChanges<T extends { weight_kg: number }>(
           }
         : null,
     };
+  });
+}
+
+/**
+ * The gain or loss between the two rows as they are displayed, so it always matches the
+ * difference a reader would work out from the rounded weights.
+ */
+export function weightChangeAmount(
+  change: BodyHistoryWeightChange,
+  unit: WeightUnit,
+  decimals: number,
+  /** Keep trailing zeros, as rows showing a fixed number of decimals do. */
+  fixed = false,
+): string {
+  const shown = (kg: number) => Number(weightFromKg(kg, unit).toFixed(decimals));
+  const amount = Math.abs(
+    Number((shown(change.current_kg) - shown(change.previous_kg)).toFixed(decimals)),
+  );
+  if (amount === 0) return `<${(10 ** -decimals).toFixed(decimals)}`;
+  return amount.toLocaleString('en-GB', {
+    minimumFractionDigits: fixed ? decimals : 0,
+    maximumFractionDigits: decimals,
   });
 }
 

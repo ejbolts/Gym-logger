@@ -160,7 +160,7 @@ describe('Body history goal-aware arrows', () => {
       await render([measurement('2026-10-02', 80), measurement('2026-10-01', 81)], goals);
       expect(arrow(rows()[0])?.classList.contains('neutral')).toBe(true);
       expect(arrow(rows()[0])?.getAttribute('aria-label')).toBe(
-        'Weight decreased since previous check-in',
+        'Weight decreased by 1 kg since previous check-in',
       );
     },
   );
@@ -192,5 +192,53 @@ describe('Body history goal-aware arrows', () => {
     expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
     await selectTab('Median Monthly');
     expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
+  });
+
+  it('shows the gain or loss beside each arrow in the row units and rounding', async () => {
+    await render(
+      [
+        measurement('2026-10-06', 84.15),
+        measurement('2026-10-05', 83.4),
+        measurement('2026-09-10', 83.36),
+        measurement('2026-09-03', 85.9),
+        measurement('2026-08-12', 88.5),
+        measurement('2026-07-08', 89.5),
+      ],
+      [],
+    );
+    const amounts = () =>
+      rows().map(
+        (row) => row.querySelector('.body-history-weight-change-amount')?.textContent ?? null,
+      );
+
+    expect(amounts()).toEqual(['0.75', '0.04', '2.54', '2.6', '1', null]);
+    expect(arrow(rows()[0])?.getAttribute('aria-label')).toBe(
+      'Weight increased by 0.75 kg since previous check-in',
+    );
+
+    await selectTab('Avg Monthly');
+    // Shown as 83.8, 84.6, 88.5 and 89.5 kg, keeping the rows' single decimal.
+    expect(amounts()).toEqual(['0.8', '3.9', '1.0', null]);
+    expect(arrow(rows()[1])?.getAttribute('aria-label')).toBe(
+      'Weight decreased by 3.9 kg since previous month with check-ins',
+    );
+  });
+
+  it('converts the amount to pounds and never shows a zero change beside an arrow', async () => {
+    await render(
+      [
+        measurement('2026-10-02', 80.02),
+        measurement('2026-10-01', 80.019),
+        measurement('2026-09-30', 79),
+      ],
+      [],
+      'lb',
+    );
+    const amount = (row: Element) =>
+      row.querySelector('.body-history-weight-change-amount')?.textContent;
+
+    // 80.02 kg and 80.019 kg both show as 176.41 lb; 79 kg shows as 174.17 lb.
+    expect(amount(rows()[0])).toBe('<0.01');
+    expect(amount(rows()[1])).toBe('2.24');
   });
 });

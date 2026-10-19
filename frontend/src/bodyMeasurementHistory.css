@@ -1,5 +1,6 @@
 .body-history-panel .body-history-weight strong {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.3rem;
 }
@@ -7,7 +8,15 @@
 .body-history-weight-change {
   display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  gap: 0.1rem;
   color: #a6a5a2;
+}
+
+.body-history-weight-change-amount {
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .body-history-weight-change .pulse-icon {

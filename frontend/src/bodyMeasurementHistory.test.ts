@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { bodyHistoryWithWeightChanges, summarizeBodyHistory } from './bodyMeasurementHistory';
+import {
+  bodyHistoryWithWeightChanges,
+  summarizeBodyHistory,
+  weightChangeAmount,
+} from './bodyMeasurementHistory';
 
 const measurements = [
   { measurement_date: '2026-10-01', weight_kg: 90, body_fat_pct: null },
@@ -52,11 +56,13 @@ describe('bodyweight history changes', () => {
   const cut = { start_weight_kg: 90, target_weight_kg: 80 };
   const bulk = { start_weight_kg: 80, target_weight_kg: 90 };
   const history = [82, 83, 82].map((weight_kg) => ({ weight_kg }));
+  const down = { direction: 'down', current_kg: 82, previous_kg: 83 } as const;
+  const up = { direction: 'up', current_kg: 83, previous_kg: 82 } as const;
 
   it('marks losses favorably and gains unfavorably for a cutting goal', () => {
     expect(bodyHistoryWithWeightChanges(history, cut).map((entry) => entry.weight_change)).toEqual([
-      { direction: 'down', status: 'favorable', goalDirection: 'loss' },
-      { direction: 'up', status: 'unfavorable', goalDirection: 'loss' },
+      { ...down, status: 'favorable', goalDirection: 'loss' },
+      { ...up, status: 'unfavorable', goalDirection: 'loss' },
       null,
     ]);
   });
@@ -64,8 +70,8 @@ describe('bodyweight history changes', () => {
   it('reverses the goal status for a bulking goal without reversing arrow direction', () => {
     expect(bodyHistoryWithWeightChanges(history, bulk).map((entry) => entry.weight_change)).toEqual(
       [
-        { direction: 'down', status: 'unfavorable', goalDirection: 'gain' },
-        { direction: 'up', status: 'favorable', goalDirection: 'gain' },
+        { ...down, status: 'unfavorable', goalDirection: 'gain' },
+        { ...up, status: 'favorable', goalDirection: 'gain' },
         null,
       ],
     );
@@ -75,7 +81,7 @@ describe('bodyweight history changes', () => {
     'shows neutral direction when no directional goal exists: %s',
     (goal) => {
       expect(bodyHistoryWithWeightChanges(history, goal)[0].weight_change).toEqual({
-        direction: 'down',
+        ...down,
         status: 'neutral',
         goalDirection: null,
       });
@@ -124,11 +130,38 @@ describe('bodyweight history changes', () => {
     const rows = bodyHistoryWithWeightChanges(entries, cut);
     expect(rows.slice(0, 8)[7].weight_change).toEqual({
       direction: 'down',
+      current_kg: 80.7,
+      previous_kg: 80.8,
       status: 'favorable',
       goalDirection: 'loss',
     });
     expect(rows.slice(8)[0].weight_change?.status).toBe('favorable');
     expect(rows.at(-1)?.weight_change).toBeNull();
     expect(entries[0]).toEqual({ weight_kg: 80 });
+  });
+});
+
+describe('bodyweight change amounts', () => {
+  const change = (current_kg: number, previous_kg: number) => ({
+    direction: current_kg > previous_kg ? ('up' as const) : ('down' as const),
+    current_kg,
+    previous_kg,
+    status: 'neutral' as const,
+    goalDirection: null,
+  });
+
+  it('matches the difference between the rounded weights shown in each row', () => {
+    // 84.14 and 83.36 kg are shown as 84.1 and 83.4 kg, a 0.7 kg change.
+    expect(weightChangeAmount(change(84.14, 83.36), 'kg', 1)).toBe('0.7');
+    expect(weightChangeAmount(change(84.15, 83.4), 'kg', 2)).toBe('0.75');
+    expect(weightChangeAmount(change(90, 80), 'kg', 1)).toBe('10');
+    expect(weightChangeAmount(change(90, 80), 'kg', 1, true)).toBe('10.0');
+    expect(weightChangeAmount(change(80.5, 80.3), 'kg', 2)).toBe('0.2');
+    expect(weightChangeAmount(change(80, 79), 'lb', 1)).toBe('2.2');
+  });
+
+  it('shows the smallest visible step rather than zero for changes hidden by rounding', () => {
+    expect(weightChangeAmount(change(80.02, 80.01), 'kg', 1)).toBe('<0.1');
+    expect(weightChangeAmount(change(80.004, 80.001), 'kg', 2)).toBe('<0.01');
   });
 });

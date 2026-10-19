@@ -7574,6 +7574,8 @@ export function BodyCompositionScreen({
                     <BodyHistoryWeightChange
                       change={measurement.weight_change}
                       comparison="previous check-in"
+                      unit={weightUnit}
+                      decimals={2}
                     />
                   </strong>
                   <small>{measurement.is_sample && 'Sample'}</small>
@@ -7678,6 +7680,9 @@ export function BodyCompositionScreen({
                   <BodyHistoryWeightChange
                     change={summary.weight_change}
                     comparison={`previous ${historyView === 'week' ? 'week' : 'month'} with check-ins`}
+                    unit={weightUnit}
+                    decimals={1}
+                    fixed
                   />
                 </strong>
                 <small>

@@ -1,5 +1,23 @@
 # Gym Logger release notes
 
+## 0.8.6
+
+20 October 2026
+
+### See how much your weight changed
+
+![Avg Monthly bodyweight history with a green down arrow and the amount lost beside each month, such as 2.2 and 0.5](screenshots/releases/0.8.6-weight-change-monthly.png)
+
+*Avg Monthly shows how much each month's average changed from the month before.*
+
+![Daily bodyweight history with green losses and red gains beside each check-in, such as ↓ 0.2 and ↑ 0.3](screenshots/releases/0.8.6-weight-change-daily.png)
+
+*Daily compares each check-in with the one before it; colours follow your weight goal.*
+
+- Each up or down arrow in Body history now shows the amount gained or lost compared with the row below, such as ↓ 0.5.
+- Daily compares with your previous check-in; Avg Week and Avg Monthly compare with the previous week or month that has check-ins.
+- Amounts use your weight unit and match the rounded weights shown, so they add up when you compare two rows.
+
 ## 0.8.5
 
 19 October 2026
