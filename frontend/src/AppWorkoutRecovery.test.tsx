@@ -171,7 +171,7 @@ describe('muscle contribution workout links', () => {
     await act(async () =>
       document.querySelector<HTMLButtonElement>('.muscle-contribution-list button')!.click(),
     );
-    await act(async () => new Promise((resolve) => window.setTimeout(resolve, 30)));
+    await act(async () => new Promise((resolve) => window.setTimeout(resolve, 60)));
   }
   beforeEach(() => {
     window.history.replaceState(null, '', '#dashboard');
@@ -238,6 +238,22 @@ describe('muscle contribution workout links', () => {
       'Second appearance',
     );
     expect(window.location.hash).toBe('#history');
+    expect(api.createWorkout).not.toHaveBeenCalled();
+    expect(api.updateWorkout).not.toHaveBeenCalled();
+  });
+  it('preserves an active workout while viewing the contributing exercise', async () => {
+    const draft = storedDraft({ workoutDate: '2026-10-18' });
+    writeActiveWorkoutDraft(draft);
+    vi.mocked(api.listWorkouts).mockResolvedValue([savedWorkout()]);
+    await mount();
+    await openSheet();
+    await openExercise();
+    expect(window.location.hash).toBe('#history');
+    expect(container.querySelector('.targeted-exercise')?.textContent).toContain(
+      'Second appearance',
+    );
+    expectPreserved(draft);
+    expect(container.querySelector('.logger-screen')?.closest('[hidden]')).not.toBeNull();
     expect(api.createWorkout).not.toHaveBeenCalled();
     expect(api.updateWorkout).not.toHaveBeenCalled();
   });

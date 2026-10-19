@@ -8765,11 +8765,15 @@ function HistoryScreen({
     const target = exercise ?? summary;
     if (!target) return;
     revealWorkoutRef.current = false;
-    const frame = window.requestAnimationFrame(() => {
-      target.focus({ preventScroll: true });
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: exercise ? 'center' : 'start',
+    // The source sheet closes as History is revealed. Let its scroll lock and
+    // the cached screen's layout settle before moving to the requested exercise.
+    let frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        target.focus({ preventScroll: true });
+        target.scrollIntoView({
+          behavior: motionReduced() ? 'instant' : 'smooth',
+          block: exercise ? 'center' : 'start',
+        });
       });
     });
     return () => window.cancelAnimationFrame(frame);
