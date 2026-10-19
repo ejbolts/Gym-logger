@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { UndoBodyweightCheckIn } from './bodyweightCheckIn';
+import { ConsistencyCard } from './ConsistencyCard';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { formatMemberSince } from './profileDisplay';
@@ -418,29 +419,9 @@ export function TodayScreen({
       </button>
     ),
     consistency: (
-      <section className="calendar-panel pulse-card" aria-labelledby="consistency-title">
-        <header className="pulse-card-header">
-          <h2 id="consistency-title">Consistency</h2>
-          <span>Last 12 weeks</span>
-        </header>
-        <div className="consistency-stats">
-          <div>
-            <span>Streak</span>
-            <b>
-              {data?.current_streak ?? 0} {data?.current_streak === 1 ? 'day' : 'days'}
-            </b>
-          </div>
-          <div>
-            <span>Training days</span>
-            <b>{trainingDays}</b>
-          </div>
-          <div>
-            <span>Avg / week</span>
-            <b>{(trainingDays / 12).toFixed(1)}</b>
-          </div>
-        </div>
+      <ConsistencyCard streak={data?.current_streak ?? 0} trainingDays={trainingDays}>
         {calendar}
-      </section>
+      </ConsistencyCard>
     ),
     'muscle-sets': (
       <section className="pulse-card" aria-labelledby="muscle-sets-title">

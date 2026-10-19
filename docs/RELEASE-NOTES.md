@@ -1,5 +1,21 @@
 # Gym Logger release notes
 
+## 0.8.6
+
+20 October 2026
+
+### Consistency calendars on shared profiles
+
+![Alex Preview shared profile with the Home consistency calendar, streak and training statistics](screenshots/releases/0.8.6-profile-consistency.png)
+
+*The viewed person's calendar uses their workout history and colours. Tap a training day to filter their shared workouts.*
+
+- Shared profiles now show the same **Consistency** card as Home: current streak, training days and average per week over the last 12 weeks, plus the monthly calendar.
+- Scroll back through their complete shared history. **Show more** and history filters do not change the calendar or its statistics.
+- Workout dots and the toggleable legend use that person's built-in and custom workout type colours.
+- Tap a training day to view their workouts for that date. Empty dates do not offer workout creation.
+- Friends-only calendars require approval. Private profiles and sample workouts remain hidden; calendar data excludes body weight, notes and exercise details.
+
 ## 0.8.5
 
 19 October 2026
