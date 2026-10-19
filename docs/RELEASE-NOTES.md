@@ -1,5 +1,24 @@
 # Gym Logger release notes
 
+## 0.8.6
+
+19 October 2026
+
+### Rest times your way
+
+![Settings showing Show rest times beside the Rest timer switch](screenshots/releases/0.8.6-rest-settings.png)
+
+*Hide the rows between sets while keeping the countdown setting independent.*
+
+![Workout logger with an individual rest removed and the temporary Undo popup at the bottom](screenshots/releases/0.8.6-rest-removal.png)
+
+*Remove one rest without deleting its set. Undo restores it while the popup is visible.*
+
+- Show rest times sits beside Rest timer in Settings > Timers & notifications. Hide the rows between sets in the logger without changing saved rests or the automatic countdown setting.
+- Swipe left on an individual rest time to remove it without deleting the set. The temporary popup at the bottom offers Undo; the remove button does the same.
+- Rest choices include 0:30 and 0:00 (no rest). Choosing 0:00 removes the rest and offers Undo.
+- After Undo expires, edit the set, choose Rest after set and save with the tick to add its rest back. Removed rests stay removed when the workout is saved or reopened.
+
 ## 0.8.5
 
 19 October 2026

@@ -19,6 +19,13 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
     selector: '[aria-label="Rest timer"]',
   },
   {
+    id: 'rest-times',
+    title: 'Show rest times',
+    page: 'settings',
+    keywords: 'hide display between sets rest duration',
+    selector: '[aria-label="Show rest times"]',
+  },
+  {
     id: 'alerts',
     title: 'Phone alerts',
     page: 'settings',

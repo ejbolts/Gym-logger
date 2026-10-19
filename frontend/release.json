@@ -1,25 +1,13 @@
 {
-  "version": "0.8.5",
+  "version": "0.8.6",
   "date": "2026-10-19",
-  "title": "Training time, friend reactions and workout types",
-  "summary": "See training time on your profile and shared profiles, react to workouts from Home or a friend profile, and catch up in a compact notification popup, alongside custom workout types and clearer account setup.",
+  "title": "Rest times your way",
+  "summary": "Hide rest times between sets, swipe away individual rests with Undo, and choose a 30-second rest or no rest.",
   "changes": [
-    "Settings > Workout types lets each account add named workout types with their own colours, such as Arms, Legs, Limbs or Torso.",
-    "Remove built-in or custom types from new workouts and restore them later. Saved workouts keep their type and colour.",
-    "Custom types work in workout drafts, history, calendar dots and filters, shared profiles, CSV import/export and account backups.",
-    "The calendar uses seven day columns without the weekly Sets column.",
-    "New accounts start public. Existing accounts keep their privacy settings; friends-only profiles stay searchable and require approval to view workouts.",
-    "The compact notification bell lists follows, requests and workout reactions. Opening it marks displayed notices as read automatically; recent notices remain visible, and follow requests keep their Approve and Decline buttons.",
-    "Creating an account has a ? beside Name and Username. Name is your display name and doesn't need to be unique; Username is how you sign in and how friends find you as @handle, so it must be unique. Both can be changed any time in Profile.",
-    "See a sample profile, under Create account, shows a profile card with the name and username you've typed, or Sam Sample until you type them, with example workouts, cardio and PRs.",
-    "Friends on Home shows each friend's latest workout or cardio session. Tap the smiley to react with 👍, ❤️, 💪, 🔥, 👏 or 🏆; choose your reaction again to remove it.",
-    "React to a workout on a shared profile using its React button and the same six-choice popup as Home. Counts and your selected reaction appear on each workout card; choose your reaction again to remove it.",
-    "The Today tab is now called Home, matching its house icon.",
-    "Your profile and viewable shared profiles show Time trained for workouts, cardio and all exercise combined. Cardio logged during a workout counts once in Combined; totals cover all training, regardless of history filters."
+    "Show rest times sits beside Rest timer in Settings > Timers & notifications. Hide the rows between sets in the logger without changing saved rests or the automatic countdown setting.",
+    "Swipe left on an individual rest time to remove it without deleting the set. The temporary popup at the bottom offers Undo; the remove button does the same.",
+    "Rest choices include 0:30 and 0:00 (no rest). Choosing 0:00 removes the rest and offers Undo.",
+    "After Undo expires, edit the set, choose Rest after set and save with the tick to add its rest back. Removed rests stay removed when the workout is saved or reopened."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#085",
-  "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b4c7fa8fca32b35d60af9eead14d5ca0e03d4820/friend-workout-reactions-20261019/compact-notifications.png",
-    "alt": "Compact notification popup with workout reactions and new followers, automatically marked read when opened and no Dismiss buttons."
-  }
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086"
 }
