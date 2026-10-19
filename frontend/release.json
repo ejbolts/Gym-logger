@@ -10,5 +10,9 @@
     "Empty starts a blank workout, as Start did before.",
     "During a live workout, Start still takes you straight back to it."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#086",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/25a262d37d50464354a339ff3b320baadd7f59b3/docs/screenshots/releases/0.8.6-start-menu.png",
+    "alt": "Start menu open above the tab bar with blue Cardio, Up next and Empty buttons; Up next shows Lower body day and Start shows a close cross."
+  }
 }
