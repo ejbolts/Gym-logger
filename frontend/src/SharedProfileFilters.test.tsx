@@ -14,7 +14,8 @@ const profile: SharedProfile = {
   visibility: 'public',
   is_you: false,
   follow_status: 'accepted',
-  follows_you: false,
+  following_since: '2026-10-06T12:00:00Z',
+  follows_you: true,
   can_view: true,
   workout_count: 2,
   recent_workout_count: 2,
@@ -100,9 +101,26 @@ function button(prefix: string) {
   )!;
 }
 
+describe('shared profile follow control', () => {
+  it('shows Following with a menu holding the start month and Unfollow', async () => {
+    expect(container.textContent).not.toContain('Public');
+    expect(container.querySelector('.profile-joined')?.textContent).toBe(
+      'Joined October 2026Follows you',
+    );
+    const following = button('Following');
+    expect(following.getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelector('[role="menu"]')).toBeNull();
+    await act(async () => following.click());
+    expect(following.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelector('[role="menu"]')?.textContent).toBe('Since Oct 2026Unfollow');
+    vi.spyOn(api.sharing, 'unfollow').mockResolvedValue(undefined);
+    await act(async () => button('Unfollow').click());
+    expect(api.sharing.unfollow).toHaveBeenCalledWith('friend');
+  });
+});
+
 describe('shared history filtering', () => {
   it('requests matching server results and resets to the first unfiltered page', async () => {
-    expect(button('Unfollow').className).toBe('profile-danger');
     await chooseType('push');
     expect(api.sharing.workouts).toHaveBeenLastCalledWith(
       'friend',

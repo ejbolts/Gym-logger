@@ -1,5 +1,23 @@
 # Gym Logger release notes
 
+## 0.8.6
+
+19 October 2026
+
+### One follow button on shared profiles
+
+![Shared profile header with Joined October 2026 and a Follows you chip, and the Following pill open to a menu showing Since Oct 2026 and Unfollow](screenshots/releases/0.8.6-profile-follow-menu.png)
+
+*Tap Following to see when you started following someone and to unfollow them.*
+
+- Shared profiles have one **Follow** pill under the name, replacing the full-width button. After
+  you follow, it switches to **Following** with a dropdown arrow; the dropdown shows **Since**
+  with the month and year, plus **Unfollow**.
+- Friends-only profiles show **Request to follow**, then **Requested** with a dropdown to
+  **Cancel request**.
+- Shared profiles no longer show whether someone is **Public**, **Friends only** or **Private**.
+- **Follows you** now sits beside the **Joined** date.
+
 ## 0.8.5
 
 19 October 2026

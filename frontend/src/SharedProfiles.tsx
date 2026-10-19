@@ -18,6 +18,7 @@ import {
   followSinceLabel,
   plural,
   SHARED_WORKOUT_PAGE_SIZE,
+  sinceMonthLabel,
   VISIBILITY_LABELS,
   workoutActivitySummary,
 } from './sharedProfileDisplay';
@@ -165,19 +166,121 @@ function FollowButton({
   );
 }
 
-function StatusChips({ profile }: { profile: SharedProfileSummary }) {
+/** A profile page's follow control: Follow, then Following or Requested with a menu to undo it. */
+function ProfileFollowControl({
+  profile,
+  onChange,
+}: {
+  profile: SharedProfileSummary;
+  onChange: (status: FollowStatus) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const menu = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    menu.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    function outside(event: PointerEvent) {
+      const target = event.target as Node;
+      if (!menu.current?.contains(target) && !trigger.current?.contains(target)) setOpen(false);
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      trigger.current?.focus();
+    }
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [open]);
+
+  if (profile.is_you) return null;
+  const pending = profile.follow_status === 'pending';
+  const since = pending ? null : sinceMonthLabel(profile.following_since);
+
+  async function run(action: () => Promise<FollowStatus>) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const status = await action();
+      setOpen(false);
+      onChange(status);
+    } catch (reason) {
+      setError(authErrorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <span className="shared-status-chips">
-      {profile.is_you && <span className="profile-badge">You</span>}
-      <em className={`visibility-${profile.visibility}`}>
-        {VISIBILITY_LABELS[profile.visibility]}
-      </em>
-      {profile.follow_status === 'accepted' && (
-        <em>{followSinceLabel('Following', profile.following_since)}</em>
+    <div className="shared-follow profile-follow">
+      {profile.follow_status === 'none' ? (
+        <button
+          type="button"
+          className="profile-follow-button is-follow"
+          disabled={busy}
+          onClick={() => void run(async () => (await api.sharing.follow(profile.id)).status)}
+        >
+          {busy && <span className="auth-spinner" aria-hidden="true" />}
+          <span>{followActionLabel(profile)}</span>
+        </button>
+      ) : (
+        <div className="profile-follow-menu-wrap">
+          <button
+            ref={trigger}
+            type="button"
+            className="profile-follow-button"
+            disabled={busy}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls={open ? menuId : undefined}
+            onClick={() => {
+              setError(null);
+              setOpen(!open);
+            }}
+          >
+            {busy ? (
+              <span className="auth-spinner" aria-hidden="true" />
+            ) : (
+              !pending && <Icon name="check" />
+            )}
+            <span>{pending ? 'Requested' : 'Following'}</span>
+            <Icon name="chevron-down" />
+          </button>
+          {open && (
+            <div ref={menu} id={menuId} className="profile-follow-menu" role="menu">
+              {since && <p>{since}</p>}
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await api.sharing.unfollow(profile.id);
+                    return 'none';
+                  })
+                }
+              >
+                {pending ? 'Cancel request' : 'Unfollow'}
+              </button>
+            </div>
+          )}
+        </div>
       )}
-      {profile.follow_status === 'pending' && <em>Requested</em>}
-      {profile.follows_you && <em>{followSinceLabel('Follows you', profile.follows_you_since)}</em>}
-    </span>
+      {error && (
+        <p className="inline-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -967,9 +1070,17 @@ export function SharedProfileScreen({
         <div className="profile-summary-main">
           <ProfileAvatar className="profile-avatar" user={avatarUser(profile)} />
           <div className="profile-summary-copy">
-            <strong>{profile.display_name}</strong>
-            <StatusChips profile={profile} />
-            {memberSince && <small>Joined {memberSince}</small>}
+            <strong>
+              {profile.display_name}
+              {profile.is_you && <span className="profile-badge">You</span>}
+            </strong>
+            {(memberSince || profile.follows_you) && (
+              <span className="shared-status-chips profile-joined">
+                {memberSince && <small>Joined {memberSince}</small>}
+                {profile.follows_you && <em>Follows you</em>}
+              </span>
+            )}
+            <ProfileFollowControl profile={profile} onChange={followChanged} />
           </div>
         </div>
         <ProfileAccountId accountId={profile.id} />
@@ -991,7 +1102,6 @@ export function SharedProfileScreen({
             </div>
           </dl>
         )}
-        <FollowButton profile={profile} onChange={followChanged} />
         {profile.is_you && (
           <p className="shared-preview-note">
             This is what members who can see your profile see. Change it in Profile.

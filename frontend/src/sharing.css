@@ -151,9 +151,105 @@
   font-weight: 600;
 }
 
-.shared-status-chips em.visibility-public {
-  border-color: rgb(57 135 229 / 45%);
-  color: var(--p-accent-text) !important;
+.profile-joined {
+  gap: 0.45rem;
+}
+
+/* Profile page follow pill and its Unfollow menu */
+
+.profile-follow {
+  justify-items: start;
+  margin-top: 0.45rem;
+}
+
+.profile-follow-menu-wrap {
+  position: relative;
+}
+
+.profile-follow-button {
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
+.profile-follow-button.is-follow {
+  border-color: transparent;
+  padding-inline: 1.1rem;
+  background: var(--p-accent);
+  color: #fff;
+}
+
+.profile-follow-button.is-follow:hover:not(:disabled) {
+  background: var(--p-accent-hover);
+}
+
+.profile-summary-copy .profile-follow-button span {
+  color: inherit;
+  font-size: inherit;
+}
+
+.profile-follow-button .pulse-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 2.4;
+  transition: transform 0.15s ease;
+}
+
+.profile-follow-button[aria-expanded='true'] .pulse-icon:last-child {
+  transform: rotate(180deg);
+}
+
+.profile-follow-menu {
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  min-width: 12rem;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 14px;
+  padding: 0.35rem;
+  background: var(--p-surface-3);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 55%);
+}
+
+.profile-follow-menu p {
+  margin: 0 0 0.25rem;
+  border-bottom: 1px solid var(--p-line-strong);
+  padding: 0.45rem 0.6rem 0.55rem;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.profile-follow-menu button {
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  padding: 0.6rem;
+  background: none;
+  color: var(--p-danger);
+  font-size: 0.875rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.profile-follow-menu button:hover:not(:disabled),
+.profile-follow-menu button:focus-visible {
+  background: rgb(230 103 103 / 12%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-follow-button .pulse-icon {
+    transition: none;
+  }
 }
 
 .shared-follow {
