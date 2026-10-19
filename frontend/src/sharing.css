@@ -800,15 +800,32 @@
   align-self: center;
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
-  border: 1px solid var(--p-line-strong);
+  border: 0;
   border-radius: 50%;
-  background: var(--p-surface-2);
+  background: transparent;
   color: var(--p-ink-2);
-  font-size: 1rem;
-  font-weight: 700;
+  cursor: pointer;
+}
+.friend-block-help:hover,
+.friend-block-help:focus-visible {
+  color: var(--accent, #3988ed);
+  background: var(--p-surface-2);
+}
+.friend-block-help:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -3px;
+}
+.friend-block-help svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .friend-block-dialog > p {
   margin: 0;

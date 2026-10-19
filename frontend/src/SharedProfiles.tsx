@@ -578,7 +578,11 @@ export function FriendsPanel({
                 aria-haspopup="dialog"
                 onClick={() => setBlockHelpOpen(true)}
               >
-                <span aria-hidden="true">?</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4" />
+                  <path d="M12 16.5h.01" />
+                </svg>
               </button>
             }
           >
