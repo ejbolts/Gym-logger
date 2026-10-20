@@ -1,4 +1,5 @@
 import { useWeightUnit } from './trainingPreferencesContext';
+import { bodyGoalKind } from './bodyMeasurementHistory';
 import { formatWeight, weightFromKg, type WeightUnit } from './weightUnits';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, ApiError } from './api';
@@ -873,7 +874,8 @@ function BodyWeightCard({
 function GoalsCard({ goals, latestWeight }: { goals: SharedGoals; latestWeight: number | null }) {
   const weightUnit = useWeightUnit();
   const goal = goals.body_weight;
-  const span = goal ? goal.start_weight_kg - goal.target_weight_kg : 0;
+  const span =
+    goal && bodyGoalKind(goal) !== 'maintain' ? goal.start_weight_kg - goal.target_weight_kg : 0;
   const progress =
     goal && latestWeight !== null && span !== 0
       ? (goal.start_weight_kg - latestWeight) / span
@@ -889,8 +891,9 @@ function GoalsCard({ goals, latestWeight }: { goals: SharedGoals; latestWeight: 
         {goal ? (
           <>
             <span>
-              {formatWeight(goal.start_weight_kg, weightUnit, 1)} →{' '}
-              {formatWeight(goal.target_weight_kg, weightUnit, 1)} by {longDate(goal.target_date)}
+              {bodyGoalKind(goal) === 'maintain'
+                ? `Maintain ${formatWeight(goal.target_weight_kg, weightUnit, 1)} until ${longDate(goal.target_date)}`
+                : `${formatWeight(goal.start_weight_kg, weightUnit, 1)} → ${formatWeight(goal.target_weight_kg, weightUnit, 1)} by ${longDate(goal.target_date)}`}
             </span>
             {progress !== null && (
               <>

@@ -25,10 +25,15 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-function goal(start: number, target: number, active = true): BodyWeightGoal {
+function goal(
+  start: number,
+  target: number,
+  active = true,
+  startDate = '2026-01-01',
+): BodyWeightGoal {
   return {
-    id: 'goal',
-    start_date: '2026-01-01',
+    id: `goal-${startDate}`,
+    start_date: startDate,
     target_date: '2026-12-31',
     start_weight_kg: start,
     target_weight_kg: target,
@@ -154,16 +159,77 @@ describe('Body history goal-aware arrows', () => {
     }
   });
 
-  it.each([{ goals: [] }, { goals: [goal(80, 80)] }, { goals: [goal(90, 75, false)] }])(
-    'keeps changes neutral without an active directional goal: $goals',
+  it.each([{ goals: [] }, { goals: [goal(90, 75, true, '2026-11-01')] }])(
+    'keeps changes neutral before any goal has started: $goals',
     async ({ goals }) => {
       await render([measurement('2026-10-02', 80), measurement('2026-10-01', 81)], goals);
       expect(arrow(rows()[0])?.classList.contains('neutral')).toBe(true);
       expect(arrow(rows()[0])?.getAttribute('aria-label')).toBe(
-        'Weight decreased since previous check-in',
+        'Weight decreased by 1 kg since previous check-in',
       );
+      expect(container.querySelector('.body-history-goal-divider')).toBeNull();
     },
   );
+
+  it('colours each row by the goal set at the time and marks where a new goal starts', async () => {
+    await render(
+      [
+        measurement('2026-10-20', 83.9),
+        measurement('2026-10-17', 84.5),
+        measurement('2026-09-29', 83.6),
+        measurement('2026-09-28', 83.3),
+        measurement('2026-08-20', 85),
+      ],
+      // An earlier cut, then a bulk set on 17 October that is still active.
+      [goal(84.5, 86, true, '2026-10-17'), goal(84, 82, false, '2026-09-01')],
+    );
+    expect(rows().map((row) => arrow(row)?.className.split(' ').at(-1) ?? null)).toEqual([
+      'unfavorable',
+      'favorable',
+      'unfavorable',
+      'favorable',
+      null,
+    ]);
+    const dividers = () => [
+      ...container.querySelectorAll<HTMLElement>('.body-history-goal-divider'),
+    ];
+    expect(dividers()).toHaveLength(2);
+    // Each rule sits directly below the oldest row under its goal.
+    expect(dividers()[0].previousElementSibling).toBe(rows()[1]);
+    expect(dividers()[0].getAttribute('aria-label')).toMatch(
+      /^New goal from 17 Oct: Gain to 86 kg$/,
+    );
+    expect(dividers()[0].textContent).toContain('from 17 Oct');
+    expect(dividers()[1].previousElementSibling).toBe(rows()[3]);
+    expect(dividers()[1].textContent).toContain('Lose to 82 kg');
+
+    await selectTab('Avg Monthly');
+    expect(rows()).toHaveLength(3);
+    expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
+    expect(dividers().map((divider) => divider.previousElementSibling)).toEqual([
+      rows()[0],
+      rows()[1],
+    ]);
+  });
+
+  it('describes maintain goals and favours moving back towards the target weight', async () => {
+    await render(
+      [
+        measurement('2026-10-03', 83.2),
+        measurement('2026-10-02', 83.6),
+        measurement('2026-10-01', 83),
+      ],
+      [goal(83, 83, true, '2026-09-01')],
+    );
+    expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
+    expect(arrow(rows()[0])?.getAttribute('aria-label')).toBe(
+      'Weight decreased by 0.4 kg since previous check-in; closer to maintenance weight',
+    );
+    expect(arrow(rows()[1])?.classList.contains('unfavorable')).toBe(true);
+    expect(arrow(rows()[1])?.getAttribute('aria-label')).toContain(
+      'further from maintenance weight',
+    );
+  });
 
   it('does not show arrows for equal weights or the first chronological check-in', async () => {
     await render([measurement('2026-10-02', 80), measurement('2026-10-01', 80)], [goal(90, 75)]);
@@ -192,5 +258,117 @@ describe('Body history goal-aware arrows', () => {
     expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
     await selectTab('Median Monthly');
     expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
+  });
+
+  it('shows the gain or loss beside each arrow in the row units and rounding', async () => {
+    await render(
+      [
+        measurement('2026-10-06', 84.15),
+        measurement('2026-10-05', 83.4),
+        measurement('2026-09-10', 83.36),
+        measurement('2026-09-03', 85.9),
+        measurement('2026-08-12', 88.5),
+        measurement('2026-07-08', 89.5),
+      ],
+      [],
+    );
+    const amounts = () =>
+      rows().map(
+        (row) => row.querySelector('.body-history-weight-change-amount')?.textContent ?? null,
+      );
+
+    expect(amounts()).toEqual(['0.75', '0.04', '2.54', '2.6', '1', null]);
+    expect(arrow(rows()[0])?.getAttribute('aria-label')).toBe(
+      'Weight increased by 0.75 kg since previous check-in',
+    );
+
+    await selectTab('Avg Monthly');
+    // Shown as 83.8, 84.6, 88.5 and 89.5 kg, keeping the rows' single decimal.
+    expect(amounts()).toEqual(['0.8', '3.9', '1.0', null]);
+    expect(arrow(rows()[1])?.getAttribute('aria-label')).toBe(
+      'Weight decreased by 3.9 kg since previous month with check-ins',
+    );
+  });
+
+  it('converts the amount to pounds and never shows a zero change beside an arrow', async () => {
+    await render(
+      [
+        measurement('2026-10-02', 80.02),
+        measurement('2026-10-01', 80.019),
+        measurement('2026-09-30', 79),
+      ],
+      [],
+      'lb',
+    );
+    const amount = (row: Element) =>
+      row.querySelector('.body-history-weight-change-amount')?.textContent;
+
+    // 80.02 kg and 80.019 kg both show as 176.41 lb; 79 kg shows as 174.17 lb.
+    expect(amount(rows()[0])).toBe('<0.01');
+    expect(amount(rows()[1])).toBe('2.24');
+  });
+
+  describe('goal form', () => {
+    function setInput(input: HTMLInputElement, value: string) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function buttonNamed(label: string) {
+      return [...container.querySelectorAll<HTMLButtonElement>('button')].find(
+        (button) => button.textContent === label,
+      )!;
+    }
+
+    beforeEach(() => {
+      HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      };
+      HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+        this.removeAttribute('open');
+      };
+    });
+
+    async function openGoalForm() {
+      await act(async () => buttonNamed('Set a goal').click());
+      return document.querySelector<HTMLFormElement>('.body-goal-form')!;
+    }
+
+    it('saves a maintain goal that holds the chosen weight', async () => {
+      const create = vi.spyOn(api, 'createBodyWeightGoal').mockResolvedValue(goal(84, 84));
+      await render([measurement('2026-10-02', 84), measurement('2026-10-01', 85)], []);
+      const form = await openGoalForm();
+      const maintain = form.querySelector<HTMLButtonElement>('[role="radio"]:nth-child(3)')!;
+      await act(async () => maintain.click());
+      expect(maintain.getAttribute('aria-checked')).toBe('true');
+      const [target, date] = form.querySelectorAll<HTMLInputElement>('input');
+      // Maintaining starts from the latest weight.
+      expect(target.value).toBe('84');
+      await act(async () => setInput(date, '2026-12-31'));
+      await act(async () => form.requestSubmit());
+
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start_weight_kg: 84,
+          target_weight_kg: 84,
+          target_date: '2026-12-31',
+        }),
+      );
+    });
+
+    it('asks for a target on the right side of the current weight', async () => {
+      const create = vi.spyOn(api, 'createBodyWeightGoal');
+      await render([measurement('2026-10-02', 84)], []);
+      const form = await openGoalForm();
+      const [target, date] = form.querySelectorAll<HTMLInputElement>('input');
+      await act(async () => setInput(target, '88'));
+      await act(async () => setInput(date, '2026-12-31'));
+      await act(async () => form.requestSubmit());
+
+      expect(create).not.toHaveBeenCalled();
+      expect(form.textContent).toContain(
+        'For a weight-loss goal, choose a target below your current 84 kg.',
+      );
+    });
   });
 });
