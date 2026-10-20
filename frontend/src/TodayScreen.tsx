@@ -444,7 +444,12 @@ export function TodayScreen({
           {latest ? weightFromKg(latest.weight_kg, weightUnit).toFixed(1) : '–'}
           <small> {weightUnit}</small>
         </strong>
-        <Sparkline values={recentWeights} label="Bodyweight, last 30 check-ins" />
+        <Sparkline
+          values={recentWeights.map((weight) => weightFromKg(weight, weightUnit))}
+          label={`Bodyweight in ${weightUnitName(weightUnit)}, last 30 check-ins`}
+          height={70}
+          yAxis
+        />
         <p className={monthChange !== null && monthChange < 0 ? 'trend-down' : ''}>
           {monthChange === null
             ? `${measurements.length} check-ins`
@@ -591,6 +596,7 @@ export function TodayScreen({
       <HomeLayoutSections
         layout={home.editing ? home.draft : home.layout}
         sections={sections}
+        onStartEditing={home.loaded && !home.saving ? home.edit : undefined}
         edit={
           home.editing
             ? {

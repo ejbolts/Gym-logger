@@ -12,7 +12,7 @@ Use it in your browser or add it to your phone's Home Screen for an app-like exp
 
 **Home** brings together your weekly activity, training calendar, muscle-group set totals, cardio goal, body-weight trend and recent personal records. It also suggests a next workout based on previous sessions and lets you resume one already in progress.
 
-Customise the dashboard by rearranging cards, hiding sections you do not need and restoring them later. Your layout is saved to your account.
+Hold any Home section for two seconds, or tap the pencil, to customise the dashboard by rearranging cards, hiding sections you do not need and restoring them later. Your layout is saved to your account.
 
 <p>
   <a href="docs/screenshots/readme/today.png"><img src="docs/screenshots/readme/today.png" alt="Home dashboard with the next workout, activity calendar, cardio goal and body-weight trend" width="360"></a>

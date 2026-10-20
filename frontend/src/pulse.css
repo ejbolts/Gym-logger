@@ -955,6 +955,17 @@ button.pulse-card:hover {
   stroke-width: 2;
 }
 
+.pulse-sparkline-axis line {
+  stroke: var(--p-line);
+  stroke-dasharray: 2 4;
+}
+
+.pulse-sparkline-axis text {
+  fill: var(--p-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
 .quick-bodyweight-form {
   display: grid;
   grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem auto;
