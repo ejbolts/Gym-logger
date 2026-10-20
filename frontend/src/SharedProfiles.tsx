@@ -9,6 +9,9 @@ import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileAccountId } from './ProfileAccountId';
 import { SharedWorkoutFilters } from './SharedWorkoutFilters';
+import { ConsistencyCard } from './ConsistencyCard';
+import { WorkoutCalendar, WorkoutCalendarLegend } from './WorkoutCalendar';
+import { builtinTypeColors, calendarLegendTypes } from './workoutTypes';
 import { TrainingTimeStats } from './TrainingTimeStats';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { PopupDialog } from './PopupDialog';
@@ -32,6 +35,7 @@ import type {
   SharedGoals,
   SharedProfile,
   SharedProfileSummary,
+  SharedConsistency,
   SharedWorkoutFilters as WorkoutFilters,
   SharedWorkoutFilterOptions,
   SharingConnection,
@@ -859,6 +863,41 @@ export interface SharedWorkoutListProps {
   renderWorkoutAction?: (workout: TrackedWorkout) => ReactNode;
 }
 
+function SharedConsistencyCalendar({
+  data,
+  onDayClick,
+}: {
+  data: SharedConsistency;
+  onDayClick: (date: string) => void;
+}) {
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
+  const colors = builtinTypeColors(data.workout_types);
+  return (
+    <ConsistencyCard streak={data.current_streak} trainingDays={data.training_days}>
+      <WorkoutCalendar
+        entries={data.heatmap}
+        types={data.workout_types}
+        categoryColors={colors}
+        hiddenCategories={hidden}
+        readOnly
+        onDayClick={onDayClick}
+      />
+      <WorkoutCalendarLegend
+        presentTypes={calendarLegendTypes(data.heatmap, data.workout_types)}
+        hiddenCategories={hidden}
+        categoryColors={colors}
+        onToggle={(id) =>
+          setHidden((current) => {
+            const next = new Set(current);
+            if (!next.delete(id)) next.add(id);
+            return next;
+          })
+        }
+      />
+    </ConsistencyCard>
+  );
+}
+
 export function SharedProfileScreen({
   profileId,
   renderWorkouts,
@@ -1081,6 +1120,25 @@ export function SharedProfileScreen({
         </section>
       ) : (
         <>
+          {profile.consistency && (
+            <SharedConsistencyCalendar
+              key={profile.id}
+              data={profile.consistency}
+              onDayClick={(date) => {
+                setFilters({
+                  category: '',
+                  exercise_id: '',
+                  machine_photo_id: '',
+                  start_date: date,
+                  end_date: date,
+                });
+                setFiltersOpen(true);
+                document
+                  .getElementById('shared-workouts-title')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            />
+          )}
           {profile.training_time && (
             <section
               className="settings-panel panel profile-training-time"

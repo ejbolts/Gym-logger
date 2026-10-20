@@ -11385,3 +11385,9 @@ html {
     animation-duration: 2s;
   }
 }
+
+/* Shared calendars keep empty dates readable without offering workout creation. */
+.calendar-day:disabled {
+  opacity: 1;
+  cursor: default;
+}

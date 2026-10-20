@@ -812,8 +812,16 @@ export type SharedCardioSession = Pick<
   | 'notes'
 >;
 
-/** A shared profile; each optional part is null when its owner does not share it. */
+/** Complete calendar data for the viewed account, independent of workout list filters. */
+export interface SharedConsistency {
+  heatmap: HeatmapDay[];
+  current_streak: number;
+  training_days: number;
+  workout_types: WorkoutType[];
+}
+
 export interface SharedProfile extends SharedProfileSummary {
+  consistency?: SharedConsistency | null;
   body_weight: SharedBodyMeasurement[] | null;
   goals: SharedGoals | null;
   cardio_sessions: SharedCardioSession[] | null;
