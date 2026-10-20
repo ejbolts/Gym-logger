@@ -4,7 +4,6 @@ import type { AuthConfig, User } from './types';
 export const MIN_PASSWORD_LENGTH = 10;
 export const USERNAME_HINT =
   '3–32 letters, numbers, dots, underscores or hyphens. Start with a letter or number.';
-export const NEW_USERNAME_HINT = 'One word you sign in with. Not your last name.';
 
 export type AuthMode = 'sign-in' | 'create-account';
 

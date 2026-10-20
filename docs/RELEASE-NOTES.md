@@ -73,9 +73,9 @@
 
 *Choose Lose, Gain or Maintain when you set a goal.*
 
-![Create account form with Sam Sample and sam.sample placeholders, an @ before the username, and hints under Name and Username](screenshots/releases/0.9.0-signup-name-username.png)
+![Create account form with Sam Sample and sam.sample placeholders, an @ before the username, and the Name and Username ? help open](screenshots/releases/0.9.0-signup-name-username.png)
 
-*Create account shows example placeholders, an @ before the username, and short hints under Name and Username. Captured with isolated sample data.*
+*Tap ? beside Name or Username for a one-line explanation. Captured with isolated sample data.*
 
 - Workout notes now share the summary card with the date, workout type, time, body weight, sets and reps. The notes placeholder is Workout notes…; the divider and volume metric are removed.
 - Plain left and right arrows inside the summary card are vertically centred on the whole card. Browse previous and next workouts with a short directional slide and fade; the latest and oldest arrows dim at the ends.
@@ -109,7 +109,7 @@
 - Arrow colours now follow the goal you had at the time, so older rows keep their meaning after you set a new goal. Weeks and months use the goal in place on their last day.
 - A dotted line marks where each new goal started, with its direction, target and start date, such as Gain to 86 kg · from 16 Oct.
 - Goals can now be Lose, Gain or Maintain. Maintain starts from your current weight; green means you moved back towards it and red means you drifted further away.
-- Create account now shows Sam Sample and sam.sample as example placeholders, an @ before the username, and hints that the name is your first and last name while the username is one word, not your last name.
+- Create account now shows Sam Sample and sam.sample as example placeholders and an @ before the username.
 - The ? help on Name and Username is shorter and plain, and the sharing paragraph above Create account has been removed.
 
 ## 0.8.5

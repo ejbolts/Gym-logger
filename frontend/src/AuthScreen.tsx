@@ -2,7 +2,6 @@ import { useId, useLayoutEffect, useRef, useState, type FormEvent, type ReactNod
 import {
   DEFAULT_AUTH_CONFIG,
   MIN_PASSWORD_LENGTH,
-  NEW_USERNAME_HINT,
   submitAuthForm,
   type AuthFieldErrors,
   type AuthMode,
@@ -321,7 +320,6 @@ export function AuthScreen({
                 id={ids.name}
                 label="Name"
                 error={fieldErrors.displayName}
-                hint="First and last name. Friends see this."
                 help="Your display name for friends to see on your profile."
               >
                 <input
@@ -334,7 +332,7 @@ export function AuthScreen({
                   placeholder="Sam Sample"
                   value={displayName}
                   aria-invalid={Boolean(fieldErrors.displayName)}
-                  aria-describedby={describedBy(ids.name, fieldErrors.displayName, 'hint')}
+                  aria-describedby={describedBy(ids.name, fieldErrors.displayName)}
                   onChange={(event) => setDisplayName(event.target.value)}
                 />
               </AuthField>
@@ -344,7 +342,6 @@ export function AuthScreen({
               id={ids.username}
               label="Username"
               error={fieldErrors.username}
-              hint={creating ? NEW_USERNAME_HINT : undefined}
               help={
                 creating
                   ? 'Used to sign in and shown as your handle so friends can find you. Must be unique.'
@@ -371,11 +368,7 @@ export function AuthScreen({
                   placeholder={creating ? 'sam.sample' : undefined}
                   value={username}
                   aria-invalid={Boolean(fieldErrors.username)}
-                  aria-describedby={describedBy(
-                    ids.username,
-                    fieldErrors.username,
-                    creating ? 'hint' : undefined,
-                  )}
+                  aria-describedby={describedBy(ids.username, fieldErrors.username)}
                   onChange={(event) => setUsername(event.target.value)}
                 />
               </div>

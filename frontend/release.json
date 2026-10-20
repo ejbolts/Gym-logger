@@ -36,7 +36,7 @@
     "Arrow colours now follow the goal you had at the time, so older rows keep their meaning after you set a new goal. Weeks and months use the goal in place on their last day.",
     "A dotted line marks where each new goal started, with its direction, target and start date, such as Gain to 86 kg · from 16 Oct.",
     "Goals can now be Lose, Gain or Maintain. Maintain starts from your current weight; green means you moved back towards it and red means you drifted further away.",
-    "Create account now shows Sam Sample and sam.sample as example placeholders, an @ before the username, and hints that the name is your first and last name while the username is one word, not your last name.",
+    "Create account now shows Sam Sample and sam.sample as example placeholders and an @ before the username.",
     "The ? help on Name and Username is shorter and plain, and the sharing paragraph above Create account has been removed."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#090",
