@@ -39,7 +39,11 @@ describe('AuthScreen', () => {
     expect(markup).toContain('at least 10 characters.');
     expect(markup).toContain('minlength="10"');
     expect(markup).toContain('maxlength="32"');
-    expect(markup).toContain('3–32 letters');
+    expect(markup).toContain('not your last name.');
+    expect(markup).toContain('placeholder="alexsmith"');
+    expect(markup).toContain('your display name for friends to see on your profile.');
+    expect(markup).toContain('must be unique.');
+    expect(markup).not.toContain('new profiles are public');
     expect(markup).toContain('>create account</span>');
   });
 

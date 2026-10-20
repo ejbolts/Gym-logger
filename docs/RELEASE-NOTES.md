@@ -66,6 +66,10 @@
 
 *Choose Lose, Gain or Maintain when you set a goal.*
 
+![Create account form with plain Name and Username help, an @ before the username, and a check asking whether Smith is a last name](screenshots/releases/0.9.0-signup-name-check.png)
+
+*Create account explains Name and Username, and offers to fix a first name in Name and a last name in Username. Captured with isolated sample data.*
+
 - The Home Bodyweight chart has a simple numbered Y-axis with faint dotted guides, using your preferred weight unit.
 - Press and hold any Home section for 0.5 seconds to enter the existing layout editor. Resize, hide or reorder sections, then save or cancel. Scrolling or releasing early cancels the hold, and the pencil button remains available.
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
@@ -94,6 +98,9 @@
 - Arrow colours now follow the goal you had at the time, so older rows keep their meaning after you set a new goal. Weeks and months use the goal in place on their last day.
 - A dotted line marks where each new goal started, with its direction, target and start date, such as Gain to 86 kg · from 16 Oct.
 - Goals can now be Lose, Gain or Maintain. Maintain starts from your current weight; green means you moved back towards it and red means you drifted further away.
+- Create account now shows example placeholders, an @ before the username, and hints that the name is your first and last name while the username is one word, not your last name.
+- If you enter one word as your name and a capitalised word such as Smith as your username, the form asks whether it is your last name. Fix it for me moves it into Name and suggests a username such as @alexsmith; It's my username keeps what you typed.
+- The ? help on Name and Username is shorter and plain, and the sharing paragraph above Create account has been removed.
 
 ## 0.8.5
 

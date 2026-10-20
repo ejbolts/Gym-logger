@@ -2,7 +2,8 @@ import { useId, useLayoutEffect, useRef, useState, type FormEvent, type ReactNod
 import {
   DEFAULT_AUTH_CONFIG,
   MIN_PASSWORD_LENGTH,
-  USERNAME_HINT,
+  NEW_USERNAME_HINT,
+  splitNameFix,
   submitAuthForm,
   type AuthFieldErrors,
   type AuthMode,
@@ -150,6 +151,8 @@ export function AuthScreen({
   const [notice, setNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const [sampleOpen, setSampleOpen] = useState(false);
+  /** The username kept after the mix-up check asked about it. */
+  const [keptUsername, setKeptUsername] = useState<string | null>(null);
 
   const screenRef = useRef<HTMLElement>(null);
   const shellTopRef = useRef<number | null>(null);
@@ -189,6 +192,8 @@ export function AuthScreen({
 
   const creating = mode === 'create-account';
   const showInviteCode = creating && (effectiveConfig.invite_code_required || inviteRevealed);
+  const nameFix =
+    creating && username !== keptUsername ? splitNameFix(displayName, username) : null;
   const ids = {
     name: `${idPrefix}-name`,
     username: `${idPrefix}-username`,
@@ -321,13 +326,8 @@ export function AuthScreen({
                 id={ids.name}
                 label="Name"
                 error={fieldErrors.displayName}
-                help={
-                  <>
-                    <b>Your display name.</b> Friends see it on your profile.{' '}
-                    <b className="auth-help-tag">Doesn't need to be unique</b> – spaces are fine.
-                    You can change it any time in Profile.
-                  </>
-                }
+                hint="First and last name. Friends see this."
+                help="Your display name for friends to see on your profile."
               >
                 <input
                   id={ids.name}
@@ -336,9 +336,10 @@ export function AuthScreen({
                   autoComplete="name"
                   autoCapitalize="words"
                   required
+                  placeholder="Alex Smith"
                   value={displayName}
                   aria-invalid={Boolean(fieldErrors.displayName)}
-                  aria-describedby={describedBy(ids.name, fieldErrors.displayName)}
+                  aria-describedby={describedBy(ids.name, fieldErrors.displayName, 'hint')}
                   onChange={(event) => setDisplayName(event.target.value)}
                 />
               </AuthField>
@@ -348,38 +349,74 @@ export function AuthScreen({
               id={ids.username}
               label="Username"
               error={fieldErrors.username}
-              hint={creating ? USERNAME_HINT : undefined}
+              hint={creating ? NEW_USERNAME_HINT : undefined}
               help={
-                creating ? (
-                  <>
-                    <b>Used to sign in</b> and shown as @handle so friends can find you.{' '}
-                    <b className="auth-help-tag is-unique">Must be unique</b> – no one else can have
-                    it. You can change it any time in Profile.
-                  </>
-                ) : undefined
+                creating
+                  ? 'Used to sign in and shown as your handle so friends can find you. Must be unique.'
+                  : undefined
               }
             >
-              <input
-                id={ids.username}
-                name="username"
-                type="text"
-                inputMode="text"
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                required
-                maxLength={32}
-                value={username}
-                aria-invalid={Boolean(fieldErrors.username)}
-                aria-describedby={describedBy(
-                  ids.username,
-                  fieldErrors.username,
-                  creating ? 'hint' : undefined,
+              <div className={creating ? 'auth-handle' : undefined}>
+                {creating && (
+                  <span className="auth-handle-at" aria-hidden="true">
+                    @
+                  </span>
                 )}
-                onChange={(event) => setUsername(event.target.value)}
-              />
+                <input
+                  id={ids.username}
+                  name="username"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                  maxLength={32}
+                  placeholder={creating ? 'alexsmith' : undefined}
+                  value={username}
+                  aria-invalid={Boolean(fieldErrors.username)}
+                  aria-describedby={describedBy(
+                    ids.username,
+                    fieldErrors.username,
+                    creating ? 'hint' : undefined,
+                  )}
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+              </div>
             </AuthField>
+
+            {nameFix && (
+              <div className="auth-name-check" role="status">
+                <p>
+                  Is <b>{username.trim()}</b> your last name? Put your first and last name in Name.
+                  Your username is a one-word sign-in handle, like <b>@{nameFix.username}</b>.
+                </p>
+                <div className="auth-name-check-actions">
+                  <button
+                    type="button"
+                    className="auth-name-check-fix"
+                    onClick={() => {
+                      setDisplayName(nameFix.displayName);
+                      setUsername(nameFix.username);
+                      document.getElementById(ids.username)?.focus();
+                    }}
+                  >
+                    Fix it for me
+                  </button>
+                  <button
+                    type="button"
+                    className="auth-name-check-keep"
+                    onClick={() => {
+                      setKeptUsername(username);
+                      document.getElementById(ids.username)?.focus();
+                    }}
+                  >
+                    It's my username
+                  </button>
+                </div>
+              </div>
+            )}
 
             <AuthField
               id={ids.password}
@@ -439,12 +476,6 @@ export function AuthScreen({
               </AuthField>
             )}
 
-            {creating && (
-              <p className="auth-field-hint">
-                New profiles are public to members who share. Your name, photo, workouts and cardio
-                are shared. You can choose Friends only or Private in Profile.
-              </p>
-            )}
             <div className="auth-error-region" aria-live="polite" aria-atomic="true">
               {error && (
                 <p className="inline-error" role="alert">
