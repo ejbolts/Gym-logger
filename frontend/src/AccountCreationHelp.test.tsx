@@ -89,28 +89,4 @@ describe('account creation help', () => {
     expect(dialog()?.querySelector('.sample-profile-username')?.textContent).toBe('@jordan.r');
     expect(dialog()?.querySelector('.profile-avatar')?.textContent).toBe('J');
   });
-
-  it('offers to fix a first name in Name and a last name in Username', async () => {
-    const check = () => container.querySelector('.auth-name-check');
-    const value = (name: string) =>
-      container.querySelector<HTMLInputElement>(`input[name="${name}"]`)!.value;
-
-    await type('name', 'Alex');
-    await type('username', 'Smith');
-    expect(check()?.textContent).toContain('Is Smith your last name?');
-    expect(check()?.textContent).toContain('@alexsmith');
-    await click(buttonNamed('Fix it for me'));
-    expect(value('name')).toBe('Alex Smith');
-    expect(value('username')).toBe('alexsmith');
-    expect(check()).toBeNull();
-
-    await type('name', 'Alex');
-    await type('username', 'Smith');
-    await click(buttonNamed("It's my username"));
-    expect(value('name')).toBe('Alex');
-    expect(value('username')).toBe('Smith');
-    expect(check()).toBeNull();
-    await type('username', 'Jones');
-    expect(check()?.textContent).toContain('Is Jones your last name?');
-  });
 });

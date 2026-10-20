@@ -3,7 +3,6 @@ import {
   DEFAULT_AUTH_CONFIG,
   MIN_PASSWORD_LENGTH,
   NEW_USERNAME_HINT,
-  splitNameFix,
   submitAuthForm,
   type AuthFieldErrors,
   type AuthMode,
@@ -151,8 +150,6 @@ export function AuthScreen({
   const [notice, setNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const [sampleOpen, setSampleOpen] = useState(false);
-  /** The username kept after the mix-up check asked about it. */
-  const [keptUsername, setKeptUsername] = useState<string | null>(null);
 
   const screenRef = useRef<HTMLElement>(null);
   const shellTopRef = useRef<number | null>(null);
@@ -192,8 +189,6 @@ export function AuthScreen({
 
   const creating = mode === 'create-account';
   const showInviteCode = creating && (effectiveConfig.invite_code_required || inviteRevealed);
-  const nameFix =
-    creating && username !== keptUsername ? splitNameFix(displayName, username) : null;
   const ids = {
     name: `${idPrefix}-name`,
     username: `${idPrefix}-username`,
@@ -336,7 +331,7 @@ export function AuthScreen({
                   autoComplete="name"
                   autoCapitalize="words"
                   required
-                  placeholder="Alex Smith"
+                  placeholder="Sam Sample"
                   value={displayName}
                   aria-invalid={Boolean(fieldErrors.displayName)}
                   aria-describedby={describedBy(ids.name, fieldErrors.displayName, 'hint')}
@@ -373,7 +368,7 @@ export function AuthScreen({
                   spellCheck={false}
                   required
                   maxLength={32}
-                  placeholder={creating ? 'alexsmith' : undefined}
+                  placeholder={creating ? 'sam.sample' : undefined}
                   value={username}
                   aria-invalid={Boolean(fieldErrors.username)}
                   aria-describedby={describedBy(
@@ -385,38 +380,6 @@ export function AuthScreen({
                 />
               </div>
             </AuthField>
-
-            {nameFix && (
-              <div className="auth-name-check" role="status">
-                <p>
-                  Is <b>{username.trim()}</b> your last name? Put your first and last name in Name.
-                  Your username is a one-word sign-in handle, like <b>@{nameFix.username}</b>.
-                </p>
-                <div className="auth-name-check-actions">
-                  <button
-                    type="button"
-                    className="auth-name-check-fix"
-                    onClick={() => {
-                      setDisplayName(nameFix.displayName);
-                      setUsername(nameFix.username);
-                      document.getElementById(ids.username)?.focus();
-                    }}
-                  >
-                    Fix it for me
-                  </button>
-                  <button
-                    type="button"
-                    className="auth-name-check-keep"
-                    onClick={() => {
-                      setKeptUsername(username);
-                      document.getElementById(ids.username)?.focus();
-                    }}
-                  >
-                    It's my username
-                  </button>
-                </div>
-              </div>
-            )}
 
             <AuthField
               id={ids.password}

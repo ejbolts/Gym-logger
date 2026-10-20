@@ -23,8 +23,6 @@ export const DEFAULT_AUTH_CONFIG: AuthConfig = {
 };
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{2,31}$/;
-/** A capitalised word such as Smith, O'Brien, Smith-Jones or McDonald. */
-const LAST_NAME_PATTERN = /^\p{Lu}\p{Ll}*(?:['-]?\p{Lu}?\p{Ll}+)+$/u;
 
 export function isNetworkFailure(reason: unknown): boolean {
   if (reason instanceof ApiError) return reason.status === 0 && reason.code === 'request_failed';
@@ -67,32 +65,6 @@ export function authErrorMessage(reason: unknown): string {
 
 export function validateUsername(username: string): string | null {
   return USERNAME_PATTERN.test(username.trim()) ? null : USERNAME_HINT;
-}
-
-/** Lower-case letters and digits from a name, as a username suggestion. */
-export function suggestUsername(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '')
-    .slice(0, 32);
-}
-
-/**
- * Catches the common sign-up mix-up: a first name alone in Name and a capitalised last name in
- * Username. Returns the corrected pair, or null when the entries look intended.
- */
-export function splitNameFix(
-  displayName: string,
-  username: string,
-): { displayName: string; username: string } | null {
-  const name = displayName.trim();
-  const lastName = username.trim();
-  if (!name || /\s/.test(name) || !LAST_NAME_PATTERN.test(lastName)) return null;
-  const fullName = `${name} ${lastName}`;
-  const suggested = suggestUsername(fullName);
-  return validateUsername(suggested) ? null : { displayName: fullName, username: suggested };
 }
 
 export function validateNewPassword(password: string): string | null {

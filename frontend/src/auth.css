@@ -191,54 +191,6 @@
   pointer-events: none;
 }
 
-/* Asks about a first name in Name and a last name in Username. */
-.auth-name-check {
-  display: grid;
-  gap: 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--p-gold) 35%, transparent);
-  border-radius: 12px;
-  padding: 0.65rem 0.75rem;
-  background: var(--p-gold-soft);
-  color: var(--p-ink-2);
-  font-size: 0.8rem;
-  line-height: 1.45;
-}
-
-.auth-name-check p {
-  margin: 0;
-}
-
-.auth-name-check b {
-  color: var(--p-ink);
-}
-
-.auth-name-check-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.auth-name-check-actions button {
-  min-height: 2.25rem;
-  border-radius: 8px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  touch-action: manipulation;
-}
-
-.auth-name-check-fix {
-  border: 0;
-  background: var(--p-gold);
-  color: #1a1300;
-}
-
-.auth-name-check-keep {
-  border: 1px solid color-mix(in srgb, var(--p-gold) 40%, transparent);
-  background: transparent;
-  color: var(--p-ink-2);
-}
-
 .auth-reveal {
   position: absolute;
   top: 50%;

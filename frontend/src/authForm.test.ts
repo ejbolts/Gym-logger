@@ -4,7 +4,6 @@ import {
   authErrorMessage,
   submitAuthForm,
   validateAuthForm,
-  splitNameFix,
   validateUsername,
   USERNAME_HINT,
   type AuthApi,
@@ -102,31 +101,6 @@ describe('validateUsername', () => {
       expect(validateUsername(username)).toBe(USERNAME_HINT);
     },
   );
-});
-
-describe('splitNameFix', () => {
-  it('suggests a full name and username for a first name and capitalised last name', () => {
-    expect(splitNameFix(' Alex ', 'Smith')).toEqual({
-      displayName: 'Alex Smith',
-      username: 'alexsmith',
-    });
-    expect(splitNameFix('Zoë', "O'Brien")).toEqual({
-      displayName: "Zoë O'Brien",
-      username: 'zoeobrien',
-    });
-    expect(splitNameFix('Sam', 'McDonald')?.username).toBe('sammcdonald');
-  });
-
-  it.each([
-    ['', 'Smith'],
-    ['Alex Smith', 'Smith'],
-    ['Alex', 'smith'],
-    ['Alex', 'alexsmith'],
-    ['Alex', 'Smith2'],
-    ['Alex', 'SMITH'],
-  ])('leaves %s / %s alone', (displayName, username) => {
-    expect(splitNameFix(displayName, username)).toBeNull();
-  });
 });
 
 describe('submitAuthForm', () => {
