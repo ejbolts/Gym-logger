@@ -6,5 +6,9 @@
   "changes": [
     "Quick-start circles are now 52 px across, up from 44 px, with larger icons to make each option easier to see and tap."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#091"
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#091",
+  "image": {
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/0e754082c31546e44a878066a2365fb66cff3872/docs/screenshots/releases/0.9.1-quick-start-circles.png",
+    "alt": "Quick-start menu with larger Cardio, Up next and Empty circles."
+  }
 }
