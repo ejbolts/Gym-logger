@@ -41,6 +41,12 @@
 :root[data-colour-mode='light'] .app-tab-bar {
   background: rgb(255 255 255 / 88%);
 }
+:root[data-colour-mode='light'] .start-menu-scrim {
+  background: rgb(243 245 247 / 72%);
+}
+:root[data-colour-mode='light'] .app-tab-start.menu-open .app-tab-start-bubble {
+  color: var(--p-ink);
+}
 :root[data-colour-mode='light'] .overlay-screen-header::before {
   background: linear-gradient(
     180deg,
