@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 import { SharedProfileScreen } from './SharedProfiles';
 import type { SharedProfile, SharedWorkoutPage, TrackedWorkout } from './types';
+import { DEFAULT_WORKOUT_TYPES } from './workoutTypes';
 
 const profile: SharedProfile = {
   id: 'friend',
@@ -23,6 +24,22 @@ const profile: SharedProfile = {
   body_weight: null,
   goals: null,
   cardio_sessions: null,
+  consistency: {
+    current_streak: 2,
+    training_days: 23,
+    workout_types: DEFAULT_WORKOUT_TYPES.map((type) =>
+      type.id === 'push' ? { ...type, color: '#abcdef' } : type,
+    ),
+    heatmap: [
+      {
+        workout_date: '2026-10-17',
+        categories: ['push'],
+        workout_count: 2,
+        set_count: 8,
+        workouts: [],
+      },
+    ],
+  },
   training_time: {
     workout_minutes: 213,
     workout_count: 4,
@@ -49,6 +66,11 @@ let root: Root;
 let container: HTMLDivElement;
 beforeEach(async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callback(0);
+    return 0;
+  });
+  Element.prototype.scrollIntoView = vi.fn();
   vi.spyOn(api.sharing, 'profile').mockResolvedValue(profile);
   vi.spyOn(api.sharing, 'workoutFilters').mockResolvedValue({
     exercises: [{ id: 'squat', name: 'Squat' }],
@@ -195,4 +217,34 @@ it('shows lifetime time separately from history filters and reacts on a shared w
   await chooseType('push');
   expect(container.querySelector('.profile-training-time')?.textContent).toContain('4h 33min');
   expect(container.querySelector('.friend-react-button')).toBeNull();
+});
+
+it('shows the viewed account calendar, toggles its legend and selects a day without truncating stats', async () => {
+  const card = container.querySelector('.calendar-panel')!;
+  expect(card.textContent).toContain('Consistency');
+  expect(card.querySelector('.consistency-stats')?.textContent).toContain('2 days');
+  expect(card.querySelector('.consistency-stats')?.textContent).toContain('23');
+  expect(card.querySelector('.consistency-stats')?.textContent).toContain('1.9');
+  const legend = card.querySelector<HTMLButtonElement>('.category-legend button')!;
+  expect(legend.textContent).toContain('Push');
+  expect(legend.querySelector('i')?.style.background).toBe('rgb(171, 205, 239)');
+  await act(async () => legend.click());
+  expect(legend.getAttribute('aria-pressed')).toBe('false');
+  expect(card.querySelector('.calendar-day.trained')?.className).toContain('filtered-out');
+  await act(async () => legend.click());
+  expect(legend.getAttribute('aria-pressed')).toBe('true');
+  expect(
+    card.querySelectorAll('.calendar-day:not(.trained):not(.empty):not(:disabled)'),
+  ).toHaveLength(0);
+  await act(async () => card.querySelector<HTMLButtonElement>('.calendar-day.trained')!.click());
+  expect(api.sharing.workouts).toHaveBeenLastCalledWith(
+    'friend',
+    0,
+    10,
+    expect.objectContaining({ start_date: '2026-10-17', end_date: '2026-10-17' }),
+  );
+  expect(card.querySelector('.consistency-stats')?.textContent).toContain('23');
+  await chooseType('push');
+  expect(card.querySelectorAll('.calendar-day.trained')).toHaveLength(1);
+  expect(card.querySelector('.consistency-stats')?.textContent).toContain('23');
 });

@@ -52,8 +52,9 @@ from .models import (
     utc_now,
 )
 from .photo_storage import profile_photo_path
-from .tracker import training_preferences, workout_options, zone2_week
+from .tracker import build_heatmap, training_preferences, workout_options, zone2_week
 from .tracker_schemas import (
+    HeatmapDay,
     MachinePhotoRead,
     PersonalRecordRead,
     TrainingTimeRead,
@@ -170,12 +171,20 @@ class SharedCardioSession(BaseModel):
     notes: str | None
 
 
+class SharedConsistencyRead(BaseModel):
+    heatmap: list[HeatmapDay]
+    current_streak: int
+    training_days: int
+    workout_types: list[WorkoutTypeRead]
+
+
 class SharedProfileRead(SharedProfileSummary):
     # None when the profile cannot be viewed or does not share that part.
     body_weight: list[SharedBodyMeasurement] | None = None
     goals: SharedGoals | None = None
     cardio_sessions: list[SharedCardioSession] | None = None
     training_time: TrainingTimeRead | None = None
+    consistency: SharedConsistencyRead | None = None
 
 
 class SharedWorkoutPage(BaseModel):
@@ -654,6 +663,38 @@ def list_shared_profiles(
     return profiles
 
 
+def shared_consistency(db: Session, user_id: str) -> SharedConsistencyRead:
+    # Calendar history must not depend on the paginated/filtered shared workout list.
+    workouts = list(
+        db.scalars(
+            select(TrainingWorkout)
+            .where(TrainingWorkout.user_id == user_id, TrainingWorkout.is_sample.is_(False))
+            .options(*workout_options())
+        )
+    )
+    catalog = workout_type_catalog(db, user_id)
+    heatmap = build_heatmap(workouts, [], catalog)
+    # The grid needs counts and type colours only. Do not expose exercise/bodyweight details.
+    for day in heatmap:
+        day.workouts = []
+    today = date.today()
+    dates = {workout.workout_date for workout in workouts if workout.workout_date <= today}
+    cursor = today if today in dates else today - timedelta(days=1)
+    streak = 0
+    while cursor in dates:
+        streak += 1
+        cursor -= timedelta(days=1)
+    first_day = start_of_week(today, training_preferences(db, user_id).week_start) - timedelta(
+        weeks=11
+    )
+    return SharedConsistencyRead(
+        heatmap=heatmap,
+        current_streak=streak,
+        training_days=sum(first_day <= day <= today for day in dates),
+        workout_types=catalog,
+    )
+
+
 @sharing_router.get("/profiles/{user_id}", response_model=SharedProfileRead)
 def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfileRead:
     member, sharing = visible_member(db, user, user_id)
@@ -688,6 +729,7 @@ def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfile
         # Cardio is shared with workouts; its notes still follow the notes choice.
         cardio_sessions=shared_cardio(db, member.id, sharing),
         training_time=training_time_totals(db, member.id),
+        consistency=shared_consistency(db, member.id),
     )
 
 

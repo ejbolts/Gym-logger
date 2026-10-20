@@ -34,6 +34,10 @@
 
 *Each notification includes its date, separated from the message by a spaced dot.*
 
+![Alex Preview shared profile with the Home consistency calendar, streak and training statistics](screenshots/releases/0.9.0-profile-consistency.png)
+
+*The viewed person's calendar uses their workout history and colours. Tap a training day to filter their shared workouts.*
+
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
@@ -41,6 +45,10 @@
 - Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session. When you follow more friends than the card shows, +N more below the list opens Friends.
 - Profile > Friends > Followers now has Block, with an outlined ? icon beside the follower count that explains blocking. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.
 - Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows.
+- Shared profiles now show the Home consistency card: current streak, training days and weekly average across the last 12 weeks, plus a scrollable monthly calendar.
+- The calendar uses the viewed person's complete shared workout history and workout type colours, including custom types. History filters and Show more do not change the consistency totals.
+- Tap a workout type in the legend to dim or show its days. Tap a training day to see that person's workouts on that date; empty days do not offer workout creation.
+- Friends-only profiles show the calendar only after approval. Private profiles and sample workouts stay hidden; the calendar does not expose body weight, notes or exercise details.
 
 ## 0.8.5
 

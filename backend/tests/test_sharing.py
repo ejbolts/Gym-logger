@@ -35,6 +35,73 @@ def jpeg() -> bytes:
     return buffer.getvalue()
 
 
+def test_shared_consistency_uses_owner_history_and_respects_access(client, other_client):
+    share(client)
+    share(other_client)
+    today = date.today()
+    exercise = named(other_client, "Barbell Bench Press")["id"]
+    custom = other_client.post(
+        "/api/workout-types", json={"name": "Torso", "color": "#abcdef"}
+    ).json()
+    # More history than the first shared workout page, plus repeated dates and old history.
+    dates = [today - timedelta(days=offset) for offset in range(15)]
+    dates += [today, today - timedelta(days=200)]
+    for day in dates:
+        response = other_client.post(
+            "/api/workouts",
+            json={
+                "name": "Owner training",
+                "workout_date": day.isoformat(),
+                "category": "other",
+                "workout_type_id": custom["id"],
+                "movements": [
+                    {
+                        "exercise_id": exercise,
+                        "sets": [
+                            {"reps": 8, "weight_kg": 40, "bodyweight_kg": 81, "completed": True}
+                        ],
+                    }
+                ],
+            },
+        )
+        assert response.status_code == 201, response.text
+    # Samples must neither extend the streak nor add calendar dates.
+    with SessionLocal() as db:
+        db.add(
+            TrainingWorkout(
+                user_id=other_client.user["id"],
+                name="Sample",
+                category="push",
+                workout_date=today - timedelta(days=15),
+                is_sample=True,
+            )
+        )
+        db.commit()
+    result = profile(client, other_client).json()["consistency"]
+    assert result["current_streak"] == 15
+    assert result["training_days"] == 15
+    assert len(result["heatmap"]) == 16
+    assert all(day["workouts"] == [] for day in result["heatmap"])
+    assert result["heatmap"][-1]["workout_count"] == 2
+    assert result["heatmap"][-1]["workout_types"][0]["id"] == custom["id"]
+    assert result["heatmap"][-1]["workout_types"][0]["color"] == "#abcdef"
+    assert profile(other_client, client).json()["consistency"]["heatmap"] == []
+    # The owner's home dashboard agrees on streak and dates (apart from the sample).
+    dashboard = other_client.get("/api/dashboard").json()
+    assert {day["workout_date"] for day in result["heatmap"]} < {
+        day["workout_date"] for day in dashboard["heatmap"]
+    }
+    share(other_client, "followers")
+    assert profile(client, other_client).json()["consistency"] is None
+    assert client.post(f"/api/sharing/follows/{other_client.user['id']}").is_success
+    assert profile(client, other_client).json()["consistency"] is None
+    assert other_client.post(f"/api/sharing/followers/{client.user['id']}").is_success
+    assert profile(client, other_client).json()["consistency"] == result
+    # Going private hides the profile entirely, including the calendar.
+    share(other_client, "private")
+    assert profile(client, other_client).status_code == 404
+
+
 def detailed_workout(exercise_id: str, photo_id: str, name: str = "Push day") -> dict:
     return {
         "name": name,
