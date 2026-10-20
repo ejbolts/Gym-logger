@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
-import { formatReleaseDate, type Release } from './releaseMetadata';
+import { formatReleaseDate, type Release, type ReleaseHighlight } from './releaseMetadata';
 
 function ReleaseDate({ release }: { release: Release }) {
   return release.date ? (
@@ -13,22 +13,48 @@ function ReleaseDate({ release }: { release: Release }) {
   );
 }
 
-function ReleaseScreenshot({ image }: { image: NonNullable<Release['image']> }) {
+function ReleaseScreenshot({
+  image,
+  highlight,
+  index = 0,
+}: {
+  image: NonNullable<Release['image']>;
+  highlight?: ReleaseHighlight;
+  index?: number;
+}) {
   const [failed, setFailed] = useState(false);
-  if (failed) return null;
+  if (failed && !highlight) return null;
 
   return (
-    <figure className="release-screenshot">
-      <a href={image.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
-        <img
-          src={image.url}
-          alt={image.alt}
+    <figure className={`release-screenshot${highlight ? ' release-feature' : ''}`}>
+      {!failed && (
+        <a
+          href={image.url}
+          target="_blank"
+          rel="noopener noreferrer"
           referrerPolicy="no-referrer"
-          decoding="async"
-          onError={() => setFailed(true)}
-        />
-      </a>
-      <figcaption>{image.alt} Select the image to view it full size.</figcaption>
+          aria-label={highlight ? `View ${highlight.title} full size` : undefined}
+        >
+          <img
+            src={image.url}
+            alt={image.alt}
+            referrerPolicy="no-referrer"
+            decoding="async"
+            loading={index === 0 ? 'eager' : 'lazy'}
+            onError={() => setFailed(true)}
+          />
+        </a>
+      )}
+      <figcaption>
+        {highlight ? (
+          <>
+            <h4>{highlight.title}</h4>
+            <p>{highlight.description}</p>
+          </>
+        ) : (
+          <>{image.alt} Select the image to view it full size.</>
+        )}
+      </figcaption>
     </figure>
   );
 }
@@ -36,7 +62,20 @@ function ReleaseScreenshot({ image }: { image: NonNullable<Release['image']> }) 
 function ReleaseDetails({ release, linkLabel }: { release: Release; linkLabel: string }) {
   return (
     <>
-      {release.image && <ReleaseScreenshot key={release.image.url} image={release.image} />}
+      {release.highlights ? (
+        <div className="release-showcase" role="group" aria-label="Release highlights">
+          {release.highlights.map((highlight, index) => (
+            <ReleaseScreenshot
+              key={highlight.title}
+              image={highlight.image}
+              highlight={highlight}
+              index={index}
+            />
+          ))}
+        </div>
+      ) : (
+        release.image && <ReleaseScreenshot key={release.image.url} image={release.image} />
+      )}
       <ul>
         {release.changes.map((change, index) => (
           <li key={index}>{change}</li>

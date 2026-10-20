@@ -35,7 +35,10 @@ describe('release popup', () => {
 
   it('shows an accessible screenshot linking to the original image without sending a referrer', () => {
     const markup = renderToStaticMarkup(
-      <ReleaseAnnouncement release={{ ...metadata, image: screenshot }} onClose={vi.fn()} />,
+      <ReleaseAnnouncement
+        release={{ ...metadata, highlights: undefined, image: screenshot }}
+        onClose={vi.fn()}
+      />,
     );
     expect(markup).toContain(`src="${screenshot.url}"`);
     expect(markup).toContain(`alt="${screenshot.alt}"`);
@@ -45,7 +48,10 @@ describe('release popup', () => {
 
   it('keeps text-only releases usable', () => {
     const markup = renderToStaticMarkup(
-      <ReleaseAnnouncement release={{ ...metadata, image: undefined }} onClose={vi.fn()} />,
+      <ReleaseAnnouncement
+        release={{ ...metadata, highlights: undefined, image: undefined }}
+        onClose={vi.fn()}
+      />,
     );
     expect(markup).not.toContain('<img');
     expect(markup).toContain(metadata.summary);

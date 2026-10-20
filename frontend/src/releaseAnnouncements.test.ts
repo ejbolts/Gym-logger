@@ -79,6 +79,29 @@ describe('release announcements', () => {
     expect(parseRelease(textOnly)).toEqual(textOnly);
   });
 
+  it('validates every highlight and its media URL while accepting legacy notes', () => {
+    expect(parseRelease({ ...metadata, highlights: undefined })).not.toBeNull();
+    const highlight = metadata.highlights[0];
+    for (const highlights of [
+      null,
+      {},
+      [],
+      [null],
+      [{ ...highlight, title: ' ' }],
+      [{ ...highlight, description: '' }],
+      [{ ...highlight, image: null }],
+      [{ ...highlight, image: { ...screenshot, url: 'javascript:alert(1)' } }],
+      [
+        {
+          ...highlight,
+          image: { ...screenshot, url: 'https://raw.githubusercontent.com.evil/a.png' },
+        },
+      ],
+      [highlight, { ...highlight, image: { ...screenshot, alt: '' } }],
+    ])
+      expect(parseRelease({ ...metadata, highlights })).toBeNull();
+  });
+
   it('ships earlier releases newest first, all older than the current version', () => {
     expect(parseReleaseHistory(history, metadata.version)).toEqual(history);
     expect(history.map((release) => release.version)).not.toContain(metadata.version);

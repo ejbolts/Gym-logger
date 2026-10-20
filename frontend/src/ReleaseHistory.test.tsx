@@ -110,7 +110,7 @@ it('shows feature media before change bullets for current and expanded earlier r
   await act(async () =>
     root.render(
       <ReleaseAnnouncement
-        release={{ ...metadata, image }}
+        release={{ ...metadata, highlights: undefined, image }}
         history={[{ ...history[0], image }]}
         onClose={vi.fn()}
       />,
@@ -121,4 +121,24 @@ it('shows feature media before change bullets for current and expanded earlier r
   await act(async () => versionToggle(history[0].version).click());
   const earlier = document.querySelector('.release-history-details')!;
   expect(earlier.querySelector('ul')?.previousElementSibling).toBe(earlier.querySelector('figure'));
+});
+
+it('shows the ordered showcase once before changes and keeps captions when a preview fails', async () => {
+  await act(async () => root.render(<ReleaseAnnouncement release={metadata} onClose={vi.fn()} />));
+  const current = document.querySelector('.release-current-details')!;
+  const showcase = current.querySelector('.release-showcase')!;
+  const cards = [...showcase.querySelectorAll('figure')];
+  expect(cards.map((card) => card.querySelector('h4')?.textContent)).toEqual(
+    metadata.highlights.map((highlight) => highlight.title),
+  );
+  expect(current.querySelectorAll('img')).toHaveLength(metadata.highlights.length);
+  expect(showcase.nextElementSibling).toBe(current.querySelector('ul'));
+  expect(cards[0].querySelector('a')?.getAttribute('href')).toBe(metadata.image.url);
+  expect(cards[0].querySelector('a')?.getAttribute('aria-label')).toContain('full size');
+
+  await act(async () => cards[0].querySelector('img')!.dispatchEvent(new Event('error')));
+  expect(cards[0].querySelector('img')).toBeNull();
+  expect(cards[0].querySelector('h4')?.textContent).toBe(metadata.highlights[0].title);
+  expect(cards[0].textContent).toContain(metadata.highlights[0].description);
+  expect(current.querySelectorAll('li')).toHaveLength(metadata.changes.length);
 });
