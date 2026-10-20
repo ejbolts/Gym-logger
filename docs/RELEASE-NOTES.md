@@ -6,6 +6,10 @@
 
 ### More ways to start, share and track your training
 
+![Workout logger with the Workout notes… field below the summary and above the first exercise](screenshots/releases/0.9.0-workout-notes-top.png)
+
+*Workout notes are near the top of the logger, above the exercises, with a shorter placeholder. Shown with isolated sample data.*
+
 ![Muscle contribution sheet opening its source workout and focusing the selected exercise](screenshots/releases/0.9.0-muscle-sheet-to-workout.gif)
 
 *Tap a muscle name, then a contributing exercise, to open and focus its saved workout. Recorded with isolated sample data.*
@@ -58,6 +62,7 @@
 
 *Choose Lose, Gain or Maintain when you set a goal.*
 
+- Workout notes now sit near the top of the workout logger, below the summary and above the exercises, with the shorter **Workout notes…** placeholder.
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.

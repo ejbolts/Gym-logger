@@ -3371,6 +3371,16 @@ function WorkoutLogger({
 
       {error && <p className="inline-error">{error}</p>}
 
+      <label className="workout-notes panel">
+        Workout notes
+        <textarea
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          placeholder="Workout notes…"
+          rows={3}
+        />
+      </label>
+
       <div className="movement-stack" ref={movementStackRef}>
         {movements.map((movement, movementIndex) => (
           <MovementCard
@@ -3481,15 +3491,6 @@ function WorkoutLogger({
       <button className="add-exercise-button" type="button" onClick={openExercisePicker}>
         ＋ Add exercise
       </button>
-      <label className="workout-notes panel">
-        Workout notes
-        <textarea
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          placeholder="How did the session feel? Anything to remember next time?"
-          rows={3}
-        />
-      </label>
       <button
         className="primary-action finish-workout-bottom"
         disabled={saving}
