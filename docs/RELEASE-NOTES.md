@@ -13,6 +13,13 @@
 ![Workout summary with integrated notes, plain centred arrows and a completed sets label](screenshots/releases/0.9.0-workout-navigation.png)
 
 *Notes share the summary card, with no divider or volume metric. Plain arrows are centred vertically inside the card; the next arrow is dimmed on the live workout. Shown with isolated sample data.*
+![Home entering layout edit mode after a half-second hold on the Bodyweight section](screenshots/releases/0.9.0-home-hold-edit-500ms.gif)
+
+*Hold any Home section for 0.5 seconds to reveal the existing layout controls. Recorded with isolated sample data.*
+
+![Home layout editor with numbered bodyweight guides and resize, hide and reorder controls](screenshots/releases/0.9.0-home-hold-edit.png)
+
+*The Bodyweight chart uses numbered dotted guides. Hold any section to resize, hide or reorder it, then save or cancel using the bottom controls.*
 
 ![Muscle contribution sheet opening its source workout and focusing the selected exercise](screenshots/releases/0.9.0-muscle-sheet-to-workout.gif)
 
@@ -70,6 +77,8 @@
 - Plain left and right arrows inside the summary card are vertically centred on the whole card. Browse previous and next workouts with a short directional slide and fade; the latest and oldest arrows dim at the ends.
 - Earlier workouts open read-only while your live workout stays mounted with its notes, entered sets and timers intact. Reduced-motion settings switch workouts without animation.
 - Collapsed exercises now say completed sets, such as 4 completed sets, without the word working.
+- The Home Bodyweight chart has a simple numbered Y-axis with faint dotted guides, using your preferred weight unit.
+- Press and hold any Home section for 0.5 seconds to enter the existing layout editor. Resize, hide or reorder sections, then save or cancel. Scrolling or releasing early cancels the hold, and the pencil button remains available.
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.

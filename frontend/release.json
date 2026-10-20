@@ -8,6 +8,8 @@
     "Plain left and right arrows inside the summary card are vertically centred on the whole card. Browse previous and next workouts with a short directional slide and fade; the latest and oldest arrows dim at the ends.",
     "Earlier workouts open read-only while your live workout stays mounted with its notes, entered sets and timers intact. Reduced-motion settings switch workouts without animation.",
     "Collapsed exercises now say completed sets, such as 4 completed sets, without the word working.",
+    "The Home Bodyweight chart now has a simple numbered Y-axis and faint dotted guides, using your preferred weight unit.",
+    "Press and hold any Home section for 0.5 seconds to edit your layout. Scrolling or releasing early cancels the hold; the pencil button is still available.",
     "Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.",
     "Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.",
     "Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.",

@@ -308,6 +308,28 @@ describe('App startup', () => {
     expect(markup).not.toContain('live-workout-card');
   });
 
+  it.each(['kg', 'lb'] as const)('uses %s for the Home Bodyweight axis', (unit) => {
+    const measurements = [85, 84, 83].map((weight_kg, index) => ({
+      id: String(index),
+      measurement_date: `2026-10-0${6 - index}`,
+      weight_kg,
+      body_fat_pct: null,
+      notes: null,
+      is_sample: true,
+      created_at: '2026-10-06T00:00:00Z',
+    }));
+    const markup = renderToday({ measurements }, unit);
+    const chart = markup.match(
+      /<svg[^>]*aria-label="Bodyweight in [^"]+, last 30 check-ins"[^>]*>([\s\S]*?)<\/svg>/,
+    )![1];
+    const labels = [...chart.matchAll(/<text[^>]*>([^<]+)<\/text>/g)].map((match) =>
+      Number(match[1]),
+    );
+    expect(labels).toHaveLength(3);
+    expect(Math.min(...labels)).toBeGreaterThan(unit === 'kg' ? 80 : 180);
+    expect(Math.max(...labels)).toBeLessThan(unit === 'kg' ? 90 : 200);
+  });
+
   it('replaces the recommendation with a resumable live workout', () => {
     const markup = renderToday({ workoutStartedAt: Date.now() - 65_000, todayBodyweight: 84.1 });
 

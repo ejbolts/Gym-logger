@@ -13,6 +13,7 @@ import {
   type HomeSectionId,
 } from './homeLayout';
 import './homeLayout.css';
+import { useHomeLongPress } from './useHomeLongPress';
 
 interface HomeEditActions {
   onChange: (layout: HomeLayout) => void;
@@ -36,11 +37,14 @@ export function HomeLayoutSections({
   layout,
   sections,
   edit,
+  onStartEditing,
 }: {
   layout: HomeLayout;
   sections: Record<HomeSectionId, ReactNode>;
   edit?: HomeEditActions;
+  onStartEditing?: () => void;
 }) {
+  const holdHandlers = useHomeLongPress(edit ? undefined : onStartEditing);
   const visible = layout.order.filter((id) => !layout.hidden.includes(id) && sections[id] != null);
   const hidden = layout.order.filter((id) => layout.hidden.includes(id) && sections[id] != null);
   const spans = homeSectionSpans(visible, layout.widths);
@@ -145,7 +149,7 @@ export function HomeLayoutSections({
           </div>
         </details>
       )}
-      <div className={`home-sections${edit ? ' is-editing' : ''}`}>
+      <div className={`home-sections${edit ? ' is-editing' : ''}`} {...holdHandlers}>
         {visible.map((id, index) => (
           <Fragment key={id}>
             <div
