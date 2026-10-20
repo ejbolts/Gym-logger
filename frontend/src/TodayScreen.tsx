@@ -13,11 +13,9 @@ import type { HomeSectionId } from './homeLayout';
 import { Meter, SparkBars, Sparkline } from './PulseCharts';
 import {
   averageOf,
-  CATEGORY_LABELS,
   daysBetween,
   parseLocalDate,
   recentStrengthRecords,
-  sessionTemplateFor,
   shortDate,
   trainingDayGrid,
   weekStartDayFrom,
@@ -38,7 +36,7 @@ import { localDate } from './utils';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
 import { profileButtonLabel } from './friendsActivityData';
-import { useWorkoutTypes } from './workoutTypesContext';
+import { useUpNextSession } from './upNext';
 import {
   formatWeight,
   formatWeightNumber,
@@ -181,17 +179,11 @@ export function TodayScreen({
     () => trainingDayGrid(workouts, today, weekStartDay, 12),
     [today, weekStartDay, workouts],
   );
-  const { types } = useWorkoutTypes();
-  const recommendation = types.find((type) => type.id === data?.recommendation?.category)?.archived
-    ? null
-    : (data?.recommendation ?? null);
-  const template = useMemo(
-    () =>
-      recommendation
-        ? sessionTemplateFor(workouts, recommendation.category, today, weightUnit)
-        : null,
-    [recommendation, today, workouts, weightUnit],
-  );
+  const {
+    recommendation,
+    label: recommendationLabel,
+    template,
+  } = useUpNextSession(data?.recommendation, workouts, today);
   const currentWeek = weeks.at(-1);
   const history = weeks.slice(0, -1);
   const haveWorkouts = workouts.length > 0;
@@ -234,11 +226,6 @@ export function TodayScreen({
     [personalRecords],
   );
   const memberSince = profile ? formatMemberSince(profile.created_at, 'short') : null;
-  const recommendationLabel = recommendation
-    ? recommendation.category === 'cardio'
-      ? 'Cardio'
-      : CATEGORY_LABELS[recommendation.category]
-    : null;
 
   const sections: Record<HomeSectionId, ReactNode> = {
     profile: profile ? (

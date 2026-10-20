@@ -197,6 +197,7 @@ import {
   mostTrainedExerciseId,
   recordCountsByWorkout,
   setLabel,
+  sessionTemplateFor,
   shortDate,
   topWorkingSet,
   weekGroupLabel,
@@ -208,6 +209,7 @@ import {
   type SessionTemplate,
 } from './trainingSummary';
 import { recentExerciseHistory, type ExerciseHistoryEntry } from './exerciseHistory';
+import { useUpNextSession } from './upNext';
 import { exerciseIconFor } from './exerciseIcons';
 import { fuzzyHighlightIndices, rankExerciseSearchMatches } from './exerciseSearch';
 import {
@@ -607,6 +609,8 @@ function AppContent() {
   const [navDirection, setNavDirection] = useState<'forward' | 'back'>('forward');
   const [bodyTrendPreference, setBodyTrendPreference] = useState(loadBodyTrendPreference);
   const workoutTypes = useWorkoutTypes();
+  const weightUnit = useWeightUnit();
+  const upNext = useUpNextSession(dashboard?.recommendation, workouts);
   const workoutTypeColors = useMemo(
     () => builtinTypeColors(workoutTypes.types),
     [workoutTypes.types],
@@ -645,6 +649,8 @@ function AppContent() {
     visitedTabs.has('progress') ||
     visitedTabs.has('cardio');
   const [workoutTemplate, setWorkoutTemplate] = useState<SessionTemplate | null>(null);
+  // The type chosen from the Start menu's Cardio option, before any exercise is added.
+  const [workoutStartCategory, setWorkoutStartCategory] = useState<WorkoutCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [backgroundActivities, setBackgroundActivities] = useState<BackgroundActivity[]>([]);
@@ -1073,11 +1079,14 @@ function AppContent() {
     workoutDate = localDate(),
     replaceActiveWorkout = false,
     template: SessionTemplate | null = null,
+    category: WorkoutCategory | null = null,
   ) {
     if (workoutSaving) return;
     if (replaceActiveWorkout) clearActiveWorkoutDraft();
     const storedDraft = replaceActiveWorkout ? null : readActiveWorkoutDraft();
-    setWorkoutTemplate(storedDraft || activeWorkoutStartedAt !== null ? null : template);
+    const freshStart = !storedDraft && activeWorkoutStartedAt === null;
+    setWorkoutTemplate(freshStart ? template : null);
+    setWorkoutStartCategory(freshStart ? category : null);
     const startedAt = storedDraft?.startedAt ?? Date.now();
     setEditingWorkout(null);
     setResumingWorkoutId(storedDraft?.resumingWorkoutId ?? null);
@@ -1472,6 +1481,7 @@ function AppContent() {
                     restoredDraftMovements={restoredDraftMovements}
                     recommendation={dashboard?.recommendation ?? null}
                     template={workoutTemplate}
+                    startCategory={workoutStartCategory}
                     initialDate={workoutStartDate}
                     initialWorkout={editingWorkout}
                     resumingWorkout={resumingWorkout}
@@ -1670,6 +1680,18 @@ function AppContent() {
               else setTab(nextTab);
             }}
             onStart={() => startWorkout()}
+            startMenu={{
+              upNextLabel: upNext.label ? `${upNext.label} day` : null,
+              onCardio: () =>
+                startWorkout(
+                  localDate(),
+                  false,
+                  sessionTemplateFor(workouts, 'cardio', localDate(), weightUnit),
+                  'cardio',
+                ),
+              onUpNext: () => startWorkout(localDate(), false, upNext.template),
+              onEmpty: () => startWorkout(),
+            }}
           />
         )}
       </div>
@@ -2126,6 +2148,7 @@ function WorkoutLogger({
   categoryColors,
   recommendation,
   template,
+  startCategory = null,
   initialDate,
   initialWorkout,
   resumingWorkout,
@@ -2148,6 +2171,8 @@ function WorkoutLogger({
   categoryColors: WorkoutTypeColors;
   recommendation: WorkoutRecommendation | null;
   template: SessionTemplate | null;
+  /** A type chosen before starting, such as Cardio from the Start menu. */
+  startCategory?: WorkoutCategory | null;
   initialDate: string;
   initialWorkout: TrackedWorkout | null;
   resumingWorkout: TrackedWorkout | null;
@@ -2182,6 +2207,7 @@ function WorkoutLogger({
     initialWorkout?.category ??
       restoredDraft?.category ??
       resumingWorkout?.category ??
+      startCategory ??
       template?.category ??
       recommendation?.category ??
       'push',
@@ -2196,7 +2222,7 @@ function WorkoutLogger({
   );
   const [workoutTypeExplicit, setWorkoutTypeExplicit] = useState(
     restoredDraft?.workoutTypeExplicit ??
-      Boolean(initialWorkout || resumingWorkout || customTypeId),
+      Boolean(initialWorkout || resumingWorkout || customTypeId || startCategory),
   );
   const selectedType = effectiveWorkoutType(
     {
@@ -3148,6 +3174,7 @@ function WorkoutLogger({
         !workoutTypes.types.find((type) => type.id === recommendation.category)?.archived &&
         !initialWorkout &&
         !template &&
+        !startCategory &&
         movements.length === 0 && (
           <section className="workout-recommendation panel">
             <div className="recommendation-heading">

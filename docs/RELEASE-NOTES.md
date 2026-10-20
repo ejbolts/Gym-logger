@@ -42,6 +42,10 @@
 
 *Tap Following to see when you started following someone and to unfollow them.*
 
+![Start menu open above the tab bar with blue Cardio, Up next and Empty buttons; Up next shows Lower body day and Start shows a close cross](screenshots/releases/0.9.0-start-menu.png)
+
+*Tap Start to choose Cardio, your Up next session or an empty workout.*
+
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
@@ -57,6 +61,11 @@
 - Friends-only profiles show Request to follow, then Requested with a dropdown to cancel the request.
 - Shared profiles no longer show whether someone is Public, Friends only or Private.
 - Follows you now sits beside the Joined date.
+- Tapping Start opens three blue buttons above it: Cardio, Up next and Empty. The + turns into a × while they're open; tap ×, the dimmed screen or press Escape to close without starting anything.
+- Up next shows the name of your recommended session, such as Lower body day, and starts it pre-filled from your last session of that type, just like Home's Up next card.
+- Cardio starts a cardio workout, pre-filled with the exercises from your last cardio session when you have one.
+- Empty starts a blank workout, as Start did before.
+- During a live workout, Start still takes you straight back to it.
 
 ## 0.8.5
 
