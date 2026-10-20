@@ -374,11 +374,24 @@ class WorkoutRecommendationRead(BaseModel):
     muscle_frequency: list[MuscleFrequencyRead]
 
 
+class WeeklyMuscleContributionRead(BaseModel):
+    workout_id: str
+    workout_name: str
+    workout_date: date
+    movement_id: str
+    exercise_id: str
+    exercise_name: str
+    working_sets: int
+    credit_per_set: float
+    set_credits: float
+
+
 class WeeklyMuscleSetsRead(BaseModel):
     muscle_group: str
     raw_sets: float
     effective_sets: float
     average_rpe: float | None
+    contributions: list[WeeklyMuscleContributionRead] = Field(default_factory=list)
 
 
 class WeeklySetsRead(BaseModel):

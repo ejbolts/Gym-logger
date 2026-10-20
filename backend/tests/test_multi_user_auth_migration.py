@@ -258,7 +258,7 @@ def test_alembic_upgrade_head_works_on_an_empty_database(tmp_path):
     engine = create_engine(f"sqlite:///{database.as_posix()}")
     with engine.connect() as connection:
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
-            "0038_workout_reactions"
+            "0039_profile_blocks"
         )
         tables = set(inspect(connection).get_table_names())
         assert {"users", "user_sessions", "user_settings", "exercises", "account_backups"} <= tables
@@ -266,6 +266,7 @@ def test_alembic_upgrade_head_works_on_an_empty_database(tmp_path):
         assert {"youtube_connections", "youtube_oauth_states"} <= tables
         assert "workout_types" in tables
         assert "workout_reactions" in tables
+        assert "profile_blocks" in tables
         assert {"resolved_at", "resolved_by_id"} <= {
             item["name"] for item in inspect(connection).get_columns("app_feedback")
         }

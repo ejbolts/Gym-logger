@@ -23,7 +23,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import case, delete, exists, func, or_, select, update
+from sqlalchemy import and_, case, delete, exists, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -40,6 +40,7 @@ from .models import (
     MachinePhoto,
     PersonalRecord,
     PersonalRecordType,
+    ProfileBlock,
     ProfileFollow,
     ProfileSharing,
     TrainingWorkout,
@@ -209,6 +210,7 @@ class ConnectionRead(BaseModel):
 class ConnectionsRead(BaseModel):
     requests: list[ConnectionRead]
     followers: list[ConnectionRead]
+    blocked: list[ConnectionRead] = []
 
 
 Reaction = Literal["like", "love", "strong", "fire", "clap", "trophy"]
@@ -291,6 +293,17 @@ def find_follow(db: Session, follower_id: str, followee_id: str) -> ProfileFollo
     return db.get(ProfileFollow, (follower_id, followee_id))
 
 
+def blocked_member_ids(db: Session, user_id: str) -> set[str]:
+    """A block prevents discovery and shared-data access in both directions."""
+    return set(
+        db.scalars(
+            select(ProfileBlock.blocked_id)
+            .where(ProfileBlock.blocker_id == user_id)
+            .union(select(ProfileBlock.blocker_id).where(ProfileBlock.blocked_id == user_id))
+        )
+    )
+
+
 def visible_member(db: Session, viewer: User, user_id: str) -> tuple[User, ProfileSharing]:
     """A sharing member the viewer can find: their name and photo, but maybe not their training."""
     require_sharing(db, viewer)
@@ -301,6 +314,7 @@ def visible_member(db: Session, viewer: User, user_id: str) -> tuple[User, Profi
         or member.disabled_at is not None
         or sharing is None
         or sharing.visibility == PRIVATE
+        or user_id in blocked_member_ids(db, viewer.id)
     ):
         raise api_error(404, "profile_not_found", "That profile is not shared.")
     return member, sharing
@@ -524,6 +538,7 @@ def pending_request_count(db: Session, user_id: str) -> int:
                 ProfileFollow.followee_id == user_id,
                 ProfileFollow.status == PENDING,
                 User.disabled_at.is_(None),
+                User.id.not_in(blocked_member_ids(db, user_id)),
             )
         )
         or 0
@@ -570,7 +585,11 @@ def list_shared_profiles(
     query = (
         select(User, ProfileSharing)
         .join(ProfileSharing, ProfileSharing.user_id == User.id)
-        .where(ProfileSharing.visibility != PRIVATE, User.disabled_at.is_(None))
+        .where(
+            ProfileSharing.visibility != PRIVATE,
+            User.disabled_at.is_(None),
+            User.id.not_in(blocked_member_ids(db, user.id)),
+        )
     )
     if q is not None:
         term = q.strip()
@@ -885,7 +904,11 @@ def reaction_summaries(
         db.execute(
             select(WorkoutReaction.workout_id, WorkoutReaction.user_id, WorkoutReaction.reaction)
             .join(User, User.id == WorkoutReaction.user_id)
-            .where(WorkoutReaction.workout_id.in_(workout_ids), User.disabled_at.is_(None))
+            .where(
+                WorkoutReaction.workout_id.in_(workout_ids),
+                User.disabled_at.is_(None),
+                User.id.not_in(blocked_member_ids(db, viewer_id)),
+            )
         ).all()
         if workout_ids
         else []
@@ -916,6 +939,7 @@ def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
             ProfileFollow.status == ACCEPTED,
             User.disabled_at.is_(None),
             ProfileSharing.visibility != PRIVATE,
+            User.id.not_in(blocked_member_ids(db, user.id)),
         )
     )
     following = db.scalar(select(func.count()).select_from(followed.subquery())) or 0
@@ -925,7 +949,11 @@ def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
             func.row_number()
             .over(
                 partition_by=TrainingWorkout.user_id,
-                order_by=(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc()),
+                order_by=(
+                    TrainingWorkout.workout_date.desc(),
+                    TrainingWorkout.created_at.desc(),
+                    TrainingWorkout.id.desc(),
+                ),
             )
             .label("position"),
         )
@@ -939,7 +967,11 @@ def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
         .join(ProfileSharing, ProfileSharing.user_id == TrainingWorkout.user_id)
         .where(newest.c.position == 1)
         .options(*workout_options())
-        .order_by(TrainingWorkout.workout_date.desc(), TrainingWorkout.created_at.desc())
+        .order_by(
+            TrainingWorkout.workout_date.desc(),
+            TrainingWorkout.created_at.desc(),
+            TrainingWorkout.id.desc(),
+        )
         .limit(FEED_SIZE)
     ).all()
     reactions = reaction_summaries(db, user.id, [workout.id for workout, _, _ in rows])
@@ -1007,7 +1039,11 @@ def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
     rows = db.execute(
         select(User, ProfileFollow)
         .join(ProfileFollow, ProfileFollow.follower_id == User.id)
-        .where(ProfileFollow.followee_id == user.id, User.disabled_at.is_(None))
+        .where(
+            ProfileFollow.followee_id == user.id,
+            User.disabled_at.is_(None),
+            User.id.not_in(blocked_member_ids(db, user.id)),
+        )
         .order_by(ProfileFollow.created_at.desc())
     ).all()
 
@@ -1022,6 +1058,20 @@ def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
     return ConnectionsRead(
         requests=[connection(*row) for row in rows if row[1].status == PENDING],
         followers=[connection(*row) for row in rows if row[1].status == ACCEPTED],
+        blocked=[
+            ConnectionRead(
+                id=member.id,
+                display_name=member.display_name,
+                profile_photo_url=None,
+                since=as_utc(block.created_at),
+            )
+            for member, block in db.execute(
+                select(User, ProfileBlock)
+                .join(ProfileBlock, ProfileBlock.blocked_id == User.id)
+                .where(ProfileBlock.blocker_id == user.id)
+                .order_by(ProfileBlock.created_at.desc())
+            )
+        ],
     )
 
 
@@ -1039,6 +1089,7 @@ def follow_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
         .where(
             TrainingWorkout.user_id == user.id,
             User.disabled_at.is_(None),
+            User.id.not_in(blocked_member_ids(db, user.id)),
         )
         .order_by(WorkoutReaction.created_at.desc())
         .limit(MAX_REACTION_NOTICES)
@@ -1158,7 +1209,7 @@ def dismiss_follow_notification(
 @sharing_router.post("/followers/{user_id}", status_code=204)
 def approve_follower(user_id: str, user: CurrentUser, db: Db) -> None:
     follow = find_follow(db, user_id, user.id)
-    if follow is None:
+    if follow is None or user_id in blocked_member_ids(db, user.id):
         raise api_error(404, "follow_request_not_found", "That follow request was withdrawn.")
     if follow.status == PENDING:
         follow.status = ACCEPTED
@@ -1174,6 +1225,59 @@ def remove_follower(user_id: str, user: CurrentUser, db: Db) -> None:
     db.execute(
         delete(ProfileFollow).where(
             ProfileFollow.follower_id == user_id, ProfileFollow.followee_id == user.id
+        )
+    )
+    db.commit()
+
+
+@sharing_router.post("/blocks/{user_id}", status_code=204)
+def block_member(user_id: str, user: CurrentUser, db: Db) -> None:
+    if user_id == user.id:
+        raise api_error(422, "cannot_block_yourself", "You cannot block yourself.")
+    member = db.get(User, user_id)
+    if member is None:
+        raise api_error(404, "profile_not_found", "That account was not found.")
+    if db.get(ProfileBlock, (user.id, user_id)) is None:
+        db.add(ProfileBlock(blocker_id=user.id, blocked_id=user_id))
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+    db.execute(
+        delete(ProfileFollow).where(
+            or_(
+                and_(ProfileFollow.follower_id == user.id, ProfileFollow.followee_id == user_id),
+                and_(ProfileFollow.follower_id == user_id, ProfileFollow.followee_id == user.id),
+            )
+        )
+    )
+    # Reactions and their notifications between these two accounts disappear together.
+    db.execute(
+        delete(WorkoutReaction).where(
+            or_(
+                and_(
+                    WorkoutReaction.user_id == user_id,
+                    WorkoutReaction.workout_id.in_(
+                        select(TrainingWorkout.id).where(TrainingWorkout.user_id == user.id)
+                    ),
+                ),
+                and_(
+                    WorkoutReaction.user_id == user.id,
+                    WorkoutReaction.workout_id.in_(
+                        select(TrainingWorkout.id).where(TrainingWorkout.user_id == user_id)
+                    ),
+                ),
+            )
+        )
+    )
+    db.commit()
+
+
+@sharing_router.delete("/blocks/{user_id}", status_code=204)
+def unblock_member(user_id: str, user: CurrentUser, db: Db) -> None:
+    db.execute(
+        delete(ProfileBlock).where(
+            ProfileBlock.blocker_id == user.id, ProfileBlock.blocked_id == user_id
         )
     )
     db.commit()

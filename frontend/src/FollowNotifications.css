@@ -58,6 +58,10 @@
 .follow-notification-copy b {
   font-weight: 550;
 }
+.follow-notification-date {
+  white-space: nowrap;
+  color: var(--p-muted);
+}
 .follow-notification-emoji {
   font-size: 1.25rem;
   flex-shrink: 0;

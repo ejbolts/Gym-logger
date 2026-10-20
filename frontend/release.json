@@ -1,25 +1,20 @@
 {
-  "version": "0.8.5",
-  "date": "2026-10-19",
-  "title": "Training time, friend reactions and workout types",
-  "summary": "See training time on your profile and shared profiles, react to workouts from Home or a friend profile, and catch up in a compact notification popup, alongside custom workout types and clearer account setup.",
+  "version": "0.9.0",
+  "date": "2026-10-20",
+  "title": "More ways to start, share and track your training",
+  "summary": "Explore the exercises behind your muscle sets, see friends’ consistency calendars, manage following and blocking, choose how to start a workout, and track weight changes against your goals.",
   "changes": [
-    "Settings > Workout types lets each account add named workout types with their own colours, such as Arms, Legs, Limbs or Torso.",
-    "Remove built-in or custom types from new workouts and restore them later. Saved workouts keep their type and colour.",
-    "Custom types work in workout drafts, history, calendar dots and filters, shared profiles, CSV import/export and account backups.",
-    "The calendar uses seven day columns without the weekly Sets column.",
-    "New accounts start public. Existing accounts keep their privacy settings; friends-only profiles stay searchable and require approval to view workouts.",
-    "The compact notification bell lists follows, requests and workout reactions. Opening it marks displayed notices as read automatically; recent notices remain visible, and follow requests keep their Approve and Decline buttons.",
-    "Creating an account has a ? beside Name and Username. Name is your display name and doesn't need to be unique; Username is how you sign in and how friends find you as @handle, so it must be unique. Both can be changed any time in Profile.",
-    "See a sample profile, under Create account, shows a profile card with the name and username you've typed, or Sam Sample until you type them, with example workouts, cardio and PRs.",
-    "Friends on Home shows each friend's latest workout or cardio session. Tap the smiley to react with 👍, ❤️, 💪, 🔥, 👏 or 🏆; choose your reaction again to remove it.",
-    "React to a workout on a shared profile using its React button and the same six-choice popup as Home. Counts and your selected reaction appear on each workout card; choose your reaction again to remove it.",
-    "The Today tab is now called Home, matching its house icon.",
-    "Your profile and viewable shared profiles show Time trained for workouts, cardio and all exercise combined. Cardio logged during a workout counts once in Combined; totals cover all training, regardless of history filters."
+    "Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.",
+    "Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.",
+    "Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.",
+    "Every notification shows its date after a spaced dot, including new followers, follow requests and workout reactions.",
+    "Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session. When you follow more friends than the card shows, +N more below the list opens Friends.",
+    "Profile > Friends > Followers now has Block, with an outlined ? icon beside the follower count that explains blocking. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.",
+    "Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#085",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#090",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b4c7fa8fca32b35d60af9eead14d5ca0e03d4820/friend-workout-reactions-20261019/compact-notifications.png",
-    "alt": "Compact notification popup with workout reactions and new followers, automatically marked read when opened and no Dismiss buttons."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/54e0294e5311426eb5725f6a4d96a28f92e47ebe/muscle-contribution-sheet-20261019/sheet-to-workout.gif",
+    "alt": "Open a muscle contribution sheet, select an exercise, and see it focused in its saved workout."
   }
 }

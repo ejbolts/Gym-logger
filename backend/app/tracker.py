@@ -97,6 +97,7 @@ from .tracker_schemas import (
     TrainingWorkoutRead,
     WeeklyDayBreakdown,
     WeeklyExerciseBreakdown,
+    WeeklyMuscleContributionRead,
     WeeklyMuscleSetsRead,
     WeeklySetsRead,
     WeightRepsRead,
@@ -269,6 +270,7 @@ def weekly_sets(
     raw_by_group: dict[str, float] = defaultdict(float)
     effective_by_group: dict[str, float] = defaultdict(float)
     rpes_by_group: dict[str, list[float]] = defaultdict(list)
+    contributions_by_group: dict[str, list[WeeklyMuscleContributionRead]] = defaultdict(list)
     raw_sets = 0
     rated_sets = 0
     unrated_sets = 0
@@ -287,6 +289,23 @@ def weekly_sets(
                 active_groups.update(group for group, _ in credits)
             if not in_current_week:
                 continue
+            if work_sets:
+                for group, contribution in credits:
+                    if contribution <= 0:
+                        continue
+                    contributions_by_group[group].append(
+                        WeeklyMuscleContributionRead(
+                            workout_id=workout.id,
+                            workout_name=workout.name,
+                            workout_date=workout.workout_date,
+                            movement_id=movement.id,
+                            exercise_id=movement.exercise.id,
+                            exercise_name=movement.exercise.name,
+                            working_sets=len(work_sets),
+                            credit_per_set=contribution,
+                            set_credits=len(work_sets) * contribution,
+                        )
+                    )
             for item in work_sets:
                 raw_sets += 1
                 is_effective = item.rpe is None or item.rpe >= 7
@@ -313,6 +332,7 @@ def weekly_sets(
                 raw_sets=round(raw_by_group[group], 1),
                 effective_sets=effective,
                 average_rpe=(round(sum(group_rpes) / len(group_rpes), 1) if group_rpes else None),
+                contributions=contributions_by_group[group],
             )
         )
 
