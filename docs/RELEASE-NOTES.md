@@ -38,6 +38,10 @@
 
 *The viewed person's calendar uses their workout history and colours. Tap a training day to filter their shared workouts.*
 
+![Shared profile header with Joined October 2026 and a Follows you chip, and the Following pill open to a menu showing Since Oct 2026 and Unfollow](screenshots/releases/0.9.0-profile-follow-menu.png)
+
+*Tap Following to see when you started following someone and to unfollow them.*
+
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
@@ -49,6 +53,10 @@
 - The calendar uses the viewed person's complete shared workout history and workout type colours, including custom types. History filters and Show more do not change the consistency totals.
 - Tap a workout type in the legend to dim or show its days. Tap a training day to see that person's workouts on that date; empty days do not offer workout creation.
 - Friends-only profiles show the calendar only after approval. Private profiles and sample workouts stay hidden; the calendar does not expose body weight, notes or exercise details.
+- Shared profiles have one Follow button under the name. After you follow, it switches to Following with a dropdown arrow; the dropdown shows Since <month year> and Unfollow.
+- Friends-only profiles show Request to follow, then Requested with a dropdown to cancel the request.
+- Shared profiles no longer show whether someone is Public, Friends only or Private.
+- Follows you now sits beside the Joined date.
 
 ## 0.8.5
 
