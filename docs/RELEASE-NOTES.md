@@ -6,9 +6,13 @@
 
 ### More ways to start, share and track your training
 
-![Workout logger with the Workout notes… field below the summary and above the first exercise](screenshots/releases/0.9.0-workout-notes-top.png)
+![Switching from a live workout to an earlier read-only workout and back](screenshots/releases/0.9.0-workout-navigation.gif)
 
-*Workout notes are near the top of the logger, above the exercises, with a shorter placeholder. Shown with isolated sample data.*
+*The arrows switch workouts with a short slide and fade, while the live workout stays intact. Recorded with isolated sample data.*
+
+![Workout summary with integrated notes, plain centred arrows and a completed sets label](screenshots/releases/0.9.0-workout-navigation.png)
+
+*Notes share the summary card, with no divider or volume metric. Plain arrows are centred vertically inside the card; the next arrow is dimmed on the live workout. Shown with isolated sample data.*
 
 ![Muscle contribution sheet opening its source workout and focusing the selected exercise](screenshots/releases/0.9.0-muscle-sheet-to-workout.gif)
 
@@ -62,7 +66,10 @@
 
 *Choose Lose, Gain or Maintain when you set a goal.*
 
-- Workout notes now sit near the top of the workout logger, below the summary and above the exercises, with the shorter **Workout notes…** placeholder.
+- Workout notes now share the summary card with the date, workout type, time, body weight, sets and reps. The notes placeholder is Workout notes…; the divider and volume metric are removed.
+- Plain left and right arrows inside the summary card are vertically centred on the whole card. Browse previous and next workouts with a short directional slide and fade; the latest and oldest arrows dim at the ends.
+- Earlier workouts open read-only while your live workout stays mounted with its notes, entered sets and timers intact. Reduced-motion settings switch workouts without animation.
+- Collapsed exercises now say completed sets, such as 4 completed sets, without the word working.
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.

@@ -523,7 +523,9 @@ describe('inactive workout suggestions', () => {
     await act(async () => window.dispatchEvent(new Event('focus')));
     expect(api.createWorkout).not.toHaveBeenCalled();
     expect(readActiveWorkoutDraft()?.movements).toEqual(draft.movements);
-    expect(container.textContent).toContain('Sets0Reps0Vol kg0');
+    expect(container.querySelector('.workout-summary-metrics')?.textContent).toContain(
+      'Sets0Reps0',
+    );
     expect(container.querySelectorAll('.pr-badge')).toHaveLength(0);
   });
 

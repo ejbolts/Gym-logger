@@ -4,7 +4,10 @@
   "title": "More ways to start, share and track your training",
   "summary": "Explore the exercises behind your muscle sets, see friends’ consistency calendars, manage following and blocking, choose how to start a workout, and track weight changes against your goals.",
   "changes": [
-    "Workout notes now sit near the top of the workout logger, below the summary and above the exercises, with the shorter Workout notes… placeholder.",
+    "Workout notes now share the summary card with the date, workout type, time, body weight, sets and reps. The notes placeholder is Workout notes…; the divider and volume metric are removed.",
+    "Plain left and right arrows inside the summary card are vertically centred on the whole card. Browse previous and next workouts with a short directional slide and fade; the latest and oldest arrows dim at the ends.",
+    "Earlier workouts open read-only while your live workout stays mounted with its notes, entered sets and timers intact. Reduced-motion settings switch workouts without animation.",
+    "Collapsed exercises now say completed sets, such as 4 completed sets, without the word working.",
     "Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.",
     "Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.",
     "Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.",
