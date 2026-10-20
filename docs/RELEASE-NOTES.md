@@ -4,113 +4,55 @@
 
 20 October 2026
 
-### More ways to start, share and track your training
+### Start faster. See your training clearly.
 
-![Switching from a live workout to an earlier read-only workout and back](screenshots/releases/0.9.0-workout-navigation.gif)
+![Open the bottom Start menu, choose Up next, and launch a pre-filled Lower body workout](screenshots/releases/0.9.0-quick-start.gif)
 
-*The arrows switch workouts with a short slide and fade, while the live workout stays intact. Recorded with isolated sample data.*
+**Quick start, right from the bottom bar.** Tap **Start** to choose **Cardio**, your recommended **Up next** session or an **Empty** workout. A live session resumes straight away.
 
-![Workout summary with integrated notes, plain centred arrows and a completed sets label](screenshots/releases/0.9.0-workout-navigation.png)
+| Follow each muscle set | Look back, keep your place |
+| :--- | :--- |
+| ![Open a muscle contribution sheet and select an exercise to focus it in its saved workout](screenshots/releases/0.9.0-muscle-sheet-to-workout.gif) | ![Browse an earlier read-only workout and return to the live session with its notes and entered sets intact](screenshots/releases/0.9.0-workout-navigation.gif) |
+| **From total to exercise.** Tap a muscle on Home, inspect its direct and assistance credits, then jump to the exact exercise in its saved workout. | **Your live workout stays intact.** Centred summary arrows browse earlier sessions read-only. Notes, entered sets and timers are waiting when you return. |
 
-*Notes share the summary card, with no divider or volume metric. Plain arrows are centred vertically inside the card; the next arrow is dimmed on the live workout. Shown with isolated sample data.*
-![Home entering layout edit mode after a half-second hold on the Bodyweight section](screenshots/releases/0.9.0-home-hold-edit-500ms.gif)
+| Your weight, in context | Your friends’ consistency |
+| :--- | :--- |
+| ![Monthly bodyweight history with change amounts and dotted Lose, Maintain and Gain goal dividers](screenshots/releases/0.9.0-weight-change-monthly.png) | ![A sample shared profile with the compact Following menu open above its consistency calendar](screenshots/releases/0.9.0-social-consistency.png) |
+| **See the change and the goal behind it.** Gain/loss amounts use the goal you had at the time. Maintain joins Lose and Gain. | **See the training rhythm.** Streaks, training days and a tappable calendar join shared profiles, with follow controls in one compact menu. |
 
-*Hold any Home section for 0.5 seconds to reveal the existing layout controls. Recorded with isolated sample data.*
+| Make Home yours | A clearer start for new accounts |
+| :--- | :--- |
+| ![Hold Home’s Bodyweight section for half a second to enter the layout editor](screenshots/releases/0.9.0-home-hold-edit-500ms.gif) | ![Create account with Sam Sample and sam.sample examples, an @ username prefix, and concise Name and Username help](screenshots/releases/0.9.0-signup-name-username.png) |
+| **Half a second to customise.** Hold any section to resize, hide or reorder cards. Bodyweight gains numbered dotted guides in your preferred unit. | **A clearer form.** Sample placeholders and shorter help distinguish your display name from your sign-in handle. |
 
-![Home layout editor with numbered bodyweight guides and resize, hide and reorder controls](screenshots/releases/0.9.0-home-hold-edit.png)
+*Previews use isolated synthetic accounts and training data. Each feature uses one media format.*
 
-*The Bodyweight chart uses numbered dotted guides. Hold any section to resize, hide or reorder it, then save or cancel using the bottom controls.*
+### What’s changed
 
-![Muscle contribution sheet opening its source workout and focusing the selected exercise](screenshots/releases/0.9.0-muscle-sheet-to-workout.gif)
+#### Start and log
 
-*Tap a muscle name, then a contributing exercise, to open and focus its saved workout. Recorded with isolated sample data.*
+- **Quick start from anywhere:** **Start** opens **Cardio**, **Up next** and **Empty** above the bottom bar. Up next names your recommended workout and reuses its previous exercises; Cardio can reuse your last cardio session. Tap **×**, the backdrop or **Escape** to close. During a live workout, Start resumes it directly. [#97](https://github.com/ejbolts/Gym-logger/pull/97)
+- **Browse without losing your session:** centred arrows in the summary open previous and next workouts with a short slide and fade. Earlier sessions are read-only; your live notes, entered sets and timers stay intact. End arrows dim, and reduced-motion settings skip the animation. Notes now share the summary card, and collapsed exercises say **completed sets**. [#102](https://github.com/ejbolts/Gym-logger/pull/102)
 
-![Biceps bottom sheet showing contributing exercises, their source workouts, set credits and tappable chevrons](screenshots/releases/0.9.0-muscle-contributions.png)
+#### Understand your progress
 
-*Tap a muscle name to see its contributing exercises. Each exercise opens its source workout in view mode.*
+- **Trace muscle totals:** tap a muscle in **Home → Sets per muscle** for contributing exercises, direct/assistance credits and weekly-goal progress. Select an exercise to open its saved workout with that exercise focused. Your active workout stays separate. [#95](https://github.com/ejbolts/Gym-logger/pull/95)
+- **Read weight changes clearly:** **Daily**, **Avg Week** and **Avg Monthly** show how much weight changed compared with the preceding entry or period. Amounts use your unit and the rounded values shown. Colours follow the goal in force at the time, and dotted dividers mark new goals. **Maintain** starts from your current weight; green means closer to it, red means further away. [#98](https://github.com/ejbolts/Gym-logger/pull/98)
+- **Shape your dashboard:** hold any Home section for **0.5 seconds** to edit, or use the pencil. Resize, hide or reorder cards, then save or cancel. Scrolling or releasing early cancels the hold. The Bodyweight chart has numbered dotted guides in kg or lb. [#101](https://github.com/ejbolts/Gym-logger/pull/101)
 
-![The saved workout opened in view mode and focused on the selected contributing exercise](screenshots/releases/0.9.0-muscle-workout-focus.png)
+#### Follow friends with more context and control
 
-*The selected exercise is highlighted and focused in its saved workout; viewing does not edit the workout.*
+- **Consistency on shared profiles:** see a streak, training days, weekly average over the last 12 weeks and a scrollable calendar in that person’s workout colours. Tap a legend entry to filter or a training day to see their workouts. Counts use their complete shared workout history, independently of History filters or **Show more**. Friends-only profiles still require approval; private profiles and sample workouts stay hidden. [#99](https://github.com/ejbolts/Gym-logger/pull/99)
+- **One place for follow controls:** **Following** opens **Since <month year>** and **Unfollow**. **Requested** lets you cancel a pending request. **Follows you** sits beside the joined date, and the old profile-visibility chip is removed. [#96](https://github.com/ejbolts/Gym-logger/pull/96)
+- **More control over sharing:** block a follower in **Profile → Friends → Followers** and manage blocks in **Blocked**. Blocking removes follows in both directions and prevents that account accessing your shared profile and data, including saved links. Unblocking does not restore follows. [#95](https://github.com/ejbolts/Gym-logger/pull/95)
+- **Keep up with recent training:** Home shows one latest session per friend, newest first, with **+N more** when needed. It refreshes every 30 seconds while visible and when you return or reconnect. Reacting to an old workout does not move it ahead of a newer session. Selected shared-workout reactions use a single emoji, and notifications show dates. [#95](https://github.com/ejbolts/Gym-logger/pull/95)
 
-![A selected heart reaction shown as a single emoji on a shared workout](screenshots/releases/0.9.0-emoji-reactions.png)
+#### Small polish
 
-*Selected reactions use the same single-emoji button on Home and shared workouts.*
+- **Clearer account creation:** **Sam Sample** and **sam.sample** placeholders, an **@** username prefix and shorter plain-text **?** help distinguish Name from Username. The extra field hints and sharing paragraph are removed. [#103](https://github.com/ejbolts/Gym-logger/pull/103)
 
-![Followers with Block buttons and an outlined question-mark icon beside the follower count](screenshots/releases/0.9.0-block-followers.png)
+[Release triage and merged PR coverage](releases/0.9.0-triage.md)
 
-*Block a follower from Profile. The outlined question-mark icon beside the follower count matches the exercise list and explains blocking; blocked accounts can be unblocked later.*
-
-![Friends on Home ordered by their newest workouts](screenshots/releases/0.9.0-latest-friends.png)
-
-*One latest workout per friend, refreshed while Home stays visible and when you return.*
-
-![Notifications showing each follower message followed by a spaced dot and its date](screenshots/releases/0.9.0-notification-dates.png)
-
-*Each notification includes its date, separated from the message by a spaced dot.*
-
-![Alex Preview shared profile with the Home consistency calendar, streak and training statistics](screenshots/releases/0.9.0-profile-consistency.png)
-
-*The viewed person's calendar uses their workout history and colours. Tap a training day to filter their shared workouts.*
-
-![Shared profile header with Joined October 2026 and a Follows you chip, and the Following pill open to a menu showing Since Oct 2026 and Unfollow](screenshots/releases/0.9.0-profile-follow-menu.png)
-
-*Tap Following to see when you started following someone and to unfollow them.*
-
-![Start menu open above the tab bar with blue Cardio, Up next and Empty buttons; Up next shows Lower body day and Start shows a close cross](screenshots/releases/0.9.0-start-menu.png)
-
-*Tap Start to choose Cardio, your Up next session or an empty workout.*
-
-![Avg Monthly bodyweight history with the amount changed beside each arrow and dotted lines marking Gain to 86 kg, Maintain 88 kg and Lose to 85 kg goals](screenshots/releases/0.9.0-weight-change-monthly.png)
-
-*Each month shows how much its average changed, coloured by the goal you had then. Dotted lines mark where each goal began.*
-
-![Daily bodyweight history with a Maintain 83.3 kg line above a Gain to 86 kg line, and red or green amounts beside each check-in](screenshots/releases/0.9.0-weight-change-daily.png)
-
-*Daily compares each check-in with the one before it, judged against the goal in force on that day.*
-
-![Add bodyweight goal popup with Lose, Gain and Maintain choices, Maintain selected and the current 83.3 kg filled in](screenshots/releases/0.9.0-maintain-goal.png)
-
-*Choose Lose, Gain or Maintain when you set a goal.*
-
-![Create account form with Sam Sample and sam.sample placeholders, an @ before the username, and the Name and Username ? help open](screenshots/releases/0.9.0-signup-name-username.png)
-
-*Tap ? beside Name or Username for a one-line explanation. Captured with isolated sample data.*
-
-- Workout notes now share the summary card with the date, workout type, time, body weight, sets and reps. The notes placeholder is Workout notes…; the divider and volume metric are removed.
-- Plain left and right arrows inside the summary card are vertically centred on the whole card. Browse previous and next workouts with a short directional slide and fade; the latest and oldest arrows dim at the ends.
-- Earlier workouts open read-only while your live workout stays mounted with its notes, entered sets and timers intact. Reduced-motion settings switch workouts without animation.
-- Collapsed exercises now say completed sets, such as 4 completed sets, without the word working.
-- The Home Bodyweight chart has a simple numbered Y-axis with faint dotted guides, using your preferred weight unit.
-- Press and hold any Home section for 0.5 seconds to enter the existing layout editor. Resize, hide or reorder sections, then save or cancel. Scrolling or releasing early cancels the hold, and the pencil button remains available.
-- Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
-- Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
-- Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
-- Every notification shows its date after a spaced dot, including new followers, follow requests and workout reactions.
-- Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session. When you follow more friends than the card shows, +N more below the list opens Friends.
-- Profile > Friends > Followers now has Block, with an outlined ? icon beside the follower count that explains blocking. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.
-- Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows.
-- Shared profiles now show the Home consistency card: current streak, training days and weekly average across the last 12 weeks, plus a scrollable monthly calendar.
-- The calendar uses the viewed person's complete shared workout history and workout type colours, including custom types. History filters and Show more do not change the consistency totals.
-- Tap a workout type in the legend to dim or show its days. Tap a training day to see that person's workouts on that date; empty days do not offer workout creation.
-- Friends-only profiles show the calendar only after approval. Private profiles and sample workouts stay hidden; the calendar does not expose body weight, notes or exercise details.
-- Shared profiles have one Follow button under the name. After you follow, it switches to Following with a dropdown arrow; the dropdown shows Since <month year> and Unfollow.
-- Friends-only profiles show Request to follow, then Requested with a dropdown to cancel the request.
-- Shared profiles no longer show whether someone is Public, Friends only or Private.
-- Follows you now sits beside the Joined date.
-- Tapping Start opens three blue buttons above it: Cardio, Up next and Empty. The + turns into a × while they're open; tap ×, the dimmed screen or press Escape to close without starting anything.
-- Up next shows the name of your recommended session, such as Lower body day, and starts it pre-filled from your last session of that type, just like Home's Up next card.
-- Cardio starts a cardio workout, pre-filled with the exercises from your last cardio session when you have one.
-- Empty starts a blank workout, as Start did before.
-- During a live workout, Start still takes you straight back to it.
-- Each up or down arrow in Body history now shows the amount gained or lost compared with the row below, such as ↓ 0.5.
-- Daily compares with your previous check-in; Avg Week and Avg Monthly compare with the previous week or month that has check-ins.
-- Amounts use your weight unit and match the rounded weights shown, so they add up when you compare two rows.
-- Arrow colours now follow the goal you had at the time, so older rows keep their meaning after you set a new goal. Weeks and months use the goal in place on their last day.
-- A dotted line marks where each new goal started, with its direction, target and start date, such as Gain to 86 kg · from 16 Oct.
-- Goals can now be Lose, Gain or Maintain. Maintain starts from your current weight; green means you moved back towards it and red means you drifted further away.
-- Create account now shows Sam Sample and sam.sample as example placeholders and an @ before the username.
-- The ? help on Name and Username is shorter and plain, and the sharing paragraph above Create account has been removed.
 
 ## 0.8.5
 

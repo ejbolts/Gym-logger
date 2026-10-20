@@ -1,5 +1,5 @@
 .release-announcement {
-  width: min(32rem, calc(100% - 2rem));
+  width: min(42rem, calc(100% - 2rem));
 }
 
 .release-announcement-body {
@@ -72,6 +72,69 @@
   color: var(--p-ink-2);
   font-size: 0.8125rem;
   line-height: 1.5;
+}
+
+.release-showcase {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.release-feature {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--p-line);
+  border-radius: 1rem;
+  background: var(--p-surface-2);
+}
+
+.release-announcement-body .release-feature > a {
+  display: grid;
+  place-items: center;
+  padding: 0.75rem;
+  background: var(--p-page);
+}
+
+.release-feature img {
+  max-height: 25rem;
+  border-radius: 0.5rem;
+}
+
+.release-feature:first-child {
+  border-color: var(--p-accent);
+}
+
+.release-feature:first-child img {
+  max-height: none;
+}
+
+.release-feature figcaption {
+  margin: 0;
+  padding: 1rem;
+}
+
+.release-feature h4 {
+  margin: 0 0 0.5rem;
+  color: var(--p-ink);
+  font-size: 1.125rem;
+  line-height: 1.3;
+}
+
+.release-announcement-body .release-feature p {
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+@media (min-width: 600px) {
+  .release-showcase {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .release-feature:first-child,
+  .release-feature:last-child:nth-child(even) {
+    grid-column: 1 / -1;
+  }
 }
 
 .release-announcement .popup-primary-action {

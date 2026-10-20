@@ -1,3 +1,14 @@
+export interface ReleaseImage {
+  url: string;
+  alt: string;
+}
+
+export interface ReleaseHighlight {
+  title: string;
+  description: string;
+  image: ReleaseImage;
+}
+
 export interface Release {
   version: string;
   /** Calendar date of these release notes, without a timezone. Optional for older servers. */
@@ -6,14 +17,23 @@ export interface Release {
   summary: string;
   changes: string[];
   url: string;
-  image?: {
-    url: string;
-    alt: string;
-  };
+  image?: ReleaseImage;
+  /** Ordered feature previews, shown before the change list. Image is the older-client fallback. */
+  highlights?: ReleaseHighlight[];
 }
 
 function text(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validImage(value: unknown): value is ReleaseImage {
+  if (!value || typeof value !== 'object') return false;
+  const image = value as Partial<ReleaseImage>;
+  return (
+    text(image.alt) &&
+    text(image.url) &&
+    /^https:\/\/raw\.githubusercontent\.com\/[^\s\\]+$/.test(image.url)
+  );
 }
 
 function validDate(value: unknown): value is string {
@@ -51,15 +71,20 @@ export function parseRelease(value: unknown): Release | null {
     return null;
   }
   if (release.date !== undefined && !validDate(release.date)) return null;
+  if (release.image !== undefined && !validImage(release.image)) return null;
   if (
-    release.image !== undefined &&
-    (!release.image ||
-      !text(release.image.alt) ||
-      !text(release.image.url) ||
-      !/^https:\/\/raw\.githubusercontent\.com\/[^\s\\]+$/.test(release.image.url))
-  ) {
+    release.highlights !== undefined &&
+    (!Array.isArray(release.highlights) ||
+      !release.highlights.length ||
+      !release.highlights.every(
+        (highlight) =>
+          highlight &&
+          text(highlight.title) &&
+          text(highlight.description) &&
+          validImage(highlight.image),
+      ))
+  )
     return null;
-  }
   return release as Release;
 }
 
