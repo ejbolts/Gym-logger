@@ -7,6 +7,12 @@
   position: relative;
   min-width: 0;
   container-type: inline-size;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.home-section :is(input, textarea, [contenteditable='true']) {
+  -webkit-touch-callout: default;
+  user-select: text;
 }
 .home-section-full,
 .home-empty {

@@ -421,23 +421,43 @@ export function Sparkline({
   values,
   label,
   height = 34,
+  yAxis = false,
 }: {
   values: number[];
   label: string;
   height?: number;
+  yAxis?: boolean;
 }) {
   const { ref, width } = useElementSize<HTMLDivElement>(140, height);
   if (values.length < 2) return <div className="pulse-sparkline" ref={ref} />;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const x = (index: number) => 4 + (index / (values.length - 1)) * (width - 9);
-  const y = (value: number) => 5 + (1 - (value - min) / (max - min || 1)) * (height - 10);
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  // Keep tiny changes legible without duplicate rounded labels, including a flat series.
+  const bounds = yAxis
+    ? niceTicks(dataMin, Math.max(dataMax, dataMin + 0.2), 2)
+    : [dataMin, dataMax];
+  const min = bounds[0];
+  const max = bounds.at(-1)!;
+  const ticks = yAxis ? [min, (min + max) / 2, max] : [];
+  const tickLabel = (value: number) => Number(value.toFixed(2)).toLocaleString('en-GB');
+  const left = yAxis ? Math.max(...ticks.map((tick) => tickLabel(tick).length)) * 6 + 8 : 4;
+  const top = yAxis ? 8 : 5;
+  const x = (index: number) => left + (index / (values.length - 1)) * (width - left - 5);
+  const y = (value: number) => top + (1 - (value - min) / (max - min || 1)) * (height - top * 2);
   const path = values
     .map((value, index) => `${index ? 'L' : 'M'}${x(index).toFixed(1)},${y(value).toFixed(1)}`)
     .join('');
   return (
-    <div className="pulse-sparkline" ref={ref}>
+    <div className="pulse-sparkline" ref={ref} style={yAxis ? { height } : undefined}>
       <svg width={width} height={height} role="img" aria-label={label}>
+        {ticks.map((tick) => (
+          <g className="pulse-sparkline-axis" key={tick}>
+            <line x1={left} x2={width - 5} y1={y(tick)} y2={y(tick)} />
+            <text x={left - 7} y={y(tick)} textAnchor="end" dominantBaseline="middle">
+              {tickLabel(tick)}
+            </text>
+          </g>
+        ))}
         <path d={path} pathLength={1} />
         <circle cx={x(values.length - 1)} cy={y(values.at(-1)!)} r="3.5" />
       </svg>
