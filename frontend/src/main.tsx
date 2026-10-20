@@ -19,6 +19,7 @@ import './homeScreenGuide.css';
 import './appGuide.css';
 import './feedback.css';
 import './sharing.css';
+import './WorkoutBrowser.css';
 
 registerAppUpdates();
 // Apply before the first paint so the opening screen respects the setting.

@@ -6,6 +6,13 @@
 
 ### More ways to start, share and track your training
 
+![Switching from a live workout to an earlier read-only workout and back](screenshots/releases/0.9.0-workout-navigation.gif)
+
+*The arrows switch workouts with a short slide and fade, while the live workout stays intact. Recorded with isolated sample data.*
+
+![Workout summary with integrated notes, plain centred arrows and a completed sets label](screenshots/releases/0.9.0-workout-navigation.png)
+
+*Notes share the summary card, with no divider or volume metric. Plain arrows are centred vertically inside the card; the next arrow is dimmed on the live workout. Shown with isolated sample data.*
 ![Home entering layout edit mode after a half-second hold on the Bodyweight section](screenshots/releases/0.9.0-home-hold-edit-500ms.gif)
 
 *Hold any Home section for 0.5 seconds to reveal the existing layout controls. Recorded with isolated sample data.*
@@ -66,6 +73,10 @@
 
 *Choose Lose, Gain or Maintain when you set a goal.*
 
+- Workout notes now share the summary card with the date, workout type, time, body weight, sets and reps. The notes placeholder is Workout notes…; the divider and volume metric are removed.
+- Plain left and right arrows inside the summary card are vertically centred on the whole card. Browse previous and next workouts with a short directional slide and fade; the latest and oldest arrows dim at the ends.
+- Earlier workouts open read-only while your live workout stays mounted with its notes, entered sets and timers intact. Reduced-motion settings switch workouts without animation.
+- Collapsed exercises now say completed sets, such as 4 completed sets, without the word working.
 - The Home Bodyweight chart has a simple numbered Y-axis with faint dotted guides, using your preferred weight unit.
 - Press and hold any Home section for 0.5 seconds to enter the existing layout editor. Resize, hide or reorder sections, then save or cancel. Scrolling or releasing early cancels the hold, and the pencil button remains available.
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
