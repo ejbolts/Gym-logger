@@ -1,6 +1,6 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 
-/** Keep scrolling and ordinary taps native; only a stationary two-second hold edits Home. */
+/** Keep scrolling and ordinary taps native; only a stationary half-second hold edits Home. */
 export function useHomeLongPress(onEdit?: () => void) {
   const callback = useRef(onEdit);
   const pending = useRef<{
@@ -67,7 +67,7 @@ export function useHomeLongPress(onEdit?: () => void) {
           pending.current = null;
           consumed.current = true;
           callback.current?.();
-        }, 2000),
+        }, 500),
       };
     },
     onPointerMoveCapture(event: ReactPointerEvent<HTMLDivElement>) {

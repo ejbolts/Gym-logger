@@ -89,10 +89,10 @@ afterEach(async () => {
 
 describe('Home hold to edit', () => {
   it.each(HOME_SECTIONS.map(({ id }) => id))(
-    'enters the existing editor after two seconds on %s',
+    'enters the existing editor after 0.5 seconds on %s',
     async (id) => {
       await pointer(card(id), 'pointerdown');
-      await advance(1999);
+      await advance(499);
       expect(edited).not.toHaveBeenCalled();
       await advance(1);
       expect(edited).toHaveBeenCalledTimes(1);
@@ -105,23 +105,23 @@ describe('Home hold to edit', () => {
       });
       expect(click.defaultPrevented).toBe(true);
       expect(opened).not.toHaveBeenCalled();
-      await advance(3000);
+      await advance(1500);
       expect(edited).toHaveBeenCalledTimes(1);
     },
   );
 
   it('leaves a quick tap native and restarts the timer for the next press', async () => {
     await pointer(card(), 'pointerdown');
-    await advance(1000);
+    await advance(250);
     await pointer(card(), 'pointerup');
     await act(async () => {
       card().dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
     });
-    await advance(2000);
+    await advance(500);
     expect(opened).toHaveBeenCalledTimes(1);
     expect(edited).not.toHaveBeenCalled();
     await pointer(card(), 'pointerdown');
-    await advance(2000);
+    await advance(500);
     expect(edited).toHaveBeenCalledTimes(1);
   });
 
@@ -129,7 +129,7 @@ describe('Home hold to edit', () => {
     'cancels on %s',
     async (action) => {
       await pointer(card(), 'pointerdown');
-      await advance(1000);
+      await advance(250);
       if (action === 'move') await pointer(card(), 'pointermove', { clientY: 111 });
       if (action === 'scroll') window.dispatchEvent(new Event('scroll'));
       if (action === 'cancel') await pointer(card(), 'pointercancel');
@@ -138,7 +138,7 @@ describe('Home hold to edit', () => {
       if (action === 'second finger')
         await pointer(window, 'pointerdown', { pointerId: 2, isPrimary: false });
       if (action === 'leave') await pointer(card(), 'pointerout', { relatedTarget: document.body });
-      await advance(2000);
+      await advance(500);
       expect(edited).not.toHaveBeenCalled();
     },
   );
@@ -149,26 +149,26 @@ describe('Home hold to edit', () => {
     const menu = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
     card().dispatchEvent(menu);
     expect(menu.defaultPrevented).toBe(true);
-    await advance(2000);
+    await advance(500);
     expect(edited).toHaveBeenCalledTimes(1);
   });
 
   it('preserves text entry, secondary clicks and disabled editing', async () => {
     const input = container.querySelector('input')!;
     await pointer(input, 'pointerdown');
-    await advance(2000);
+    await advance(500);
     await pointer(card(), 'pointerdown', { button: 2 });
-    await advance(2000);
+    await advance(500);
     await act(async () => root.render(<Harness enabled={false} />));
     await pointer(card(), 'pointerdown');
-    await advance(2000);
+    await advance(500);
     expect(edited).not.toHaveBeenCalled();
   });
 
   it('cleans up a pending hold on unmount', async () => {
     await pointer(card(), 'pointerdown');
     await act(async () => root.render(null));
-    await advance(2000);
+    await advance(500);
     expect(edited).not.toHaveBeenCalled();
   });
 });

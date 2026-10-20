@@ -6,9 +6,9 @@
 
 ### More ways to start, share and track your training
 
-![Home entering layout edit mode after a two-second hold on the Bodyweight section](screenshots/releases/0.9.0-home-hold-edit.gif)
+![Home entering layout edit mode after a half-second hold on the Bodyweight section](screenshots/releases/0.9.0-home-hold-edit-500ms.gif)
 
-*Hold any Home section for two seconds to reveal the existing layout controls. Recorded with isolated sample data.*
+*Hold any Home section for 0.5 seconds to reveal the existing layout controls. Recorded with isolated sample data.*
 
 ![Home layout editor with numbered bodyweight guides and resize, hide and reorder controls](screenshots/releases/0.9.0-home-hold-edit.png)
 
@@ -67,7 +67,7 @@
 *Choose Lose, Gain or Maintain when you set a goal.*
 
 - The Home Bodyweight chart has a simple numbered Y-axis with faint dotted guides, using your preferred weight unit.
-- Press and hold any Home section for two seconds to enter the existing layout editor. Resize, hide or reorder sections, then save or cancel. Scrolling or releasing early cancels the hold, and the pencil button remains available.
+- Press and hold any Home section for 0.5 seconds to enter the existing layout editor. Resize, hide or reorder sections, then save or cancel. Scrolling or releasing early cancels the hold, and the pencil button remains available.
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
