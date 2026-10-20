@@ -4382,16 +4382,27 @@ button.pulse-card:active,
 /* ───────── Start menu: Cardio, Up next and Empty fan out above Start ───────── */
 
 .start-menu-scrim {
+  --start-menu-scrim-tint: rgb(5 6 8 / 50%);
   position: fixed;
   z-index: 69;
   inset: 0;
-  background: rgb(5 6 8 / 50%);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
   opacity: 0;
   pointer-events: none;
   touch-action: none;
   transition: opacity 240ms ease;
+}
+
+/* Fade the visual layer only, keeping the whole backdrop available to dismiss the menu. */
+.start-menu-scrim::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--start-menu-scrim-tint);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  mask-image: linear-gradient(to top, #000 0%, #000 12%, transparent 55%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 12%, transparent 55%);
 }
 
 .start-menu-scrim.open {

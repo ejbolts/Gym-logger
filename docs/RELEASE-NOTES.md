@@ -4,13 +4,14 @@
 
 21 October 2026
 
-### Bigger quick-start buttons
+### A clearer quick-start menu
 
-![Quick-start menu with larger Cardio, Up next and Empty circles](screenshots/releases/0.9.1-quick-start-circles.png)
+![Quick-start menu with larger circles and a background blur fading to clear around mid-screen](screenshots/releases/0.9.1-quick-start-circles.png)
 
-*The three quick-start circles are now 52 px across, with larger icons.*
+*Larger quick-start circles sit over a blur that is strongest at the bottom and fades to a clear dashboard around mid-screen.*
 
 - Enlarged the Cardio, Up next and Empty circles from 44 px to 52 px and their icons from 20 px to 24 px.
+- The quick-start backdrop now fades from a stronger blur at the bottom to clear around mid-screen, in both dark and light mode.
 
 ## 0.9.0
 
