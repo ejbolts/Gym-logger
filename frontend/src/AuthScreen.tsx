@@ -2,7 +2,6 @@ import { useId, useLayoutEffect, useRef, useState, type FormEvent, type ReactNod
 import {
   DEFAULT_AUTH_CONFIG,
   MIN_PASSWORD_LENGTH,
-  USERNAME_HINT,
   submitAuthForm,
   type AuthFieldErrors,
   type AuthMode,
@@ -321,13 +320,7 @@ export function AuthScreen({
                 id={ids.name}
                 label="Name"
                 error={fieldErrors.displayName}
-                help={
-                  <>
-                    <b>Your display name.</b> Friends see it on your profile.{' '}
-                    <b className="auth-help-tag">Doesn't need to be unique</b> – spaces are fine.
-                    You can change it any time in Profile.
-                  </>
-                }
+                help="Your display name for friends to see on your profile."
               >
                 <input
                   id={ids.name}
@@ -336,6 +329,7 @@ export function AuthScreen({
                   autoComplete="name"
                   autoCapitalize="words"
                   required
+                  placeholder="Sam Sample"
                   value={displayName}
                   aria-invalid={Boolean(fieldErrors.displayName)}
                   aria-describedby={describedBy(ids.name, fieldErrors.displayName)}
@@ -348,37 +342,36 @@ export function AuthScreen({
               id={ids.username}
               label="Username"
               error={fieldErrors.username}
-              hint={creating ? USERNAME_HINT : undefined}
               help={
-                creating ? (
-                  <>
-                    <b>Used to sign in</b> and shown as @handle so friends can find you.{' '}
-                    <b className="auth-help-tag is-unique">Must be unique</b> – no one else can have
-                    it. You can change it any time in Profile.
-                  </>
-                ) : undefined
+                creating
+                  ? 'Used to sign in and shown as your handle so friends can find you. Must be unique.'
+                  : undefined
               }
             >
-              <input
-                id={ids.username}
-                name="username"
-                type="text"
-                inputMode="text"
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                required
-                maxLength={32}
-                value={username}
-                aria-invalid={Boolean(fieldErrors.username)}
-                aria-describedby={describedBy(
-                  ids.username,
-                  fieldErrors.username,
-                  creating ? 'hint' : undefined,
+              <div className={creating ? 'auth-handle' : undefined}>
+                {creating && (
+                  <span className="auth-handle-at" aria-hidden="true">
+                    @
+                  </span>
                 )}
-                onChange={(event) => setUsername(event.target.value)}
-              />
+                <input
+                  id={ids.username}
+                  name="username"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                  maxLength={32}
+                  placeholder={creating ? 'sam.sample' : undefined}
+                  value={username}
+                  aria-invalid={Boolean(fieldErrors.username)}
+                  aria-describedby={describedBy(ids.username, fieldErrors.username)}
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+              </div>
             </AuthField>
 
             <AuthField
@@ -439,12 +432,6 @@ export function AuthScreen({
               </AuthField>
             )}
 
-            {creating && (
-              <p className="auth-field-hint">
-                New profiles are public to members who share. Your name, photo, workouts and cardio
-                are shared. You can choose Friends only or Private in Profile.
-              </p>
-            )}
             <div className="auth-error-region" aria-live="polite" aria-atomic="true">
               {error && (
                 <p className="inline-error" role="alert">

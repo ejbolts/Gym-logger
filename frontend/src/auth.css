@@ -171,6 +171,26 @@
   padding-right: 4.5rem !important;
 }
 
+.auth-handle {
+  position: relative;
+  display: grid;
+}
+
+.auth-handle input {
+  padding-left: 2.1rem !important;
+}
+
+.auth-handle-at {
+  position: absolute;
+  top: 50%;
+  left: 0.8rem;
+  color: var(--p-accent-text);
+  font-size: 1rem;
+  font-weight: 700;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .auth-reveal {
   position: absolute;
   top: 50%;
@@ -865,18 +885,6 @@
 
 .auth-help[hidden] {
   display: none;
-}
-
-.auth-help b {
-  color: var(--p-ink);
-}
-
-.auth-help .auth-help-tag {
-  color: var(--p-good);
-}
-
-.auth-help .auth-help-tag.is-unique {
-  color: var(--p-gold);
 }
 
 .auth-sample-profile {

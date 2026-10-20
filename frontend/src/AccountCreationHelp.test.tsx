@@ -60,13 +60,14 @@ describe('account creation help', () => {
     await click(nameHelp);
     expect(nameHelp.getAttribute('aria-expanded')).toBe('true');
     expect(nameText.hidden).toBe(false);
-    expect(nameText.textContent).toContain("Doesn't need to be unique");
-    expect(nameText.textContent).toContain('change it any time in Profile');
+    expect(nameText.textContent).toBe('Your display name for friends to see on your profile.');
+    expect(nameText.querySelector('b')).toBeNull();
 
     await click(usernameHelp);
-    expect(usernameText.textContent).toContain('Used to sign in');
-    expect(usernameText.textContent).toContain('Must be unique');
-    expect(usernameText.textContent).toContain('change it any time in Profile');
+    expect(usernameText.textContent).toBe(
+      'Used to sign in and shown as your handle so friends can find you. Must be unique.',
+    );
+    expect(usernameText.querySelector('b')).toBeNull();
 
     await click(nameHelp);
     expect(nameText.hidden).toBe(true);
