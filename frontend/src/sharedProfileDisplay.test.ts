@@ -3,6 +3,7 @@ import {
   followActionLabel,
   followSinceLabel,
   sharedParts,
+  sinceMonthLabel,
   workoutActivitySummary,
 } from './sharedProfileDisplay';
 import type { SharedProfileSummary } from './types';
@@ -50,6 +51,11 @@ describe('shared profile display', () => {
     );
     expect(followSinceLabel('Following', null)).toBe('Following');
     expect(followSinceLabel('Following', 'invalid')).toBe('Following');
+  });
+  it('shortens a relationship start date to its month and year', () => {
+    expect(sinceMonthLabel('2026-10-06T12:00:00Z')).toBe('Since Oct 2026');
+    expect(sinceMonthLabel(null)).toBeNull();
+    expect(sinceMonthLabel('invalid')).toBeNull();
   });
   it('always lists workouts, then only the parts the owner chose to share', () => {
     expect(sharedParts(profile)).toEqual(['Workouts + cardio']);

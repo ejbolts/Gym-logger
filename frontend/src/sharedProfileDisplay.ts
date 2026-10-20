@@ -24,6 +24,14 @@ export function followSinceLabel(label: string, since?: string | null): string {
     : label;
 }
 
+/** "Since Oct 2026" for a relationship start date, or null when it is unknown. */
+export function sinceMonthLabel(since?: string | null): string | null {
+  const date = since ? new Date(since) : null;
+  return date && !Number.isNaN(date.getTime())
+    ? `Since ${date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}`
+    : null;
+}
+
 /** What a viewable profile shares: workouts and cardio always, then the optional parts chosen. */
 export function sharedParts(profile: SharedProfileSummary): string[] {
   const shares = profile.shares;
