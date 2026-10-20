@@ -69,6 +69,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -81,14 +82,14 @@ function button(label: string) {
   return found!;
 }
 
-async function render(onOpenFriend = vi.fn()) {
+async function render(onOpenFriend = vi.fn(), onOpenFriends = vi.fn()) {
   await act(async () =>
     root.render(
       <FriendsActivityCard
         active
         today="2026-10-19"
         onOpenFriend={onOpenFriend}
-        onOpenFriends={vi.fn()}
+        onOpenFriends={onOpenFriends}
       />,
     ),
   );
@@ -116,6 +117,16 @@ it('summarises strength and cardio sessions, dates and reactions', () => {
   expect(nextReaction(null, 'love')).toBe('love');
 });
 
+it('counts followed friends beyond the card and opens Friends from the count', async () => {
+  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], following: 5 });
+  const openFriends = vi.fn();
+  await render(vi.fn(), openFriends);
+  const more = host.querySelector<HTMLButtonElement>('.friends-activity-more')!;
+  expect(more.textContent).toBe('+3 more');
+  await act(async () => more.click());
+  expect(openFriends).toHaveBeenCalled();
+});
+
 it("shows each friend's latest session with one reaction button and opens their profile", async () => {
   vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], following: 2 });
   const openFriend = vi.fn();
@@ -135,7 +146,7 @@ it("shows each friend's latest session with one reaction button and opens their 
 });
 
 it('reacts from the picker, shows your reaction, and removes it when chosen again', async () => {
-  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [alex], following: 1 });
+  const feed = vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [alex], following: 1 });
   const react = vi
     .spyOn(api.sharing, 'react')
     .mockResolvedValue({ counts: [{ reaction: 'love', count: 1 }], yours: 'love' });
@@ -150,6 +161,10 @@ it('reacts from the picker, shows your reaction, and removes it when chosen agai
   expect(host.querySelectorAll('.friend-react-picker button')).toHaveLength(6);
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Like');
 
+  feed.mockResolvedValue({
+    items: [{ ...alex, reactions: { counts: [{ reaction: 'love', count: 1 }], yours: 'love' } }],
+    following: 1,
+  });
   await act(async () => button('Love').click());
   expect(react).toHaveBeenCalledWith('w2', 'love');
   expect(host.querySelector('.friend-react-picker')).toBeNull();
@@ -160,9 +175,82 @@ it('reacts from the picker, shows your reaction, and removes it when chosen agai
   await act(async () => mine.click());
   expect(button('Love').getAttribute('aria-pressed')).toBe('true');
   expect(document.activeElement).toBe(button('Love'));
+  feed.mockResolvedValue({ items: [alex], following: 1 });
   await act(async () => button('Love').click());
   expect(remove).toHaveBeenCalledWith('w2');
   expect(button('React to Alex Preview’s Incline walk').textContent).not.toContain('❤️');
+});
+
+it('refreshes an already reacted session to the newest workout and keeps the server recency order', async () => {
+  vi.useFakeTimers();
+  const reacted = {
+    ...alex,
+    reactions: { counts: [{ reaction: 'love' as const, count: 1 }], yours: 'love' as const },
+  };
+  const feed = vi
+    .spyOn(api.sharing, 'feed')
+    .mockResolvedValue({ items: [jordan, reacted], following: 2 });
+  await render();
+  const newest = {
+    ...alex,
+    workout: { ...strength, id: 'w3', name: 'New upper day' },
+    reactions: { counts: [], yours: null },
+  };
+  feed.mockResolvedValue({ items: [newest, jordan], following: 2 });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(30_000);
+  });
+  const rows = [...host.querySelectorAll('.friend-activity-list li')];
+  expect(rows[0].textContent).toContain('Alex PreviewStrengthNew upper day');
+  expect(rows[1].textContent).toContain('Jordan Preview');
+  expect(rows[0].querySelector('.friend-react-button')?.getAttribute('aria-label')).toBe(
+    'React to Alex Preview’s New upper day',
+  );
+  expect(host.textContent).not.toContain('Incline walk');
+});
+
+it('refreshes on return to the page and ignores stale in-flight feed responses', async () => {
+  let oldResponse!: (feed: { items: FriendFeedItem[]; following: number }) => void;
+  vi.spyOn(api.sharing, 'feed')
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        oldResponse = resolve;
+      }),
+    )
+    .mockResolvedValue({ items: [alex, jordan], following: 2 });
+  await render();
+  await act(async () => {
+    window.dispatchEvent(new Event('focus'));
+  });
+  expect(host.querySelector('.friend-activity-list li')?.textContent).toContain('Alex Preview');
+  await act(async () => oldResponse({ items: [jordan], following: 1 }));
+  expect(host.querySelectorAll('.friend-activity-list li')).toHaveLength(2);
+  expect(host.querySelector('.friend-activity-list li')?.textContent).toContain('Alex Preview');
+});
+
+it('pauses background refresh while hidden or away from Home', async () => {
+  vi.useFakeTimers();
+  const feed = vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [alex], following: 1 });
+  await render();
+  let visibility: DocumentVisibilityState = 'hidden';
+  vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+  await act(async () => vi.advanceTimersByTimeAsync(60_000));
+  expect(feed).toHaveBeenCalledTimes(1);
+  visibility = 'visible';
+  await act(async () => {
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  expect(feed).toHaveBeenCalledTimes(2);
+  await act(async () =>
+    root.render(
+      <FriendsActivityCard active={false} onOpenFriend={vi.fn()} onOpenFriends={vi.fn()} />,
+    ),
+  );
+  await act(async () => {
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(30_000);
+  });
+  expect(feed).toHaveBeenCalledTimes(2);
 });
 
 it('closes the picker with Escape or a tap elsewhere without reacting', async () => {

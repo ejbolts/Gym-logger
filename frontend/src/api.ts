@@ -281,6 +281,10 @@ export const api = {
       request<void>(`/api/sharing/followers/${encodeURIComponent(userId)}`, { method: 'POST' }),
     removeFollower: (userId: string) =>
       request<void>(`/api/sharing/followers/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
+    blockMember: (userId: string) =>
+      request<void>(`/api/sharing/blocks/${encodeURIComponent(userId)}`, { method: 'POST' }),
+    unblockMember: (userId: string) =>
+      request<void>(`/api/sharing/blocks/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
   },
   updateProfile: (payload: ProfileUpdateInput) =>
     request<User>('/api/profile', {

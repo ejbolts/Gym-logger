@@ -5,6 +5,7 @@ export function PopupDialog({
   title,
   kicker,
   className = '',
+  closeLabel,
   style,
   onClose,
   children,
@@ -12,6 +13,7 @@ export function PopupDialog({
   title: string;
   kicker?: string;
   className?: string;
+  closeLabel?: string;
   style?: CSSProperties;
   onClose: () => void;
   children: ReactNode;
@@ -54,7 +56,7 @@ export function PopupDialog({
           aria-label={`Close ${title}`}
           onClick={onClose}
         >
-          ×
+          {closeLabel ?? '×'}
         </button>
       </header>
       {children}

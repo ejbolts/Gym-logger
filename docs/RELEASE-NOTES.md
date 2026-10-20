@@ -1,5 +1,47 @@
 # Gym Logger release notes
 
+## 0.9.0
+
+20 October 2026
+
+### More ways to start, share and track your training
+
+![Muscle contribution sheet opening its source workout and focusing the selected exercise](screenshots/releases/0.9.0-muscle-sheet-to-workout.gif)
+
+*Tap a muscle name, then a contributing exercise, to open and focus its saved workout. Recorded with isolated sample data.*
+
+![Biceps bottom sheet showing contributing exercises, their source workouts, set credits and tappable chevrons](screenshots/releases/0.9.0-muscle-contributions.png)
+
+*Tap a muscle name to see its contributing exercises. Each exercise opens its source workout in view mode.*
+
+![The saved workout opened in view mode and focused on the selected contributing exercise](screenshots/releases/0.9.0-muscle-workout-focus.png)
+
+*The selected exercise is highlighted and focused in its saved workout; viewing does not edit the workout.*
+
+![A selected heart reaction shown as a single emoji on a shared workout](screenshots/releases/0.9.0-emoji-reactions.png)
+
+*Selected reactions use the same single-emoji button on Home and shared workouts.*
+
+![Followers with Block buttons and an outlined question-mark icon beside the follower count](screenshots/releases/0.9.0-block-followers.png)
+
+*Block a follower from Profile. The outlined question-mark icon beside the follower count matches the exercise list and explains blocking; blocked accounts can be unblocked later.*
+
+![Friends on Home ordered by their newest workouts](screenshots/releases/0.9.0-latest-friends.png)
+
+*One latest workout per friend, refreshed while Home stays visible and when you return.*
+
+![Notifications showing each follower message followed by a spaced dot and its date](screenshots/releases/0.9.0-notification-dates.png)
+
+*Each notification includes its date, separated from the message by a spaced dot.*
+
+- Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
+- Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
+- Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
+- Every notification shows its date after a spaced dot, including new followers, follow requests and workout reactions.
+- Home shows one latest workout per friend, ordered newest first. The card refreshes every 30 seconds while visible and when returning to the app or reconnecting; reacting to an older workout never pins it above a newer session. When you follow more friends than the card shows, +N more below the list opens Friends.
+- Profile > Friends > Followers now has Block, with an outlined ? icon beside the follower count that explains blocking. Blocking hides your profile, workouts, cardio, photos, shared data and recent activity from that account, including saved links. It also removes follows in both directions.
+- Manage blocked accounts in the Blocked list. Unblock allows access again according to your sharing settings; it does not restore previous follows.
+
 ## 0.8.5
 
 19 October 2026

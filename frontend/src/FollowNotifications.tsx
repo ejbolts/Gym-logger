@@ -12,6 +12,21 @@ import { ProfileAvatar } from './ProfileAvatar';
 import type { SharingConnection, SharingNotifications } from './types';
 import './FollowNotifications.css';
 
+function NotificationDate({ since }: { since: string }) {
+  return (
+    <span className="follow-notification-date">
+      {' · '}
+      <time dateTime={since}>
+        {new Date(since).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })}
+      </time>
+    </span>
+  );
+}
+
 /** Opening the compact inbox reads displayed notices; requests remain actionable. */
 export function FollowNotifications({
   active,
@@ -142,6 +157,7 @@ export function FollowNotifications({
                 <div className="follow-notification-copy">
                   <p>
                     <strong>{person.display_name}</strong> requested to follow you
+                    <NotificationDate since={person.since} />
                   </p>
                   <div className="follow-notification-actions">
                     <button
@@ -172,6 +188,7 @@ export function FollowNotifications({
                 <div className="follow-notification-copy">
                   <p>
                     <strong>{notice.display_name}</strong> reacted to <b>{notice.workout_name}</b>
+                    <NotificationDate since={notice.since} />
                   </p>
                 </div>
                 <span
@@ -188,6 +205,7 @@ export function FollowNotifications({
                 <div className="follow-notification-copy">
                   <p>
                     <strong>{person.display_name}</strong> started following you
+                    <NotificationDate since={person.since} />
                   </p>
                 </div>
                 <Icon name="user" />

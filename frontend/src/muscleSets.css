@@ -1,0 +1,147 @@
+.muscle-bars .muscle-name-button {
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--p-ink-2);
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.muscle-name-button:hover,
+.muscle-name-button:focus-visible {
+  color: var(--p-accent);
+}
+.popup-dialog.muscle-contribution-sheet {
+  width: min(30rem, calc(100% - 1.5rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto auto max(0.75rem, env(safe-area-inset-bottom));
+  border-radius: 24px;
+}
+.muscle-contribution-sheet::before {
+  content: '';
+  display: block;
+  width: 2.25rem;
+  height: 0.25rem;
+  margin: 0.625rem auto 0;
+  border-radius: 8px;
+  background: var(--p-muted);
+}
+.muscle-contribution-sheet > header {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 0;
+  background: var(--p-surface);
+}
+.muscle-contribution-sheet .popup-dialog-close {
+  width: auto;
+  min-height: 2.75rem;
+  border: 0;
+  padding: 0 0 0 0.75rem;
+  background: transparent;
+  color: var(--p-accent);
+  font-size: 0.875rem;
+}
+.muscle-sheet-body {
+  padding: 0 1.25rem 1.25rem;
+}
+.muscle-sheet-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.875rem;
+}
+.muscle-sheet-total strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+.muscle-sheet-total > span {
+  color: var(--p-ink-2);
+  font-size: 0.875rem;
+}
+.muscle-sheet-goal {
+  height: 0.4375rem;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--p-surface-2);
+}
+.muscle-sheet-goal > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--p-accent);
+}
+.muscle-sheet-goal-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1.5rem;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+.muscle-sheet-body h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+}
+.muscle-sheet-body h3 > span {
+  color: var(--p-muted);
+  font-weight: 400;
+}
+.muscle-contribution-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.muscle-contribution-list li + li {
+  border-top: 1px solid var(--p-line);
+}
+.muscle-contribution-list button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.875rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--p-ink);
+  text-align: left;
+}
+.muscle-contribution-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.25rem;
+}
+.muscle-contribution-copy strong {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.muscle-contribution-copy .pulse-icon {
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: 0.25rem;
+  color: var(--p-muted);
+  vertical-align: -0.125rem;
+}
+.muscle-contribution-copy > span,
+.muscle-contribution-copy small,
+.muscle-contribution-value small {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.muscle-contribution-value {
+  display: grid;
+  gap: 0.125rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.muscle-sheet-note {
+  margin: 1rem 0 0;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}

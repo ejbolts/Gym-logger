@@ -179,7 +179,10 @@ it('shows lifetime time separately from history filters and reacts on a shared w
       .click(),
   );
   expect(react).toHaveBeenCalledWith('first', 'love');
-  expect(container.querySelector('.friend-react-button')?.textContent).toContain('Love');
+  expect(container.querySelector('.friend-react-button')?.textContent).toBe('❤️');
+  expect(container.querySelector('.friend-react-button')?.getAttribute('aria-label')).toContain(
+    'Love',
+  );
   await act(async () =>
     container.querySelector<HTMLButtonElement>('.friend-react-button')!.click(),
   );
