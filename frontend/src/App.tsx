@@ -70,9 +70,13 @@ import {
   summarizeBodyWeightTrend,
 } from './bodyTrend';
 import type { BodyTrendDuration, BodyTrendRange, BodyTrendStatistic } from './bodyTrend';
-import { bodyHistoryWithWeightChanges, summarizeBodyHistory } from './bodyMeasurementHistory';
-import type { BodyHistoryPeriod } from './bodyMeasurementHistory';
-import { BodyHistoryWeightChange } from './BodyHistoryWeightChange';
+import {
+  bodyGoalKind,
+  bodyHistoryWithWeightChanges,
+  summarizeBodyHistory,
+} from './bodyMeasurementHistory';
+import type { BodyGoalKind, BodyHistoryPeriod } from './bodyMeasurementHistory';
+import { BodyHistoryGoalDivider, BodyHistoryWeightChange } from './BodyHistoryWeightChange';
 import {
   DEFAULT_BODY_TREND_PREFERENCE,
   loadBodyTrendPreference,
@@ -6873,6 +6877,7 @@ export function BodyCompositionScreen({
   const [error, setError] = useState<string | null>(null);
   const [goals, setGoals] = useState<BodyWeightGoal[]>([]);
   const [goalTarget, setGoalTarget] = useState<number | null>(null);
+  const [goalKind, setGoalKind] = useState<BodyGoalKind>('loss');
   const [goalDate, setGoalDate] = useState('');
   const [savingGoal, setSavingGoal] = useState(false);
   const [editingMeasurement, setEditingMeasurement] = useState<BodyMeasurement | null>(null);
@@ -6892,11 +6897,14 @@ export function BodyCompositionScreen({
     measurements
       .slice()
       .sort((first, second) => second.measurement_date.localeCompare(first.measurement_date)),
-    activeGoal,
+    goals,
+    (measurement) => measurement.measurement_date,
   );
+  // A week or month is judged by the goal in force on its last day.
   const historySummaries = bodyHistoryWithWeightChanges(
     historyView === 'daily' ? [] : summarizeBodyHistory(measurements, historyView, trendStatistic),
-    activeGoal,
+    goals,
+    (summary) => summary.end_date,
   );
   const historyCount = historyView === 'daily' ? measurements.length : historySummaries.length;
   const checkInPageCount = Math.max(1, Math.ceil(historyCount / HISTORY_PAGE_SIZE));
@@ -6941,9 +6949,25 @@ export function BodyCompositionScreen({
       );
   }, []);
 
+  function chooseGoalKind(kind: BodyGoalKind) {
+    setGoalKind(kind);
+    // Maintaining usually means holding today's weight, so start from it.
+    if (kind === 'maintain' && goalTarget === null && latest) setGoalTarget(latest.weight_kg);
+  }
+
   async function saveGoal() {
     if (!latest || !hasValidTarget || !goalDate) {
       setError('Log a current weight, target weight, and target date first.');
+      return;
+    }
+    const direction = bodyGoalKind({
+      start_weight_kg: latest.weight_kg,
+      target_weight_kg: targetWeight!,
+    });
+    if (goalKind !== 'maintain' && direction !== goalKind) {
+      setError(
+        `For a weight-${goalKind} goal, choose a target ${goalKind === 'loss' ? 'below' : 'above'} your current ${formatWeight(latest.weight_kg, weightUnit)}.`,
+      );
       return;
     }
     setSavingGoal(true);
@@ -6952,7 +6976,8 @@ export function BodyCompositionScreen({
       const goal = await api.createBodyWeightGoal({
         start_date: localDate(),
         target_date: goalDate,
-        start_weight_kg: latest.weight_kg,
+        // A maintain goal holds one weight, so its start and target are the same.
+        start_weight_kg: goalKind === 'maintain' ? targetWeight! : latest.weight_kg,
         target_weight_kg: targetWeight!,
         active: true,
       });
@@ -7154,6 +7179,7 @@ export function BodyCompositionScreen({
           type="button"
           onClick={() => {
             setError(null);
+            setGoalKind(activeGoal ? bodyGoalKind(activeGoal) : 'loss');
             setGoalOpen(true);
             setEntryOpen(false);
           }}
@@ -7176,7 +7202,18 @@ export function BodyCompositionScreen({
               void saveGoal();
             }}
           >
-            {activeGoal && latest && (
+            {activeGoal && latest && bodyGoalKind(activeGoal) === 'maintain' && (
+              <div className="body-goal-progress">
+                <div>
+                  <strong>{formatWeight(latest.weight_kg, weightUnit)}</strong>
+                  <span>
+                    Maintaining {formatWeight(activeGoal.target_weight_kg, weightUnit)} until{' '}
+                    {prettyDate(activeGoal.target_date)}
+                  </span>
+                </div>
+              </div>
+            )}
+            {activeGoal && latest && bodyGoalKind(activeGoal) !== 'maintain' && (
               <div className="body-goal-progress">
                 <div>
                   <strong>{formatWeight(latest.weight_kg, weightUnit)}</strong>
@@ -7194,13 +7231,33 @@ export function BodyCompositionScreen({
                 </div>
               </div>
             )}
+            <div className="segmented-control body-goal-kind" role="radiogroup" aria-label="Goal">
+              {(
+                [
+                  ['loss', 'Lose'],
+                  ['gain', 'Gain'],
+                  ['maintain', 'Maintain'],
+                ] as const
+              ).map(([kind, label]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  role="radio"
+                  aria-checked={goalKind === kind}
+                  className={goalKind === kind ? 'active' : ''}
+                  onClick={() => chooseGoalKind(kind)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="goal-entry-fields">
               <label>
-                Target ({weightUnit})
+                {goalKind === 'maintain' ? 'Maintain' : 'Target'} ({weightUnit})
                 <WeightInput weightKg={goalTarget} onWeightChange={setGoalTarget} />
               </label>
               <label>
-                Target date
+                {goalKind === 'maintain' ? 'Until' : 'Target date'}
                 <input
                   type="date"
                   value={goalDate}
@@ -7355,6 +7412,8 @@ export function BodyCompositionScreen({
                     <BodyHistoryWeightChange
                       change={measurement.weight_change}
                       comparison="previous check-in"
+                      unit={weightUnit}
+                      decimals={2}
                     />
                   </strong>
                   <small>{measurement.is_sample && 'Sample'}</small>
@@ -7433,44 +7492,55 @@ export function BodyCompositionScreen({
                   </div>
                 </form>
               )}
+              {measurement.goal_change && (
+                <BodyHistoryGoalDivider goal={measurement.goal_change} unit={weightUnit} />
+              )}
             </Fragment>
           ))}
         {historyView !== 'daily' &&
           pagedSummaries.map((summary) => (
-            <article className="body-history-summary-grid" key={summary.start_date}>
-              <div className="body-history-date">
-                <strong>
-                  {historyView === 'week'
-                    ? `${new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(new Date(`${summary.start_date}T12:00:00`))} – ${new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(new Date(`${summary.end_date}T12:00:00`))}`
-                    : new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
-                        new Date(`${summary.start_date}T12:00:00`),
-                      )}
-                </strong>
-                <small>
-                  {summary.start_date.slice(0, 4)}
-                  {summary.start_date.slice(0, 4) !== summary.end_date.slice(0, 4)
-                    ? `–${summary.end_date.slice(0, 4)}`
-                    : ''}
-                </small>
-              </div>
-              <div className="body-history-weight">
-                <strong>
-                  {weightFromKg(summary.weight_kg, weightUnit).toFixed(1)} {weightUnit}
-                  <BodyHistoryWeightChange
-                    change={summary.weight_change}
-                    comparison={`previous ${historyView === 'week' ? 'week' : 'month'} with check-ins`}
-                  />
-                </strong>
-                <small>
-                  {summary.count} {summary.count === 1 ? 'check-in' : 'check-ins'}
-                </small>
-              </div>
-              <div className="body-history-fat">
-                <strong>
-                  {summary.body_fat_pct === null ? '–' : `${summary.body_fat_pct.toFixed(1)}%`}
-                </strong>
-              </div>
-            </article>
+            <Fragment key={summary.start_date}>
+              <article className="body-history-summary-grid">
+                <div className="body-history-date">
+                  <strong>
+                    {historyView === 'week'
+                      ? `${new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(new Date(`${summary.start_date}T12:00:00`))} – ${new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(new Date(`${summary.end_date}T12:00:00`))}`
+                      : new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
+                          new Date(`${summary.start_date}T12:00:00`),
+                        )}
+                  </strong>
+                  <small>
+                    {summary.start_date.slice(0, 4)}
+                    {summary.start_date.slice(0, 4) !== summary.end_date.slice(0, 4)
+                      ? `–${summary.end_date.slice(0, 4)}`
+                      : ''}
+                  </small>
+                </div>
+                <div className="body-history-weight">
+                  <strong>
+                    {weightFromKg(summary.weight_kg, weightUnit).toFixed(1)} {weightUnit}
+                    <BodyHistoryWeightChange
+                      change={summary.weight_change}
+                      comparison={`previous ${historyView === 'week' ? 'week' : 'month'} with check-ins`}
+                      unit={weightUnit}
+                      decimals={1}
+                      fixed
+                    />
+                  </strong>
+                  <small>
+                    {summary.count} {summary.count === 1 ? 'check-in' : 'check-ins'}
+                  </small>
+                </div>
+                <div className="body-history-fat">
+                  <strong>
+                    {summary.body_fat_pct === null ? '–' : `${summary.body_fat_pct.toFixed(1)}%`}
+                  </strong>
+                </div>
+              </article>
+              {summary.goal_change && (
+                <BodyHistoryGoalDivider goal={summary.goal_change} unit={weightUnit} />
+              )}
+            </Fragment>
           ))}
         <PaginationControls
           currentPage={checkInPage}

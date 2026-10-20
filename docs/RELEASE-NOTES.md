@@ -46,6 +46,18 @@
 
 *Tap Start to choose Cardio, your Up next session or an empty workout.*
 
+![Avg Monthly bodyweight history with the amount changed beside each arrow and dotted lines marking Gain to 86 kg, Maintain 88 kg and Lose to 85 kg goals](screenshots/releases/0.9.0-weight-change-monthly.png)
+
+*Each month shows how much its average changed, coloured by the goal you had then. Dotted lines mark where each goal began.*
+
+![Daily bodyweight history with a Maintain 83.3 kg line above a Gain to 86 kg line, and red or green amounts beside each check-in](screenshots/releases/0.9.0-weight-change-daily.png)
+
+*Daily compares each check-in with the one before it, judged against the goal in force on that day.*
+
+![Add bodyweight goal popup with Lose, Gain and Maintain choices, Maintain selected and the current 83.3 kg filled in](screenshots/releases/0.9.0-maintain-goal.png)
+
+*Choose Lose, Gain or Maintain when you set a goal.*
+
 - Tap a muscle name in Home > Sets per muscle to open its bottom sheet, with contributing exercises, direct or assistance credits, and progress towards your weekly goal.
 - Each exercise has a right chevron and its source workout and date. Tap it to open that saved workout in view mode, scrolled to and focused on the contributing exercise. Your active workout stays separate.
 - Selected reactions on shared workouts show the emoji alone, matching Home. Reaction names remain available to screen readers.
@@ -66,6 +78,12 @@
 - Cardio starts a cardio workout, pre-filled with the exercises from your last cardio session when you have one.
 - Empty starts a blank workout, as Start did before.
 - During a live workout, Start still takes you straight back to it.
+- Each up or down arrow in Body history now shows the amount gained or lost compared with the row below, such as ↓ 0.5.
+- Daily compares with your previous check-in; Avg Week and Avg Monthly compare with the previous week or month that has check-ins.
+- Amounts use your weight unit and match the rounded weights shown, so they add up when you compare two rows.
+- Arrow colours now follow the goal you had at the time, so older rows keep their meaning after you set a new goal. Weeks and months use the goal in place on their last day.
+- A dotted line marks where each new goal started, with its direction, target and start date, such as Gain to 86 kg · from 16 Oct.
+- Goals can now be Lose, Gain or Maintain. Maintain starts from your current weight; green means you moved back towards it and red means you drifted further away.
 
 ## 0.8.5
 

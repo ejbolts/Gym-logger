@@ -23,7 +23,13 @@
     "Up next shows the name of your recommended session, such as Lower body day, and starts it pre-filled from your last session of that type, just like Home's Up next card.",
     "Cardio starts a cardio workout, pre-filled with the exercises from your last cardio session when you have one.",
     "Empty starts a blank workout, as Start did before.",
-    "During a live workout, Start still takes you straight back to it."
+    "During a live workout, Start still takes you straight back to it.",
+    "Each up or down arrow in Body history now shows the amount gained or lost compared with the row below, such as ↓ 0.5.",
+    "Daily compares with your previous check-in; Avg Week and Avg Monthly compare with the previous week or month that has check-ins.",
+    "Amounts use your weight unit and match the rounded weights shown, so they add up when you compare two rows.",
+    "Arrow colours now follow the goal you had at the time, so older rows keep their meaning after you set a new goal. Weeks and months use the goal in place on their last day.",
+    "A dotted line marks where each new goal started, with its direction, target and start date, such as Gain to 86 kg · from 16 Oct.",
+    "Goals can now be Lose, Gain or Maintain. Maintain starts from your current weight; green means you moved back towards it and red means you drifted further away."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#090",
   "image": {
