@@ -8,22 +8,22 @@ export function ProfileButton({
   onClick,
   name,
   photoUrl,
-  followRequests = 0,
+  friendRequests = 0,
   openFeedback = 0,
 }: {
   onClick: () => void;
   name?: string;
   photoUrl?: string | null;
-  followRequests?: number;
+  friendRequests?: number;
   openFeedback?: number;
 }) {
-  const count = followRequests + openFeedback;
+  const count = friendRequests + openFeedback;
   return (
     <button
       className="icon-button-pulse profile-button"
       type="button"
       onClick={onClick}
-      aria-label={profileButtonLabel(name, followRequests, openFeedback)}
+      aria-label={profileButtonLabel(name, friendRequests, openFeedback)}
     >
       {count > 0 && (
         <span className="profile-request-badge" aria-hidden="true">

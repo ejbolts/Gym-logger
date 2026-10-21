@@ -14,9 +14,8 @@ const profile: SharedProfile = {
   member_since: '2026-10-01T12:00:00Z',
   visibility: 'public',
   is_you: false,
-  follow_status: 'accepted',
-  following_since: '2026-10-06T12:00:00Z',
-  follows_you: true,
+  friend_status: 'friends',
+  friends_since: '2026-10-06T12:00:00Z',
   can_view: true,
   workout_count: 2,
   recent_workout_count: 2,
@@ -65,8 +64,34 @@ const workout: TrackedWorkout = {
 };
 let root: Root;
 let container: HTMLDivElement;
+function renderProfile(profileId = 'friend') {
+  return act(async () =>
+    root.render(
+      <SharedProfileScreen
+        profileId={profileId}
+        onChooseSharing={() => {}}
+        renderWorkouts={({ workouts, renderWorkoutAction }) => (
+          <ul>
+            {workouts.map((item) => (
+              <li key={item.id}>
+                {item.name}
+                {renderWorkoutAction?.(item)}
+              </li>
+            ))}
+          </ul>
+        )}
+      />,
+    ),
+  );
+}
 beforeEach(async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     callback(0);
     return 0;
@@ -85,24 +110,7 @@ beforeEach(async () => {
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
-  await act(async () =>
-    root.render(
-      <SharedProfileScreen
-        profileId="friend"
-        onChooseSharing={() => {}}
-        renderWorkouts={({ workouts, renderWorkoutAction }) => (
-          <ul>
-            {workouts.map((item) => (
-              <li key={item.id}>
-                {item.name}
-                {renderWorkoutAction?.(item)}
-              </li>
-            ))}
-          </ul>
-        )}
-      />,
-    ),
-  );
+  await renderProfile();
 });
 afterEach(async () => {
   await act(async () => root.unmount());
@@ -123,21 +131,53 @@ function button(prefix: string) {
   )!;
 }
 
-describe('shared profile follow control', () => {
-  it('shows Following with a menu holding the start month and Unfollow', async () => {
+describe('shared profile friend control', () => {
+  it('shows Friends with a menu holding the start month, Remove friend and Block', async () => {
     expect(container.textContent).not.toContain('Public');
-    expect(container.querySelector('.profile-joined')?.textContent).toBe(
-      'Joined October 2026Follows you',
-    );
-    const following = button('Following');
-    expect(following.getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelector('.profile-joined')?.textContent).toBe('Joined October 2026');
+    const friends = button('Friends');
+    expect(friends.getAttribute('aria-expanded')).toBe('false');
     expect(container.querySelector('[role="menu"]')).toBeNull();
-    await act(async () => following.click());
-    expect(following.getAttribute('aria-expanded')).toBe('true');
-    expect(container.querySelector('[role="menu"]')?.textContent).toBe('Since Oct 2026Unfollow');
-    vi.spyOn(api.sharing, 'unfollow').mockResolvedValue(undefined);
-    await act(async () => button('Unfollow').click());
-    expect(api.sharing.unfollow).toHaveBeenCalledWith('friend');
+    await act(async () => friends.click());
+    expect(friends.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelector('[role="menu"]')?.textContent).toBe(
+      'Since Oct 2026Remove friendBlock',
+    );
+    vi.spyOn(api.sharing, 'removeFriend').mockResolvedValue(undefined);
+    await act(async () => button('Remove friend').click());
+    expect(api.sharing.removeFriend).toHaveBeenCalledWith('friend');
+  });
+
+  it('asks before blocking, then explains where to unblock', async () => {
+    const block = vi.spyOn(api.sharing, 'blockMember').mockResolvedValue(undefined);
+    await act(async () => button('Friends').click());
+    await act(async () => button('Block').click());
+    const dialog = document.querySelector('dialog[open]');
+    expect(dialog?.textContent).toContain('Block Sample Friend?');
+    expect(dialog?.textContent).toContain('unblock them in Social, under Find');
+    expect(block).not.toHaveBeenCalled();
+    await act(async () => dialog!.querySelector<HTMLButtonElement>('.profile-danger')!.click());
+    expect(block).toHaveBeenCalledWith('friend');
+    expect(container.textContent).toContain('You blocked Sample Friend');
+  });
+
+  it('accepts or declines a friend request from a friends-only profile', async () => {
+    vi.mocked(api.sharing.profile).mockResolvedValue({
+      ...profile,
+      id: 'asker',
+      visibility: 'followers',
+      friend_status: 'incoming',
+      friends_since: null,
+      can_view: false,
+    });
+    await renderProfile('asker');
+    expect(container.textContent).toContain('Sample Friend sent you a friend request');
+    expect(container.querySelector('[aria-label="More options for Sample Friend"]')).not.toBeNull();
+    const accept = vi.spyOn(api.sharing, 'acceptFriend').mockResolvedValue({ status: 'friends' });
+    vi.mocked(api.sharing.profile).mockResolvedValue(profile);
+    await act(async () => button('Accept').click());
+    expect(accept).toHaveBeenCalledWith('asker');
+    expect(button('Friends')).toBeTruthy();
   });
 });
 

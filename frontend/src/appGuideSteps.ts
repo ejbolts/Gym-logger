@@ -46,7 +46,7 @@ export function appGuideSteps(videosAllowed: boolean): AppGuideStep[] {
     {
       title: 'Train alongside friends',
       description:
-        'Social brings together friends’ latest sessions, reactions, people search and follow requests. Your existing sharing choices still apply.',
+        'Social shows each friend’s latest session and lets you react. Use Find to search for people and answer friend requests. Your sharing choices still apply.',
       target: 'social',
       tab: 'social',
       icon: 'people',

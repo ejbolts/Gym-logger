@@ -129,11 +129,11 @@ export interface TodayScreenProps {
   profilePhotoUrl?: string | null;
   /** The signed-in account for the Profile section; omitted outside the signed-in app. */
   profile?: Pick<User, 'display_name' | 'username' | 'profile_photo_url' | 'created_at'>;
-  /** Follow requests waiting for approval, shown as a count on the profile button. */
-  followRequests?: number;
+  /** Friend requests waiting for an answer, shown as a count on the profile button. */
+  friendRequests?: number;
   notifications?: ReactNode;
   accountActions?: ReactNode;
-  /** Unresolved app feedback, shown to administrators beside follow requests. */
+  /** Unresolved app feedback, shown to administrators beside friend requests. */
   openFeedback?: number;
   calendar?: ReactNode;
   /** The Friends card with friends' latest sessions; omitted outside the signed-in app. */
@@ -168,7 +168,7 @@ export function TodayScreen({
   profileLabel,
   profilePhotoUrl,
   profile,
-  followRequests = 0,
+  friendRequests = 0,
   notifications,
   accountActions,
   openFeedback = 0,
@@ -535,7 +535,7 @@ export function TodayScreen({
                   onClick={onOpenProfile}
                   name={profileLabel}
                   photoUrl={profilePhotoUrl}
-                  followRequests={followRequests}
+                  friendRequests={friendRequests}
                   openFeedback={openFeedback}
                 />
               )}

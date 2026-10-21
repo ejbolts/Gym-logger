@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { CachedTabPanel } from './CachedTabPanel';
-import { FriendsActivityCard } from './FriendsActivity';
 import { AccountHeaderActions } from './AccountHeaderActions';
-import { FriendsPanel } from './SharedProfiles';
+import { useFriendConnections } from './friendConnections';
+import { FriendsList } from './FriendsList';
+import { FindPanel } from './SharedProfiles';
 import { PageHeader } from './TodayScreen';
 import { useSlidingIndicator } from './motionHooks';
 import type { SharedProfileSummary, User } from './types';
@@ -22,14 +23,10 @@ export function SocialScreen({
   account?: User;
   openFeedback?: number;
 }) {
-  const [section, setSection] = useState<'activity' | 'friends'>('activity');
-  const [friendsVisited, setFriendsVisited] = useState(false);
+  const [section, setSection] = useState<'friends' | 'find'>('friends');
   const indicator = useSlidingIndicator<HTMLDivElement>(section);
-
-  function openFriends() {
-    setFriendsVisited(true);
-    setSection('friends');
-  }
+  const { connections, state, error, refresh, updateReactions } = useFriendConnections(active);
+  const requests = connections?.requests.length ?? 0;
 
   return (
     <section className="social-screen content-page">
@@ -43,7 +40,7 @@ export function SocialScreen({
             profile={account}
             openFeedback={openFeedback}
             onOpenProfile={onChooseSharing}
-            onOpenFriends={openFriends}
+            onOpenFriends={() => setSection('find')}
           />
         }
       />
@@ -56,42 +53,56 @@ export function SocialScreen({
         <button
           type="button"
           role="tab"
-          aria-selected={section === 'activity'}
-          className={section === 'activity' ? 'active' : ''}
-          onClick={() => setSection('activity')}
+          aria-selected={section === 'friends'}
+          className={section === 'friends' ? 'active' : ''}
+          onClick={() => setSection('friends')}
         >
-          Following
+          Friends
         </button>
         <button
           type="button"
           role="tab"
-          aria-selected={section === 'friends'}
-          className={section === 'friends' ? 'active' : ''}
-          onClick={openFriends}
+          aria-selected={section === 'find'}
+          aria-label={
+            requests > 0
+              ? `Find, ${requests} friend ${requests === 1 ? 'request' : 'requests'}`
+              : undefined
+          }
+          className={section === 'find' ? 'active' : ''}
+          onClick={() => setSection('find')}
         >
-          Friends
+          Find
+          {requests > 0 && (
+            <span className="segmented-badge" aria-hidden="true">
+              {requests > 9 ? '9+' : requests}
+            </span>
+          )}
         </button>
       </div>
-      <CachedTabPanel active={section === 'activity'}>
-        <FriendsActivityCard
-          active={active && section === 'activity'}
+      <CachedTabPanel active={section === 'friends'}>
+        <FriendsList
+          connections={connections}
+          state={state}
+          error={error}
+          onRetry={refresh}
           onOpenFriend={onOpenProfile}
-          onOpenFriends={openFriends}
+          onOpenFind={() => setSection('find')}
           onChooseSharing={onChooseSharing}
-          title="Latest sessions"
-          friendsLabel="Find friends"
+          onReactionsChange={updateReactions}
         />
       </CachedTabPanel>
-      {friendsVisited && (
-        <CachedTabPanel active={section === 'friends'}>
-          <FriendsPanel
-            active={active && section === 'friends'}
-            refreshKey={0}
-            onOpenProfile={onOpenProfile}
-            onChooseSharing={onChooseSharing}
-          />
-        </CachedTabPanel>
-      )}
+      <CachedTabPanel active={section === 'find'}>
+        <FindPanel
+          active={active && section === 'find'}
+          connections={connections}
+          state={state}
+          error={error}
+          onRetry={refresh}
+          onChanged={refresh}
+          onOpenProfile={onOpenProfile}
+          onChooseSharing={onChooseSharing}
+        />
+      </CachedTabPanel>
     </section>
   );
 }

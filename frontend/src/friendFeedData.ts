@@ -1,4 +1,4 @@
-import { parseLocalDate, shortDate } from './trainingSummary';
+import { addDays, parseLocalDate, shortDate } from './trainingSummary';
 import type { FriendFeedItem, WorkoutReactionKind, WorkoutReactions } from './types';
 import { formatMinutesDuration } from './utils';
 
@@ -59,6 +59,11 @@ export function relativeDay(value: string, today: string): string {
   if (days > 1 && days < 7)
     return parseLocalDate(value).toLocaleDateString('en-GB', { weekday: 'short' });
   return shortDate(value);
+}
+
+/** The last seven days, oldest first, ending with `today`. */
+export function lastWeek(today: string): string[] {
+  return Array.from({ length: 7 }, (_, index) => addDays(today, index - 6));
 }
 
 /** The most used reactions (up to three) and the total, for a compact summary. */

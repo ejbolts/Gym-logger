@@ -1,4 +1,3 @@
-import { shortDate } from './trainingSummary';
 import type { ProfileVisibility, SharedProfileSummary } from './types';
 
 export const SHARED_WORKOUT_PAGE_SIZE = 10;
@@ -11,17 +10,6 @@ export const VISIBILITY_LABELS: Record<ProfileVisibility, string> = {
 
 export function plural(count: number, word: string): string {
   return `${count.toLocaleString('en-GB')} ${word}${count === 1 ? '' : 's'}`;
-}
-
-export function followSinceLabel(label: string, since?: string | null): string {
-  const date = since ? new Date(since) : null;
-  return date && !Number.isNaN(date.getTime())
-    ? `${label} since ${date.toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })}`
-    : label;
 }
 
 /** "Since Oct 2026" for a relationship start date, or null when it is unknown. */
@@ -45,24 +33,16 @@ export function sharedParts(profile: SharedProfileSummary): string[] {
   ];
 }
 
-export function workoutActivitySummary(profile: SharedProfileSummary): string {
-  if (!profile.can_view) {
-    return profile.follow_status === 'pending'
-      ? 'Follow request sent'
-      : 'Shares with friends only. Follow to see their training.';
+/** A person's relationship to you, or who can see their profile when you are not connected. */
+export function friendStatusLabel(profile: SharedProfileSummary): string {
+  switch (profile.friend_status) {
+    case 'friends':
+      return 'Friend';
+    case 'incoming':
+      return 'Sent you a friend request';
+    case 'outgoing':
+      return 'Friend request sent';
+    default:
+      return VISIBILITY_LABELS[profile.visibility];
   }
-  if (!profile.workout_count) return 'No workouts logged yet';
-  return [
-    plural(profile.workout_count, 'workout'),
-    `${profile.recent_workout_count ?? 0} in the last 30 days`,
-    profile.last_workout_date ? `last ${shortDate(profile.last_workout_date)}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
-
-/** The button offered to someone who does not follow this profile yet. */
-export function followActionLabel(profile: SharedProfileSummary): string | null {
-  if (profile.is_you || profile.follow_status !== 'none') return null;
-  return profile.visibility === 'public' ? 'Follow' : 'Request to follow';
 }

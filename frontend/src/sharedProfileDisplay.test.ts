@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  followActionLabel,
-  followSinceLabel,
-  sharedParts,
-  sinceMonthLabel,
-  workoutActivitySummary,
-} from './sharedProfileDisplay';
+import { friendStatusLabel, sharedParts, sinceMonthLabel } from './sharedProfileDisplay';
 import type { SharedProfileSummary } from './types';
 
 const nothingExtra = {
@@ -22,8 +16,7 @@ const profile: SharedProfileSummary = {
   member_since: '2026-09-01T10:00:00Z',
   visibility: 'public',
   is_you: false,
-  follow_status: 'none',
-  follows_you: false,
+  friend_status: 'none',
   can_view: true,
   workout_count: 42,
   recent_workout_count: 6,
@@ -42,16 +35,6 @@ const friendsOnly: SharedProfileSummary = {
 };
 
 describe('shared profile display', () => {
-  it('labels relationship start dates independently of signup and missing dates', () => {
-    expect(followSinceLabel('Following', '2026-10-06T12:00:00Z')).toBe(
-      'Following since 6 Oct 2026',
-    );
-    expect(followSinceLabel('Follows you', '2026-10-09T12:00:00Z')).toBe(
-      'Follows you since 9 Oct 2026',
-    );
-    expect(followSinceLabel('Following', null)).toBe('Following');
-    expect(followSinceLabel('Following', 'invalid')).toBe('Following');
-  });
   it('shortens a relationship start date to its month and year', () => {
     expect(sinceMonthLabel('2026-10-06T12:00:00Z')).toBe('Since Oct 2026');
     expect(sinceMonthLabel(null)).toBeNull();
@@ -68,28 +51,15 @@ describe('shared profile display', () => {
     expect(sharedParts(friendsOnly)).toEqual([]);
   });
 
-  it('summarises workout activity, or why a friends-only profile is hidden', () => {
-    expect(workoutActivitySummary(profile)).toBe(
-      '42 workouts · 6 in the last 30 days · last Tue 6 Oct',
+  it('labels the relationship, or who can see the profile when you are not connected', () => {
+    expect(friendStatusLabel(profile)).toBe('Public');
+    expect(friendStatusLabel(friendsOnly)).toBe('Friends only');
+    expect(friendStatusLabel({ ...friendsOnly, friend_status: 'outgoing' })).toBe(
+      'Friend request sent',
     );
-    expect(workoutActivitySummary({ ...profile, workout_count: 1, recent_workout_count: 1 })).toBe(
-      '1 workout · 1 in the last 30 days · last Tue 6 Oct',
+    expect(friendStatusLabel({ ...friendsOnly, friend_status: 'incoming' })).toBe(
+      'Sent you a friend request',
     );
-    expect(workoutActivitySummary({ ...profile, workout_count: 0, last_workout_date: null })).toBe(
-      'No workouts logged yet',
-    );
-    expect(workoutActivitySummary(friendsOnly)).toBe(
-      'Shares with friends only. Follow to see their training.',
-    );
-    expect(workoutActivitySummary({ ...friendsOnly, follow_status: 'pending' })).toBe(
-      'Follow request sent',
-    );
-  });
-
-  it('offers to follow public profiles and to request friends-only ones', () => {
-    expect(followActionLabel(profile)).toBe('Follow');
-    expect(followActionLabel(friendsOnly)).toBe('Request to follow');
-    expect(followActionLabel({ ...friendsOnly, follow_status: 'pending' })).toBeNull();
-    expect(followActionLabel({ ...profile, is_you: true })).toBeNull();
+    expect(friendStatusLabel({ ...profile, friend_status: 'friends' })).toBe('Friend');
   });
 });

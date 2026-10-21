@@ -1,10 +1,10 @@
 # Gym Logger release notes
 
-## 0.9.1
+## 0.10.0
 
 21 October 2026
 
-### Training in one place, with a home for Social
+### Training in one place, and friends in Social
 
 ![Body with matching Notifications, Profile and Settings buttons and no duplicate header plus](screenshots/releases/0.9.1-header-controls.png)
 
@@ -22,9 +22,13 @@
 
 *Wider screens keep the searchable library beside the chart. Returning from full progress preserves your search, list position, selected exercise, metric and date range. Previews use synthetic training data.*
 
-![Social with friends’ latest sessions and the existing reaction controls](screenshots/releases/0.9.1-social-following.png)
+![Social Friends tab listing each friend once with a seven-day activity strip, latest session and reaction button](screenshots/releases/0.10.0-social-friends.png)
 
-*Following shows your friends’ latest sessions. Friends contains people search, follow requests, followers and block controls. All previews use isolated synthetic accounts and workouts.*
+*Friends lists each friend once, most recently active first, with their week at a glance, latest session and a reaction button.*
+
+![Social Find tab with a waiting friend request, people search and a sent request](screenshots/releases/0.10.0-social-find.png)
+
+*Find holds friend requests to accept or decline, people search, requests you sent and blocked members. All previews use isolated synthetic accounts and workouts.*
 
 ![Quick-start menu with larger Cardio, Up next and Empty circles](screenshots/releases/0.9.1-quick-start-circles.png)
 
@@ -37,7 +41,8 @@
 - **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls. Removed the duplicate blue plus buttons from Training and Body headers; use **Start** for workouts and **Log weigh-in** for bodyweight entries.
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
 - **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views.
-- **Social:** a dedicated bottom tab brings together friends’ latest sessions, reactions, notifications, people search and follow requests using the existing controls. Sharing permissions are unchanged, and Home keeps a compact friends teaser.
+- **Friends instead of followers:** send one friend request; once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles, and either friend can remove the friendship. Existing follows in either direction became friendships, and waiting follow requests became friend requests. Notifications show requests to you and requests that were accepted.
+- **Social:** a dedicated bottom tab with **Friends** and **Find**. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members, with a badge for waiting requests. Profiles offer **Add friend**, **Accept** or **Decline**, and a menu to cancel a request, remove a friend or block. Home keeps its compact friends card, and Profile links to Social.
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.
 - **Sessions:** initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. **Show more** reveals older sessions; calendar and exercise links can still open older workouts directly.
 - Enlarged the Cardio, Up next and Empty circles from 44 px to 52 px and their icons from 20 px to 24 px.

@@ -2183,40 +2183,6 @@ html[data-reduce-motion] .app-tab-items[aria-hidden] {
   padding-right: 0.875rem;
 }
 
-.social-screen .friends-panel {
-  margin-top: 0;
-}
-
-.social-screen .friend-activity-list {
-  display: grid;
-  gap: 0.875rem;
-}
-
-.social-screen .friend-activity-list > li {
-  border: 1px solid var(--p-line);
-  border-radius: 14px;
-  padding: 1rem 0.75rem;
-  background: var(--p-surface-2);
-}
-
-.social-screen .friend-activity-open {
-  align-items: flex-start;
-}
-
-.social-screen .friend-activity-copy {
-  gap: 0.375rem;
-}
-
-.social-screen .friend-activity-session {
-  flex-wrap: wrap;
-}
-
-.social-screen .friend-activity-title {
-  overflow: visible;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
 @media (max-width: 480px) {
   .social-screen .friend-group li {
     flex-wrap: wrap;

@@ -162,7 +162,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
     id: 'friends',
     title: 'Friends',
     page: 'profile',
-    keywords: 'people search follow followers requests approve',
+    keywords: 'people search friends friend requests accept block social',
     selector: '.friends-panel, .sharing-locked',
     reveal: ['Friends'],
   },

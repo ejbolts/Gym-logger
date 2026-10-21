@@ -3,7 +3,10 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { api, ApiError } from './api';
+import { lastWeek } from './friendFeedData';
 import { SocialScreen } from './SocialScreen';
+import type { FriendActivity, FriendConnections, TrackedWorkout } from './types';
+import { localDate } from './utils';
 
 let root: Root;
 let host: HTMLDivElement;
@@ -15,37 +18,52 @@ const person = {
   profile_photo_url: null,
   since: '2026-10-21T10:00:00Z',
 };
-const profile = {
-  ...person,
-  member_since: person.since,
-  visibility: 'public',
-  is_you: false,
-  follow_status: 'none',
-  follows_you: false,
-  can_view: true,
-  workout_count: 1,
-  recent_workout_count: 1,
-  last_workout_date: '2026-10-21',
-  shares: { notes: false, body_weight: false, goals: false, machine_photos: false },
-} as const;
+const workout: TrackedWorkout = {
+  id: 'w1',
+  name: 'Upper body',
+  workout_date: localDate(),
+  category: 'upper',
+  notes: null,
+  duration_minutes: 48,
+  start_time: null,
+  end_time: null,
+  is_sample: false,
+  created_at: '2026-10-21T10:00:00Z',
+  updated_at: '2026-10-21T10:00:00Z',
+  movements: [],
+};
+const week = lastWeek(localDate());
+const alex: FriendActivity = {
+  id: 'alex',
+  display_name: 'Alex Sample',
+  profile_photo_url: null,
+  since: '2026-10-01T10:00:00Z',
+  latest: { workout, reactions: { counts: [], yours: null } },
+  recent_workout_count: 4,
+  training_dates: [week[2], week[6]],
+};
+const casey: FriendActivity = {
+  ...alex,
+  id: 'casey',
+  display_name: 'Casey Sample',
+  latest: null,
+  recent_workout_count: 0,
+  training_dates: [],
+};
+let connections: FriendConnections;
 
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   openProfile.mockClear();
   chooseSharing.mockClear();
-  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [], following: 0 });
+  connections = { friends: [alex, casey], requests: [person], sent: [], blocked: [] };
+  vi.spyOn(api.sharing, 'friends').mockImplementation(async () => connections);
   vi.spyOn(api.sharing, 'notifications').mockResolvedValue({
     requests: [],
-    followers: [],
-    blocked: [],
+    accepted: [],
     reactions: [],
   });
-  vi.spyOn(api.sharing, 'profiles').mockResolvedValue([profile]);
-  vi.spyOn(api.sharing, 'connections').mockResolvedValue({
-    requests: [person],
-    followers: [],
-    blocked: [],
-  });
+  vi.spyOn(api.sharing, 'profiles').mockResolvedValue([]);
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -71,71 +89,128 @@ async function render(active = true) {
   );
 }
 
-async function tab(label: string) {
-  const button = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
-    (item) => item.textContent === label,
+function tab(name: 'Friends' | 'Find') {
+  return [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((item) =>
+    item.textContent?.startsWith(name),
   )!;
-  await act(async () => button.click());
 }
 
-it('reuses friend requests and people search, retaining the search field between sections', async () => {
+async function click(target: HTMLElement) {
+  await act(async () => target.click());
+}
+
+function labelled(label: string) {
+  return host.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!;
+}
+
+it('lists each friend once with their week and latest session, and opens their profile', async () => {
   await render();
-  expect(api.sharing.profiles).not.toHaveBeenCalled();
-  await tab('Friends');
-  expect(host.textContent).toContain('Follow requests');
-  expect(host.textContent).toContain('Search people');
-  const approve = vi.spyOn(api.sharing, 'approveFollower').mockResolvedValue();
-  vi.mocked(api.sharing.connections).mockResolvedValue({
-    requests: [],
-    followers: [person],
-    blocked: [],
-  });
-  await act(async () =>
-    host.querySelector<HTMLButtonElement>('[aria-label="Approve Jamie Sample"]')!.click(),
+  expect(tab('Friends').getAttribute('aria-selected')).toBe('true');
+  const cards = [...host.querySelectorAll('.friend-cards > li')];
+  expect(cards.map((card) => card.querySelector('b')?.textContent)).toEqual([
+    'Alex Sample',
+    'Casey Sample',
+  ]);
+  expect(cards[0].textContent).toContain('4 workouts in the last 30 days');
+  expect(cards[0].textContent).toContain('Upper body · 48min');
+  expect(cards[0].textContent).toContain('Today · 0 sets');
+  expect(cards[0].querySelector('.friend-week')?.getAttribute('aria-label')).toBe(
+    'Trained on 2 of the last 7 days',
   );
-  expect(approve).toHaveBeenCalledWith('jamie');
+  expect(cards[0].querySelectorAll('.friend-week .is-trained')).toHaveLength(2);
+  expect(cards[0].querySelector('[aria-label="React to Alex Sample’s Upper body"]')).not.toBeNull();
+  expect(cards[1].textContent).toContain('No sessions logged yet.');
+  await click(labelled("Open Alex Sample's profile"));
+  expect(openProfile).toHaveBeenCalledWith(alex);
+});
+
+it('shows friend requests on Find with a count, and keeps the search between tabs', async () => {
+  await render();
+  expect(tab('Find').getAttribute('aria-label')).toBe('Find, 1 friend request');
+  expect(tab('Find').querySelector('.segmented-badge')?.textContent).toBe('1');
+  await click(tab('Find'));
+  expect(host.textContent).toContain('Friend requests');
+  expect(host.textContent).toContain('Search people');
+  const accept = vi.spyOn(api.sharing, 'acceptFriend').mockImplementation(async () => {
+    connections = { ...connections, requests: [] };
+    return { status: 'friends' };
+  });
+  await click(labelled('Accept Jamie Sample'));
+  expect(accept).toHaveBeenCalledWith('jamie');
+  expect(host.textContent).not.toContain('Friend requests');
+  expect(tab('Find').querySelector('.segmented-badge')).toBeNull();
   const input = host.querySelector<HTMLInputElement>('input[type="search"]')!;
   await act(async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Jamie');
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await tab('Following');
-  await tab('Friends');
+  await click(tab('Friends'));
+  await click(tab('Find'));
   expect(host.querySelector<HTMLInputElement>('input[type="search"]')?.value).toBe('Jamie');
 });
 
-it('keeps private profiles private and routes sharing choices to Profile', async () => {
-  vi.mocked(api.sharing.feed).mockRejectedValue(
-    new ApiError('Choose sharing first.', 'sharing_required', 403),
+it('cancels sent requests and unblocks members from Find', async () => {
+  connections = {
+    friends: [],
+    requests: [],
+    sent: [{ ...person, id: 'riley', display_name: 'Riley Sample' }],
+    blocked: [{ ...person, id: 'morgan', display_name: 'Morgan Sample' }],
+  };
+  const remove = vi.spyOn(api.sharing, 'removeFriend').mockResolvedValue(undefined);
+  const unblock = vi.spyOn(api.sharing, 'unblockMember').mockResolvedValue(undefined);
+  await render();
+  expect(host.textContent).toContain('Add friends to see their latest sessions');
+  await click(
+    [...host.querySelectorAll<HTMLButtonElement>('.friends-list-empty button')].find((button) =>
+      button.textContent?.includes('Find friends'),
+    )!,
   );
-  vi.mocked(api.sharing.profiles).mockRejectedValue(
-    new ApiError('Choose sharing first.', 'sharing_required', 403),
-  );
+  expect(tab('Find').getAttribute('aria-selected')).toBe('true');
+  await click(labelled('Cancel request to Riley Sample'));
+  expect(remove).toHaveBeenCalledWith('riley');
+  await click(labelled('Unblock Morgan Sample'));
+  expect(unblock).toHaveBeenCalledWith('morgan');
+  expect(api.sharing.friends).toHaveBeenCalledTimes(3);
+});
+
+it('keeps private profiles private, routes sharing choices to Profile and still unblocks', async () => {
+  connections = {
+    locked: true,
+    friends: [],
+    requests: [],
+    sent: [],
+    blocked: [{ ...person, id: 'morgan', display_name: 'Morgan Sample' }],
+  };
+  const unblock = vi.spyOn(api.sharing, 'unblockMember').mockResolvedValue(undefined);
   const updateSharing = vi.spyOn(api.sharing, 'updateChoices');
   await render();
-  await act(async () =>
-    [...host.querySelectorAll<HTMLButtonElement>('button')]
-      .find((button) => button.textContent === 'Share')!
-      .click(),
+  await click(
+    [...host.querySelectorAll<HTMLButtonElement>('button')].find(
+      (button) => button.textContent === 'Choose who can see your profile',
+    )!,
   );
   expect(chooseSharing).toHaveBeenCalledOnce();
-  await tab('Friends');
-  await act(async () =>
-    [...host.querySelectorAll<HTMLButtonElement>('button')]
-      .find((button) => button.textContent === 'Profile sharing')!
-      .click(),
-  );
-  expect(chooseSharing).toHaveBeenCalledTimes(2);
+  await click(tab('Find'));
+  expect(host.textContent).toContain('Share your profile to see others');
+  await click(labelled('Unblock Morgan Sample'));
+  expect(unblock).toHaveBeenCalledWith('morgan');
   expect(updateSharing).not.toHaveBeenCalled();
 });
 
-it('does not poll the activity feed while Social is hidden', async () => {
+it('treats an older server’s sharing error as a locked profile', async () => {
+  vi.mocked(api.sharing.friends).mockRejectedValue(
+    new ApiError('Choose sharing first.', 'sharing_required', 403),
+  );
+  await render();
+  expect(host.textContent).toContain('Share your profile to see others');
+});
+
+it('does not load or poll friends while Social is hidden', async () => {
   await render(false);
-  expect(api.sharing.feed).not.toHaveBeenCalled();
+  expect(api.sharing.friends).not.toHaveBeenCalled();
   await render(true);
-  expect(api.sharing.feed).toHaveBeenCalledOnce();
-  await tab('Friends');
-  const calls = vi.mocked(api.sharing.feed).mock.calls.length;
+  expect(api.sharing.friends).toHaveBeenCalledOnce();
+  await render(false);
   await act(async () => window.dispatchEvent(new Event('focus')));
-  expect(api.sharing.feed).toHaveBeenCalledTimes(calls);
+  expect(api.sharing.friends).toHaveBeenCalledOnce();
 });

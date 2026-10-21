@@ -10,7 +10,7 @@ type ActivityState =
   | { kind: 'loading' }
   | { kind: 'locked' }
   | { kind: 'error' }
-  | { kind: 'ready'; items: FriendFeedItem[]; following: number };
+  | { kind: 'ready'; items: FriendFeedItem[]; friends: number };
 
 /** Home's Friends card: each friend's latest session, with one button to react to it. */
 export function FriendsActivityCard({
@@ -104,14 +104,14 @@ export function FriendsActivityCard({
         <p className="pulse-empty-line">Loading your friends’ sessions…</p>
       ) : state.kind === 'locked' ? (
         <p className="pulse-empty-line">
-          Share your profile to follow friends and react to their workouts here.
+          Share your profile to add friends and react to their workouts here.
         </p>
       ) : state.kind === 'error' ? (
         <p className="pulse-empty-line">Friends’ sessions could not be loaded.</p>
       ) : state.items.length === 0 ? (
         <p className="pulse-empty-line">
-          {state.following === 0
-            ? 'Follow friends to see their latest workouts here.'
+          {state.friends === 0
+            ? 'Add friends to see their latest workouts here.'
             : 'Your friends have not logged a workout yet.'}
         </p>
       ) : (
@@ -175,9 +175,9 @@ export function FriendsActivityCard({
           })}
         </ul>
       )}
-      {state.kind === 'ready' && state.items.length > 0 && state.following > state.items.length && (
+      {state.kind === 'ready' && state.items.length > 0 && state.friends > state.items.length && (
         <button type="button" className="friends-activity-more" onClick={onOpenFriends}>
-          +{state.following - state.items.length} more
+          +{state.friends - state.items.length} more
         </button>
       )}
     </section>

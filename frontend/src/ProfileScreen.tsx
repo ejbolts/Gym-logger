@@ -7,8 +7,6 @@ import { ProfileTrainingTime } from './ProfileTrainingTime';
 import { SettingsSearch } from './SettingsSearch';
 import { useSettingsPageJump } from './settingsNavigation';
 import { ProfileSharingPanel } from './ProfileSharing';
-import { FriendsPanel } from './SharedProfiles';
-import type { SharedProfileSummary } from './types';
 import { useUserSession } from './userContext';
 
 function Spinner() {
@@ -311,19 +309,36 @@ export function FeedbackReviewPanel({
   );
 }
 
+/** Friends live in Social; Profile keeps a pointer for people who look for them here. */
+function FriendsLinkPanel({ onOpenFriends }: { onOpenFriends: () => void }) {
+  return (
+    <section className="settings-panel panel friends-panel" aria-labelledby="profile-friends-title">
+      <header>
+        <div>
+          <p className="section-kicker">SOCIAL</p>
+          <h2 id="profile-friends-title">Friends</h2>
+        </div>
+      </header>
+      <p>Your friends, friend requests and people search are in Social.</p>
+      <button type="button" className="profile-secondary" onClick={onOpenFriends}>
+        Open Social
+      </button>
+    </section>
+  );
+}
+
 export function ProfileScreen({
   active,
-  onOpenProfile,
+  onOpenFriends,
   openFeedback = 0,
   onOpenAdmin,
 }: {
   active: boolean;
-  onOpenProfile: (profile: SharedProfileSummary) => void;
+  onOpenFriends: () => void;
   openFeedback?: number;
   onOpenAdmin?: () => void;
 }) {
   const { user, updateUser } = useUserSession();
-  const [sharingVersion, setSharingVersion] = useState(0);
   useSettingsPageJump('profile', active);
   if (!user) return null;
 
@@ -335,8 +350,8 @@ export function ProfileScreen({
       {onOpenAdmin && openFeedback > 0 && (
         <FeedbackReviewPanel openFeedback={openFeedback} onOpenAdmin={onOpenAdmin} />
       )}
-      <ProfileSharingPanel onSaved={() => setSharingVersion((version) => version + 1)} />
-      <FriendsPanel active={active} refreshKey={sharingVersion} onOpenProfile={onOpenProfile} />
+      <ProfileSharingPanel />
+      <FriendsLinkPanel onOpenFriends={onOpenFriends} />
       <PasswordForm />
       <SessionPanel />
       <DangerZone />

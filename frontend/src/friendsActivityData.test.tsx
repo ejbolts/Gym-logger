@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 import {
-  useFollowRequestCount,
+  useFriendRequestCount,
   profileButtonLabel,
   useOpenFeedbackCount,
 } from './friendsActivityData';
@@ -29,7 +29,7 @@ describe('Home friend and feedback counts', () => {
     document.body.append(container);
     const root = createRoot(container);
     function Badge({ active }: { active: boolean }) {
-      return <span>{useFollowRequestCount(active, true)}</span>;
+      return <span>{useFriendRequestCount(active, true)}</span>;
     }
     try {
       await act(async () => root.render(<Badge active />));
@@ -80,9 +80,9 @@ describe('Home friend and feedback counts', () => {
 
   it('describes waiting requests and feedback on the profile button', () => {
     expect(profileButtonLabel('Ethan', 0, 0)).toBe('Profile: Ethan');
-    expect(profileButtonLabel('Ethan', 1, 0)).toBe('Profile: Ethan, 1 follow request');
+    expect(profileButtonLabel('Ethan', 1, 0)).toBe('Profile: Ethan, 1 friend request');
     expect(profileButtonLabel(undefined, 2, 1)).toBe(
-      'Profile, 2 follow requests, 1 feedback message to review',
+      'Profile, 2 friend requests, 1 feedback message to review',
     );
     expect(profileButtonLabel('Ethan', 0, 3)).toBe('Profile: Ethan, 3 feedback messages to review');
   });

@@ -442,8 +442,8 @@ describe('App startup', () => {
       const markup = renderSignedIn(hash, account);
 
       expect(markup).toContain('<strong>Profile</strong>');
-      expect(markup).toContain('<span>Friends</span>');
-      expect(markup).toContain('Loading your friends');
+      expect(markup).toContain('id="profile-friends-title">Friends</h2>');
+      expect(markup).toContain('Open Social');
       expect(markup).not.toContain('View shared profiles');
     }
     const social = renderSignedIn('#shared', account);

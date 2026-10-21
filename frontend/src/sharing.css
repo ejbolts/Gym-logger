@@ -155,7 +155,7 @@
   gap: 0.45rem;
 }
 
-/* Profile page follow pill and its Unfollow menu */
+/* Profile page friend pill and its menu to cancel, remove or block */
 
 .profile-follow {
   justify-items: start;
@@ -892,42 +892,21 @@
 .shared-workout-reaction-summary > span {
   font-size: 0.9375rem;
 }
-.friend-block-help {
-  flex-shrink: 0;
-  align-self: center;
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--p-ink-2);
-  cursor: pointer;
-}
-.friend-block-help:hover,
-.friend-block-help:focus-visible {
-  color: var(--accent, #3988ed);
-  background: var(--p-surface-2);
-}
-.friend-block-help:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: -3px;
-}
-.friend-block-help svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 .friend-block-dialog > p {
   margin: 0;
   padding: 1rem;
   line-height: 1.5;
+}
+.friend-block-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}
+.friend-block-actions > button {
+  width: auto;
+  min-height: 2.5rem;
+  padding: 0.45rem 1rem;
 }
 .history-card-social .friend-react-picker {
   right: 0.625rem;
@@ -975,4 +954,239 @@
 
 .friends-activity-more:hover {
   color: var(--p-ink-2);
+}
+
+/* Profile page: Add friend or Accept and Decline, beside a menu of further actions */
+
+.profile-friend-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.profile-follow-button.is-more {
+  width: 2.25rem;
+  justify-content: center;
+  padding: 0;
+}
+
+.profile-follow-button.is-more .pulse-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 3.2;
+}
+
+.profile-follow-button.is-more[aria-expanded='true'] .pulse-icon:last-child {
+  transform: none;
+}
+
+/* A search result you are already friends with */
+
+.friend-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--p-good);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.friend-status-label .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2.4;
+}
+
+/* Social tabs: a count of friend requests waiting on Find */
+
+.segmented-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  margin-left: 0.4rem;
+  border-radius: 999px;
+  padding: 0 0.3rem;
+  background: var(--p-danger);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: 0.05em;
+}
+
+/* Social's Friends tab: each friend once, with their week and latest session */
+
+.friends-list .pulse-card-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.friends-list-count {
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  background: var(--p-surface-2);
+  color: var(--p-ink-2);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.friends-list-empty {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+}
+
+.friends-list-empty p {
+  margin: 0;
+  color: var(--p-muted);
+  font-size: 0.875rem;
+}
+
+.friends-list-empty .profile-primary {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+}
+
+.friends-list-empty .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.friend-cards {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.friend-cards > li {
+  position: relative;
+  display: grid;
+  gap: 0.7rem;
+  border: 1px solid var(--p-line);
+  border-radius: 14px;
+  padding: 0.85rem 0.85rem 0.75rem;
+  background: var(--p-surface-2);
+  transition: opacity 160ms ease;
+}
+
+/* While choosing a reaction, the other friends fade back. */
+.friend-cards.is-picking > li:not(.is-picking) {
+  opacity: 0.35;
+}
+
+.friend-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.friend-card-person {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--p-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.friend-card-name {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.friend-card-name b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+}
+
+.friend-card-name small {
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.friend-week {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.friend-week > span {
+  width: 7px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--p-line-strong);
+}
+
+.friend-week > span.is-trained {
+  background: var(--p-accent);
+}
+
+.friend-card-latest {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--p-line);
+  border-radius: 12px;
+  padding: 0.55rem 0.55rem 0.55rem 0.7rem;
+  background: var(--p-surface);
+}
+
+.friend-card-session {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.friend-card-title {
+  overflow-wrap: anywhere;
+  color: var(--p-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.friend-card-latest .friend-react-button {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.friend-card-empty {
+  margin: 0;
+  border: 1px dashed var(--p-line-strong);
+  border-radius: 12px;
+  padding: 0.6rem 0.7rem;
+  color: var(--p-muted);
+  font-size: 0.8125rem;
+}
+
+@container (max-width: 300px) {
+  .friend-card-top {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .friend-cards > li {
+    transition: none;
+  }
 }

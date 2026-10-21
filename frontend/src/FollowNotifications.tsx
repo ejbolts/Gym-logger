@@ -78,13 +78,13 @@ export function FollowNotifications({
     };
   }, [active, open, attempt]);
 
-  async function respond(person: SharingConnection, action: 'approve' | 'decline') {
+  async function respond(person: SharingConnection, action: 'accept' | 'decline') {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      if (action === 'approve') await api.sharing.approveFollower(person.id);
-      else await api.sharing.removeFollower(person.id);
+      if (action === 'accept') await api.sharing.acceptFriend(person.id);
+      else await api.sharing.removeFriend(person.id);
       setItems(
         (current) =>
           current && {
@@ -102,9 +102,7 @@ export function FollowNotifications({
 
   const count = items ? unreadNotificationReferences(items).length : 0;
   const total =
-    (items?.requests.length ?? 0) +
-    (items?.followers.length ?? 0) +
-    (items?.reactions?.length ?? 0);
+    (items?.requests.length ?? 0) + (items?.accepted.length ?? 0) + (items?.reactions?.length ?? 0);
   return (
     <>
       <button
@@ -146,7 +144,7 @@ export function FollowNotifications({
           )}
           {items && total === 0 && (
             <p className="shared-card-empty">
-              You're all caught up. New followers, follow requests and workout reactions appear
+              You're all caught up. Friend requests, accepted requests and workout reactions appear
               here.
             </p>
           )}
@@ -156,7 +154,7 @@ export function FollowNotifications({
                 <ProfileAvatar className="profile-avatar" user={{ ...person, username: '' }} />
                 <div className="follow-notification-copy">
                   <p>
-                    <strong>{person.display_name}</strong> requested to follow you
+                    <strong>{person.display_name}</strong> sent you a friend request
                     <NotificationDate since={person.since} />
                   </p>
                   <div className="follow-notification-actions">
@@ -164,10 +162,10 @@ export function FollowNotifications({
                       type="button"
                       className="profile-primary"
                       disabled={busy}
-                      aria-label={`Approve ${person.display_name}`}
-                      onClick={() => void respond(person, 'approve')}
+                      aria-label={`Accept ${person.display_name}`}
+                      onClick={() => void respond(person, 'accept')}
                     >
-                      Approve
+                      Accept
                     </button>
                     <button
                       type="button"
@@ -199,12 +197,12 @@ export function FollowNotifications({
                 </span>
               </li>
             ))}
-            {items?.followers.map((person) => (
-              <li key={`follower-${person.id}`}>
+            {items?.accepted.map((person) => (
+              <li key={`accepted-${person.id}`}>
                 <ProfileAvatar className="profile-avatar" user={{ ...person, username: '' }} />
                 <div className="follow-notification-copy">
                   <p>
-                    <strong>{person.display_name}</strong> started following you
+                    <strong>{person.display_name}</strong> accepted your friend request
                     <NotificationDate since={person.since} />
                   </p>
                 </div>

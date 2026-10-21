@@ -6,9 +6,9 @@ export function unreadNotificationReferences(
     ...items.requests
       .filter((item) => !item.is_read)
       .map((item) => ({ kind: 'request' as const, id: item.id, since: item.since })),
-    ...items.followers
+    ...items.accepted
       .filter((item) => !item.is_read)
-      .map((item) => ({ kind: 'follower' as const, id: item.id, since: item.since })),
+      .map((item) => ({ kind: 'accepted' as const, id: item.id, since: item.since })),
     ...(items.reactions ?? [])
       .filter((item) => !item.is_read)
       .map((item) => ({
@@ -41,8 +41,8 @@ export function markNotificationSnapshotRead(
     requests: items.requests.map((item) =>
       matches('request', item.id, item.since) ? { ...item, is_read: true } : item,
     ),
-    followers: items.followers.map((item) =>
-      matches('follower', item.id, item.since) ? { ...item, is_read: true } : item,
+    accepted: items.accepted.map((item) =>
+      matches('accepted', item.id, item.since) ? { ...item, is_read: true } : item,
     ),
     reactions: items.reactions?.map((item) =>
       matches('reaction', item.id, item.since, item.workout_id) ? { ...item, is_read: true } : item,

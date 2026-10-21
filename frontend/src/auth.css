@@ -815,7 +815,7 @@
   }
 }
 
-/* Follow requests, plus open feedback for administrators. */
+/* Friend requests, plus open feedback for administrators. */
 .profile-request-badge {
   position: absolute;
   top: -0.4rem;

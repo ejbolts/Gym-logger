@@ -680,7 +680,7 @@ export interface AppFeedback {
   resolved_by: string | null;
 }
 
-/** Who can see a profile: nobody, followers its owner approves ("Friends only"), or everyone. */
+/** Who can see a profile: nobody, its friends (`followers`, "Friends only"), or everyone. */
 export type ProfileVisibility = 'private' | 'followers' | 'public';
 
 /** Who can see the profile and what it shares beyond its workouts, cardio and profile photo. */
@@ -693,11 +693,12 @@ export interface SharingChoices {
 }
 
 export interface SharingSettings extends SharingChoices {
-  /** Follow requests waiting for this account's approval. */
+  /** Friend requests waiting for this account to accept or decline. */
   pending_requests: number;
 }
 
-export type FollowStatus = 'none' | 'pending' | 'accepted';
+/** `incoming` requests asked you; `outgoing` requests are yours, waiting for them. */
+export type FriendStatus = 'none' | 'incoming' | 'outgoing' | 'friends';
 
 export interface SharedProfileSummary {
   id: string;
@@ -706,14 +707,10 @@ export interface SharedProfileSummary {
   member_since: string;
   visibility: Exclude<ProfileVisibility, 'private'>;
   is_you: boolean;
-  /** Your follow of this member. */
-  follow_status: FollowStatus;
-  follows_you: boolean;
-  /** When you began following this member; pending requests have no start date. */
-  following_since?: string | null;
-  /** When this member began following you. */
-  follows_you_since?: string | null;
-  /** False for a friends-only profile you do not follow: only its name and photo are shown. */
+  friend_status: FriendStatus;
+  /** When the friendship was accepted; requests have no start date. */
+  friends_since?: string | null;
+  /** False for a friends-only profile of a non-friend: only its name and photo are shown. */
   can_view: boolean;
   workout_count: number | null;
   /** Workouts in the last 30 days. */
@@ -739,10 +736,24 @@ export interface SharingConnection {
   is_read?: boolean;
 }
 
-export interface SharingConnections {
+/** A friend, `since` the friendship began, with their latest session and recent training. */
+export interface FriendActivity extends SharingConnection {
+  latest: { workout: TrackedWorkout; reactions: WorkoutReactions } | null;
+  /** Workouts in the last 30 days. */
+  recent_workout_count: number;
+  /** Dates with a workout in roughly the last week, oldest first. */
+  training_dates: string[];
+}
+
+export interface FriendConnections {
+  /** A private account sees only the members it blocked, so it can still unblock them. */
+  locked?: boolean;
+  /** Most recent activity first. */
+  friends: FriendActivity[];
+  /** Requests waiting for you, and yours waiting for them. */
   requests: SharingConnection[];
-  followers: SharingConnection[];
-  blocked?: SharingConnection[];
+  sent: SharingConnection[];
+  blocked: SharingConnection[];
 }
 
 export type WorkoutReactionKind = 'like' | 'love' | 'strong' | 'fire' | 'clap' | 'trophy';
@@ -752,7 +763,7 @@ export interface WorkoutReactions {
   yours: WorkoutReactionKind | null;
 }
 
-/** A followed member's latest workout or cardio session. */
+/** A friend's latest workout or cardio session. */
 export interface FriendFeedItem {
   friend: Pick<SharingConnection, 'id' | 'display_name' | 'profile_photo_url'>;
   workout: TrackedWorkout;
@@ -761,8 +772,8 @@ export interface FriendFeedItem {
 
 export interface FriendFeed {
   items: FriendFeedItem[];
-  /** Members you follow who share, including those without a session yet. */
-  following: number;
+  /** Friends who share, including those without a session yet. */
+  friends: number;
 }
 
 /** A reaction to one of your workouts; `since` is when it was given. */
@@ -772,12 +783,16 @@ export interface ReactionNotice extends SharingConnection {
   reaction: WorkoutReactionKind;
 }
 
-export interface SharingNotifications extends SharingConnections {
+export interface SharingNotifications {
+  /** Friend requests waiting for you. */
+  requests: SharingConnection[];
+  /** Your friend requests that were accepted; `since` is when. */
+  accepted: SharingConnection[];
   reactions?: ReactionNotice[];
 }
 
 export interface NotificationReadReference {
-  kind: 'request' | 'follower' | 'reaction';
+  kind: 'request' | 'accepted' | 'reaction';
   id: string;
   since: string;
   workout_id?: string;
