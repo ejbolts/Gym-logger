@@ -15,6 +15,7 @@ export function CollapsibleSection({
   headingLevel = 2,
   headingClassName,
   badge,
+  help,
   defaultExpanded = false,
   children,
 }: {
@@ -25,6 +26,8 @@ export function CollapsibleSection({
   headingClassName?: string;
   /** Status shown beside the chevron, so it stays visible while the section is folded. */
   badge?: ReactNode;
+  /** A separate help control beside the title; tapping it does not fold the section. */
+  help?: ReactNode;
   defaultExpanded?: boolean;
   children: ReactNode;
 }) {
@@ -34,6 +37,12 @@ export function CollapsibleSection({
   useSettingsReveal(title, () => setExpanded(true));
   useCollapseAnimation(ref, expanded);
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
+  const toggleEnd = (
+    <span className="collapsible-toggle-end">
+      {badge}
+      <Icon name="chevron-down" />
+    </span>
+  );
 
   return (
     <section
@@ -44,14 +53,20 @@ export function CollapsibleSection({
       <header onClick={() => setExpanded((current) => !current)}>
         <div>
           {kicker && <p className="section-kicker">{kicker}</p>}
-          <Heading id={`${id}-title`} className={headingClassName}>
+          <Heading
+            id={`${id}-title`}
+            className={
+              [headingClassName, help && 'collapsible-heading-with-help']
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
+          >
             <button type="button" className="collapsible-toggle" aria-expanded={expanded}>
               <span>{title}</span>
-              <span className="collapsible-toggle-end">
-                {badge}
-                <Icon name="chevron-down" />
-              </span>
+              {!help && toggleEnd}
             </button>
+            {help}
+            {help && toggleEnd}
           </Heading>
         </div>
       </header>

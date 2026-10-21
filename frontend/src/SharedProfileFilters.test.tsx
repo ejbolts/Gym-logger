@@ -310,6 +310,23 @@ describe('shared history filtering', () => {
   });
 });
 
+it('keeps the counting explanation in a help popup next to Time trained', async () => {
+  const card = container.querySelector('.profile-training-time')!;
+  expect(card.textContent).not.toContain('Totals use each');
+  const help = card.querySelector<HTMLButtonElement>('[aria-label="About time trained"]')!;
+  await act(async () => help.click());
+  const dialog = document.querySelector('dialog[open]')!;
+  expect(dialog.textContent).toContain(
+    "Totals use each workout's logged duration and every cardio session. Cardio done during a workout counts once in Combined.",
+  );
+  await act(async () =>
+    dialog.querySelector<HTMLButtonElement>('[aria-label="Close Time trained"]')!.click(),
+  );
+  expect(document.querySelector('dialog[open]')).toBeNull();
+  expect(document.activeElement).toBe(help);
+  expect(card.textContent).toContain('4h 33min');
+});
+
 it('shows lifetime time separately from history filters and reacts on a shared workout', async () => {
   expect(container.querySelector('.profile-training-time')?.textContent).toContain('3h 33min');
   expect(container.querySelector('.profile-training-time')?.textContent).toContain('1h 20min');

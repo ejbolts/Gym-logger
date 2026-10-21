@@ -19,6 +19,12 @@ const friendsOnly: SharingSettings = {
 };
 
 beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
   vi.useFakeTimers();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.spyOn(api.sharing, 'choices').mockResolvedValue(friendsOnly);
@@ -52,6 +58,36 @@ function button(text: string) {
 }
 
 describe('profile sharing visibility', () => {
+  it('shows its explanation in a help popup without changing sharing or folding the section', async () => {
+    await render();
+    const section = container.querySelector('.profile-sharing')!;
+    const help = container.querySelector<HTMLButtonElement>(
+      '[aria-label="About profile sharing"]',
+    )!;
+    const explanation =
+      'Choose who can see your training. Only members who share their own profile can see or follow others.';
+    expect(container.textContent).not.toContain('Choose who can see your training.');
+    await act(async () => help.click());
+    const dialog = document.querySelector('dialog[open]')!;
+    expect(dialog.textContent).toContain(explanation);
+    expect(section.classList.contains('is-collapsed')).toBe(false);
+    await act(async () =>
+      dialog.dispatchEvent(new Event('cancel', { bubbles: true, cancelable: true })),
+    );
+    await act(async () => vi.advanceTimersByTime(20));
+    expect(document.querySelector('dialog[open]')).toBeNull();
+    expect(document.activeElement).toBe(help);
+    await act(async () => section.querySelector<HTMLButtonElement>('.collapsible-toggle')!.click());
+    expect(section.classList.contains('is-collapsed')).toBe(true);
+    await act(async () => help.click());
+    expect(section.classList.contains('is-collapsed')).toBe(true);
+    expect(document.querySelector('dialog[open]')).not.toBeNull();
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('[aria-label="Close Profile sharing"]')!.click(),
+    );
+    expect(api.sharing.updateChoices).not.toHaveBeenCalled();
+  });
+
   it('waits for the confirm button before changing who can see a shared profile', async () => {
     await render();
     await act(async () => radio('public').click());

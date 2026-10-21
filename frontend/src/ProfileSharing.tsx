@@ -4,6 +4,7 @@ import { api } from './api';
 import { authErrorMessage } from './authForm';
 import { CollapsibleSection } from './CollapsibleSection';
 import { Icon } from './Icon';
+import { HelpPopup } from './HelpPopup';
 import { VISIBILITY_LABELS } from './sharedProfileDisplay';
 import type { ProfileVisibility, SharingChoices, SharingSettings } from './types';
 
@@ -167,6 +168,14 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
       className="settings-panel panel profile-sharing"
       kicker="SHARING"
       title="Profile sharing"
+      help={
+        <HelpPopup title="Profile sharing">
+          <p>
+            Choose who can see your training. Only members who share their own profile can see or
+            follow others.
+          </p>
+        </HelpPopup>
+      }
       defaultExpanded
       badge={
         saved && (
@@ -176,10 +185,6 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
         )
       }
     >
-      <p>
-        Choose who can see your training. Only members who share their own profile can see or add
-        others as friends.
-      </p>
       {loadError ? (
         <div className="sharing-load-error">
           <p className="inline-error" role="alert">

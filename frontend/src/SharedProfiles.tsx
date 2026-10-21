@@ -13,7 +13,7 @@ import { SharedWorkoutFilters } from './SharedWorkoutFilters';
 import { ConsistencyCard } from './ConsistencyCard';
 import { WorkoutCalendar, WorkoutCalendarLegend } from './WorkoutCalendar';
 import { builtinTypeColors, calendarLegendTypes } from './workoutTypes';
-import { TrainingTimeStats } from './TrainingTimeStats';
+import { TrainingTimeStats, TrainingTimeHelp } from './TrainingTimeStats';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { PopupDialog } from './PopupDialog';
 import { formatMemberSince } from './profileDisplay';
@@ -1288,7 +1288,10 @@ export function SharedProfileScreen({
               <header>
                 <div>
                   <p className="section-kicker">ACTIVITY</p>
-                  <h2 id="shared-training-time-title">Time trained</h2>
+                  <div className="profile-help-row">
+                    <h2 id="shared-training-time-title">Time trained</h2>
+                    <TrainingTimeHelp />
+                  </div>
                 </div>
               </header>
               <TrainingTimeStats time={profile.training_time} />

@@ -38,6 +38,14 @@
 
 *Settings holds account details, sharing choices, password changes, sign-out and account deletion. Settings search opens the moved controls and can still take you to edit your profile.*
 
+![Time trained help popup explaining workout and cardio duration totals](screenshots/releases/0.10.0-training-time-help.png)
+
+*Tap the question mark beside Time trained to read how the totals avoid counting cardio twice.*
+
+![Profile sharing help popup explaining who can see shared training](screenshots/releases/0.10.0-sharing-help.png)
+
+*Sharing guidance opens from its own question mark without folding the section. The collapsed What you share arrow points down independently of the parent section.*
+
 ![Quick-start menu with larger Cardio, Up next and Empty circles](screenshots/releases/0.9.1-quick-start-circles.png)
 
 *The three quick-start circles are now 52 px across, with larger icons and the full-screen background blur.*
@@ -52,6 +60,7 @@
 - **Friends instead of followers:** send one friend request; once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles, and either friend can remove the friendship. Existing follows in either direction became friendships, and waiting follow requests became friend requests. Notifications show requests to you and requests that were accepted.
 - **Social:** a dedicated bottom tab with **Friends** and **Find**. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members, with a badge for waiting requests. Profiles offer **Add friend**, **Accept** or **Decline**, and a menu to cancel a request, remove a friend or block. Home keeps its compact friends card.
 - **Your profile:** tapping your avatar opens the same calendar, training totals and workout layout used for other members, with the existing name, username and photo editor. Sharing, account UUID, password, sign-out, account deletion and administrator feedback controls move to **Settings**. Search opens their new locations; choosing sharing from Social goes directly to its settings section. Private accounts can view their own profile while remaining hidden from other members.
+- **Help when you need it:** tap **?** beside **Time trained** or **Profile sharing** for their explanations. The descriptions no longer take space in the cards. Collapsed **What you share** shows a downward arrow, even when its parent is expanded.
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.
 - **Sessions:** initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. **Show more** reveals older sessions; calendar and exercise links can still open older workouts directly.
 - Enlarged the Cardio, Up next and Empty circles from 44 px to 52 px and their icons from 20 px to 24 px.
