@@ -6,6 +6,10 @@
 
 ### Training in one place, with a home for Social
 
+![Home with matching Notifications, Profile and Settings buttons at the top right](screenshots/releases/0.9.1-header-controls.png)
+
+*Notifications and Profile stay beside Settings in the same order on Home, Training, Social and Body. The existing inbox, account photo or initial and profile controls are reused.*
+
 ![Training Sessions keeps the existing calendar above the latest three weeks of workouts](screenshots/releases/0.9.1-training-sessions.png)
 
 *The calendar, date details, machine filter and session cards stay together in Sessions. Show more reveals older workouts.*
@@ -26,6 +30,7 @@
 
 *Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading.*
 
+- **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls.
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
 - **Exercises:** search the existing exercise library, select a lift, and use its charts, records, metrics and date ranges. The original History, Progress and Cardio links still open their matching Training views.
 - **Social:** a dedicated bottom tab brings together friends’ latest sessions, reactions, notifications, people search and follow requests using the existing controls. Sharing permissions are unchanged, and Home keeps a compact friends teaser.

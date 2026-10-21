@@ -1,22 +1,26 @@
 import { useState } from 'react';
 import { CachedTabPanel } from './CachedTabPanel';
 import { FriendsActivityCard } from './FriendsActivity';
-import { FollowNotifications } from './FollowNotifications';
+import { AccountHeaderActions } from './AccountHeaderActions';
 import { FriendsPanel } from './SharedProfiles';
 import { PageHeader } from './TodayScreen';
 import { useSlidingIndicator } from './motionHooks';
-import type { SharedProfileSummary } from './types';
+import type { SharedProfileSummary, User } from './types';
 
 export function SocialScreen({
   active,
   onOpenProfile,
   onChooseSharing,
   onOpenSettings,
+  account,
+  openFeedback,
 }: {
   active: boolean;
   onOpenProfile: (profile: Pick<SharedProfileSummary, 'id' | 'display_name'>) => void;
   onChooseSharing: () => void;
   onOpenSettings: () => void;
+  account?: User;
+  openFeedback?: number;
 }) {
   const [section, setSection] = useState<'activity' | 'friends'>('activity');
   const [friendsVisited, setFriendsVisited] = useState(false);
@@ -33,7 +37,15 @@ export function SocialScreen({
         title="Social"
         eyebrow="Friends · sessions · reactions"
         onOpenSettings={onOpenSettings}
-        actions={<FollowNotifications active={active} onOpenFriends={openFriends} />}
+        accountActions={
+          <AccountHeaderActions
+            active={active}
+            profile={account}
+            openFeedback={openFeedback}
+            onOpenProfile={onChooseSharing}
+            onOpenFriends={openFriends}
+          />
+        }
       />
       <div
         ref={indicator}

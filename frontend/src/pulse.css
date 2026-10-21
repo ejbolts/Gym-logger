@@ -139,6 +139,20 @@ body {
   display: flex;
   flex-shrink: 0;
   gap: 0.5rem;
+  margin-left: auto;
+}
+
+.account-header-actions {
+  display: flex;
+  gap: inherit;
+}
+
+.page-header:has(.account-header-actions) {
+  flex-wrap: wrap;
+}
+
+.page-header:has(.account-header-actions) > div:first-child {
+  flex: 1 1 7.5rem;
 }
 
 .icon-button-pulse {

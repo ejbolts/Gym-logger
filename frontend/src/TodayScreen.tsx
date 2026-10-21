@@ -35,7 +35,7 @@ import type {
 import { localDate } from './utils';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
-import { profileButtonLabel } from './friendsActivityData';
+import { ProfileButton } from './AccountHeaderActions';
 import { useUpNextSession } from './upNext';
 import {
   formatWeight,
@@ -52,12 +52,14 @@ export function PageHeader({
   eyebrow,
   title,
   actions,
+  accountActions,
   onOpenSettings,
   headingLevel = 1,
 }: {
   eyebrow?: string;
   title: string;
   actions?: ReactNode;
+  accountActions?: ReactNode;
   onOpenSettings?: () => void;
   headingLevel?: 1 | 2;
 }) {
@@ -68,9 +70,10 @@ export function PageHeader({
         {eyebrow && <p className="page-eyebrow">{eyebrow}</p>}
         <Heading>{title}</Heading>
       </div>
-      {(actions || onOpenSettings) && (
+      {(actions || accountActions || onOpenSettings) && (
         <div className="page-header-actions">
           {actions}
+          {accountActions}
           {onOpenSettings && <SettingsButton onClick={onOpenSettings} />}
         </div>
       )}
@@ -129,6 +132,7 @@ export interface TodayScreenProps {
   /** Follow requests waiting for approval, shown as a count on the profile button. */
   followRequests?: number;
   notifications?: ReactNode;
+  accountActions?: ReactNode;
   /** Unresolved app feedback, shown to administrators beside follow requests. */
   openFeedback?: number;
   calendar?: ReactNode;
@@ -166,6 +170,7 @@ export function TodayScreen({
   profile,
   followRequests = 0,
   notifications,
+  accountActions,
   openFeedback = 0,
   calendar,
   friendsActivity,
@@ -521,6 +526,22 @@ export function TodayScreen({
         })}
         title="Home"
         onOpenSettings={onOpenSettings}
+        accountActions={
+          accountActions ?? (
+            <div className="account-header-actions">
+              {notifications}
+              {onOpenProfile && (
+                <ProfileButton
+                  onClick={onOpenProfile}
+                  name={profileLabel}
+                  photoUrl={profilePhotoUrl}
+                  followRequests={followRequests}
+                  openFeedback={openFeedback}
+                />
+              )}
+            </div>
+          )
+        }
         actions={
           <>
             <button
@@ -536,33 +557,6 @@ export function TodayScreen({
             >
               <Icon name="edit" />
             </button>
-            {notifications}
-            {onOpenProfile && (
-              <button
-                className="icon-button-pulse profile-button"
-                type="button"
-                onClick={onOpenProfile}
-                aria-label={profileButtonLabel(profileLabel, followRequests, openFeedback)}
-              >
-                {followRequests + openFeedback > 0 && (
-                  <span className="profile-request-badge" aria-hidden="true">
-                    {followRequests + openFeedback > 9 ? '9+' : followRequests + openFeedback}
-                  </span>
-                )}
-                {profileLabel ? (
-                  <ProfileAvatar
-                    className="profile-button-initial"
-                    user={{
-                      display_name: profileLabel,
-                      username: '',
-                      profile_photo_url: profilePhotoUrl,
-                    }}
-                  />
-                ) : (
-                  <Icon name="user" />
-                )}
-              </button>
-            )}
             {onOpenVideos && (
               <button
                 className="icon-button-pulse"

@@ -243,7 +243,7 @@ import {
   type SettingsJump,
 } from './settingsNavigation';
 import { useOpenFeedbackCount } from './friendsActivityData';
-import { FollowNotifications } from './FollowNotifications';
+import { AccountHeaderActions } from './AccountHeaderActions';
 import { AdminScreen } from './AdminScreen';
 import { canUploadVideos, useUserSession } from './userContext';
 import { RestTimerToast, WorkoutHeaderMeta } from './WorkoutRestTimer';
@@ -575,7 +575,14 @@ function AppContent() {
   });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const home = useHomeLayout(tab === 'dashboard');
-  const openFeedback = useOpenFeedbackCount(tab === 'dashboard' || tab === 'profile', isAdmin);
+  const openFeedback = useOpenFeedbackCount(
+    tab === 'dashboard' ||
+      tab === 'profile' ||
+      tab === 'body' ||
+      tab === 'social' ||
+      historySectionForTab(tab) !== null,
+    isAdmin,
+  );
   const scrollPositionsRef = useRef(new Map<number, number>());
   const navigationActionRef = useRef<'push' | 'replace' | 'pop'>('replace');
   const currentTabRef = useRef(tab);
@@ -1283,6 +1290,18 @@ function AppContent() {
     openSavedWorkout(contribution.workout_id, contribution.exercise_id, contribution.movement_id);
   }
 
+  function accountHeaderActions(active: boolean) {
+    return user ? (
+      <AccountHeaderActions
+        active={active}
+        profile={user}
+        openFeedback={openFeedback}
+        onOpenProfile={() => setTab('profile')}
+        onOpenFriends={() => setTab('social')}
+      />
+    ) : undefined;
+  }
+
   return (
     <SettingsNavigationContext.Provider value={{ request: settingsJump, navigate: openSetting }}>
       <div
@@ -1436,14 +1455,7 @@ function AppContent() {
                   profileLabel={user?.display_name}
                   profilePhotoUrl={user?.profile_photo_url}
                   profile={user ?? undefined}
-                  notifications={
-                    user ? (
-                      <FollowNotifications
-                        active={tab === 'dashboard'}
-                        onOpenFriends={() => setTab('social')}
-                      />
-                    ) : undefined
-                  }
+                  accountActions={accountHeaderActions(tab === 'dashboard')}
                   openFeedback={openFeedback}
                   friendsActivity={
                     user ? (
@@ -1584,6 +1596,7 @@ function AppContent() {
                 onDataChange={refreshAfterMutation}
                 trendPreference={bodyTrendPreference}
                 onOpenSettings={() => setTab('settings')}
+                accountActions={accountHeaderActions(tab === 'body')}
               />
             </CachedTabPanel>
           )}
@@ -1604,6 +1617,7 @@ function AppContent() {
                 section={historySection}
                 onSectionChange={(section) => setTab(section)}
                 onOpenSettings={() => setTab('settings')}
+                accountActions={accountHeaderActions(sectionFromTab !== null)}
                 onOpenExercise={(exerciseId) => openHistorySection('progress', exerciseId)}
                 onOpenWorkout={openSavedWorkout}
                 initialExerciseId={historyExerciseId}
@@ -1662,6 +1676,8 @@ function AppContent() {
             <CachedTabPanel active={tab === 'social'}>
               <SocialScreen
                 active={tab === 'social'}
+                account={user}
+                openFeedback={openFeedback}
                 onOpenProfile={openSharedProfile}
                 onChooseSharing={() => setTab('profile')}
                 onOpenSettings={() => setTab('settings')}
@@ -6980,6 +6996,7 @@ export function BodyCompositionScreen({
   entryRequest = 0,
   trendPreference = DEFAULT_BODY_TREND_PREFERENCE,
   onOpenSettings,
+  accountActions,
 }: {
   measurements: BodyMeasurement[];
   onSave: (payload: {
@@ -6993,6 +7010,7 @@ export function BodyCompositionScreen({
   entryRequest?: number;
   trendPreference?: BodyTrendPreference;
   onOpenSettings?: () => void;
+  accountActions?: ReactNode;
 }) {
   const weightUnit = useWeightUnit();
   const [measurementDate, setMeasurementDate] = useState(localDate());
@@ -7205,6 +7223,7 @@ export function BodyCompositionScreen({
         eyebrow={`${measurements.length} ${measurements.length === 1 ? 'check-in' : 'check-ins'}${latest ? ` · latest ${shortDate(latest.measurement_date)}` : ''}`}
         title="Body"
         onOpenSettings={onOpenSettings}
+        accountActions={accountActions}
         actions={
           <button
             className="icon-button-pulse accent"
@@ -8513,6 +8532,7 @@ function HistoryScreen({
   onStartWorkout,
   onReplaceActiveWorkout,
   onOpenSettings,
+  accountActions,
 }: {
   workouts: TrackedWorkout[];
   categoryColors: WorkoutTypeColors;
@@ -8540,6 +8560,7 @@ function HistoryScreen({
   onStartWorkout: (workoutDate?: string) => void;
   onReplaceActiveWorkout: (workoutDate: string) => void;
   onOpenSettings: () => void;
+  accountActions?: ReactNode;
 }) {
   const weightUnit = useWeightUnit();
   const { types } = useWorkoutTypes();
@@ -8717,6 +8738,7 @@ function HistoryScreen({
         }
         title="Training"
         onOpenSettings={onOpenSettings}
+        accountActions={accountActions}
         actions={
           section === 'history' ? (
             <button
