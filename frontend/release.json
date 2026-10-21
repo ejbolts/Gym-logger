@@ -15,15 +15,15 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#091",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4207691f378b2701c4d0dcca2d10ef6c7560a652/docs/screenshots/releases/0.9.1-progress-colours.png",
-    "alt": "Pec Deck progress with a decrease shown in red, using synthetic training data."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/612828eb54def2aec60411bef95c93f2f9d58cea/docs/screenshots/releases/0.9.1-training-sessions.png",
+    "alt": "Training Sessions retains the calendar above the latest three weeks of synthetic workouts."
   },
   "highlights": [
     {
       "title": "Your training, together",
       "description": "Sessions keeps the calendar and saved workouts. Exercises opens familiar progress tools, and Cardio stays within reach. Switch tabs and return to the view you were using.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/51e829553f7b1cae2ce6094560576566d5d6a367/docs/screenshots/releases/0.9.1-training-sessions.png",
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/612828eb54def2aec60411bef95c93f2f9d58cea/docs/screenshots/releases/0.9.1-training-sessions.png",
         "alt": "Training Sessions retains the calendar above the latest three weeks of workouts."
       }
     },
@@ -31,7 +31,7 @@
       "title": "A place for friends",
       "description": "Social brings together the existing feed, reactions, follow requests and people search. Your sharing choices stay under your control.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/51e829553f7b1cae2ce6094560576566d5d6a367/docs/screenshots/releases/0.9.1-social-following.png",
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/612828eb54def2aec60411bef95c93f2f9d58cea/docs/screenshots/releases/0.9.1-social-following.png",
         "alt": "Social shows synthetic friends’ latest sessions and the existing reaction and notification controls."
       }
     },
@@ -39,8 +39,8 @@
       "title": "Progress at a glance",
       "description": "Green means an increase and red means a decrease. Unchanged values stay neutral across estimated 1RM, top set and volume.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4207691f378b2701c4d0dcca2d10ef6c7560a652/docs/screenshots/releases/0.9.1-progress-colours.png",
-        "alt": "Pec Deck progress with a decrease shown in red, using synthetic training data."
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/612828eb54def2aec60411bef95c93f2f9d58cea/docs/screenshots/releases/0.9.1-training-exercises.png",
+        "alt": "Training Exercises uses the existing Pec Deck chart, records and red decrease comparison with synthetic data."
       }
     },
     {
