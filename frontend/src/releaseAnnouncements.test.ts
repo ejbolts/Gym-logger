@@ -81,7 +81,11 @@ describe('release announcements', () => {
 
   it('validates every highlight and its media URL while accepting legacy notes', () => {
     expect(parseRelease({ ...metadata, highlights: undefined })).not.toBeNull();
-    const highlight = metadata.highlights[0];
+    const highlight = {
+      title: 'Sample feature',
+      description: 'Feature details',
+      image: screenshot,
+    };
     for (const highlights of [
       null,
       {},

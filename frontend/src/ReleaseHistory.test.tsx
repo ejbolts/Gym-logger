@@ -124,21 +124,36 @@ it('shows feature media before change bullets for current and expanded earlier r
 });
 
 it('shows the ordered showcase once before changes and keeps captions when a preview fails', async () => {
-  await act(async () => root.render(<ReleaseAnnouncement release={metadata} onClose={vi.fn()} />));
+  const image = { url: 'https://example.com/feature.png', alt: 'Feature preview' };
+  const illustrated = {
+    ...metadata,
+    image,
+    highlights: [
+      { title: 'First feature', description: 'First feature details', image },
+      {
+        title: 'Second feature',
+        description: 'Second feature details',
+        image: { url: 'https://example.com/second.png', alt: 'Second preview' },
+      },
+    ],
+  };
+  await act(async () =>
+    root.render(<ReleaseAnnouncement release={illustrated} onClose={vi.fn()} />),
+  );
   const current = document.querySelector('.release-current-details')!;
   const showcase = current.querySelector('.release-showcase')!;
   const cards = [...showcase.querySelectorAll('figure')];
   expect(cards.map((card) => card.querySelector('h4')?.textContent)).toEqual(
-    metadata.highlights.map((highlight) => highlight.title),
+    illustrated.highlights.map((highlight) => highlight.title),
   );
-  expect(current.querySelectorAll('img')).toHaveLength(metadata.highlights.length);
+  expect(current.querySelectorAll('img')).toHaveLength(illustrated.highlights.length);
   expect(showcase.nextElementSibling).toBe(current.querySelector('ul'));
-  expect(cards[0].querySelector('a')?.getAttribute('href')).toBe(metadata.image.url);
+  expect(cards[0].querySelector('a')?.getAttribute('href')).toBe(illustrated.image.url);
   expect(cards[0].querySelector('a')?.getAttribute('aria-label')).toContain('full size');
 
   await act(async () => cards[0].querySelector('img')!.dispatchEvent(new Event('error')));
   expect(cards[0].querySelector('img')).toBeNull();
-  expect(cards[0].querySelector('h4')?.textContent).toBe(metadata.highlights[0].title);
-  expect(cards[0].textContent).toContain(metadata.highlights[0].description);
+  expect(cards[0].querySelector('h4')?.textContent).toBe(illustrated.highlights[0].title);
+  expect(cards[0].textContent).toContain(illustrated.highlights[0].description);
   expect(current.querySelectorAll('li')).toHaveLength(metadata.changes.length);
 });

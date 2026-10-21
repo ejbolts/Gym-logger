@@ -4465,8 +4465,8 @@ button.pulse-card:active,
 }
 
 .start-menu-icon {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 3.25rem;
+  height: 3.25rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -4477,8 +4477,8 @@ button.pulse-card:active,
 }
 
 .start-menu-icon .pulse-icon {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .start-menu-option:active .start-menu-icon {
