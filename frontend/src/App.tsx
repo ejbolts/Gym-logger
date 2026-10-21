@@ -7224,20 +7224,6 @@ export function BodyCompositionScreen({
         title="Body"
         onOpenSettings={onOpenSettings}
         accountActions={accountActions}
-        actions={
-          <button
-            className="icon-button-pulse accent"
-            type="button"
-            aria-label="Add bodyweight"
-            onClick={() => {
-              setError(null);
-              setEntryOpen(true);
-              setGoalOpen(false);
-            }}
-          >
-            <Icon name="plus" />
-          </button>
-        }
       />
       <div className="body-reference-stats" aria-label="Bodyweight summary">
         <div>
@@ -8739,18 +8725,6 @@ function HistoryScreen({
         title="Training"
         onOpenSettings={onOpenSettings}
         accountActions={accountActions}
-        actions={
-          section === 'history' ? (
-            <button
-              className="icon-button-pulse accent"
-              type="button"
-              onClick={() => onStartWorkout()}
-              aria-label="Add workout"
-            >
-              <Icon name="plus" />
-            </button>
-          ) : undefined
-        }
       />
       <div
         ref={sectionIndicatorRef}
