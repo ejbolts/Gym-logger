@@ -6,12 +6,25 @@
 
 ### Clearer progress and a shorter History
 
+![Pec Deck progress with a decrease shown in red](screenshots/releases/0.9.1-progress-colours.png)
+
+*Progress increases are green, decreases are red, and unchanged values stay neutral.*
+
+![History initially shows three weeks and a Show more button for older workouts](screenshots/releases/0.9.1-history-three-weeks.png)
+
+*History starts with the latest workout week and the two preceding weeks. Show more reveals older sessions. Both previews use isolated synthetic training data.*
+
+![Quick-start menu with larger Cardio, Up next and Empty circles](screenshots/releases/0.9.1-quick-start-circles.png)
+
+*The three quick-start circles are now 52 px across, with larger icons and the full-screen background blur.*
+
 ![A short pull returns muscle details to place; a longer swipe dismisses the sheet](screenshots/releases/0.9.1-muscle-sheet-swipe.gif)
 
 *Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading. Preview uses isolated synthetic training data.*
 
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.
 - **History:** initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. **Show more** reveals older sessions; links to older workouts still open them directly.
+- Enlarged the Cardio, Up next and Empty circles from 44 px to 52 px and their icons from 20 px to 24 px.
 - Pull down from the muscle details handle or header to close it. Content can also be pulled down when the list is at the top; short pulls return to place, and long lists still scroll.
 - Removed the redundant **Contributing exercises** heading and count. **Done**, **Escape** and tapping outside continue to close the sheet.
 
