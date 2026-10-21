@@ -6,7 +6,7 @@
   "changes": [
     "Notifications and Profile now sit beside Settings in the same order on Home, Training, Social and Body. Removed the duplicate blue plus buttons from Training and Body headers; use Start for workouts and Log weigh-in for bodyweight entries.",
     "Training combines Sessions, Exercises and Cardio. Sessions keeps the existing calendar, day details, machine filters and workout cards, with the latest three weeks shown first and Show more for older workouts.",
-    "Exercises starts with a searchable exercise list and opens the existing charts, records and session history. Training remembers your selected view and exercise when you return from another tab. Older History, Progress and Cardio links still work.",
+    "Exercises has a bounded, searchable library with a live progress preview below on phones and beside it on wider screens. Date-range buttons sit beside the preview value. Open full progress for records and session history, then return with your search, list position and range intact. Older History, Progress and Cardio links still work.",
     "Social has its own bottom tab for friends’ latest sessions, reactions, people search and follow requests. It reuses the existing sharing controls and notifications without changing anyone’s profile visibility. Home keeps its compact friends card.",
     "Progress changes are green for increases, red for decreases, and neutral when unchanged across estimated 1RM, top set and volume.",
     "Training’s Sessions view starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
@@ -26,6 +26,14 @@
       "image": {
         "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
         "alt": "Training Sessions retains the calendar above the latest three weeks of workouts."
+      }
+    },
+    {
+      "title": "Library + preview",
+      "description": "Scroll the exercise library without losing your place. Select a lift to update its preview and use 1M, 3M, 9M or 1Y beside the value. Open full progress for records and saved sessions.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/ea38bb8da4f6ac2d6ffbea2e5fa833005429e91e/docs/screenshots/releases/0.9.1-exercise-library-wide.png",
+        "alt": "A bounded exercise library beside the existing live progress chart, with range controls next to the value and synthetic training data."
       }
     },
     {

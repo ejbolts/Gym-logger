@@ -14,9 +14,13 @@
 
 *The calendar, date details, machine filter and session cards stay together in Sessions. Show more reveals older workouts.*
 
-![Training Exercises uses the existing Pec Deck chart, records and red decrease comparison](screenshots/releases/0.9.1-training-exercises.png)
+![Training Exercises on a phone with a bounded library and live Pec Deck preview](screenshots/releases/0.9.1-training-exercises.png)
 
-*Choose a lift from the searchable exercise list, then use the familiar metric controls, date ranges and session history.*
+*Scroll or search the library to update the preview. Range buttons sit beside the value; Open full progress retains the familiar records and session history.*
+
+![Exercise library and progress preview side by side on a wider screen](screenshots/releases/0.9.1-exercise-library-wide.png)
+
+*Wider screens keep the searchable library beside the chart. Returning from full progress preserves your search, list position, selected exercise, metric and date range. Previews use synthetic training data.*
 
 ![Social with friends’ latest sessions and the existing reaction controls](screenshots/releases/0.9.1-social-following.png)
 
@@ -32,7 +36,7 @@
 
 - **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls. Removed the duplicate blue plus buttons from Training and Body headers; use **Start** for workouts and **Log weigh-in** for bodyweight entries.
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
-- **Exercises:** search the existing exercise library, select a lift, and use its charts, records, metrics and date ranges. The original History, Progress and Cardio links still open their matching Training views.
+- **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views.
 - **Social:** a dedicated bottom tab brings together friends’ latest sessions, reactions, notifications, people search and follow requests using the existing controls. Sharing permissions are unchanged, and Home keeps a compact friends teaser.
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.
 - **Sessions:** initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. **Show more** reveals older sessions; calendar and exercise links can still open older workouts directly.

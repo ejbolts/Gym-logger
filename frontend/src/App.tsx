@@ -6034,7 +6034,7 @@ const RANGE_LABELS: Record<BodyTrendRange, string> = {
   all: 'All',
 };
 
-function ProgressScreen({
+export function ProgressScreen({
   exercises,
   measurements,
   personalRecords,
@@ -6056,7 +6056,10 @@ function ProgressScreen({
   onOpenSettings?: () => void;
 }) {
   const weightUnit = useWeightUnit();
-  const strengthExercises = exercises.filter((exercise) => exercise.kind === 'strength');
+  const strengthExercises = useMemo(
+    () => exercises.filter((exercise) => exercise.kind === 'strength'),
+    [exercises],
+  );
   const [exerciseId, setExerciseId] = useState(() => {
     const preferred = [initialExerciseId, defaultExerciseId].find(
       (id) => id && strengthExercises.some((exercise) => exercise.id === id),
@@ -6064,9 +6067,13 @@ function ProgressScreen({
     return preferred ?? strengthExercises[0]?.id ?? '';
   });
   const [metric, setMetric] = useState<ProgressMetric>('estimated_1rm');
-  const [browsing, setBrowsing] = useState(browseFirst && !initialExerciseId);
+  const [fullProgress, setFullProgress] = useState(!browseFirst || Boolean(initialExerciseId));
+  const libraryMode = browseFirst && !fullProgress;
   const [displayRange, setDisplayRange] = useState<BodyTrendRange>('3m');
-  const [progress, setProgress] = useState<ExerciseProgress | null>(null);
+  const [loadedProgress, setProgress] = useState<ExerciseProgress | null>(null);
+  const progress = loadedProgress?.exercise.id === exerciseId ? loadedProgress : null;
+  const [progressError, setProgressError] = useState<string | null>(null);
+  const [progressAttempt, setProgressAttempt] = useState(0);
   const [loading, setLoading] = useState(false);
   const [visibleSessions, setVisibleSessions] = useState(HISTORY_PAGE_SIZE);
   const [pickerRequest, setPickerRequest] = useState(0);
@@ -6075,17 +6082,21 @@ function ProgressScreen({
   const selectedExercise = strengthExercises.find((exercise) => exercise.id === exerciseId) ?? null;
 
   useEffect(() => {
-    if (!exerciseId || browsing) return;
+    if (!exerciseId) return;
     let cancelled = false;
     setVisibleSessions(HISTORY_PAGE_SIZE);
     setLoading(true);
+    setProgressError(null);
     void api
       .exerciseProgress(exerciseId)
       .then((nextProgress) => {
         if (!cancelled) setProgress(nextProgress);
       })
       .catch(() => {
-        if (!cancelled) setProgress(null);
+        if (!cancelled) {
+          setProgress(null);
+          setProgressError('Could not load exercise progress.');
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -6093,7 +6104,7 @@ function ProgressScreen({
     return () => {
       cancelled = true;
     };
-  }, [exerciseId, browsing]);
+  }, [exerciseId, progressAttempt]);
 
   const metricInfo = PROGRESS_METRICS.find((item) => item.value === metric)!;
   const inRange = progress ? progressPointsForChart(progress.points, metric, displayRange) : [];
@@ -6143,266 +6154,324 @@ function ProgressScreen({
     detail: `${formatWeight(point.best_weight_kg, weightUnit)} × ${point.best_reps}${point.best_rpe === null ? '' : ` @ RPE ${point.best_rpe}`}`,
   }));
 
-  if (browsing) {
-    return (
-      <section className="progress-screen training-exercise-browser" aria-label="Exercise progress">
-        <p className="pulse-empty-line">
-          Choose an exercise to see its progress and previous sessions.
-        </p>
-        <ProgressExerciseSearch
-          exercises={strengthExercises}
-          exerciseId=""
-          browseOnly
-          onChange={(id) => {
-            setExerciseId(id);
-            setBrowsing(false);
-          }}
-        />
-      </section>
-    );
-  }
+  const rangeControls = (
+    <div
+      ref={rangeIndicatorRef}
+      className="range-chips slide-indicator"
+      role="tablist"
+      aria-label="Exercise progress graph range"
+    >
+      {TIME_RANGE_OPTIONS.map((option) => (
+        <button
+          type="button"
+          role="tab"
+          key={option.value}
+          aria-selected={displayRange === option.value}
+          aria-label={option.label}
+          className={displayRange === option.value ? 'active' : ''}
+          onClick={() => setDisplayRange(option.value)}
+        >
+          {RANGE_LABELS[option.value]}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <section className={`progress-screen ${embedded ? '' : 'content-page'}`}>
-      {browseFirst && (
-        <button type="button" className="training-back text-link" onClick={() => setBrowsing(true)}>
-          <Icon name="chevron-left" /> All exercises
+    <section
+      className={`progress-screen ${embedded ? '' : 'content-page'}${libraryMode ? ' exercise-library-workspace' : ''}`}
+    >
+      {browseFirst && fullProgress && (
+        <button
+          type="button"
+          className="training-back text-link"
+          onClick={() => setFullProgress(false)}
+        >
+          <Icon name="chevron-left" /> Back to library
         </button>
       )}
-      <PageHeader
-        headingLevel={embedded ? 2 : 1}
-        eyebrow={
-          selectedExercise
-            ? [
-                selectedExercise.muscle_group,
-                selectedExercise.equipment,
-                progress?.exercise.id === selectedExercise.id
-                  ? `${progress.points.length} ${progress.points.length === 1 ? 'session' : 'sessions'}`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')
-            : 'Exercise progress'
-        }
-        title={selectedExercise?.name ?? 'Progress'}
-        onOpenSettings={embedded ? undefined : onOpenSettings}
-        actions={
-          <>
-            {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
-            <button
-              className="icon-button-pulse"
-              type="button"
-              aria-label="Select exercise"
-              onClick={() => setPickerRequest((request) => request + 1)}
-            >
-              <Icon name="search" />
-            </button>
-          </>
-        }
-      />
-      <section className="progress-controls">
-        <ProgressExerciseSearch
-          exercises={strengthExercises}
-          exerciseId={exerciseId}
-          onChange={setExerciseId}
-          openRequest={pickerRequest}
-        />
-      </section>
-      {!strengthExercises.length && (
-        <EmptyState
-          title="No exercises yet"
-          body="Add a strength exercise to a workout to start tracking its progress."
-        />
+      {browseFirst && (
+        <section
+          className="training-exercise-browser exercise-library-panel"
+          hidden={!libraryMode}
+          aria-label="Exercise library browser"
+        >
+          <ProgressExerciseSearch
+            exercises={strengthExercises}
+            exerciseId={exerciseId}
+            browseOnly
+            onChange={setExerciseId}
+          />
+        </section>
       )}
-      {loading && !progress && <LoadingState />}
-      {progress && (
-        <div className={loading ? 'progress-refreshing' : ''}>
-          <div
-            ref={metricIndicatorRef}
-            className="segmented-control slide-indicator"
-            role="tablist"
-            aria-label="Progress metric"
-          >
-            {PROGRESS_METRICS.map((item) => (
-              <button
-                type="button"
-                role="tab"
-                key={item.value}
-                aria-selected={metric === item.value}
-                className={metric === item.value ? 'active' : ''}
-                onClick={() => setMetric(item.value)}
-              >
-                {item.label}
-              </button>
-            ))}
+      <section
+        className={
+          libraryMode ? 'pulse-card exercise-progress-preview' : 'exercise-progress-detail'
+        }
+        aria-label={libraryMode ? 'Selected exercise preview' : 'Full exercise progress'}
+      >
+        {libraryMode ? (
+          <header className="exercise-preview-header">
+            <div>
+              <p>Selected exercise</p>
+              <h2>{selectedExercise?.name ?? 'Exercise progress'}</h2>
+              <small>
+                {[selectedExercise?.muscle_group, selectedExercise?.equipment]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </small>
+            </div>
+            {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
+          </header>
+        ) : (
+          <PageHeader
+            headingLevel={embedded ? 2 : 1}
+            eyebrow={
+              selectedExercise
+                ? [
+                    selectedExercise.muscle_group,
+                    selectedExercise.equipment,
+                    progress?.exercise.id === selectedExercise.id
+                      ? `${progress.points.length} ${progress.points.length === 1 ? 'session' : 'sessions'}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : 'Exercise progress'
+            }
+            title={selectedExercise?.name ?? 'Progress'}
+            onOpenSettings={embedded ? undefined : onOpenSettings}
+            actions={
+              <>
+                {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
+                <button
+                  className="icon-button-pulse"
+                  type="button"
+                  aria-label="Select exercise"
+                  onClick={() => setPickerRequest((request) => request + 1)}
+                >
+                  <Icon name="search" />
+                </button>
+              </>
+            }
+          />
+        )}
+        {!libraryMode && (
+          <section className="progress-controls">
+            <ProgressExerciseSearch
+              exercises={strengthExercises}
+              exerciseId={exerciseId}
+              onChange={setExerciseId}
+              openRequest={pickerRequest}
+            />
+          </section>
+        )}
+        {!strengthExercises.length && (
+          <EmptyState
+            title="No exercises yet"
+            body="Add a strength exercise to a workout to start tracking its progress."
+          />
+        )}
+        {exerciseId && !progress && !progressError && <LoadingState />}
+        {progressError && (
+          <div className="exercise-progress-error" role="alert">
+            <p>{progressError}</p>
+            <button
+              type="button"
+              className="text-link"
+              onClick={() => setProgressAttempt((attempt) => attempt + 1)}
+            >
+              Retry
+            </button>
           </div>
-          {progress.points.length ? (
-            <>
-              <div className="progress-hero">
-                <div className="progress-hero-summary">
-                  <strong className="progress-hero-value">
-                    {latestPoint ? formatMetricKg(latestPoint[metric]) : '–'}
-                    <small>{weightUnit}</small>
-                  </strong>
-                  <p className="progress-hero-caption">
-                    {latestPoint
-                      ? `${metricInfo.series} · latest session ${shortDate(latestPoint.workout_date)}`
-                      : 'No sessions in this range'}
-                  </p>
-                  {change !== null && firstPoint && (
-                    <p className={`progress-delta ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`}>
-                      <Icon name={change >= 0 ? 'up' : 'down'} />
-                      {change >= 0 ? '+' : '−'}
-                      {formatMetricKg(Math.abs(change))} {weightUnit}
-                      {changePercent !== null &&
-                        ` (${change >= 0 ? '+' : '−'}${Math.abs(changePercent).toFixed(1)}%)`}{' '}
-                      since {dayMonth(firstPoint.workout_date)}
+        )}
+        {progress && (
+          <div className={loading ? 'progress-refreshing' : ''}>
+            <div
+              ref={metricIndicatorRef}
+              className="segmented-control slide-indicator"
+              role="tablist"
+              aria-label="Progress metric"
+            >
+              {PROGRESS_METRICS.map((item) => (
+                <button
+                  type="button"
+                  role="tab"
+                  key={item.value}
+                  aria-selected={metric === item.value}
+                  className={metric === item.value ? 'active' : ''}
+                  onClick={() => setMetric(item.value)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            {progress.points.length ? (
+              <>
+                <div className="progress-hero">
+                  <div className="progress-hero-summary">
+                    <strong className="progress-hero-value">
+                      {latestPoint ? formatMetricKg(latestPoint[metric]) : '–'}
+                      <small>{weightUnit}</small>
+                    </strong>
+                    <p className="progress-hero-caption">
+                      {latestPoint
+                        ? `${metricInfo.series} · latest session ${shortDate(latestPoint.workout_date)}`
+                        : 'No sessions in this range'}
                     </p>
-                  )}
+                    {change !== null && firstPoint && (
+                      <p
+                        className={`progress-delta ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`}
+                      >
+                        <Icon name={change >= 0 ? 'up' : 'down'} />
+                        {change >= 0 ? '+' : '−'}
+                        {formatMetricKg(Math.abs(change))} {weightUnit}
+                        {changePercent !== null &&
+                          ` (${change >= 0 ? '+' : '−'}${Math.abs(changePercent).toFixed(1)}%)`}{' '}
+                        since {dayMonth(firstPoint.workout_date)}
+                      </p>
+                    )}
+                  </div>
+                  {libraryMode
+                    ? rangeControls
+                    : selectedExercise && <ExerciseIcon exercise={selectedExercise} />}
                 </div>
-                {selectedExercise && <ExerciseIcon exercise={selectedExercise} />}
-              </div>
-              <div
-                ref={rangeIndicatorRef}
-                className="range-chips slide-indicator"
-                role="tablist"
-                aria-label="Exercise progress graph range"
-              >
-                {TIME_RANGE_OPTIONS.map((option) => (
+                {!libraryMode && rangeControls}
+                <LandscapeChartFrame
+                  title={`${progress.exercise.name} · ${metricInfo.series}${weekly ? ' (best per week)' : ''}`}
+                  controls={null}
+                >
+                  {(expanded, close) => (
+                    <TrendChart
+                      points={chartPoints}
+                      label={`${progress.exercise.name} ${metricInfo.series}${weekly ? ', best per week' : ''}`}
+                      seriesLabel={
+                        weekly
+                          ? `Best ${metric === 'estimated_1rm' ? 'est. 1RM' : 'top weight'} that week`
+                          : metricInfo.series
+                      }
+                      unit={weightUnit}
+                      height={libraryMode ? 160 : 200}
+                      fillHeight={expanded}
+                      markRecords={metric !== 'volume_kg'}
+                      formatValue={formatMetric}
+                      onSelect={(point) => {
+                        if (!point.id) return;
+                        close();
+                        onOpenWorkout(point.id, progress.exercise.id);
+                      }}
+                    />
+                  )}
+                </LandscapeChartFrame>
+                {libraryMode && (
                   <button
                     type="button"
-                    role="tab"
-                    key={option.value}
-                    aria-selected={displayRange === option.value}
-                    aria-label={option.label}
-                    className={displayRange === option.value ? 'active' : ''}
-                    onClick={() => setDisplayRange(option.value)}
+                    className="exercise-open-progress"
+                    onClick={() => setFullProgress(true)}
                   >
-                    {RANGE_LABELS[option.value]}
+                    Open full progress <Icon name="chevron-right" />
                   </button>
-                ))}
-              </div>
-              <LandscapeChartFrame
-                title={`${progress.exercise.name} · ${metricInfo.series}${weekly ? ' (best per week)' : ''}`}
-                controls={null}
-              >
-                {(expanded, close) => (
-                  <TrendChart
-                    points={chartPoints}
-                    label={`${progress.exercise.name} ${metricInfo.series}${weekly ? ', best per week' : ''}`}
-                    seriesLabel={
-                      weekly
-                        ? `Best ${metric === 'estimated_1rm' ? 'est. 1RM' : 'top weight'} that week`
-                        : metricInfo.series
-                    }
-                    unit={weightUnit}
-                    height={200}
-                    fillHeight={expanded}
-                    markRecords={metric !== 'volume_kg'}
-                    formatValue={formatMetric}
-                    onSelect={(point) => {
-                      if (!point.id) return;
-                      close();
-                      onOpenWorkout(point.id, progress.exercise.id);
-                    }}
-                  />
                 )}
-              </LandscapeChartFrame>
-              <section className="stat-grid" aria-label="Personal bests">
-                <div>
-                  <span>Heaviest set</span>
-                  <b className="num">
-                    {heaviestSetPoint
-                      ? `${formatWeight(heaviestSetPoint.best_weight_kg, weightUnit)} × ${heaviestSetPoint.best_reps}`
-                      : '–'}
-                  </b>
-                  <small>
-                    {heaviestSetPoint ? shortDate(heaviestSetPoint.workout_date) : 'No sets yet'}
-                  </small>
-                </div>
-                <div>
-                  <span>Best est. 1RM</span>
-                  <b className="num">
-                    {formatWeight(progress.personal_best_estimated_1rm, weightUnit, 1)}
-                  </b>
-                  <small>
-                    {estimatedOneRepMaxPoint
-                      ? shortDate(estimatedOneRepMaxPoint.workout_date)
-                      : 'Epley'}
-                  </small>
-                </div>
-                <div>
-                  <span>Best session volume</span>
-                  <b className="num">
-                    {volumePoint ? formatWeight(volumePoint.volume_kg, weightUnit, 0) : '–'}
-                  </b>
-                  <small>
-                    {volumePoint ? shortDate(volumePoint.workout_date) : 'Working sets'}
-                  </small>
-                </div>
-                <div>
-                  <span>Relative strength</span>
-                  <b className="num">
-                    {bodyweight && progress.personal_best_estimated_1rm
-                      ? `${(progress.personal_best_estimated_1rm / bodyweight).toFixed(2)} × BW`
-                      : '–'}
-                  </b>
-                  <small>
-                    {bodyweight
-                      ? `Best e1RM at ${formatWeight(bodyweight, weightUnit)}`
-                      : 'Log bodyweight to compare'}
-                  </small>
-                </div>
-              </section>
-              <section
-                className="pulse-card progress-sessions"
-                aria-label="Exercise session history"
-              >
-                <header className="pulse-card-header">
-                  <h2>Sessions</h2>
-                  <span>Best set · {metricInfo.label}</span>
-                </header>
-                <ul>
-                  {sessionsNewestFirst.slice(0, visibleSessions).map((point) => (
-                    <li key={point.workout_id}>
+                <div hidden={libraryMode}>
+                  <section className="stat-grid" aria-label="Personal bests">
+                    <div>
+                      <span>Heaviest set</span>
+                      <b className="num">
+                        {heaviestSetPoint
+                          ? `${formatWeight(heaviestSetPoint.best_weight_kg, weightUnit)} × ${heaviestSetPoint.best_reps}`
+                          : '–'}
+                      </b>
+                      <small>
+                        {heaviestSetPoint
+                          ? shortDate(heaviestSetPoint.workout_date)
+                          : 'No sets yet'}
+                      </small>
+                    </div>
+                    <div>
+                      <span>Best est. 1RM</span>
+                      <b className="num">
+                        {formatWeight(progress.personal_best_estimated_1rm, weightUnit, 1)}
+                      </b>
+                      <small>
+                        {estimatedOneRepMaxPoint
+                          ? shortDate(estimatedOneRepMaxPoint.workout_date)
+                          : 'Epley'}
+                      </small>
+                    </div>
+                    <div>
+                      <span>Best session volume</span>
+                      <b className="num">
+                        {volumePoint ? formatWeight(volumePoint.volume_kg, weightUnit, 0) : '–'}
+                      </b>
+                      <small>
+                        {volumePoint ? shortDate(volumePoint.workout_date) : 'Working sets'}
+                      </small>
+                    </div>
+                    <div>
+                      <span>Relative strength</span>
+                      <b className="num">
+                        {bodyweight && progress.personal_best_estimated_1rm
+                          ? `${(progress.personal_best_estimated_1rm / bodyweight).toFixed(2)} × BW`
+                          : '–'}
+                      </b>
+                      <small>
+                        {bodyweight
+                          ? `Best e1RM at ${formatWeight(bodyweight, weightUnit)}`
+                          : 'Log bodyweight to compare'}
+                      </small>
+                    </div>
+                  </section>
+                  <section
+                    className="pulse-card progress-sessions"
+                    aria-label="Exercise session history"
+                  >
+                    <header className="pulse-card-header">
+                      <h2>Sessions</h2>
+                      <span>Best set · {metricInfo.label}</span>
+                    </header>
+                    <ul>
+                      {sessionsNewestFirst.slice(0, visibleSessions).map((point) => (
+                        <li key={point.workout_id}>
+                          <button
+                            type="button"
+                            aria-label={`View ${progress.exercise.name} in workout from ${prettyDate(point.workout_date)}`}
+                            onClick={() => onOpenWorkout(point.workout_id, progress.exercise.id)}
+                          >
+                            <span className="session-date">
+                              {shortDate(point.workout_date)}
+                              {recordIds.has(point.workout_id) && <em className="pr-chip">PR</em>}
+                            </span>
+                            <span className="session-set num">
+                              {formatWeight(point.best_weight_kg, weightUnit)} × {point.best_reps}
+                              {point.best_rpe !== null && <small> @{point.best_rpe}</small>}
+                            </span>
+                            <b className="num">{formatMetricKg(point[metric])}</b>
+                            <Icon name="chevron-right" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {visibleSessions < sessionsNewestFirst.length && (
                       <button
                         type="button"
-                        aria-label={`View ${progress.exercise.name} in workout from ${prettyDate(point.workout_date)}`}
-                        onClick={() => onOpenWorkout(point.workout_id, progress.exercise.id)}
+                        className="show-more-button"
+                        onClick={() => setVisibleSessions((count) => count + HISTORY_PAGE_SIZE * 2)}
                       >
-                        <span className="session-date">
-                          {shortDate(point.workout_date)}
-                          {recordIds.has(point.workout_id) && <em className="pr-chip">PR</em>}
-                        </span>
-                        <span className="session-set num">
-                          {formatWeight(point.best_weight_kg, weightUnit)} × {point.best_reps}
-                          {point.best_rpe !== null && <small> @{point.best_rpe}</small>}
-                        </span>
-                        <b className="num">{formatMetricKg(point[metric])}</b>
-                        <Icon name="chevron-right" />
+                        Show more · {sessionsNewestFirst.length - visibleSessions} older
                       </button>
-                    </li>
-                  ))}
-                </ul>
-                {visibleSessions < sessionsNewestFirst.length && (
-                  <button
-                    type="button"
-                    className="show-more-button"
-                    onClick={() => setVisibleSessions((count) => count + HISTORY_PAGE_SIZE * 2)}
-                  >
-                    Show more · {sessionsNewestFirst.length - visibleSessions} older
-                  </button>
-                )}
-              </section>
-            </>
-          ) : (
-            <EmptyState
-              title="No data yet"
-              body="Complete this exercise in a workout to start its progress graph."
-            />
-          )}
-        </div>
-      )}
+                    )}
+                  </section>
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                title="No data yet"
+                body="Complete this exercise in a workout to start its progress graph."
+              />
+            )}
+          </div>
+        )}
+      </section>
     </section>
   );
 }
