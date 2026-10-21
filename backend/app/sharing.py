@@ -117,7 +117,8 @@ class SharedProfileSummary(BaseModel):
     display_name: str
     profile_photo_url: str | None
     member_since: datetime
-    visibility: Literal["followers", "public"]
+    # Private profiles are returned only to their owner.
+    visibility: Visibility
     is_you: bool
     # Requests are ``incoming`` when they asked you, ``outgoing`` when you asked them.
     friend_status: FriendStatus
@@ -373,6 +374,9 @@ def blocked_member_ids(db: Session, user_id: str) -> set[str]:
 
 def visible_member(db: Session, viewer: User, user_id: str) -> tuple[User, ProfileSharing]:
     """A sharing member the viewer can find: their name and photo, but maybe not their training."""
+    # An owner can preview their own profile without making it visible to anyone else.
+    if user_id == viewer.id:
+        return viewer, sharing_choices(db, viewer.id)
     require_sharing(db, viewer)
     member = db.get(User, user_id)
     sharing = db.get(ProfileSharing, user_id)

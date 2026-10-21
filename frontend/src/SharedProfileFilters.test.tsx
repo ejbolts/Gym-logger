@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 import { SharedProfileScreen } from './SharedProfiles';
-import type { SharedProfile, SharedWorkoutPage, TrackedWorkout } from './types';
+import type { SharedProfile, SharedWorkoutPage, TrackedWorkout, User } from './types';
 import { DEFAULT_WORKOUT_TYPES } from './workoutTypes';
 
 const profile: SharedProfile = {
@@ -64,11 +64,17 @@ const workout: TrackedWorkout = {
 };
 let root: Root;
 let container: HTMLDivElement;
-function renderProfile(profileId = 'friend') {
+function renderProfile(
+  profileId = 'friend',
+  ownProfile?: { user: User; onSaved: (user: User) => void },
+  active = true,
+) {
   return act(async () =>
     root.render(
       <SharedProfileScreen
         profileId={profileId}
+        ownProfile={ownProfile}
+        active={active}
         onChooseSharing={() => {}}
         renderWorkouts={({ workouts, renderWorkoutAction }) => (
           <ul>
@@ -178,6 +184,67 @@ describe('shared profile friend control', () => {
     await act(async () => button('Accept').click());
     expect(accept).toHaveBeenCalledWith('asker');
     expect(button('Friends')).toBeTruthy();
+  });
+});
+
+describe('own profile', () => {
+  const user: User = {
+    id: 'owner',
+    username: 'sample.owner',
+    display_name: 'Sample Owner',
+    is_admin: false,
+    can_upload_videos: false,
+    created_at: '2026-10-01T12:00:00Z',
+  };
+
+  it('reuses the training profile with editing and hides settings and self-friend/reaction actions', async () => {
+    vi.mocked(api.sharing.profile).mockResolvedValue({
+      ...profile,
+      id: user.id,
+      is_you: true,
+      visibility: 'private',
+    });
+    const onSaved = vi.fn();
+    await renderProfile(user.id, { user, onSaved });
+    expect(container.querySelectorAll('.profile-summary')).toHaveLength(1);
+    expect(container.querySelector('.profile-summary .shared-stat-row')?.textContent).toContain(
+      'Last 30 days',
+    );
+    expect(container.querySelector('.calendar-panel')).not.toBeNull();
+    expect(container.textContent).toContain('First workout');
+    expect(container.textContent).toContain('Your profile is private');
+    expect(container.querySelector('.profile-training-time')?.textContent).toContain('4h 33min');
+    expect(container.textContent).not.toContain('Change password');
+    expect(container.textContent).not.toContain('Profile sharing');
+    expect(container.querySelector('.profile-account-id')).toBeNull();
+    expect(container.querySelector('.friend-react-button')).toBeNull();
+    expect(container.querySelector('.profile-friend-actions')).toBeNull();
+    await act(async () => button('Edit profile').click());
+    expect(container.querySelector('input[autocomplete="name"]')).not.toBeNull();
+    expect(container.querySelector('input[type="file"]')).not.toBeNull();
+    expect(container.querySelector('.calendar-panel')).not.toBeNull();
+    await act(async () => button('Cancel').click());
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('refreshes visibility when returning from Settings and keeps the chosen workout filters', async () => {
+    const owner = { user, onSaved: vi.fn() };
+    vi.mocked(api.sharing.profile).mockResolvedValue({ ...profile, id: user.id, is_you: true });
+    await renderProfile(user.id, owner);
+    await chooseType('lower');
+    await renderProfile(user.id, owner, false);
+    vi.mocked(api.sharing.profile)
+      .mockClear()
+      .mockResolvedValue({ ...profile, id: user.id, is_you: true, visibility: 'private' });
+    await renderProfile(user.id, owner, true);
+    expect(api.sharing.profile).toHaveBeenCalledExactlyOnceWith(user.id);
+    expect(container.textContent).toContain('Your profile is private');
+    expect(api.sharing.workouts).toHaveBeenLastCalledWith(
+      user.id,
+      0,
+      10,
+      expect.objectContaining({ category: 'lower' }),
+    );
   });
 });
 

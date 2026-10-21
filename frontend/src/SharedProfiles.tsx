@@ -8,6 +8,7 @@ import { clipBodyWeightGoalPath } from './bodyTrend';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileAccountId } from './ProfileAccountId';
+import { ProfileIdentity } from './ProfileIdentity';
 import { SharedWorkoutFilters } from './SharedWorkoutFilters';
 import { ConsistencyCard } from './ConsistencyCard';
 import { WorkoutCalendar, WorkoutCalendarLegend } from './WorkoutCalendar';
@@ -41,6 +42,7 @@ import type {
   SharingConnection,
   TrackedWorkout,
   WorkoutReactions,
+  User,
 } from './types';
 import { formatMinutesDuration } from './utils';
 
@@ -80,7 +82,7 @@ export function SharingLocked({ onChooseSharing }: { onChooseSharing: () => void
         </div>
       </header>
       <p>
-        Your profile is private. Share it with friends or everyone in Profile to see and add other
+        Your profile is private. Share it with friends or everyone in Settings to see and add other
         members as friends; your workouts and profile photo are always part of it.
       </p>
       <button type="button" className="profile-primary" onClick={onChooseSharing}>
@@ -981,12 +983,38 @@ function SharedConsistencyCalendar({
   );
 }
 
+function ProfileStats({ profile }: { profile: SharedProfile }) {
+  if (!profile.can_view) return null;
+  return (
+    <dl className="shared-stat-row">
+      <div>
+        <dt>Workouts</dt>
+        <dd className="num">{(profile.workout_count ?? 0).toLocaleString('en-GB')}</dd>
+      </div>
+      <div>
+        <dt>Last 30 days</dt>
+        <dd className="num">{profile.recent_workout_count ?? 0}</dd>
+      </div>
+      <div>
+        <dt>Last workout</dt>
+        <dd className="num">
+          {profile.last_workout_date ? dayMonth(profile.last_workout_date) : '–'}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 export function SharedProfileScreen({
   profileId,
   renderWorkouts,
   onChooseSharing,
+  active = true,
+  ownProfile,
 }: {
   profileId: string;
+  active?: boolean;
+  ownProfile?: { user: User; onSaved: (user: User) => void };
   /** The workout history list, drawn with the same cards as the account's own history. */
   renderWorkouts: (props: SharedWorkoutListProps) => ReactNode;
   onChooseSharing: () => void;
@@ -1018,11 +1046,12 @@ export function SharedProfileScreen({
   const invalidDates = Boolean(
     filters.start_date && filters.end_date && filters.start_date > filters.end_date,
   );
-  const queryKey = JSON.stringify([profileId, attempt, filters]);
+  const queryKey = JSON.stringify([profileId, attempt, filters, active]);
   const currentQuery = useRef(queryKey);
   currentQuery.current = queryKey;
 
   useEffect(() => {
+    if (!active) return;
     if (invalidDates) {
       setLoadingWorkouts(false);
       return;
@@ -1065,7 +1094,7 @@ export function SharedProfileScreen({
     return () => {
       cancelled = true;
     };
-  }, [profileId, attempt, filters, invalidDates]);
+  }, [profileId, attempt, filters, invalidDates, active]);
 
   async function loadMore() {
     if (loadingMore || loadingWorkouts || invalidDates) return;
@@ -1100,6 +1129,20 @@ export function SharedProfileScreen({
     setProfile({ ...profile, friend_status: status, friends_since: null });
     setAttempt((count) => count + 1);
   }
+
+  const ownIdentity =
+    ownProfile?.user.id === profileId ? (
+      <ProfileIdentity user={ownProfile.user} onSaved={ownProfile.onSaved}>
+        {profile?.is_you && <ProfileStats profile={profile} />}
+        {profile?.is_you && (
+          <p className="shared-preview-note">
+            {profile.visibility === 'private'
+              ? 'Your profile is private. Only you can see this page.'
+              : 'This is the training you share with members who can view your profile.'}
+          </p>
+        )}
+      </ProfileIdentity>
+    ) : null;
 
   if (state === 'locked') {
     return (
@@ -1143,6 +1186,7 @@ export function SharedProfileScreen({
   if (state === 'error' || !profile) {
     return (
       <section className="settings-screen shared-profile-screen content-page">
+        {ownIdentity}
         {state === 'error' ? (
           <LoadProblem
             message={error ?? 'Could not load this profile.'}
@@ -1165,51 +1209,36 @@ export function SharedProfileScreen({
 
   return (
     <section className="settings-screen shared-profile-screen content-page">
-      <section className="settings-panel panel profile-summary" aria-label="Shared profile">
-        <div className="profile-summary-main">
-          <ProfileAvatar className="profile-avatar" user={avatarUser(profile)} />
-          <div className="profile-summary-copy">
-            <strong>
-              {profile.display_name}
-              {profile.is_you && <span className="profile-badge">You</span>}
-            </strong>
-            {memberSince && (
-              <span className="shared-status-chips profile-joined">
-                <small>Joined {memberSince}</small>
-              </span>
-            )}
-            <ProfileFriendControl
-              profile={profile}
-              onChange={friendChanged}
-              onBlocked={() => setState('blocked')}
-            />
+      {ownIdentity ?? (
+        <section className="settings-panel panel profile-summary" aria-label="Shared profile">
+          <div className="profile-summary-main">
+            <ProfileAvatar className="profile-avatar" user={avatarUser(profile)} />
+            <div className="profile-summary-copy">
+              <strong>
+                {profile.display_name}
+                {profile.is_you && <span className="profile-badge">You</span>}
+              </strong>
+              {memberSince && (
+                <span className="shared-status-chips profile-joined">
+                  <small>Joined {memberSince}</small>
+                </span>
+              )}
+              <ProfileFriendControl
+                profile={profile}
+                onChange={friendChanged}
+                onBlocked={() => setState('blocked')}
+              />
+            </div>
           </div>
-        </div>
-        <ProfileAccountId accountId={profile.id} />
-        {profile.can_view && (
-          <dl className="shared-stat-row">
-            <div>
-              <dt>Workouts</dt>
-              <dd className="num">{(profile.workout_count ?? 0).toLocaleString('en-GB')}</dd>
-            </div>
-            <div>
-              <dt>Last 30 days</dt>
-              <dd className="num">{profile.recent_workout_count ?? 0}</dd>
-            </div>
-            <div>
-              <dt>Last workout</dt>
-              <dd className="num">
-                {profile.last_workout_date ? dayMonth(profile.last_workout_date) : '–'}
-              </dd>
-            </div>
-          </dl>
-        )}
-        {profile.is_you && (
-          <p className="shared-preview-note">
-            This is what members who can see your profile see. Change it in Profile.
-          </p>
-        )}
-      </section>
+          <ProfileAccountId accountId={profile.id} />
+          <ProfileStats profile={profile} />
+          {profile.is_you && (
+            <p className="shared-preview-note">
+              This is what members who can see your profile see. Sharing is managed in Settings.
+            </p>
+          )}
+        </section>
+      )}
       {!profile.can_view ? (
         <section className="settings-panel panel sharing-locked">
           <header>

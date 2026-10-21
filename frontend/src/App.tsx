@@ -231,6 +231,8 @@ import {
 import { VideoUpload } from './VideoUpload';
 import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
+import { AccountSettings, AccountSessionSettings } from './AccountSettings';
+import { ProfileAccountId } from './ProfileAccountId';
 import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
 import { FriendsActivityCard } from './FriendsActivity';
 import { SocialScreen } from './SocialScreen';
@@ -238,6 +240,7 @@ import { SettingsSearch } from './SettingsSearch';
 import { ColourThemePanel } from './ColourThemePanel';
 import {
   SettingsNavigationContext,
+  SETTINGS_DESTINATIONS,
   useSettingsPageJump,
   type SettingsDestination,
   type SettingsJump,
@@ -570,13 +573,14 @@ function AppContent() {
     const initialTab = initialHistoryState
       ? initialHistoryState.tab
       : appTabFromHash(window.location.hash);
-    // Which shared profile was open is not kept across a reload, so start from Friends.
+    // Which member was open is not kept across a reload, so show your own profile.
     return initialTab === 'shared-profile' ? 'profile' : initialTab;
   });
   const historyIndexRef = useRef(initialHistoryState?.index ?? 0);
   const home = useHomeLayout(tab === 'dashboard');
   const openFeedback = useOpenFeedbackCount(
     tab === 'dashboard' ||
+      tab === 'settings' ||
       tab === 'profile' ||
       tab === 'body' ||
       tab === 'social' ||
@@ -1223,12 +1227,21 @@ function AppContent() {
   function openSharedProfile(
     profile: Pick<SharedProfileSummary, 'id' | 'display_name'> & { is_you?: boolean },
   ) {
+    if (profile.id === user?.id) {
+      setTab('profile');
+      return;
+    }
     setSharedProfile((current) => ({
       id: profile.id,
       name: profile.is_you ? 'Your shared profile' : profile.display_name,
       opened: (current?.opened ?? 0) + 1,
     }));
     setTab('shared-profile');
+  }
+
+  function openSharingSettings() {
+    const destination = SETTINGS_DESTINATIONS.find((entry) => entry.id === 'sharing');
+    if (destination) openSetting(destination);
   }
 
   function openHistorySection(section: HistorySection, exerciseId: string | null = null) {
@@ -1463,7 +1476,7 @@ function AppContent() {
                         active={tab === 'dashboard'}
                         onOpenFriend={openSharedProfile}
                         onOpenFriends={() => setTab('social')}
-                        onChooseSharing={() => setTab('profile')}
+                        onChooseSharing={openSharingSettings}
                       />
                     ) : undefined
                   }
@@ -1654,6 +1667,7 @@ function AppContent() {
                 onDataChange={refreshAfterMutation}
                 account={user}
                 onOpenProfile={() => setTab('profile')}
+                openFeedback={openFeedback}
                 onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
                 releaseVersion={announcement.release.version}
                 onOpenReleaseNotes={announcement.show}
@@ -1679,7 +1693,8 @@ function AppContent() {
                 account={user}
                 openFeedback={openFeedback}
                 onOpenProfile={openSharedProfile}
-                onChooseSharing={() => setTab('profile')}
+                onOpenOwnProfile={() => setTab('profile')}
+                onChooseSharing={openSharingSettings}
                 onOpenSettings={() => setTab('settings')}
               />
             </CachedTabPanel>
@@ -1688,8 +1703,14 @@ function AppContent() {
             <CachedTabPanel active={tab === 'profile'}>
               <ProfileScreen
                 active={tab === 'profile'}
-                openFeedback={openFeedback}
-                onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
+                onChooseSharing={openSharingSettings}
+                renderWorkouts={(props) => (
+                  <SharedWorkoutHistory
+                    {...props}
+                    categoryColors={workoutTypeColors}
+                    weekStartDay={weekStartDayFrom(dashboard?.weekly_sets?.week_start)}
+                  />
+                )}
               />
             </CachedTabPanel>
           )}
@@ -1700,7 +1721,7 @@ function AppContent() {
                 <SharedProfileScreen
                   key={`${sharedProfile.id}-${sharedProfile.opened}`}
                   profileId={sharedProfile.id}
-                  onChooseSharing={() => setTab('profile')}
+                  onChooseSharing={openSharingSettings}
                   renderWorkouts={(props) => (
                     <SharedWorkoutHistory
                       {...props}
@@ -6493,6 +6514,7 @@ function SettingsScreen({
   onDataChange,
   account,
   onOpenProfile,
+  openFeedback,
   onOpenAdmin,
   releaseVersion,
   onOpenReleaseNotes,
@@ -6508,6 +6530,7 @@ function SettingsScreen({
   onOpenAppGuide: () => void;
   account: User | null;
   onOpenProfile: () => void;
+  openFeedback: number;
   /** Present only for administrators. */
   onOpenAdmin?: () => void;
   workouts: TrackedWorkout[];
@@ -6738,11 +6761,13 @@ function SettingsScreen({
             </div>
           </header>
           <p>{account.username}</p>
+          <ProfileAccountId accountId={account.id} />
           <button type="button" className="profile-secondary" onClick={onOpenProfile}>
-            Manage profile
+            View profile
           </button>
         </section>
       )}
+      {account && <AccountSettings openFeedback={openFeedback} onOpenAdmin={onOpenAdmin} />}
       {onOpenAdmin && (
         <section className="settings-panel panel" aria-labelledby="admin-settings-title">
           <header>
@@ -7045,6 +7070,7 @@ function SettingsScreen({
         </div>
       </section>
 
+      {account && <AccountSessionSettings />}
       {exportOpen && (
         <DataExportDialog
           workoutDates={workoutDates}

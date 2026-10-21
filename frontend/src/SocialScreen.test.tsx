@@ -11,6 +11,7 @@ import { localDate } from './utils';
 let root: Root;
 let host: HTMLDivElement;
 const openProfile = vi.fn();
+const openOwnProfile = vi.fn();
 const chooseSharing = vi.fn();
 const person = {
   id: 'jamie',
@@ -55,6 +56,7 @@ let connections: FriendConnections;
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   openProfile.mockClear();
+  openOwnProfile.mockClear();
   chooseSharing.mockClear();
   connections = { friends: [alex, casey], requests: [person], sent: [], blocked: [] };
   vi.spyOn(api.sharing, 'friends').mockImplementation(async () => connections);
@@ -82,6 +84,7 @@ async function render(active = true) {
       <SocialScreen
         active={active}
         onOpenProfile={openProfile}
+        onOpenOwnProfile={openOwnProfile}
         onChooseSharing={chooseSharing}
         onOpenSettings={vi.fn()}
       />,
@@ -102,6 +105,13 @@ async function click(target: HTMLElement) {
 function labelled(label: string) {
   return host.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!;
 }
+
+it('opens your own profile from the avatar separately from sharing settings', async () => {
+  await render();
+  await click(host.querySelector<HTMLButtonElement>('.account-header-actions .profile-button')!);
+  expect(openOwnProfile).toHaveBeenCalledOnce();
+  expect(chooseSharing).not.toHaveBeenCalled();
+});
 
 it('lists each friend once with their week and latest session, and opens their profile', async () => {
   await render();
@@ -173,7 +183,7 @@ it('cancels sent requests and unblocks members from Find', async () => {
   expect(api.sharing.friends).toHaveBeenCalledTimes(3);
 });
 
-it('keeps private profiles private, routes sharing choices to Profile and still unblocks', async () => {
+it('keeps private profiles private, routes sharing choices to Settings and still unblocks', async () => {
   connections = {
     locked: true,
     friends: [],

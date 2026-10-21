@@ -1,10 +1,17 @@
-import { useContext, useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import {
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { api, ApiError } from './api';
 import { authErrorMessage, USERNAME_HINT, validateUsername } from './authForm';
 import { Icon } from './Icon';
 import { optimisePhoto } from './photoOptimise';
 import { ProfileAvatar } from './ProfileAvatar';
-import { ProfileAccountId } from './ProfileAccountId';
 import { formatMemberSince } from './profileDisplay';
 import type { User } from './types';
 import { SettingsNavigationContext } from './settingsNavigation';
@@ -17,7 +24,15 @@ const PHOTO_ERRORS = new Set([
 ]);
 
 /** Identity is read-only until Edit profile; photo and text drafts share Save and Cancel. */
-export function ProfileIdentity({ user, onSaved }: { user: User; onSaved: (user: User) => void }) {
+export function ProfileIdentity({
+  user,
+  onSaved,
+  children,
+}: {
+  user: User;
+  onSaved: (user: User) => void;
+  children?: ReactNode;
+}) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
@@ -175,7 +190,6 @@ export function ProfileIdentity({ user, onSaved }: { user: User; onSaved: (user:
           </button>
         )}
       </div>
-      <ProfileAccountId accountId={user.id} />
       {editing && (
         <>
           <input
@@ -267,6 +281,7 @@ export function ProfileIdentity({ user, onSaved }: { user: User; onSaved: (user:
           {status}
         </p>
       )}
+      {children}
     </section>
   );
 }

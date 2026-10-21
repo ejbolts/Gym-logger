@@ -88,7 +88,7 @@ function Spinner() {
   return <span className="auth-spinner" aria-hidden="true" />;
 }
 
-/** Profile's sharing section: who can see the profile, and what it shares. */
+/** Settings' sharing section: who can see the profile, and what it shares. */
 export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
   const [saved, setSaved] = useState<SharingSettings | null>(null);
   const [draft, setDraft] = useState<SharingChoices>(PRIVATE_DEFAULTS);

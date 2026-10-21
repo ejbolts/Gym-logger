@@ -11,6 +11,7 @@ import type { SharedProfileSummary, User } from './types';
 export function SocialScreen({
   active,
   onOpenProfile,
+  onOpenOwnProfile,
   onChooseSharing,
   onOpenSettings,
   account,
@@ -18,6 +19,7 @@ export function SocialScreen({
 }: {
   active: boolean;
   onOpenProfile: (profile: Pick<SharedProfileSummary, 'id' | 'display_name'>) => void;
+  onOpenOwnProfile: () => void;
   onChooseSharing: () => void;
   onOpenSettings: () => void;
   account?: User;
@@ -39,7 +41,7 @@ export function SocialScreen({
             active={active}
             profile={account}
             openFeedback={openFeedback}
-            onOpenProfile={onChooseSharing}
+            onOpenProfile={onOpenOwnProfile}
             onOpenFriends={() => setSection('find')}
           />
         }

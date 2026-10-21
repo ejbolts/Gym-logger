@@ -1,6 +1,7 @@
 from datetime import UTC, date, datetime, timedelta
 from io import BytesIO
 
+import pytest
 from conftest import TEST_PASSWORD, register_user
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -41,6 +42,49 @@ def jpeg() -> bytes:
     buffer = BytesIO()
     Image.new("RGB", (300, 300), "#336699").save(buffer, format="JPEG")
     return buffer.getvalue()
+
+
+@pytest.mark.parametrize("stored_choices", [True, False])
+def test_private_owner_can_preview_without_exposing_profile(client, other_client, stored_choices):
+    share(other_client)
+    if stored_choices:
+        share(client, "private", **NOTHING_EXTRA)
+    else:
+        with SessionLocal() as db:
+            choices = db.get(ProfileSharing, client.user["id"])
+            if choices:
+                db.delete(choices)
+                db.commit()
+    exercise = named(client, "Barbell Bench Press")["id"]
+    created = client.post(
+        "/api/workouts",
+        json={
+            "name": "My private training",
+            "workout_date": date.today().isoformat(),
+            "category": "push",
+            "notes": "Not shared",
+            "movements": [{"exercise_id": exercise, "sets": [{"reps": 8, "weight_kg": 50}]}],
+        },
+    )
+    assert created.status_code == 201, created.text
+    own = profile(client, client)
+    assert own.status_code == 200, own.text
+    assert own.json()["is_you"] is True
+    assert own.json()["can_view"] is True
+    assert own.json()["visibility"] == "private"
+    assert own.json()["workout_count"] == 1
+    assert own.json()["body_weight"] is None
+    assert own.json()["goals"] is None
+    base = f"/api/sharing/profiles/{client.user['id']}"
+    page = client.get(base + "/workouts").json()
+    assert page["total"] == 1
+    assert page["workouts"][0]["notes"] is None
+    assert client.get(base + "/workout-filters").json()["exercises"][0]["id"] == exercise
+    assert profile(other_client, client).status_code == 404
+    assert other_client.get(base + "/workouts").status_code == 404
+    assert other_client.get(base + "/workout-filters").status_code == 404
+    assert profile(client, other_client).status_code == 403
+    assert client.get("/api/sharing").json()["visibility"] == "private"
 
 
 def test_shared_consistency_uses_owner_history_and_respects_access(client, other_client):

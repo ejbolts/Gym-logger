@@ -42,14 +42,14 @@ function Harness() {
         <button aria-label="Rest timer" onClick={restChanged}>
           On
         </button>
-      </section>
-      <section data-settings-page="profile" className="profile-screen" hidden={page !== 'profile'}>
-        <ProfileIdentity user={account} onSaved={vi.fn()} />
-        <CollapsibleSection className="settings-panel" title="Change password">
+        <CollapsibleSection className="settings-panel account-password" title="Change password">
           <form className="profile-form">
             <input autoComplete="current-password" />
           </form>
         </CollapsibleSection>
+      </section>
+      <section data-settings-page="profile" className="profile-screen" hidden={page !== 'profile'}>
+        <ProfileIdentity user={account} onSaved={vi.fn()} />
       </section>
     </SettingsNavigationContext.Provider>
   );
@@ -100,6 +100,9 @@ it('matches cross-page terms and synonyms and does not list anything for an empt
   expect(searchSettings('username')[0].page).toBe('profile');
   expect(searchSettings('color').map((entry) => entry.id)).toContain('appearance');
   expect(searchSettings('password', false)).toEqual([]);
+  for (const query of ['password', 'sharing', 'sign out', 'delete account', 'uuid']) {
+    expect(searchSettings(query)[0].page).toBe('settings');
+  }
   expect(searchSettings('  ')).toEqual([]);
   expect(new Set(SETTINGS_DESTINATIONS.map((entry) => entry.id)).size).toBe(
     SETTINGS_DESTINATIONS.length,
