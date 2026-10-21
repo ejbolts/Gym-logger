@@ -342,12 +342,12 @@ describe('App startup', () => {
 
   it('marks the active tab and shows live time on the Start button', () => {
     const idle = renderToStaticMarkup(
-      <AppTabBar active="progress" workoutStartedAt={null} onSelect={vi.fn()} onStart={vi.fn()} />,
+      <AppTabBar active="training" workoutStartedAt={null} onSelect={vi.fn()} onStart={vi.fn()} />,
     );
     expect(idle.match(/class="app-tab /g)).toHaveLength(5);
     expect(idle).toContain('aria-label="Start workout"');
     expect(idle).toMatch(
-      /class="app-tab active" aria-current="page"><svg[^>]*>.*?<\/svg><span>Progress<\/span>/,
+      /class="app-tab active" aria-current="page"><svg[^>]*>.*?<\/svg><span>Training<\/span>/,
     );
 
     const live = renderToStaticMarkup(
@@ -437,8 +437,8 @@ describe('App startup', () => {
     expect(markup).toContain('Loading your sharing choices');
   });
 
-  it('opens Friends on Profile for old shared list links and reloaded profile links', () => {
-    for (const hash of ['#shared', '#shared-profile']) {
+  it('keeps reloaded profile links usable and sends old shared-list links to Social', () => {
+    for (const hash of ['#shared-profile']) {
       const markup = renderSignedIn(hash, account);
 
       expect(markup).toContain('<strong>Profile</strong>');
@@ -446,6 +446,10 @@ describe('App startup', () => {
       expect(markup).toContain('Loading your friends');
       expect(markup).not.toContain('View shared profiles');
     }
+    const social = renderSignedIn('#shared', account);
+    expect(social).toContain('aria-current="page"');
+    expect(social).toContain('<span>Social</span>');
+    expect(social).not.toContain('<strong>Profile</strong>');
   });
 
   it('offers the Profile entry point on Today', () => {

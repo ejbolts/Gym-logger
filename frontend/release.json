@@ -1,11 +1,14 @@
 {
   "version": "0.9.1",
   "date": "2026-10-21",
-  "title": "Clearer progress and a shorter History",
-  "summary": "Read progress changes in green and red, start History with the latest three weeks, use larger quick-start circles, and swipe down to close muscle details.",
+  "title": "Training in one place, with a home for Social",
+  "summary": "Keep your calendar, sessions, exercise progress and cardio together in Training. Find friends, follow requests and reactions in Social, using the familiar controls.",
   "changes": [
+    "Training combines Sessions, Exercises and Cardio. Sessions keeps the existing calendar, day details, machine filters and workout cards, with the latest three weeks shown first and Show more for older workouts.",
+    "Exercises starts with a searchable exercise list and opens the existing charts, records and session history. Training remembers your selected view and exercise when you return from another tab. Older History, Progress and Cardio links still work.",
+    "Social has its own bottom tab for friends’ latest sessions, reactions, people search and follow requests. It reuses the existing sharing controls and notifications without changing anyone’s profile visibility. Home keeps its compact friends card.",
     "Progress changes are green for increases, red for decreases, and neutral when unchanged across estimated 1RM, top set and volume.",
-    "History starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
+    "Training’s Sessions view starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
     "Quick-start circles are now 52 px across, up from 44 px, with larger icons to make each option easier to see and tap.",
     "Swipe down from the muscle details handle or header to close the sheet. You can also pull down on its content when the list is at the top; short pulls return to place and scrolling still works.",
     "Removed the redundant Contributing exercises heading and count from muscle details. Done, Escape and tapping outside still close the sheet."
@@ -17,19 +20,27 @@
   },
   "highlights": [
     {
+      "title": "Your training, together",
+      "description": "Sessions keeps the calendar and saved workouts. Exercises opens familiar progress tools, and Cardio stays within reach. Switch tabs and return to the view you were using.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/51e829553f7b1cae2ce6094560576566d5d6a367/docs/screenshots/releases/0.9.1-training-sessions.png",
+        "alt": "Training Sessions retains the calendar above the latest three weeks of workouts."
+      }
+    },
+    {
+      "title": "A place for friends",
+      "description": "Social brings together the existing feed, reactions, follow requests and people search. Your sharing choices stay under your control.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/51e829553f7b1cae2ce6094560576566d5d6a367/docs/screenshots/releases/0.9.1-social-following.png",
+        "alt": "Social shows synthetic friends’ latest sessions and the existing reaction and notification controls."
+      }
+    },
+    {
       "title": "Progress at a glance",
       "description": "Green means an increase and red means a decrease. Unchanged values stay neutral across estimated 1RM, top set and volume.",
       "image": {
         "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4207691f378b2701c4d0dcca2d10ef6c7560a652/docs/screenshots/releases/0.9.1-progress-colours.png",
         "alt": "Pec Deck progress with a decrease shown in red, using synthetic training data."
-      }
-    },
-    {
-      "title": "Start with the latest three weeks",
-      "description": "History starts with your latest workout week and the two preceding weeks. Show more keeps older sessions within reach.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4207691f378b2701c4d0dcca2d10ef6c7560a652/docs/screenshots/releases/0.9.1-history-three-weeks.png",
-        "alt": "History initially shows three calendar weeks with Show more available for older sessions, using synthetic training data."
       }
     },
     {

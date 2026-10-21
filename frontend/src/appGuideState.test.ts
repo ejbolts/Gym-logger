@@ -87,8 +87,9 @@ describe('feature onboarding', () => {
     expect(appGuideSteps(false).map((step) => step.target)).toEqual([
       'today',
       'start',
-      'history',
+      'training',
       'progress',
+      'social',
       'body',
       'cardio',
       'installation',

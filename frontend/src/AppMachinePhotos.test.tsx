@@ -326,6 +326,21 @@ describe('saving and pinning a machine photo while logging', () => {
 describe('filtering History by machine', () => {
   beforeEach(() => window.history.replaceState(null, '', '#history'));
 
+  it('keeps the calendar and open session when switching Training views and returning from Social', async () => {
+    await act(async () => root.render(<App />));
+    expect(container.querySelector('[aria-label="Workout calendar"]')).not.toBeNull();
+    await click(container.querySelector<HTMLButtonElement>('.history-card-summary')!);
+    expect(container.querySelector('.history-card.open')).not.toBeNull();
+    await click(button('Exercises'));
+    expect(container.querySelector('.training-exercise-browser')).not.toBeNull();
+    await click(button('Sessions'));
+    expect(container.querySelector('.history-card.open')).not.toBeNull();
+    await click(button('Social'));
+    await click(button('Training'));
+    expect(container.querySelector('.history-card.open')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Workout calendar"]')).not.toBeNull();
+  });
+
   it('finds the last session on one machine among later sessions at other gyms', async () => {
     await act(async () => root.render(<App />));
     expect(historyCardTitles()).toHaveLength(1);

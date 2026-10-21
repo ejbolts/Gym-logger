@@ -487,10 +487,12 @@ export function FriendsPanel({
   active,
   refreshKey,
   onOpenProfile,
+  onChooseSharing,
 }: {
   active: boolean;
   refreshKey: number;
   onOpenProfile: (profile: SharedProfileSummary) => void;
+  onChooseSharing?: () => void;
 }) {
   const [profiles, setProfiles] = useState<SharedProfileSummary[] | null>(null);
   const [connections, setConnections] = useState<SharingConnections | null>(null);
@@ -587,9 +589,14 @@ export function FriendsPanel({
       }
     >
       {state === 'locked' ? (
-        <p className="shared-card-empty">
-          Share your profile above to see and follow other members.
-        </p>
+        <div className="shared-card-empty">
+          <p>Choose profile sharing to see and follow other members.</p>
+          {onChooseSharing && (
+            <button type="button" className="profile-secondary" onClick={onChooseSharing}>
+              Profile sharing
+            </button>
+          )}
+        </div>
       ) : state === 'error' && !profiles ? (
         <div className="sharing-load-error">
           <p className="inline-error" role="alert">

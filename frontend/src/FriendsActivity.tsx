@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { api, ApiError } from './api';
 import { friendSession, reactionSummary, relativeDay } from './friendFeedData';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
@@ -17,13 +17,20 @@ export function FriendsActivityCard({
   active,
   onOpenFriend,
   onOpenFriends,
+  onChooseSharing,
+  title = 'Friends',
+  friendsLabel = 'See all',
   today = localDate(),
 }: {
   active: boolean;
   onOpenFriend: (friend: FriendFeedItem['friend']) => void;
   onOpenFriends: () => void;
+  onChooseSharing?: () => void;
+  title?: string;
+  friendsLabel?: string;
   today?: string;
 }) {
+  const titleId = useId();
   const [state, setState] = useState<ActivityState>({ kind: 'loading' });
   const [picking, setPicking] = useState<string | null>(null);
   const refresh = useRef<() => void>(() => undefined);
@@ -82,11 +89,15 @@ export function FriendsActivityCard({
   }
 
   return (
-    <section className="pulse-card friends-activity" aria-labelledby="friends-activity-title">
+    <section className="pulse-card friends-activity" aria-labelledby={titleId}>
       <header className="pulse-card-header">
-        <h2 id="friends-activity-title">Friends</h2>
-        <button type="button" className="text-link" onClick={onOpenFriends}>
-          {state.kind === 'locked' ? 'Share' : 'See all'}
+        <h2 id={titleId}>{title}</h2>
+        <button
+          type="button"
+          className="text-link"
+          onClick={state.kind === 'locked' ? (onChooseSharing ?? onOpenFriends) : onOpenFriends}
+        >
+          {state.kind === 'locked' ? 'Share' : friendsLabel}
         </button>
       </header>
       {state.kind === 'loading' ? (
@@ -100,7 +111,7 @@ export function FriendsActivityCard({
       ) : state.items.length === 0 ? (
         <p className="pulse-empty-line">
           {state.following === 0
-            ? 'Follow friends from Profile to see their latest workouts here.'
+            ? 'Follow friends to see their latest workouts here.'
             : 'Your friends have not logged a workout yet.'}
         </p>
       ) : (

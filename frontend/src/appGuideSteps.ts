@@ -28,20 +28,28 @@ export function appGuideSteps(videosAllowed: boolean): AppGuideStep[] {
       icon: 'plus',
     },
     {
-      title: 'Look back in History',
+      title: 'Your training in one place',
       description:
-        'Review and edit saved workouts, read your notes and revisit machine photos. The training calendar shows your consistency over time.',
-      target: 'history',
-      tab: 'history',
+        'Training keeps your calendar and saved workouts in Sessions. Review notes, machine photos and older workouts here, or switch to Cardio.',
+      target: 'training',
+      tab: 'training',
       icon: 'calendar',
     },
     {
       title: 'Watch your progress',
       description:
-        'Choose an exercise to explore its progression charts and personal records. Compare sessions to see how your training is changing.',
+        'Open Exercises in Training and choose a lift to explore its existing charts, records and previous sessions.',
       target: 'progress',
       tab: 'progress',
       icon: 'trend',
+    },
+    {
+      title: 'Train alongside friends',
+      description:
+        'Social brings together friends’ latest sessions, reactions, people search and follow requests. Your existing sharing choices still apply.',
+      target: 'social',
+      tab: 'social',
+      icon: 'people',
     },
     {
       title: 'Track your body',

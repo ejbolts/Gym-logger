@@ -53,17 +53,20 @@ export function PageHeader({
   title,
   actions,
   onOpenSettings,
+  headingLevel = 1,
 }: {
   eyebrow?: string;
   title: string;
   actions?: ReactNode;
   onOpenSettings?: () => void;
+  headingLevel?: 1 | 2;
 }) {
+  const Heading = headingLevel === 1 ? 'h1' : 'h2';
   return (
     <header className="page-header">
       <div>
         {eyebrow && <p className="page-eyebrow">{eyebrow}</p>}
-        <h1>{title}</h1>
+        <Heading>{title}</Heading>
       </div>
       {(actions || onOpenSettings) && (
         <div className="page-header-actions">

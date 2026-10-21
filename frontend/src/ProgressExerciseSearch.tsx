@@ -8,20 +8,25 @@ export function ProgressExerciseSearch({
   exerciseId,
   onChange,
   openRequest = 0,
+  browseOnly = false,
 }: {
   exercises: Exercise[];
   exerciseId: string;
   onChange: (exerciseId: string) => void;
   openRequest?: number;
+  /** A persistent list in Training; selecting a row opens the existing progress view. */
+  browseOnly?: boolean;
 }) {
-  const selected = exercises.find((exercise) => exercise.id === exerciseId) ?? null;
+  const selected = browseOnly
+    ? null
+    : (exercises.find((exercise) => exercise.id === exerciseId) ?? null);
   const inputId = useId();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const handledOpenRequestRef = useRef(openRequest);
   const blurFrameRef = useRef<number | null>(null);
   const [query, setQuery] = useState(selected?.name ?? '');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(browseOnly);
   const [activeIndex, setActiveIndex] = useState(0);
   const matches = useMemo(() => progressExerciseMatches(exercises, query), [exercises, query]);
 
@@ -67,8 +72,9 @@ export function ProgressExerciseSearch({
 
   return (
     <div
-      className="progress-exercise-field"
+      className={`progress-exercise-field${browseOnly ? ' is-browsing' : ''}`}
       onBlur={(event) => {
+        if (browseOnly) return;
         if (
           event.relatedTarget instanceof Node &&
           event.currentTarget.contains(event.relatedTarget)
@@ -129,31 +135,33 @@ export function ProgressExerciseSearch({
               choose(matches[activeIndex]);
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              setOpen(false);
+              setOpen(browseOnly);
               setQuery(selected?.name ?? '');
             }
           }}
         />
-        <button
-          type="button"
-          aria-label={open ? 'Close exercise search' : 'Browse exercises'}
-          aria-expanded={open}
-          onClick={() => {
-            if (open) {
-              setOpen(false);
-              setQuery(selected?.name ?? '');
-            } else {
-              setQuery('');
-              setActiveIndex(0);
-              setOpen(true);
-              inputRef.current?.focus();
-            }
-          }}
-        >
-          <Icon name={open ? 'close' : 'chevron-down'} />
-        </button>
+        {!browseOnly && (
+          <button
+            type="button"
+            aria-label={open ? 'Close exercise search' : 'Browse exercises'}
+            aria-expanded={open}
+            onClick={() => {
+              if (open) {
+                setOpen(false);
+                setQuery(selected?.name ?? '');
+              } else {
+                setQuery('');
+                setActiveIndex(0);
+                setOpen(true);
+                inputRef.current?.focus();
+              }
+            }}
+          >
+            <Icon name={open ? 'close' : 'chevron-down'} />
+          </button>
+        )}
       </div>
-      {open && (
+      {(browseOnly || open) && (
         <div className="progress-exercise-results" id={listId} role="listbox">
           {matches.map((exercise, index) => (
             <button

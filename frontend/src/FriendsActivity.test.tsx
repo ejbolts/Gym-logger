@@ -281,7 +281,7 @@ it('explains the card when your profile is private, nobody is followed or friend
   expect(host.textContent).toContain('Share your profile to follow friends');
 
   for (const [following, message] of [
-    [0, 'Follow friends from Profile'],
+    [0, 'Follow friends to see'],
     [2, 'Your friends have not logged a workout yet.'],
   ] as const) {
     feed.mockResolvedValueOnce({ items: [], following });

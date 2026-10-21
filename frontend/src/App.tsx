@@ -233,6 +233,7 @@ import { YouTubeConnectionPanel } from './YouTubeConnectionPanel';
 import { ProfileScreen } from './ProfileScreen';
 import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
 import { FriendsActivityCard } from './FriendsActivity';
+import { SocialScreen } from './SocialScreen';
 import { SettingsSearch } from './SettingsSearch';
 import { ColourThemePanel } from './ColourThemePanel';
 import {
@@ -650,6 +651,7 @@ function AppContent() {
   const historySection = sectionFromTab ?? lastHistorySection;
   const historyGroupVisited =
     sectionFromTab !== null ||
+    visitedTabs.has('training') ||
     visitedTabs.has('history') ||
     visitedTabs.has('progress') ||
     visitedTabs.has('cardio');
@@ -1438,7 +1440,7 @@ function AppContent() {
                     user ? (
                       <FollowNotifications
                         active={tab === 'dashboard'}
-                        onOpenFriends={() => setTab('profile')}
+                        onOpenFriends={() => setTab('social')}
                       />
                     ) : undefined
                   }
@@ -1448,7 +1450,8 @@ function AppContent() {
                       <FriendsActivityCard
                         active={tab === 'dashboard'}
                         onOpenFriend={openSharedProfile}
-                        onOpenFriends={() => setTab('profile')}
+                        onOpenFriends={() => setTab('social')}
+                        onChooseSharing={() => setTab('profile')}
                       />
                     ) : undefined
                   }
@@ -1655,6 +1658,16 @@ function AppContent() {
               />
             </CachedTabPanel>
           )}
+          {user && (tab === 'social' || visitedTabs.has('social')) && (
+            <CachedTabPanel active={tab === 'social'}>
+              <SocialScreen
+                active={tab === 'social'}
+                onOpenProfile={openSharedProfile}
+                onChooseSharing={() => setTab('profile')}
+                onOpenSettings={() => setTab('settings')}
+              />
+            </CachedTabPanel>
+          )}
           {user && (tab === 'profile' || visitedTabs.has('profile')) && (
             <CachedTabPanel active={tab === 'profile'}>
               <ProfileScreen
@@ -1703,7 +1716,8 @@ function AppContent() {
             restEndsAt={restEndsAt}
             workoutSaving={workoutSaving}
             onSelect={(nextTab) => {
-              if (nextTab === 'history' || nextTab === 'progress') openHistorySection(nextTab);
+              if (nextTab === 'training')
+                setTab(lastHistorySection === 'history' ? 'training' : lastHistorySection);
               else setTab(nextTab);
             }}
             onStart={() => startWorkout()}
@@ -6012,6 +6026,7 @@ function ProgressScreen({
   embedded = false,
   initialExerciseId = null,
   defaultExerciseId = null,
+  browseFirst = false,
   onOpenSettings,
 }: {
   exercises: Exercise[];
@@ -6021,6 +6036,7 @@ function ProgressScreen({
   embedded?: boolean;
   initialExerciseId?: string | null;
   defaultExerciseId?: string | null;
+  browseFirst?: boolean;
   onOpenSettings?: () => void;
 }) {
   const weightUnit = useWeightUnit();
@@ -6032,6 +6048,7 @@ function ProgressScreen({
     return preferred ?? strengthExercises[0]?.id ?? '';
   });
   const [metric, setMetric] = useState<ProgressMetric>('estimated_1rm');
+  const [browsing, setBrowsing] = useState(browseFirst && !initialExerciseId);
   const [displayRange, setDisplayRange] = useState<BodyTrendRange>('3m');
   const [progress, setProgress] = useState<ExerciseProgress | null>(null);
   const [loading, setLoading] = useState(false);
@@ -6042,7 +6059,7 @@ function ProgressScreen({
   const selectedExercise = strengthExercises.find((exercise) => exercise.id === exerciseId) ?? null;
 
   useEffect(() => {
-    if (!exerciseId) return;
+    if (!exerciseId || browsing) return;
     let cancelled = false;
     setVisibleSessions(HISTORY_PAGE_SIZE);
     setLoading(true);
@@ -6060,7 +6077,7 @@ function ProgressScreen({
     return () => {
       cancelled = true;
     };
-  }, [exerciseId]);
+  }, [exerciseId, browsing]);
 
   const metricInfo = PROGRESS_METRICS.find((item) => item.value === metric)!;
   const inRange = progress ? progressPointsForChart(progress.points, metric, displayRange) : [];
@@ -6110,9 +6127,34 @@ function ProgressScreen({
     detail: `${formatWeight(point.best_weight_kg, weightUnit)} × ${point.best_reps}${point.best_rpe === null ? '' : ` @ RPE ${point.best_rpe}`}`,
   }));
 
+  if (browsing) {
+    return (
+      <section className="progress-screen training-exercise-browser" aria-label="Exercise progress">
+        <p className="pulse-empty-line">
+          Choose an exercise to see its progress and previous sessions.
+        </p>
+        <ProgressExerciseSearch
+          exercises={strengthExercises}
+          exerciseId=""
+          browseOnly
+          onChange={(id) => {
+            setExerciseId(id);
+            setBrowsing(false);
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className={`progress-screen ${embedded ? '' : 'content-page'}`}>
+      {browseFirst && (
+        <button type="button" className="training-back text-link" onClick={() => setBrowsing(true)}>
+          <Icon name="chevron-left" /> All exercises
+        </button>
+      )}
       <PageHeader
+        headingLevel={embedded ? 2 : 1}
         eyebrow={
           selectedExercise
             ? [
@@ -6127,7 +6169,7 @@ function ProgressScreen({
             : 'Exercise progress'
         }
         title={selectedExercise?.name ?? 'Progress'}
-        onOpenSettings={onOpenSettings}
+        onOpenSettings={embedded ? undefined : onOpenSettings}
         actions={
           <>
             {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
@@ -8665,56 +8707,64 @@ function HistoryScreen({
 
   return (
     <section className="history-screen content-page">
-      {section !== 'progress' && (
-        <>
-          <PageHeader
-            eyebrow={
-              section === 'cardio'
-                ? 'Zone 2 · energy · sessions'
-                : `${totalWorkouts} ${totalWorkouts === 1 ? 'workout' : 'workouts'} logged`
-            }
-            title={section === 'cardio' ? 'Cardio' : 'History'}
-            onOpenSettings={onOpenSettings}
-            actions={
-              section === 'history' ? (
-                <button
-                  className="icon-button-pulse accent"
-                  type="button"
-                  onClick={() => onStartWorkout()}
-                  aria-label="Add workout"
-                >
-                  <Icon name="plus" />
-                </button>
-              ) : undefined
-            }
-          />
-          <div
-            ref={sectionIndicatorRef}
-            className="segmented-control slide-indicator"
-            role="tablist"
-            aria-label="History sections"
-          >
+      <PageHeader
+        eyebrow={
+          section === 'progress'
+            ? 'Exercise charts · records · sessions'
+            : section === 'cardio'
+              ? 'Zone 2 · energy · sessions'
+              : `${totalWorkouts} ${totalWorkouts === 1 ? 'workout' : 'workouts'} logged`
+        }
+        title="Training"
+        onOpenSettings={onOpenSettings}
+        actions={
+          section === 'history' ? (
             <button
+              className="icon-button-pulse accent"
               type="button"
-              role="tab"
-              aria-selected={section === 'history'}
-              className={section === 'history' ? 'active' : ''}
-              onClick={() => onSectionChange('history')}
+              onClick={() => onStartWorkout()}
+              aria-label="Add workout"
             >
-              Workouts
+              <Icon name="plus" />
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={section === 'cardio'}
-              className={section === 'cardio' ? 'active' : ''}
-              onClick={() => onSectionChange('cardio')}
-            >
-              Cardio
-            </button>
-          </div>
-        </>
-      )}
+          ) : undefined
+        }
+      />
+      <div
+        ref={sectionIndicatorRef}
+        className="segmented-control slide-indicator"
+        role="tablist"
+        aria-label="Training sections"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={section === 'history'}
+          className={section === 'history' ? 'active' : ''}
+          onClick={() => onSectionChange('history')}
+        >
+          Sessions
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={section === 'progress'}
+          className={section === 'progress' ? 'active' : ''}
+          data-guide-target="progress"
+          onClick={() => onSectionChange('progress')}
+        >
+          Exercises
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={section === 'cardio'}
+          className={section === 'cardio' ? 'active' : ''}
+          onClick={() => onSectionChange('cardio')}
+        >
+          Cardio
+        </button>
+      </div>
       {visitedSections.has('progress') && (
         <CachedTabPanel active={section === 'progress'}>
           <ProgressScreen
@@ -8723,6 +8773,7 @@ function HistoryScreen({
             measurements={measurements}
             onOpenWorkout={(workoutId, exerciseId) => onOpenWorkout(workoutId, exerciseId)}
             embedded
+            browseFirst
             initialExerciseId={initialExerciseId}
             defaultExerciseId={defaultExerciseId}
             onOpenSettings={onOpenSettings}
