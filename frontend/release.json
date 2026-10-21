@@ -16,7 +16,7 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#091",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/612828eb54def2aec60411bef95c93f2f9d58cea/docs/screenshots/releases/0.9.1-training-sessions.png",
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
     "alt": "Training Sessions retains the calendar above the latest three weeks of synthetic workouts."
   },
   "highlights": [
@@ -24,7 +24,7 @@
       "title": "Your training, together",
       "description": "Sessions keeps the calendar and saved workouts. Exercises opens familiar progress tools, and Cardio stays within reach. Switch tabs and return to the view you were using.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/612828eb54def2aec60411bef95c93f2f9d58cea/docs/screenshots/releases/0.9.1-training-sessions.png",
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
         "alt": "Training Sessions retains the calendar above the latest three weeks of workouts."
       }
     },
@@ -40,7 +40,7 @@
       "title": "Your account, on every tab",
       "description": "Open Notifications or Profile beside Settings on Home, Training, Social and Body. Matching buttons keep the same order and wrap neatly on smaller screens.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/2806ac9655455b211af2419b45189484cdb72250/docs/screenshots/releases/0.9.1-header-controls.png",
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-header-controls.png",
         "alt": "Body with matching Notifications, Profile and Settings buttons at the top right and no duplicate header plus, using synthetic account data."
       }
     },
