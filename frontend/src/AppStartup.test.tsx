@@ -435,6 +435,8 @@ describe('App startup', () => {
 
     expect(markup).toContain('Profile sharing');
     expect(markup).toContain('Loading your sharing choices');
+    expect(markup).not.toContain('profile-friends-title');
+    expect(markup).not.toContain('Open Social');
   });
 
   it('keeps reloaded profile links usable and sends old shared-list links to Social', () => {
@@ -442,8 +444,7 @@ describe('App startup', () => {
       const markup = renderSignedIn(hash, account);
 
       expect(markup).toContain('<strong>Profile</strong>');
-      expect(markup).toContain('id="profile-friends-title">Friends</h2>');
-      expect(markup).toContain('Open Social');
+      expect(markup).toContain('Profile sharing');
       expect(markup).not.toContain('View shared profiles');
     }
     const social = renderSignedIn('#shared', account);

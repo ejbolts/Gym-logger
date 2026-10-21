@@ -1688,7 +1688,6 @@ function AppContent() {
             <CachedTabPanel active={tab === 'profile'}>
               <ProfileScreen
                 active={tab === 'profile'}
-                onOpenFriends={() => setTab('social')}
                 openFeedback={openFeedback}
                 onOpenAdmin={isAdmin ? () => setTab('admin') : undefined}
               />

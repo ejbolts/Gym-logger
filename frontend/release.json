@@ -9,6 +9,7 @@
     "Exercises has a bounded, searchable library with a live progress preview below on phones and beside it on wider screens. Date-range buttons sit beside the preview value. Open full progress for records and session history, then return with your search, list position and range intact. Older History, Progress and Cardio links still work.",
     "Follows are now friendships. Send a friend request, and once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles. Existing follows in either direction became friendships, and waiting follow requests became friend requests.",
     "Social has its own bottom tab. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members. Remove or block a friend from their profile. Home keeps its compact friends card.",
+    "Removed the redundant Friends shortcut from Profile settings. Friends, requests and people search are available in Social.",
     "Progress changes are green for increases, red for decreases, and neutral when unchanged across estimated 1RM, top set and volume.",
     "Training’s Sessions view starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
     "Quick-start circles are now 52 px across, up from 44 px, with larger icons to make each option easier to see and tap.",

@@ -309,32 +309,12 @@ export function FeedbackReviewPanel({
   );
 }
 
-/** Friends live in Social; Profile keeps a pointer for people who look for them here. */
-function FriendsLinkPanel({ onOpenFriends }: { onOpenFriends: () => void }) {
-  return (
-    <section className="settings-panel panel friends-panel" aria-labelledby="profile-friends-title">
-      <header>
-        <div>
-          <p className="section-kicker">SOCIAL</p>
-          <h2 id="profile-friends-title">Friends</h2>
-        </div>
-      </header>
-      <p>Your friends, friend requests and people search are in Social.</p>
-      <button type="button" className="profile-secondary" onClick={onOpenFriends}>
-        Open Social
-      </button>
-    </section>
-  );
-}
-
 export function ProfileScreen({
   active,
-  onOpenFriends,
   openFeedback = 0,
   onOpenAdmin,
 }: {
   active: boolean;
-  onOpenFriends: () => void;
   openFeedback?: number;
   onOpenAdmin?: () => void;
 }) {
@@ -351,7 +331,6 @@ export function ProfileScreen({
         <FeedbackReviewPanel openFeedback={openFeedback} onOpenAdmin={onOpenAdmin} />
       )}
       <ProfileSharingPanel />
-      <FriendsLinkPanel onOpenFriends={onOpenFriends} />
       <PasswordForm />
       <SessionPanel />
       <DangerZone />
