@@ -32,8 +32,8 @@
       "title": "Library + preview",
       "description": "Scroll the exercise library without losing your place. Select a lift to update its preview and use 1M, 3M, 9M or 1Y beside the value. Open full progress for records and saved sessions.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/ea38bb8da4f6ac2d6ffbea2e5fa833005429e91e/docs/screenshots/releases/0.9.1-exercise-library-wide.png",
-        "alt": "A bounded exercise library beside the existing live progress chart, with range controls next to the value and synthetic training data."
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/21500abe4be9ef48159c2aff923f25a548a8e1f4/docs/screenshots/releases/0.9.1-training-exercises.png",
+        "alt": "A bounded exercise library above its live progress preview on a phone, with range controls beside the value and synthetic training data."
       }
     },
     {
