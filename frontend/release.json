@@ -1,9 +1,11 @@
 {
   "version": "0.9.1",
   "date": "2026-10-21",
-  "title": "Swipe down to close muscle details",
-  "summary": "Dismiss muscle-set details with a downward swipe and see the exercise list without a redundant heading.",
+  "title": "Clearer progress and a shorter History",
+  "summary": "Read progress changes in green and red, start History with the latest three weeks, and swipe down to close muscle details.",
   "changes": [
+    "Progress changes are green for increases, red for decreases, and neutral when unchanged across estimated 1RM, top set and volume.",
+    "History starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
     "Swipe down from the muscle details handle or header to close the sheet. You can also pull down on its content when the list is at the top; short pulls return to place and scrolling still works.",
     "Removed the redundant Contributing exercises heading and count from muscle details. Done, Escape and tapping outside still close the sheet."
   ],

@@ -270,7 +270,7 @@ import {
   type WorkoutDraftSet as DraftSet,
 } from './workoutMovements';
 import { applySupersetSelection, clearSuperset } from './workoutSupersets';
-import { upsertWorkoutByRecency } from './workoutHistory';
+import { initialHistoryVisibleCount, upsertWorkoutByRecency } from './workoutHistory';
 import { calculateDraftPrs } from './workoutPr';
 import { completedWorkoutDurationMinutes } from './workoutResume';
 import {
@@ -8502,10 +8502,11 @@ function HistoryScreen({
   const weightUnit = useWeightUnit();
   const { types } = useWorkoutTypes();
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
-  const [visibleCount, setVisibleCount] = useState(() => {
-    const index = initialOpenId ? workouts.findIndex((item) => item.id === initialOpenId) : -1;
-    return Math.max(HISTORY_PAGE_SIZE * 2, index + 1);
-  });
+  const [extraVisibleCount, setExtraVisibleCount] = useState(0);
+  const targetIndex = initialOpenId ? workouts.findIndex((item) => item.id === initialOpenId) : -1;
+  const visibleCount =
+    Math.max(initialHistoryVisibleCount(workouts, weekStartDay), targetIndex + 1) +
+    extraVisibleCount;
   const [targetExerciseId, setTargetExerciseId] = useState<string | null>(
     initialOpenId ? initialExerciseId : null,
   );
@@ -8824,7 +8825,7 @@ function HistoryScreen({
                     disabled={loadingOlder}
                     onClick={() => {
                       if (visibleCount < workouts.length) {
-                        setVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2);
+                        setExtraVisibleCount((count) => count + HISTORY_PAGE_SIZE * 2);
                       } else onLoadOlder();
                     }}
                   >

@@ -2061,6 +2061,10 @@ html[data-reduce-motion] .app-tab-items[aria-hidden] {
   color: var(--p-good);
 }
 
+.progress-delta.down {
+  color: var(--p-danger);
+}
+
 .progress-delta .pulse-icon {
   width: 0.875rem;
   height: 0.875rem;

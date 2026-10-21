@@ -328,6 +328,8 @@ describe('filtering History by machine', () => {
 
   it('finds the last session on one machine among later sessions at other gyms', async () => {
     await act(async () => root.render(<App />));
+    expect(historyCardTitles()).toHaveLength(1);
+    await click(container.querySelector<HTMLButtonElement>('.show-more-button')!);
     expect(historyCardTitles()).toHaveLength(4);
 
     await click(button('Filter by machine'));

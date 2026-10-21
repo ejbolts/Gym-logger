@@ -4,12 +4,14 @@
 
 21 October 2026
 
-### Swipe down to close muscle details
+### Clearer progress and a shorter History
 
 ![A short pull returns muscle details to place; a longer swipe dismisses the sheet](screenshots/releases/0.9.1-muscle-sheet-swipe.gif)
 
 *Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading. Preview uses isolated synthetic training data.*
 
+- **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.
+- **History:** initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. **Show more** reveals older sessions; links to older workouts still open them directly.
 - Pull down from the muscle details handle or header to close it. Content can also be pulled down when the list is at the top; short pulls return to place, and long lists still scroll.
 - Removed the redundant **Contributing exercises** heading and count. **Done**, **Escape** and tapping outside continue to close the sheet.
 

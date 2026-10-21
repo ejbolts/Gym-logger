@@ -1,5 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { upsertWorkoutByRecency, workoutPageForId } from './workoutHistory';
+import {
+  initialHistoryVisibleCount,
+  upsertWorkoutByRecency,
+  workoutPageForId,
+} from './workoutHistory';
+
+describe('initial History visibility', () => {
+  it('includes every workout in the latest three calendar weeks, rather than a fixed count', () => {
+    const workouts = [
+      ...Array.from({ length: 20 }, () => ({ workout_date: '2026-10-21' })),
+      { workout_date: '2026-10-05' },
+      { workout_date: '2026-10-04' },
+    ];
+    expect(initialHistoryVisibleCount(workouts, 1)).toBe(21);
+    expect(initialHistoryVisibleCount(workouts, 0)).toBe(22);
+  });
+
+  it('anchors to the latest workout and counts empty weeks across a year boundary', () => {
+    expect(
+      initialHistoryVisibleCount(
+        ['2026-01-06', '2025-12-22', '2025-12-21'].map((workout_date) => ({ workout_date })),
+        1,
+      ),
+    ).toBe(2);
+    expect(initialHistoryVisibleCount([], 1)).toBe(0);
+  });
+});
 
 describe('workout history navigation', () => {
   const workouts = Array.from({ length: 17 }, (_, index) => ({ id: `workout-${index}` }));
