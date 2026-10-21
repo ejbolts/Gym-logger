@@ -212,7 +212,7 @@ describe('own profile', () => {
     );
     expect(container.querySelector('.calendar-panel')).not.toBeNull();
     expect(container.textContent).toContain('First workout');
-    expect(container.textContent).toContain('Your profile is private');
+    expect(container.querySelector('.shared-preview-note')).toBeNull();
     expect(container.querySelector('.profile-training-time')?.textContent).toContain('4h 33min');
     expect(container.textContent).not.toContain('Change password');
     expect(container.textContent).not.toContain('Profile sharing');
@@ -231,6 +231,9 @@ describe('own profile', () => {
     const owner = { user, onSaved: vi.fn() };
     vi.mocked(api.sharing.profile).mockResolvedValue({ ...profile, id: user.id, is_you: true });
     await renderProfile(user.id, owner);
+    expect(container.querySelector('.shared-preview-note')?.textContent).toContain(
+      'This is the training you share',
+    );
     await chooseType('lower');
     await renderProfile(user.id, owner, false);
     vi.mocked(api.sharing.profile)
@@ -238,7 +241,7 @@ describe('own profile', () => {
       .mockResolvedValue({ ...profile, id: user.id, is_you: true, visibility: 'private' });
     await renderProfile(user.id, owner, true);
     expect(api.sharing.profile).toHaveBeenCalledExactlyOnceWith(user.id);
-    expect(container.textContent).toContain('Your profile is private');
+    expect(container.querySelector('.shared-preview-note')).toBeNull();
     expect(api.sharing.workouts).toHaveBeenLastCalledWith(
       user.id,
       0,

@@ -1134,11 +1134,9 @@ export function SharedProfileScreen({
     ownProfile?.user.id === profileId ? (
       <ProfileIdentity user={ownProfile.user} onSaved={ownProfile.onSaved}>
         {profile?.is_you && <ProfileStats profile={profile} />}
-        {profile?.is_you && (
+        {profile?.is_you && profile.visibility !== 'private' && (
           <p className="shared-preview-note">
-            {profile.visibility === 'private'
-              ? 'Your profile is private. Only you can see this page.'
-              : 'This is the training you share with members who can view your profile.'}
+            This is the training you share with members who can view your profile.
           </p>
         )}
       </ProfileIdentity>

@@ -32,7 +32,7 @@
 
 ![Your own training profile with name and photo editing, workout totals and the consistency calendar](screenshots/releases/0.10.0-own-profile.png)
 
-*Your profile uses the same training layout as other members. Edit your name and photo above the calendar, training totals and workouts. A private account can preview its own profile without enabling sharing.*
+*Your profile uses the same training layout as other members. Edit your name and photo above the calendar, training totals and workouts. A private account can preview its own profile without enabling sharing; the header omits the private-profile reminder.*
 
 ![Account details, profile sharing and security controls in Settings](screenshots/releases/0.10.0-account-settings.png)
 
