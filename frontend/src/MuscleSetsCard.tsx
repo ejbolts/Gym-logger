@@ -123,6 +123,7 @@ function MuscleContributionSheet({
       kicker="THIS WEEK"
       className="muscle-contribution-sheet"
       closeLabel="Done"
+      swipeToDismiss
       onClose={onClose}
     >
       <div className="muscle-sheet-body">
@@ -147,9 +148,6 @@ function MuscleContributionSheet({
           </span>
           <span>{percentage}% of goal</span>
         </p>
-        <h3>
-          Contributing exercises <span>· {contributions.length}</span>
-        </h3>
         {contributions.length ? (
           <ul className="muscle-contribution-list">
             {contributions.map((contribution) => (

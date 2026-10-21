@@ -13,25 +13,41 @@
 .muscle-name-button:focus-visible {
   color: var(--p-accent);
 }
-.popup-dialog.muscle-contribution-sheet {
+.popup-dialog.muscle-contribution-sheet[open] {
   width: min(30rem, calc(100% - 1.5rem));
   max-height: calc(100dvh - 2rem);
   margin: auto auto max(0.75rem, env(safe-area-inset-bottom));
   border-radius: 24px;
+  /* The shared pop-in animation would restart whenever a drag snaps back. */
+  animation: none;
+  transform: translateY(var(--sheet-offset, 0px));
+  transition: transform 180ms ease-out;
 }
-.muscle-contribution-sheet::before {
+.popup-dialog.muscle-contribution-sheet.sheet-dragging {
+  transition: none;
+  user-select: none;
+}
+.muscle-contribution-sheet > header::before {
   content: '';
+  position: absolute;
+  top: 0.625rem;
+  left: calc(50% - 1.125rem);
   display: block;
   width: 2.25rem;
   height: 0.25rem;
-  margin: 0.625rem auto 0;
   border-radius: 8px;
   background: var(--p-muted);
 }
 .muscle-contribution-sheet > header {
-  padding: 0.875rem 1.25rem;
+  padding: 1.75rem 1.25rem 0.875rem;
   border-bottom: 0;
   background: var(--p-surface);
+  touch-action: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .popup-dialog.muscle-contribution-sheet {
+    transition: none;
+  }
 }
 .muscle-contribution-sheet .popup-dialog-close {
   width: auto;
@@ -79,14 +95,6 @@
   margin: 0.5rem 0 1.5rem;
   color: var(--p-muted);
   font-size: 0.75rem;
-}
-.muscle-sheet-body h3 {
-  margin: 0 0 0.25rem;
-  font-size: 0.875rem;
-}
-.muscle-sheet-body h3 > span {
-  color: var(--p-muted);
-  font-weight: 400;
 }
 .muscle-contribution-list {
   margin: 0;

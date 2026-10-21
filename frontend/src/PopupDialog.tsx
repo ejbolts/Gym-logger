@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
+import { useSheetDismiss } from './useSheetDismiss';
 
 export function PopupDialog({
   title,
@@ -7,6 +8,7 @@ export function PopupDialog({
   className = '',
   closeLabel,
   style,
+  swipeToDismiss = false,
   onClose,
   children,
 }: {
@@ -15,11 +17,13 @@ export function PopupDialog({
   className?: string;
   closeLabel?: string;
   style?: CSSProperties;
+  swipeToDismiss?: boolean;
   onClose: () => void;
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  useSheetDismiss(dialogRef, swipeToDismiss, onClose);
 
   useEffect(() => {
     const dialog = dialogRef.current;

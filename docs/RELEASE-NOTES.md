@@ -1,5 +1,18 @@
 # Gym Logger release notes
 
+## 0.9.1
+
+21 October 2026
+
+### Swipe down to close muscle details
+
+![A short pull returns muscle details to place; a longer swipe dismisses the sheet](screenshots/releases/0.9.1-muscle-sheet-swipe.gif)
+
+*Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading. Preview uses isolated synthetic training data.*
+
+- Pull down from the muscle details handle or header to close it. Content can also be pulled down when the list is at the top; short pulls return to place, and long lists still scroll.
+- Removed the redundant **Contributing exercises** heading and count. **Done**, **Escape** and tapping outside continue to close the sheet.
+
 ## 0.9.0
 
 20 October 2026
