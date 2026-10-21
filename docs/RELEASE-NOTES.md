@@ -4,13 +4,19 @@
 
 21 October 2026
 
-### Bigger quick-start buttons
+### Bigger quick-start buttons and swipeable muscle details
 
 ![Quick-start menu with larger Cardio, Up next and Empty circles](screenshots/releases/0.9.1-quick-start-circles.png)
 
-*The three quick-start circles are now 52 px across, with larger icons.*
+*The three quick-start circles are now 52 px across, with larger icons and the full-screen background blur.*
+
+![A short pull returns muscle details to place; a longer swipe dismisses the sheet](screenshots/releases/0.9.1-muscle-sheet-swipe.gif)
+
+*Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading. Preview uses isolated synthetic training data.*
 
 - Enlarged the Cardio, Up next and Empty circles from 44 px to 52 px and their icons from 20 px to 24 px.
+- Pull down from the muscle details handle or header to close it. Content can also be pulled down when the list is at the top; short pulls return to place, and long lists still scroll.
+- Removed the redundant **Contributing exercises** heading and count. **Done**, **Escape** and tapping outside continue to close the sheet.
 
 ## 0.9.0
 
