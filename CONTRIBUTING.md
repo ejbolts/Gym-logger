@@ -12,13 +12,13 @@ Thanks for helping improve Gym Logger. Bug reports, documentation, accessibility
 ## Make a focused change
 
 1. Fork the repository if needed, clone it and create a feature branch from current `main`. Contributors with write access can use a branch in this repository. Keep one purpose per pull request.
-2. Follow the [local setup instructions](docs/TECHNICAL-REFERENCE.md#first-local-run-mock-youtube) using Python 3.12 and Node.js 20+. Use mock YouTube uploads and a separate sample database, upload directory, VAPID key and session-cookie name. Never develop against real user data or a running stable checkout.
+2. Follow the [local setup instructions](docs/TECHNICAL-REFERENCE.md#first-local-run-mock-youtube) using Python 3.12 and Node.js 22.13+ (CI uses Node.js 22). Use mock YouTube uploads and a separate sample database, upload directory, VAPID key and session-cookie name. Never develop against real user data or a running stable checkout.
 3. Follow existing React/TypeScript and FastAPI/SQLAlchemy patterns. Label fields, support keyboard navigation and small screens, and respect reduced motion. Preserve account isolation and require authentication on new APIs.
 4. Add regression tests for meaningful behavior changes. For schema changes, include an Alembic migration and test an existing database upgrade; creating fresh tables is not an upgrade test.
-5. Run the checks below and exercise changed behavior with sample data. Include a reviewed screenshot for visible changes and a short recording when a sequence is needed to explain the behavior.
+5. Run focused checks for the changed behavior using the [development test commands](docs/TECHNICAL-REFERENCE.md#checks), and exercise changed behavior with sample data. Include a reviewed screenshot for visible changes and a short recording when a sequence is needed to explain the behavior. GitHub runs the full checks below for PRs; both check jobs must pass before merging.
 6. Keep release metadata and notes accurate for user-visible changes. Coordinate the pending version with the maintainer; PR count does not determine the version. Preserve release history.
 
-From the repository root, with the development virtual environment activated:
+To reproduce the full GitHub checks locally, from the repository root with the development virtual environment activated:
 
 ```sh
 ruff format --check backend

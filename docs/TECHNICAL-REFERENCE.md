@@ -72,7 +72,7 @@ Sign-in uses cookie-based sessions with per-user accounts and authorization chec
 ## Prerequisites
 
 - Python 3.12
-- Node.js 20+ and npm
+- Node.js 22.13+ and npm (CI uses Node.js 22)
 - ffmpeg and ffprobe available on `PATH` (or configured with environment variables)
 
 Windows PowerShell (using winget where available):
@@ -121,13 +121,13 @@ Initialize or upgrade the SQLite database, build the PWA, then run FastAPI:
 
 ```powershell
 alembic upgrade head
-Set-Location frontend; npm install; npm run build; Set-Location ..
+Set-Location frontend; npm ci; npm run build; Set-Location ..
 uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
 ```bash
 alembic upgrade head
-(cd frontend && npm install && npm run build)
+(cd frontend && npm ci && npm run build)
 uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
@@ -199,16 +199,65 @@ against the current code before starting new work.
 
 ## Checks
 
-Run these from the repository root after activating the virtual environment:
+While developing, run the tests for the behaviour you changed. From the repository root,
+after activating the virtual environment:
+
+```powershell
+python -m pytest backend/tests/test_workout_types.py -x
+ruff check backend/tests/test_workout_types.py
+```
+
+From `frontend/`, use a focused watch or a one-off selection:
+
+```sh
+npm run test:watch -- src/WeightInput.test.tsx
+npm run test:related -- src/weightUnits.ts
+npm run test:changed -- origin/main
+```
+
+`test:changed` without a reference covers uncommitted changes; with `origin/main` it
+covers the feature branch's changes. Related-test selection follows static imports, so
+include relevant integration tests yourself when the relationship is indirect. On Windows,
+use the actual worktree directory rather than a junction alias if Vite cannot resolve files.
+
+Check formatting/lint for edited files and exercise changed UI behaviour with isolated
+sample data. Run wider suites locally when changing authentication, shared state, database
+fixtures, migrations or other shared behaviour. Do not rerun unrelated passing checks after
+every small edit. Documentation-only changes need documentation checks, not application suites.
+
+The GitHub **Checks** workflow runs full frontend and backend jobs in parallel on every PR
+(including stacked PRs), on `main` pushes, and on manual dispatch. It caches dependencies
+and cancels superseded runs. Before merging, require both **Frontend checks** and
+**Backend checks** to pass for the current PR revision. Making these checks mandatory in a
+GitHub ruleset is a separate maintainer action after the workflow is available; adding the
+workflow does not change existing branch protection or authorise a merge or deployment.
+
+For a full local verification, run these from the repository root:
 
 ```powershell
 ruff format --check backend
 ruff check backend
-pytest
+python -m pytest --durations=10
 Set-Location frontend; npm run format:check; npm run lint; npm run build; npm test
 ```
 
-Use `ruff format backend` and `npm run format` to apply formatting.
+Use `ruff format backend` and `npm run format` to apply formatting. Use `npm ci` from
+`frontend/` for a clean install of the committed dependency lockfile. After intentionally
+changing dependencies or package scripts, update and commit `package-lock.json` with
+`npm install --package-lock-only`.
+
+Backend tests ignore the checkout's `.env` and inherited `GYM_` deployment settings.
+Each run uses its own short `gym-tests-` directory in the operating system's temporary
+directory for SQLite, temporary files, uploads and credentials, outside Git. An explicit
+pytest `--basetemp` is still respected. The schema is created once per run; rows are cleared between tests in
+foreign-key order, with real commits and connections retained for scheduler and
+concurrent-request tests.
+
+Ordinary API fixtures pre-create accounts with a real cached password hash and a
+real server-side session. Tests marked `auth_flow` (including the auth and account
+management suites) create their fixture accounts through real registration and login.
+Use that marker for tests whose purpose includes those authentication flows; explicit
+calls to registration/login and password hashing always use the real implementation.
 
 ## Switching to real YouTube uploads
 

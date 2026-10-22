@@ -42,6 +42,9 @@ where = ["backend"]
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 addopts = "-q"
+markers = [
+  "auth_flow: exercise real registration/login when creating authenticated fixture accounts",
+]
 
 [tool.ruff]
 target-version = "py312"
