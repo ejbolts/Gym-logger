@@ -87,6 +87,14 @@
         "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/40685e5417b9ec73ff55b104b34a9ef10e611bf2/docs/screenshots/releases/0.9.1-muscle-sheet-swipe.gif",
         "alt": "A short downward pull returns muscle details to place; a longer pull dismisses the sheet, with exercises listed without a redundant heading."
       }
+    },
+    {
+      "title": "Remove a rest, keep the set",
+      "description": "Choose 0:00 (no rest) or swipe left on a rest row. Undo restores it. Removed rests stay removed when editing, saving or reopening; edit the set to add one back. Show rest times in Settings hides rows independently of the countdown.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/a53226ebff66b5f4c16bbeca293b80911fd9948e/docs/screenshots/releases/0.10.0-rest-removal.gif",
+        "alt": "An isolated sample workout removes a rest with zero time, restores it with Undo, then removes it with a left swipe while retaining both sets."
+      }
     }
   ]
 }
