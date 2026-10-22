@@ -25,6 +25,14 @@
   },
   "highlights": [
     {
+      "title": "Settings, with a place for everything",
+      "description": "Browse six focused sections with saved-value summaries. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f1e3a10d6e6bc1b5242ab2e3e9abe62b840b1968/docs/screenshots/releases/0.10.0-settings-overview.png",
+        "alt": "The redesigned Settings overview with six focused categories, search and synthetic account preferences."
+      }
+    },
+    {
       "title": "Your profile, focused on training",
       "description": "View your calendar, training totals and workouts in the same layout as your friends. Edit your name and photo here; manage privacy, your account and security in Settings. Your own page stays available when your profile is private.",
       "image": {
