@@ -11,6 +11,8 @@ from app.database import SessionLocal
 from app.main import create_app
 from app.models import Exercise, User, UserSession
 
+pytestmark = pytest.mark.auth_flow
+
 
 def feed_passwords(monkeypatch, *answers: str) -> None:
     replies = iter(answers)

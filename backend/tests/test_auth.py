@@ -57,6 +57,8 @@ from app.models import (
     movement_machine_photos,
 )
 
+pytestmark = pytest.mark.auth_flow
+
 PUBLIC_ROUTES = {
     ("GET", "/api/health"),
     ("GET", "/api/auth/config"),
