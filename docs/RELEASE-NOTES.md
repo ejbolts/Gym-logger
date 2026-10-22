@@ -54,6 +54,11 @@
 
 *Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading.*
 
+![Remove an individual rest using zero time, restore it with Undo, then swipe its row left to remove it again](screenshots/releases/0.10.0-rest-removal.gif)
+
+*Choose 0:00 (no rest) or swipe left to remove just the rest. Undo restores it, and both sets stay in the workout. This recording uses isolated sample data.*
+
+- **Rest times:** choose **0:00 (no rest)** or swipe left on a rest row to remove it without deleting its set. **Undo** restores the previous duration. Removed rests stay removed through set edits, workout saves and reopening. Edit the set and save **Rest after set** to add one back. Choices include **0:30**; **Settings > Timers & notifications > Show rest times** hides the rows independently of the automatic countdown.
 - **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls. Removed the duplicate blue plus buttons from Training and Body headers; use **Start** for workouts and **Log weigh-in** for bodyweight entries.
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
 - **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views.
