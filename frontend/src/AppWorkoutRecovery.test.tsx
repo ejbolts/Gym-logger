@@ -27,6 +27,7 @@ vi.mock('./api', async (importOriginal) => {
     ...original,
     api: {
       ...original.api,
+      workoutRevision: vi.fn().mockResolvedValue({ revision: 'initial' }),
       dashboard: vi.fn(),
       listExercises: vi.fn(),
       listWorkouts: vi.fn(),
@@ -293,6 +294,7 @@ function expectPreserved(draft: ActiveWorkoutDraft) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(api.workoutRevision).mockResolvedValue({ revision: 'initial' });
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('matchMedia', () => ({ matches: false }));
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
@@ -494,6 +496,62 @@ describe('finishing workouts in the background', () => {
     expect(api.createWorkout).toHaveBeenCalledTimes(2);
     expect(window.location.hash).toBe('#dashboard');
   });
+
+  it('keeps later navigation after a failed new-workout save and preserves recovery', async () => {
+    const draft = storedDraft();
+    writeActiveWorkoutDraft(draft);
+    let fail!: (reason: Error) => void;
+    vi.mocked(api.createWorkout).mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        fail = reject;
+      }),
+    );
+    await mount();
+    await confirmFinish();
+    await navigateTo('Training');
+    await act(async () => fail(new Error('Connection lost.')));
+    expect(window.location.hash).toBe('#training');
+    expectPreserved(draft);
+    expect(document.querySelector('.app-notification-toast')?.textContent).toContain(
+      'could not be saved',
+    );
+    expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+  });
+
+  it('shows completion records without locking navigation, scrolling, or focus', async () => {
+    writeActiveWorkoutDraft(storedDraft());
+    vi.mocked(api.createWorkout).mockResolvedValue(remoteWorkout());
+    await mount();
+    vi.mocked(api.listPersonalRecords).mockResolvedValueOnce([
+      {
+        id: 'record',
+        exercise_id: bench.id,
+        exercise_name: bench.name,
+        workout_id: 'remote-workout',
+        set_id: 'remote-set',
+        record_type: 'weight',
+        value: 90,
+        weight_kg: 90,
+        unit: 'kg',
+        normalized_weight: 90,
+        formula: null,
+        achieved_date: '2026-10-23',
+      } as import('./types').PersonalRecord,
+    ]);
+    await confirmFinish();
+    expect(document.querySelector('.workout-completion-toast')?.textContent).toContain('1 new PR');
+    expect(document.querySelector('[aria-modal="true"], #root[inert]')).toBeNull();
+    expect(document.body.style.overflow).not.toBe('hidden');
+    await navigateTo('Training');
+    expect(window.location.hash).toBe('#training');
+    expect(document.querySelector('.workout-completion-toast')).not.toBeNull();
+    await act(async () =>
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="Close personal record summary"]')!
+        .click(),
+    );
+    expect(document.querySelector('.workout-completion-toast')).toBeNull();
+  });
 });
 
 describe('inactive workout suggestions', () => {
@@ -662,5 +720,184 @@ describe('inactive workout suggestions', () => {
         .reduce((volume, set) => volume + set.reps! * set.weight_kg!, 0),
     ).toBe(640);
     expect(sets.map((set) => set.notes)).toEqual(saved.movements[0].sets.map((set) => set.notes));
+  });
+});
+
+function remoteWorkout(name = 'Phone workout'): TrackedWorkout {
+  return {
+    id: 'remote-workout',
+    name,
+    workout_date: '2026-10-23',
+    category: 'push',
+    notes: null,
+    duration_minutes: 30,
+    start_time: null,
+    end_time: null,
+    is_sample: true,
+    created_at: '2026-10-23T01:00:00Z',
+    updated_at: '2026-10-23T01:00:00Z',
+    movements: [
+      {
+        id: 'remote-movement',
+        order_index: 0,
+        exercise: bench,
+        notes: null,
+        machine_photos: [],
+        superset_group_id: null,
+        superset_name: null,
+        sets: [
+          {
+            ...createWorkoutSet('strength'),
+            id: 'remote-set',
+            order_index: 0,
+            reps: 8,
+            weight_kg: 80,
+            incline_percent: null,
+            speed_kph: null,
+            bodyweight_kg: null,
+            percentile: null,
+            warmup: false,
+            set_type: 'normal',
+            failed: false,
+            target_reps: null,
+            completed: true,
+          },
+        ],
+      },
+    ],
+  };
+}
+async function navigateTo(label: string) {
+  const button = [...container.querySelectorAll<HTMLButtonElement>('nav button')].find(
+    (button) => button.textContent?.trim() === label,
+  )!;
+  expect(button).toBeDefined();
+  await act(async () => button.click());
+}
+async function focusApp() {
+  await act(async () => window.dispatchEvent(new Event('focus')));
+}
+describe('cross-device training updates', () => {
+  beforeEach(() => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+    window.history.replaceState(null, '', '#training');
+  });
+  it('reconciles remote creates, edits and deletes without reloading or navigating', async () => {
+    await mount();
+    await focusApp();
+    expect(api.listWorkouts).toHaveBeenCalledTimes(1);
+    for (const [revision, remote] of [
+      ['created', [remoteWorkout()]],
+      ['edited', [remoteWorkout('Updated phone workout')]],
+      ['deleted', []],
+    ] as const) {
+      vi.mocked(api.workoutRevision).mockResolvedValue({ revision });
+      vi.mocked(api.listWorkouts).mockResolvedValue([...remote]);
+      await focusApp();
+      expect(window.location.hash).toBe('#training');
+      expect(container.querySelectorAll('.history-card')).toHaveLength(remote.length);
+      if (remote.length)
+        expect(container.querySelector('.history-card')?.textContent).toContain(remote[0].name);
+      expect(container.querySelector('.background-activity-bar')).toBeNull();
+      expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+    }
+    expect(api.listWorkouts).toHaveBeenCalledTimes(4);
+    await focusApp();
+    expect(api.listWorkouts).toHaveBeenCalledTimes(4);
+  });
+  it('preserves an active workout and its notes/sets while remote history changes', async () => {
+    window.history.replaceState(null, '', '#log');
+    const draft = storedDraft();
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    vi.mocked(api.workoutRevision).mockResolvedValue({ revision: 'remote' });
+    vi.mocked(api.listWorkouts).mockResolvedValue([remoteWorkout()]);
+    await focusApp();
+    expect(window.location.hash).toBe('#log');
+    expectPreserved(draft);
+    expect(container.querySelector('.logger-screen')?.textContent).toContain(
+      'Workout notes survive',
+    );
+  });
+  it('retries an incomplete refresh rather than acknowledging missing data', async () => {
+    await mount();
+    vi.mocked(api.workoutRevision).mockResolvedValue({ revision: 'changed' });
+    vi.mocked(api.listWorkouts).mockRejectedValueOnce(new Error('temporary outage'));
+    await focusApp();
+    expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+    vi.mocked(api.listWorkouts).mockResolvedValue([remoteWorkout()]);
+    await focusApp();
+    expect(container.querySelector('.history-card')?.textContent).toContain('Phone workout');
+    expect(api.listWorkouts).toHaveBeenCalledTimes(3);
+  });
+  it('rechecks a change made during a refresh on the next check', async () => {
+    await mount();
+    let deliver!: (workouts: TrackedWorkout[]) => void;
+    vi.mocked(api.workoutRevision).mockResolvedValue({ revision: 'first-change' });
+    vi.mocked(api.listWorkouts).mockReturnValueOnce(
+      new Promise((resolve) => {
+        deliver = resolve;
+      }),
+    );
+    await focusApp();
+    vi.mocked(api.workoutRevision).mockResolvedValue({ revision: 'second-change' });
+    await act(async () => deliver([remoteWorkout()]));
+    vi.mocked(api.listWorkouts).mockResolvedValue([remoteWorkout('Latest phone change')]);
+    await focusApp();
+    expect(container.querySelector('.history-card')?.textContent).toContain('Latest phone change');
+    expect(api.listWorkouts).toHaveBeenCalledTimes(3);
+  });
+});
+describe('navigation while saving an old workout', () => {
+  async function editSavedWorkout() {
+    window.history.replaceState(null, '', '#training');
+    vi.mocked(api.listWorkouts).mockResolvedValue([remoteWorkout()]);
+    await mount();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('.history-card-summary')!.click(),
+    );
+    const edit = [...container.querySelectorAll<HTMLButtonElement>('.workout-actions button')].find(
+      (button) => button.textContent === 'Edit',
+    )!;
+    await act(async () => edit.click());
+  }
+  it('keeps later navigation when a slow edit succeeds', async () => {
+    let finish!: (workout: TrackedWorkout) => void;
+    vi.mocked(api.updateWorkout).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    await editSavedWorkout();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('.finish-workout-bottom')!.click(),
+    );
+    expect(api.updateWorkout).toHaveBeenCalledOnce();
+    await navigateTo('Body');
+    await act(async () => finish(remoteWorkout('Saved changes')));
+    expect(window.location.hash).toBe('#body');
+  });
+  it('keeps the editor mounted for a failed edit while another screen stays usable', async () => {
+    let fail!: (error: Error) => void;
+    vi.mocked(api.updateWorkout).mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        fail = reject;
+      }),
+    );
+    await editSavedWorkout();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('.finish-workout-bottom')!.click(),
+    );
+    await navigateTo('Body');
+    await act(async () => fail(new Error('Save failed; retry.')));
+    expect(window.location.hash).toBe('#body');
+    expect(container.querySelector('.logger-screen')?.textContent).toContain('Save failed; retry.');
+    expect(document.querySelector('.app-notification-toast')?.textContent).toContain(
+      'could not be saved',
+    );
+    expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+    await navigateTo('Training');
+    expect(window.location.hash).toBe('#training');
   });
 });

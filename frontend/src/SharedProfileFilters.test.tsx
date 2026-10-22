@@ -68,10 +68,12 @@ function renderProfile(
   profileId = 'friend',
   ownProfile?: { user: User; onSaved: (user: User) => void },
   active = true,
+  dataRevision: string | null = null,
 ) {
   return act(async () =>
     root.render(
       <SharedProfileScreen
+        dataRevision={dataRevision}
         profileId={profileId}
         ownProfile={ownProfile}
         active={active}
@@ -392,4 +394,22 @@ it('shows the viewed account calendar, toggles its legend and selects a day with
   await chooseType('push');
   expect(card.querySelectorAll('.calendar-day.trained')).toHaveLength(1);
   expect(card.querySelector('.consistency-stats')?.textContent).toContain('23');
+});
+
+it('refreshes a changed training revision while retaining the selected workout filter', async () => {
+  await chooseType('lower');
+  vi.mocked(api.sharing.workouts).mockResolvedValue({
+    total: 1,
+    workouts: [{ ...workout, name: 'Updated on another device' }],
+    personal_records: [],
+  });
+  await renderProfile('friend', undefined, true, 'remote-change');
+  expect(container.textContent).toContain('Updated on another device');
+  expect(container.querySelector<HTMLSelectElement>('select')?.value).toBe('lower');
+  expect(api.sharing.workouts).toHaveBeenLastCalledWith(
+    'friend',
+    0,
+    10,
+    expect.objectContaining({ category: 'lower' }),
+  );
 });

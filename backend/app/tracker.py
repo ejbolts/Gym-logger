@@ -737,6 +737,7 @@ def save_body_measurement(
     else:
         measurement = BodyMeasurement(user_id=user.id, **payload.model_dump())
         db.add(measurement)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     db.refresh(measurement)
     return measurement
@@ -796,6 +797,8 @@ async def import_body_measurement_csv(
     except CsvImportError as error:
         db.rollback()
         raise HTTPException(status_code=422, detail=str(error)) from error
+    if summary.measurements_created or summary.measurements_updated:
+        bump_workout_cache_revision(db, user.id)
     db.commit()
     return BodyMeasurementCsvImportRead(**summary.__dict__)
 
@@ -806,6 +809,7 @@ def delete_body_measurement(measurement_id: str, db: DbSession, user: CurrentUse
     if not measurement:
         raise HTTPException(status_code=404, detail="Body measurement was not found.")
     db.delete(measurement)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
 
 
@@ -1385,6 +1389,7 @@ def create_cardio_session(
 
     session = CardioSession(user_id=user.id, **payload.model_dump(exclude={"exercise_id"}))
     db.add(session)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     db.refresh(session)
     return session
@@ -1412,6 +1417,7 @@ def update_cardio_session(
         if key in optional_metrics and key not in payload.model_fields_set:
             continue
         setattr(session, key, value)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     db.refresh(session)
     return session
@@ -1427,7 +1433,7 @@ def update_cardio_calories(
     session.calories_kcal = payload.calories_kcal
     if sync_cardio_session_metrics_to_workout_sets(db, session, {"calories_kcal"}):
         rebuild_personal_records(db, user.id)
-        bump_workout_cache_revision(db, user.id)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     db.refresh(session)
     return session
@@ -1512,7 +1518,7 @@ def update_cardio_metrics(
         setattr(session, key, getattr(payload, key))
     if sync_cardio_session_metrics_to_workout_sets(db, session, payload.model_fields_set):
         rebuild_personal_records(db, user.id)
-        bump_workout_cache_revision(db, user.id)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     db.refresh(session)
     return session
@@ -1526,6 +1532,7 @@ def delete_cardio_session(session_id: str, db: DbSession, user: CurrentUser) -> 
     if session.source_workout_id:
         raise HTTPException(status_code=409, detail="Delete imported cardio from its workout.")
     db.delete(session)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
 
 
@@ -1553,6 +1560,7 @@ def create_body_weight_goal(
             existing_goal.active = False
     goal = BodyWeightGoal(user_id=user.id, **payload.model_dump())
     db.add(goal)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     db.refresh(goal)
     return goal
@@ -1576,6 +1584,7 @@ def update_body_weight_goal(
     values = payload.model_dump()
     for key, value in values.items():
         setattr(goal, key, value)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
     db.refresh(goal)
     return goal
@@ -1587,6 +1596,7 @@ def delete_body_weight_goal(goal_id: str, db: DbSession, user: CurrentUser) -> N
     if not goal:
         raise HTTPException(status_code=404, detail="Body-weight goal was not found.")
     db.delete(goal)
+    bump_workout_cache_revision(db, user.id)
     db.commit()
 
 

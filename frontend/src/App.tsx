@@ -95,6 +95,7 @@ import {
 } from './historyWindow';
 import { InlineConfirmButton } from './InlineConfirmButton';
 import { NotificationDialog } from './NotificationDialog';
+import { useTrainingDataSync } from './useTrainingDataSync';
 import { PopupDialog } from './PopupDialog';
 import { PlateCalculatorDialog } from './PlateCalculator';
 import { barTypeForExercise } from './plateLoading';
@@ -461,7 +462,7 @@ function recordTypeLabel(type: PersonalRecord['record_type']): string {
   }[type];
 }
 
-function WorkoutCompletionDialog({
+function WorkoutCompletionToast({
   records,
   onClose,
 }: {
@@ -469,74 +470,48 @@ function WorkoutCompletionDialog({
   onClose: () => void;
 }) {
   const weightUnit = useWeightUnit();
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
-  const backdropDismiss = useBackdropDismiss(onClose);
-
+  onCloseRef.current = onClose;
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    const root = document.getElementById('root');
-    const rootWasInert = root?.hasAttribute('inert') ?? false;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    root?.setAttribute('inert', '');
-    window.requestAnimationFrame(() => closeButtonRef.current?.focus());
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
-    };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      if (!rootWasInert) root?.removeAttribute('inert');
-      window.removeEventListener('keydown', closeOnEscape);
-    };
-  }, []);
+    const timer = window.setTimeout(() => onCloseRef.current(), 8000);
+    return () => window.clearTimeout(timer);
+  }, [records]);
 
   return createPortal(
-    <div className="modal-backdrop pr-summary-backdrop" {...backdropDismiss}>
-      <ConfettiBurst />
-      <section
-        className="pr-summary panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="workout-completion-title"
+    <aside
+      className="pr-summary panel workout-completion-toast"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-labelledby="workout-completion-title"
+    >
+      <button
+        type="button"
+        className="icon-button popup-close"
+        onClick={onClose}
+        aria-label="Close personal record summary"
       >
-        <button
-          ref={closeButtonRef}
-          type="button"
-          className="icon-button popup-close"
-          onClick={onClose}
-          aria-label="Close personal record summary"
-        >
-          ×
-        </button>
-        <span className="pr-trophy" aria-hidden="true">
-          🏆
-        </span>
-        <p className="section-kicker">WORKOUT COMPLETE</p>
-        <h2 id="workout-completion-title">
-          {records.length} new PR{records.length === 1 ? '' : 's'}
-        </h2>
-        {records.map((record) => (
-          <div key={record.id}>
-            <strong>{record.exercise_name}</strong>
-            <span>
-              {recordTypeLabel(record.record_type)} · {recordDisplayValue(record, weightUnit)}
-              {record.record_type === 'reps_at_weight' && record.weight_kg != null
-                ? ` @ ${formatWeight(record.weight_kg, weightUnit)}`
-                : ''}
-            </span>
-          </div>
-        ))}
-        <button type="button" className="pr-summary-done" onClick={onClose}>
-          Done
-        </button>
-      </section>
-    </div>,
+        ×
+      </button>
+      <span className="pr-trophy" aria-hidden="true">
+        🏆
+      </span>
+      <p className="section-kicker">WORKOUT COMPLETE</p>
+      <h2 id="workout-completion-title">
+        {records.length} new PR{records.length === 1 ? '' : 's'}
+      </h2>
+      {records.map((record) => (
+        <div key={record.id}>
+          <strong>{record.exercise_name}</strong>
+          <span>
+            {recordTypeLabel(record.record_type)} · {recordDisplayValue(record, weightUnit)}
+            {record.record_type === 'reps_at_weight' && record.weight_kg != null
+              ? ` @ ${formatWeight(record.weight_kg, weightUnit)}`
+              : ''}
+          </span>
+        </div>
+      ))}
+    </aside>,
     document.body,
   );
 }
@@ -592,6 +567,10 @@ function AppContent() {
   const currentTabRef = useRef(tab);
   const initialRefreshStartedRef = useRef(false);
   const backgroundActivityIdRef = useRef(0);
+  const refreshGenerationRef = useRef(0);
+  const refreshingDataRef = useRef(0);
+  const trainingRevisionRef = useRef<string | null>(null);
+  const [dataRevision, setDataRevision] = useState<string | null>(null);
   currentTabRef.current = tab;
   const [visitedTabs, setVisitedTabs] = useState(() => new Set<AppTab>([tab]));
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -738,7 +717,7 @@ function AppContent() {
   function navigateBack() {
     const currentState = window.history.state;
     if (tab === 'log') {
-      setEditingWorkout(null);
+      if (!workoutSaving) setEditingWorkout(null);
       if (isAppHistoryState(currentState) && currentState.index > 0) {
         window.history.back();
         return;
@@ -777,10 +756,16 @@ function AppContent() {
     silent = false,
     activityLabel = trainingDataActivityLabel('startup'),
   }: { silent?: boolean; activityLabel?: string | null } = {}) {
+    const generation = ++refreshGenerationRef.current;
+    const current = () => generation === refreshGenerationRef.current;
     const refresh = async () => {
+      // Read before the data: a change during this refresh must trigger another pass.
+      const revision = await api.workoutRevision().catch(() => null);
+      if (!current()) return;
       const windowStart = historyStartRef.current;
       const results = await Promise.allSettled([
         api.dashboard(windowStart).then((nextDashboard) => {
+          if (!current()) return;
           startTransition(() =>
             setDashboard((current) => {
               const olderDays = keepLoadedBefore(
@@ -798,25 +783,28 @@ function AppContent() {
             // Logging compares sets with older history; its summary loads off the startup path.
             void api
               .exerciseHistoryBaselines(windowStart)
-              .then((baselines) =>
+              .then((baselines) => {
+                if (!current()) return;
                 setHistoryBaselines({
                   before: windowStart,
                   byExercise: new Map(
                     baselines.map((baseline) => [baseline.exercise_id, baseline]),
                   ),
-                }),
-              )
+                });
+              })
               .catch(() => undefined);
           } else setHistoryBaselines(null);
         }),
         api
           .listExercises()
           .then((nextExercises) => {
+            if (!current()) return;
             // Publish readiness with the actual catalogue, so an urgent loading update cannot
             // mount the logger against an empty or partial list and overwrite its stored draft.
             setExerciseCatalogue({ exercises: nextExercises, loaded: true, error: null });
           })
           .catch((reason: unknown) => {
+            if (!current()) return;
             setExerciseCatalogue((current) => ({
               ...current,
               error: reason instanceof Error ? reason.message : 'Could not load your exercises.',
@@ -824,6 +812,7 @@ function AppContent() {
             throw reason;
           }),
         api.listWorkouts(windowStart).then((nextWorkouts) => {
+          if (!current()) return;
           startTransition(() =>
             setWorkouts((current) => [
               ...nextWorkouts,
@@ -832,12 +821,20 @@ function AppContent() {
           );
         }),
         api.listBodyMeasurements().then((nextMeasurements) => {
+          if (!current()) return;
           startTransition(() => setMeasurements(nextMeasurements));
         }),
         api.listPersonalRecords().then((nextRecords) => {
+          if (!current()) return;
           startTransition(() => setPersonalRecords(nextRecords));
         }),
       ]);
+      if (!current()) return;
+      // Failed reads do not acknowledge the revision, so quiet sync will retry them.
+      if (results.every((result) => result.status === 'fulfilled')) {
+        trainingRevisionRef.current = revision?.revision ?? null;
+        setDataRevision(revision?.revision ?? null);
+      }
       const firstFailure = results.find(
         (result, index): result is PromiseRejectedResult =>
           result.status === 'rejected' &&
@@ -856,9 +853,37 @@ function AppContent() {
       setLoading(false);
     };
 
-    if (activityLabel) await withBackgroundActivity(activityLabel, refresh);
-    else await refresh();
+    refreshingDataRef.current += 1;
+    try {
+      if (activityLabel) await withBackgroundActivity(activityLabel, refresh);
+      else await refresh();
+    } finally {
+      refreshingDataRef.current -= 1;
+    }
   }
+
+  useTrainingDataSync(
+    async () => {
+      if (
+        refreshingDataRef.current ||
+        workoutSaving ||
+        backgroundActivities.length ||
+        loadingOlderHistoryRef.current
+      )
+        return;
+      const generation = refreshGenerationRef.current;
+      const { revision } = await api.workoutRevision();
+      // A local save/refresh may have started while the revision request was in flight.
+      if (
+        generation !== refreshGenerationRef.current ||
+        refreshingDataRef.current ||
+        revision === trainingRevisionRef.current
+      )
+        return;
+      await refreshData({ silent: true, activityLabel: null });
+    },
+    !loading && !workoutSaving && backgroundActivities.length === 0,
+  );
 
   const historySummary = dashboard?.history ?? null;
   const olderHistoryAvailable = hasOlderHistory(historyStart, historySummary);
@@ -919,8 +944,11 @@ function AppContent() {
     return () => {
       cancelled = true;
       initialRefreshStartedRef.current = false;
+      // This ref is a request generation counter, not a DOM ref.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      ++refreshGenerationRef.current;
     };
-    // This is the single startup read; later refreshes are invoked by mutation handlers.
+    // Later reads follow mutations and quiet cross-device revision checks.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -930,8 +958,7 @@ function AppContent() {
   }, [tab]);
 
   useEffect(() => {
-    // Navigation only reveals an already-cached screen. Training data is refreshed at startup
-    // and by the mutation handlers below, never as a side effect of changing views.
+    // Navigation reveals an already-cached screen; synchronization runs independently.
     setVisitedTabs((current) => {
       if (current.has(tab)) return current;
       const next = new Set(current);
@@ -993,8 +1020,9 @@ function AppContent() {
     const wasEditing = editingWorkout !== null;
     const resumedId = resumingWorkoutId;
     setWorkoutSaving(true);
+    ++refreshGenerationRef.current;
     // Keep the logger and its recovery draft mounted until the server confirms the save.
-    if (!wasEditing) setTab('dashboard', { replace: true });
+    setTab(wasEditing ? 'history' : 'dashboard', { replace: true });
     let saved: TrackedWorkout;
     try {
       saved = await withBackgroundActivity(
@@ -1007,7 +1035,12 @@ function AppContent() {
               : api.createWorkout(payload),
       );
     } catch (error) {
-      if (!wasEditing) setTab('log', { replace: true });
+      if (currentTabRef.current === (wasEditing ? 'history' : 'dashboard'))
+        setTab('log', { replace: true });
+      else if (currentTabRef.current !== 'log')
+        setMessage(
+          'Your workout could not be saved. Return to the workout to retry; your entries are still here.',
+        );
       throw error;
     } finally {
       setWorkoutSaving(false);
@@ -1019,7 +1052,7 @@ function AppContent() {
       setActiveWorkoutStartedAt(null);
       setResumingWorkoutId(null);
     }
-    if (wasEditing) setTab('history', { replace: true });
+    if (wasEditing && currentTabRef.current === 'log') setTab('history', { replace: true });
     setEditingWorkout(null);
 
     if (!wasEditing) {
@@ -1377,7 +1410,7 @@ function AppContent() {
           <NotificationDialog key={message} message={message} onClose={() => setMessage(null)} />
         )}
         {completionRecords.length > 0 && (
-          <WorkoutCompletionDialog
+          <WorkoutCompletionToast
             records={completionRecords}
             onClose={() => setCompletionRecords([])}
           />
@@ -1603,6 +1636,7 @@ function AppContent() {
           {!loading && (tab === 'body' || visitedTabs.has('body')) && (
             <CachedTabPanel active={tab === 'body'}>
               <BodyCompositionScreen
+                dataRevision={dataRevision}
                 measurements={measurements}
                 onSave={saveMeasurement}
                 onDelete={deleteMeasurement}
@@ -1616,6 +1650,7 @@ function AppContent() {
           {!loading && historyGroupVisited && (
             <CachedTabPanel active={sectionFromTab !== null}>
               <HistoryScreen
+                dataRevision={dataRevision}
                 key={`${historyOpenId ?? 'history'}-${historyExerciseId ?? 'all'}-${historyMovementId ?? 'any'}-${historyOpenCount}`}
                 workouts={workouts}
                 categoryColors={workoutTypeColors}
@@ -1702,6 +1737,7 @@ function AppContent() {
           {user && (tab === 'profile' || visitedTabs.has('profile')) && (
             <CachedTabPanel active={tab === 'profile'}>
               <ProfileScreen
+                dataRevision={dataRevision}
                 active={tab === 'profile'}
                 onChooseSharing={openSharingSettings}
                 renderWorkouts={(props) => (
@@ -6055,6 +6091,7 @@ const RANGE_LABELS: Record<BodyTrendRange, string> = {
 };
 
 export function ProgressScreen({
+  dataRevision = null,
   exercises,
   measurements,
   personalRecords,
@@ -6065,6 +6102,7 @@ export function ProgressScreen({
   browseFirst = false,
   onOpenSettings,
 }: {
+  dataRevision?: string | null;
   exercises: Exercise[];
   measurements: BodyMeasurement[];
   personalRecords: PersonalRecord[];
@@ -6124,7 +6162,7 @@ export function ProgressScreen({
     return () => {
       cancelled = true;
     };
-  }, [exerciseId, progressAttempt]);
+  }, [exerciseId, progressAttempt, dataRevision]);
 
   const metricInfo = PROGRESS_METRICS.find((item) => item.value === metric)!;
   const inRange = progress ? progressPointsForChart(progress.points, metric, displayRange) : [];
@@ -7083,6 +7121,7 @@ function SettingsScreen({
 }
 
 export function BodyCompositionScreen({
+  dataRevision = null,
   measurements,
   onSave,
   onDelete,
@@ -7092,6 +7131,7 @@ export function BodyCompositionScreen({
   onOpenSettings,
   accountActions,
 }: {
+  dataRevision?: string | null;
   measurements: BodyMeasurement[];
   onSave: (payload: {
     measurement_date: string;
@@ -7181,13 +7221,20 @@ export function BodyCompositionScreen({
     setTrendStatistic(trendPreference.statistic);
   }, [trendPreference]);
   useEffect(() => {
+    let cancelled = false;
     void api
       .listBodyWeightGoals()
-      .then(setGoals)
-      .catch((reason) =>
-        setError(reason instanceof Error ? reason.message : 'Could not load body-weight goals.'),
-      );
-  }, []);
+      .then((next) => {
+        if (!cancelled) setGoals(next);
+      })
+      .catch((reason) => {
+        if (!cancelled)
+          setError(reason instanceof Error ? reason.message : 'Could not load body-weight goals.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataRevision]);
 
   function chooseGoalKind(kind: BodyGoalKind) {
     setGoalKind(kind);
@@ -7971,10 +8018,12 @@ function BodyTrendChart({
 }
 
 function CardioScreen({
+  dataRevision,
   exercises,
   onDataChange,
   onOpenWorkout,
 }: {
+  dataRevision: string | null;
   exercises: Exercise[];
   onDataChange: () => Promise<void>;
   onOpenWorkout: (workoutId: string) => void;
@@ -8037,7 +8086,7 @@ function CardioScreen({
     const reloadPreferences = () => void load();
     window.addEventListener('training-preferences-updated', reloadPreferences);
     return () => window.removeEventListener('training-preferences-updated', reloadPreferences);
-  }, []);
+  }, [dataRevision]);
   const filteredSessions =
     overview?.sessions.filter(
       (session) =>
@@ -8586,6 +8635,7 @@ function CardioScreen({
 }
 
 function HistoryScreen({
+  dataRevision,
   workouts,
   categoryColors,
   measurements,
@@ -8614,6 +8664,7 @@ function HistoryScreen({
   onOpenSettings,
   accountActions,
 }: {
+  dataRevision: string | null;
   workouts: TrackedWorkout[];
   categoryColors: WorkoutTypeColors;
   measurements: BodyMeasurement[];
@@ -8858,6 +8909,7 @@ function HistoryScreen({
       {visitedSections.has('progress') && (
         <CachedTabPanel active={section === 'progress'}>
           <ProgressScreen
+            dataRevision={dataRevision}
             exercises={exercises}
             personalRecords={personalRecords}
             measurements={measurements}
@@ -8873,6 +8925,7 @@ function HistoryScreen({
       {visitedSections.has('cardio') && (
         <CachedTabPanel active={section === 'cardio'}>
           <CardioScreen
+            dataRevision={dataRevision}
             exercises={exercises}
             onDataChange={onDataChange}
             onOpenWorkout={(workoutId) => onOpenWorkout(workoutId, null)}

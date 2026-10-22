@@ -403,6 +403,11 @@ export const api = {
       `/api/dashboard${calendarStart ? `?${new URLSearchParams({ calendar_start: calendarStart })}` : ''}`,
     ),
   trainingTime: () => request<TrainingTime>('/api/training-time'),
+  workoutRevision: () =>
+    request<WorkoutCacheRevision>('/api/workouts/revision', {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
+    }),
   listWorkouts: listCachedWorkouts,
   listOlderHistory,
   exerciseHistoryBaselines: (before: string) =>

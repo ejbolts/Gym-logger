@@ -54,6 +54,16 @@
 
 *Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading.*
 
+![Finish a workout, navigate while saving, then open Body with the completion PR notice still visible](screenshots/releases/0.10.0-nonblocking-saves.gif)
+
+*Saving and updating stay in the background. Routine notices and completion PRs no longer lock navigation, scrolling or focus. The recording uses isolated sample training.*
+
+![A workout saved in a separate signed-in session appears on the desktop without a reload](screenshots/releases/0.10.0-cross-device-refresh.gif)
+
+*Your visible app checks for saved training changes every five seconds and when you return or reconnect. A separate sample session creates the workout while this page stays open.*
+
+- **Keep moving while saving:** finishing a workout returns to Home immediately; saving an old session returns to Sessions while the save continues. Completion PRs and routine notices are dismissible, non-blocking messages. A completed or failed save respects a screen you have moved to, and failed saves retain your entries for retry.
+- **Training across devices:** saved workout creates, edits and deletions appear automatically while the app is visible, normally within a five-second check plus the request time. Returning or reconnecting checks immediately. Bodyweight, goals and standalone cardio changes also signal a refresh; loaded progress, cardio and your own profile stay current. Refreshes preserve your active workout, unsaved edits and filters, pause when hidden/offline, skip unchanged data and retry temporary failures quietly. In-progress workouts remain on the device where you are logging, and simultaneous edits to the same saved workout retain the existing last-save behavior.
 - **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls. Removed the duplicate blue plus buttons from Training and Body headers; use **Start** for workouts and **Log weigh-in** for bodyweight entries.
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
 - **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views.
