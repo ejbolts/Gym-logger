@@ -393,7 +393,7 @@ describe('App startup', () => {
   });
 
   it.each([
-    ['settings', 'Settings', 'Timers • notifications • data'],
+    ['settings', 'Settings', 'Preferences • privacy • data'],
     ['videos', 'Videos', 'Workout clips • uploads'],
   ])('renders the overlay header on the %s screen', (tab, title, subtitle) => {
     stubWindow(`#${tab}`);
