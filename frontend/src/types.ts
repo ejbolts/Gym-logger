@@ -705,7 +705,8 @@ export interface SharedProfileSummary {
   display_name: string;
   profile_photo_url: string | null;
   member_since: string;
-  visibility: Exclude<ProfileVisibility, 'private'>;
+  /** Private is returned only when viewing your own profile. */
+  visibility: ProfileVisibility;
   is_you: boolean;
   friend_status: FriendStatus;
   /** When the friendship was accepted; requests have no start date. */

@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 import { SharedProfileScreen } from './SharedProfiles';
-import type { SharedProfile, SharedWorkoutPage, TrackedWorkout } from './types';
+import type { SharedProfile, SharedWorkoutPage, TrackedWorkout, User } from './types';
 import { DEFAULT_WORKOUT_TYPES } from './workoutTypes';
 
 const profile: SharedProfile = {
@@ -64,11 +64,17 @@ const workout: TrackedWorkout = {
 };
 let root: Root;
 let container: HTMLDivElement;
-function renderProfile(profileId = 'friend') {
+function renderProfile(
+  profileId = 'friend',
+  ownProfile?: { user: User; onSaved: (user: User) => void },
+  active = true,
+) {
   return act(async () =>
     root.render(
       <SharedProfileScreen
         profileId={profileId}
+        ownProfile={ownProfile}
+        active={active}
         onChooseSharing={() => {}}
         renderWorkouts={({ workouts, renderWorkoutAction }) => (
           <ul>
@@ -181,6 +187,70 @@ describe('shared profile friend control', () => {
   });
 });
 
+describe('own profile', () => {
+  const user: User = {
+    id: 'owner',
+    username: 'sample.owner',
+    display_name: 'Sample Owner',
+    is_admin: false,
+    can_upload_videos: false,
+    created_at: '2026-10-01T12:00:00Z',
+  };
+
+  it('reuses the training profile with editing and hides settings and self-friend/reaction actions', async () => {
+    vi.mocked(api.sharing.profile).mockResolvedValue({
+      ...profile,
+      id: user.id,
+      is_you: true,
+      visibility: 'private',
+    });
+    const onSaved = vi.fn();
+    await renderProfile(user.id, { user, onSaved });
+    expect(container.querySelectorAll('.profile-summary')).toHaveLength(1);
+    expect(container.querySelector('.profile-summary .shared-stat-row')?.textContent).toContain(
+      'Last 30 days',
+    );
+    expect(container.querySelector('.calendar-panel')).not.toBeNull();
+    expect(container.textContent).toContain('First workout');
+    expect(container.querySelector('.shared-preview-note')).toBeNull();
+    expect(container.querySelector('.profile-training-time')?.textContent).toContain('4h 33min');
+    expect(container.textContent).not.toContain('Change password');
+    expect(container.textContent).not.toContain('Profile sharing');
+    expect(container.querySelector('.profile-account-id')).toBeNull();
+    expect(container.querySelector('.friend-react-button')).toBeNull();
+    expect(container.querySelector('.profile-friend-actions')).toBeNull();
+    await act(async () => button('Edit profile').click());
+    expect(container.querySelector('input[autocomplete="name"]')).not.toBeNull();
+    expect(container.querySelector('input[type="file"]')).not.toBeNull();
+    expect(container.querySelector('.calendar-panel')).not.toBeNull();
+    await act(async () => button('Cancel').click());
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('refreshes visibility when returning from Settings and keeps the chosen workout filters', async () => {
+    const owner = { user, onSaved: vi.fn() };
+    vi.mocked(api.sharing.profile).mockResolvedValue({ ...profile, id: user.id, is_you: true });
+    await renderProfile(user.id, owner);
+    expect(container.querySelector('.shared-preview-note')?.textContent).toContain(
+      'This is the training you share',
+    );
+    await chooseType('lower');
+    await renderProfile(user.id, owner, false);
+    vi.mocked(api.sharing.profile)
+      .mockClear()
+      .mockResolvedValue({ ...profile, id: user.id, is_you: true, visibility: 'private' });
+    await renderProfile(user.id, owner, true);
+    expect(api.sharing.profile).toHaveBeenCalledExactlyOnceWith(user.id);
+    expect(container.querySelector('.shared-preview-note')).toBeNull();
+    expect(api.sharing.workouts).toHaveBeenLastCalledWith(
+      user.id,
+      0,
+      10,
+      expect.objectContaining({ category: 'lower' }),
+    );
+  });
+});
+
 describe('shared history filtering', () => {
   it('requests matching server results and resets to the first unfiltered page', async () => {
     await chooseType('push');
@@ -238,6 +308,23 @@ describe('shared history filtering', () => {
     expect(container.textContent).toContain('No workouts match these filters.');
     expect(container.textContent).not.toContain('Late old result');
   });
+});
+
+it('keeps the counting explanation in a help popup next to Time trained', async () => {
+  const card = container.querySelector('.profile-training-time')!;
+  expect(card.textContent).not.toContain('Totals use each');
+  const help = card.querySelector<HTMLButtonElement>('[aria-label="About time trained"]')!;
+  await act(async () => help.click());
+  const dialog = document.querySelector('dialog[open]')!;
+  expect(dialog.textContent).toContain(
+    "Totals use each workout's logged duration and every cardio session. Cardio done during a workout counts once in Combined.",
+  );
+  await act(async () =>
+    dialog.querySelector<HTMLButtonElement>('[aria-label="Close Time trained"]')!.click(),
+  );
+  expect(document.querySelector('dialog[open]')).toBeNull();
+  expect(document.activeElement).toBe(help);
+  expect(card.textContent).toContain('4h 33min');
 });
 
 it('shows lifetime time separately from history filters and reacts on a shared workout', async () => {

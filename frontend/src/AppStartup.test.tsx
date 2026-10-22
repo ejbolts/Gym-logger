@@ -12,6 +12,7 @@ import type {
   WorkoutTypeColors,
 } from './types';
 import { UserContext, type UserSession } from './userContext';
+import { AccountSettings, AccountSessionSettings } from './AccountSettings';
 import { TrainingPreferencesContext } from './trainingPreferencesContext';
 import type { WeightUnit } from './weightUnits';
 
@@ -425,16 +426,30 @@ describe('App startup', () => {
     expect(markup).toContain('<strong>Profile</strong>');
     expect(markup).toContain('lifter');
     expect(markup).toContain('Admin');
-    expect(markup).toContain('Change password');
-    expect(markup).toContain('Sign out');
-    expect(markup).toContain('Delete account');
+    expect(markup).toContain('Edit profile');
+    expect(markup).toContain('Loading profile');
+    expect(markup).not.toContain('Change password');
+    expect(markup).not.toContain('Sign out');
+    expect(markup).not.toContain('Delete account');
+    expect(markup).not.toContain('Search settings');
   });
 
-  it('offers profile sharing on the Profile screen', () => {
-    const markup = renderSignedIn('#profile', account);
+  it('renders sharing and security panels for Settings', () => {
+    const markup = renderToStaticMarkup(
+      <UserContext.Provider
+        value={{ user: account, updateUser: vi.fn(), signOut: vi.fn(), accountDeleted: vi.fn() }}
+      >
+        <AccountSettings />
+        <AccountSessionSettings />
+      </UserContext.Provider>,
+    );
 
     expect(markup).toContain('Profile sharing');
     expect(markup).toContain('Loading your sharing choices');
+    expect(markup).toContain('Change password');
+    expect(markup).toContain('Sign out');
+    expect(markup).toContain('Delete account');
+    expect(markup).not.toContain('Edit profile');
     expect(markup).not.toContain('profile-friends-title');
     expect(markup).not.toContain('Open Social');
   });
@@ -444,7 +459,8 @@ describe('App startup', () => {
       const markup = renderSignedIn(hash, account);
 
       expect(markup).toContain('<strong>Profile</strong>');
-      expect(markup).toContain('Profile sharing');
+      expect(markup).toContain('Edit profile');
+      expect(markup).not.toContain('Profile sharing');
       expect(markup).not.toContain('View shared profiles');
     }
     const social = renderSignedIn('#shared', account);

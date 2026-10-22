@@ -8,6 +8,7 @@ export interface SettingsDestination {
   selector: string;
   reveal?: string[];
   editProfile?: boolean;
+  requiresAccount?: boolean;
 }
 
 export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
@@ -131,21 +132,23 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   {
     id: 'uuid',
     title: 'Account UUID',
-    page: 'profile',
+    page: 'settings',
+    requiresAccount: true,
     keywords: 'id identifier copy account',
-    selector: '.profile-identity .profile-account-id code',
+    selector: '[aria-labelledby="account-settings-title"] .profile-account-id code',
   },
   {
     id: 'training-time',
     title: 'Time trained',
     page: 'profile',
     keywords: 'total hours minutes duration workouts cardio combined exercise stats',
-    selector: '#profile-training-time-title',
+    selector: '#shared-training-time-title',
   },
   {
     id: 'sharing',
     title: 'Profile sharing',
-    page: 'profile',
+    page: 'settings',
+    requiresAccount: true,
     keywords: 'privacy private public friends only visibility',
     selector: '.profile-sharing',
     reveal: ['Profile sharing'],
@@ -153,7 +156,8 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   {
     id: 'shared-fields',
     title: 'What you share',
-    page: 'profile',
+    page: 'settings',
+    requiresAccount: true,
     keywords: 'sharing machine photos notes goals cardio body weight',
     selector: '.sharing-options',
     reveal: ['Profile sharing', 'What you share'],
@@ -161,22 +165,25 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   {
     id: 'password',
     title: 'Change password',
-    page: 'profile',
+    page: 'settings',
+    requiresAccount: true,
     keywords: 'security login account',
-    selector: '.profile-screen .profile-form input[autocomplete="current-password"]',
+    selector: '.account-password input[autocomplete="current-password"]',
     reveal: ['Change password'],
   },
   {
     id: 'signout',
     title: 'Sign out',
-    page: 'profile',
+    page: 'settings',
+    requiresAccount: true,
     keywords: 'logout log out device session',
     selector: '#profile-session-title',
   },
   {
     id: 'delete',
     title: 'Delete account',
-    page: 'profile',
+    page: 'settings',
+    requiresAccount: true,
     keywords: 'remove permanently danger',
     selector: '.danger-zone h2',
   },
@@ -187,7 +194,7 @@ export function searchSettings(query: string, includeProfile = true): SettingsDe
   if (!words.length) return [];
   return SETTINGS_DESTINATIONS.filter(
     (entry) =>
-      (includeProfile || entry.page !== 'profile') &&
+      (includeProfile || (entry.page !== 'profile' && !entry.requiresAccount)) &&
       words.every((word) => `${entry.title} ${entry.keywords}`.toLocaleLowerCase().includes(word)),
   );
 }

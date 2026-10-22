@@ -1,7 +1,19 @@
 import type { TrainingTime } from './types';
 import { formatMinutesDuration } from './utils';
+import { HelpPopup } from './HelpPopup';
 
-/** The same lifetime totals and counting explanation on your own and shared profiles. */
+export function TrainingTimeHelp() {
+  return (
+    <HelpPopup title="Time trained">
+      <p>
+        Totals use each workout's logged duration and every cardio session. Cardio done during a
+        workout counts once in Combined.
+      </p>
+    </HelpPopup>
+  );
+}
+
+/** The same lifetime totals on your own and shared profiles. */
 export function TrainingTimeStats({ time }: { time: TrainingTime | null }) {
   const stats = [
     {
@@ -21,22 +33,16 @@ export function TrainingTimeStats({ time }: { time: TrainingTime | null }) {
     { label: 'Combined', minutes: time?.total_minutes, detail: time && 'All exercise' },
   ];
   return (
-    <>
-      <dl className="shared-stat-row">
-        {stats.map((stat) => (
-          <div key={stat.label}>
-            <dt>{stat.label}</dt>
-            <dd className="num">
-              {stat.minutes === undefined ? '–' : formatMinutesDuration(stat.minutes)}
-            </dd>
-            {stat.detail && <small>{stat.detail}</small>}
-          </div>
-        ))}
-      </dl>
-      <p>
-        Totals use each workout's logged duration and every cardio session. Cardio done during a
-        workout counts once in Combined.
-      </p>
-    </>
+    <dl className="shared-stat-row">
+      {stats.map((stat) => (
+        <div key={stat.label}>
+          <dt>{stat.label}</dt>
+          <dd className="num">
+            {stat.minutes === undefined ? '–' : formatMinutesDuration(stat.minutes)}
+          </dd>
+          {stat.detail && <small>{stat.detail}</small>}
+        </div>
+      ))}
+    </dl>
   );
 }
