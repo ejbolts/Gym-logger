@@ -171,46 +171,59 @@ describe('Body history goal-aware arrows', () => {
     },
   );
 
-  it('colours each row by the goal set at the time and marks where a new goal starts', async () => {
-    await render(
-      [
-        measurement('2026-10-20', 83.9),
-        measurement('2026-10-17', 84.5),
-        measurement('2026-09-29', 83.6),
-        measurement('2026-09-28', 83.3),
-        measurement('2026-08-20', 85),
-      ],
-      // An earlier cut, then a bulk set on 17 October that is still active.
-      [goal(84.5, 86, true, '2026-10-17'), goal(84, 82, false, '2026-09-01')],
-    );
-    expect(rows().map((row) => arrow(row)?.className.split(' ').at(-1) ?? null)).toEqual([
-      'unfavorable',
-      'favorable',
-      'unfavorable',
-      'favorable',
-      null,
-    ]);
-    const dividers = () => [
-      ...container.querySelectorAll<HTMLElement>('.body-history-goal-divider'),
-    ];
-    expect(dividers()).toHaveLength(2);
-    // Each rule sits directly below the oldest row under its goal.
-    expect(dividers()[0].previousElementSibling).toBe(rows()[1]);
-    expect(dividers()[0].getAttribute('aria-label')).toMatch(
-      /^New goal from 17 Oct: Gain to 86 kg$/,
-    );
-    expect(dividers()[0].textContent).toContain('from 17 Oct');
-    expect(dividers()[1].previousElementSibling).toBe(rows()[3]);
-    expect(dividers()[1].textContent).toContain('Lose to 82 kg');
+  it.each(['en-AU', 'en-US'])(
+    'colours rows by their goal and marks its start using the %s date format',
+    async (locale) => {
+      const DateTimeFormat = Intl.DateTimeFormat;
+      vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function (locales, options) {
+        return new DateTimeFormat(locales ?? locale, options);
+      });
+      await render(
+        [
+          measurement('2026-10-20', 83.9),
+          measurement('2026-10-17', 84.5),
+          measurement('2026-09-29', 83.6),
+          measurement('2026-09-28', 83.3),
+          measurement('2026-08-20', 85),
+        ],
+        // An earlier cut, then a bulk set on 17 October that is still active.
+        [goal(84.5, 86, true, '2026-10-17'), goal(84, 82, false, '2026-09-01')],
+      );
+      expect(rows().map((row) => arrow(row)?.className.split(' ').at(-1) ?? null)).toEqual([
+        'unfavorable',
+        'favorable',
+        'unfavorable',
+        'favorable',
+        null,
+      ]);
+      const dividers = () => [
+        ...container.querySelectorAll<HTMLElement>('.body-history-goal-divider'),
+      ];
+      expect(dividers()).toHaveLength(2);
+      const goalStart = new Date(2026, 9, 17);
+      const goalDate = new DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+        ...(goalStart.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }),
+      }).format(goalStart);
+      // Each rule sits directly below the oldest row under its goal.
+      expect(dividers()[0].previousElementSibling).toBe(rows()[1]);
+      expect(dividers()[0].getAttribute('aria-label')).toBe(
+        `New goal from ${goalDate}: Gain to 86 kg`,
+      );
+      expect(dividers()[0].textContent).toContain(`from ${goalDate}`);
+      expect(dividers()[1].previousElementSibling).toBe(rows()[3]);
+      expect(dividers()[1].textContent).toContain('Lose to 82 kg');
 
-    await selectTab('Avg Monthly');
-    expect(rows()).toHaveLength(3);
-    expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
-    expect(dividers().map((divider) => divider.previousElementSibling)).toEqual([
-      rows()[0],
-      rows()[1],
-    ]);
-  });
+      await selectTab('Avg Monthly');
+      expect(rows()).toHaveLength(3);
+      expect(arrow(rows()[0])?.classList.contains('favorable')).toBe(true);
+      expect(dividers().map((divider) => divider.previousElementSibling)).toEqual([
+        rows()[0],
+        rows()[1],
+      ]);
+    },
+  );
 
   it('describes maintain goals and favours moving back towards the target weight', async () => {
     await render(
