@@ -42,13 +42,13 @@ import type {
   SharedProfileSummary,
   SharedWorkoutPage,
   SharingChoices,
-  SharingConnections,
+  FriendConnections,
   SharingNotifications,
   FriendFeed,
   WorkoutReactionKind,
   WorkoutReactions,
   SharingSettings,
-  FollowStatus,
+  FriendStatus,
   TrackedWorkout,
   User,
   WorkoutInput,
@@ -241,13 +241,20 @@ export const api = {
           ...Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== '')),
         })}`,
       ),
-    follow: (userId: string) =>
-      request<{ status: FollowStatus }>(`/api/sharing/follows/${encodeURIComponent(userId)}`, {
+    /** Send a friend request, or accept theirs when they already asked you. */
+    addFriend: (userId: string) =>
+      request<{ status: FriendStatus }>(`/api/sharing/friends/${encodeURIComponent(userId)}`, {
         method: 'POST',
       }),
-    unfollow: (userId: string) =>
-      request<void>(`/api/sharing/follows/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
-    connections: () => request<SharingConnections>('/api/sharing/followers'),
+    acceptFriend: (userId: string) =>
+      request<{ status: FriendStatus }>(
+        `/api/sharing/friends/${encodeURIComponent(userId)}/accept`,
+        { method: 'POST' },
+      ),
+    /** Remove a friend, cancel your request, or decline theirs. */
+    removeFriend: (userId: string) =>
+      request<void>(`/api/sharing/friends/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
+    friends: () => request<FriendConnections>('/api/sharing/friends'),
     notifications: () => request<SharingNotifications>('/api/sharing/notifications'),
     markNotificationsRead: (items: NotificationReadReference[]) =>
       request<void>('/api/sharing/notifications/read', {
@@ -277,10 +284,6 @@ export const api = {
         headers: jsonHeaders,
         body: JSON.stringify({ since }),
       }),
-    approveFollower: (userId: string) =>
-      request<void>(`/api/sharing/followers/${encodeURIComponent(userId)}`, { method: 'POST' }),
-    removeFollower: (userId: string) =>
-      request<void>(`/api/sharing/followers/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
     blockMember: (userId: string) =>
       request<void>(`/api/sharing/blocks/${encodeURIComponent(userId)}`, { method: 'POST' }),
     unblockMember: (userId: string) =>

@@ -44,7 +44,8 @@ describe('BodyCompositionScreen', () => {
     );
     expect(markup).toContain('7-day average');
     expect(markup).toContain('Set a goal');
-    expect(markup).toContain('aria-label="Add bodyweight"');
+    expect(markup).not.toContain('aria-label="Add bodyweight"');
+    expect(markup).toContain('Log weigh-in');
     expect(markup).toContain('<h1>Body</h1>');
     expect(markup).toContain('role="tab" aria-selected="true">Daily</button>');
     expect(markup).toContain('role="tab" aria-selected="false">Avg Week</button>');

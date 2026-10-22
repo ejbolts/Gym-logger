@@ -452,9 +452,11 @@ describe('finishing workouts in the background', () => {
 
     const history =
       container.querySelector<HTMLButtonElement>('[data-tab="history"]') ??
-      [...container.querySelectorAll('button')].find((button) => button.textContent === 'History')!;
+      [...container.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Training',
+      )!;
     await act(async () => history.click());
-    expect(window.location.hash).toBe('#history');
+    expect(window.location.hash).toBe('#training');
     await act(async () =>
       finishSave({
         ...vi.mocked(api.createWorkout).mock.calls[0][0],
@@ -465,7 +467,7 @@ describe('finishing workouts in the background', () => {
         updated_at: new Date().toISOString(),
       }),
     );
-    expect(window.location.hash).toBe('#history');
+    expect(window.location.hash).toBe('#training');
     expect(readActiveWorkoutDraft()).toBeNull();
     expect(container.querySelector('.background-activity-bar')).toBeNull();
   });

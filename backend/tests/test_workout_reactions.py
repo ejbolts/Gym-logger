@@ -4,7 +4,7 @@ import pytest
 from conftest import register_user
 from fastapi.testclient import TestClient
 from test_auth import named
-from test_sharing import share
+from test_sharing import befriend, share
 
 
 def log_workout(test_client: TestClient, name: str, days_ago: int, notes: str | None = None):
@@ -35,7 +35,7 @@ def third_client(client):
     third.close()
 
 
-def test_feed_shows_each_followed_members_latest_session(client, other_client, third_client):
+def test_feed_shows_each_friends_latest_session(client, other_client, third_client):
     share(other_client, "public")
     share(third_client, "followers")
     for days_ago in range(4):
@@ -43,20 +43,20 @@ def test_feed_shows_each_followed_members_latest_session(client, other_client, t
         log_workout(third_client, f"Third {days_ago}", days_ago * 2)
     log_workout(client, "Mine", 0)
 
-    # Nobody followed yet; public profiles still need a follow to appear.
-    assert client.get("/api/sharing/feed").json() == {"items": [], "following": 0}
-    client.post(f"/api/sharing/follows/{other_client.user['id']}")
-    client.post(f"/api/sharing/follows/{third_client.user['id']}")
-    # The friends-only request is still pending, so only Other appears.
+    # No friends yet; public profiles still need a friendship to appear.
+    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 0}
+    befriend(client, other_client)
+    client.post(f"/api/sharing/friends/{third_client.user['id']}")
+    # The request to Third is still waiting, so only Other appears.
     feed = client.get("/api/sharing/feed").json()
     assert [item["workout"]["name"] for item in feed["items"]] == ["Other 0"]
-    assert feed["following"] == 1
+    assert feed["friends"] == 1
 
-    third_client.post(f"/api/sharing/followers/{client.user['id']}")
+    third_client.post(f"/api/sharing/friends/{client.user['id']}/accept")
     feed = client.get("/api/sharing/feed").json()
     # One latest session per friend, most recent first.
     assert [item["workout"]["name"] for item in feed["items"]] == ["Third 0", "Other 0"]
-    assert feed["following"] == 2
+    assert feed["friends"] == 2
     other = feed["items"][1]
     assert other["friend"] == {
         "id": other_client.user["id"],
@@ -70,11 +70,43 @@ def test_feed_shows_each_followed_members_latest_session(client, other_client, t
 
 def test_feed_counts_friends_without_sessions_and_hides_private_ones(client, other_client):
     share(other_client, "public")
-    client.post(f"/api/sharing/follows/{other_client.user['id']}")
-    assert client.get("/api/sharing/feed").json() == {"items": [], "following": 1}
+    befriend(client, other_client)
+    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 1}
     log_workout(other_client, "First", 0)
     share(other_client, "private")
-    assert client.get("/api/sharing/feed").json() == {"items": [], "following": 0}
+    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 0}
+
+
+def test_friends_list_shows_latest_activity_for_every_friend(client, other_client, third_client):
+    share(other_client, "public")
+    share(third_client, "followers")
+    for days_ago in (12, 5, 1):
+        log_workout(other_client, f"Other {days_ago}", days_ago, notes="Private note")
+    befriend(client, other_client)
+    befriend(third_client, client)
+    # Another account's workout and samples are not part of the activity.
+    log_workout(client, "Mine", 0)
+
+    friends = client.get("/api/sharing/friends").json()
+    # Friends with a session come first, newest first; friends without one follow.
+    assert [item["display_name"] for item in friends["friends"]] == ["Other", "Third"]
+    other, third = friends["friends"]
+    assert other["latest"]["workout"]["name"] == "Other 1"
+    assert other["latest"]["workout"]["notes"] is None
+    assert other["latest"]["reactions"] == {"counts": [], "yours": None}
+    assert other["recent_workout_count"] == 3
+    assert other["training_dates"] == [
+        (date.today() - timedelta(days=days)).isoformat() for days in (5, 1)
+    ]
+    assert third["latest"] is None and third["training_dates"] == []
+    assert friends["requests"] == [] and friends["sent"] == []
+
+    reaction_url = f"/api/sharing/workouts/{other['latest']['workout']['id']}/reaction"
+    client.put(reaction_url, json={"reaction": "fire"})
+    log_workout(third_client, "Third today", 0)
+    friends = client.get("/api/sharing/friends").json()["friends"]
+    assert [item["display_name"] for item in friends] == ["Third", "Other"]
+    assert friends[1]["latest"]["reactions"]["yours"] == "fire"
 
 
 def test_private_members_cannot_load_the_feed(client):
@@ -89,7 +121,7 @@ def test_reactions_are_one_per_member_and_notify_the_owner(client, other_client,
     workout = log_workout(client, "Leg day", 0)
     url = f"/api/sharing/workouts/{workout['id']}/reaction"
     for member in (other_client, third_client):
-        member.post(f"/api/sharing/follows/{client.user['id']}")
+        befriend(member, client)
 
     assert other_client.put(url, json={"reaction": "fire"}).json() == {
         "counts": [{"reaction": "fire", "count": 1}],
@@ -155,8 +187,7 @@ def test_reactions_respect_profile_access(client, other_client):
         == 404
     )
 
-    other_client.post(f"/api/sharing/follows/{client.user['id']}")
-    client.post(f"/api/sharing/followers/{other_client.user['id']}")
+    befriend(other_client, client)
     assert other_client.put(url, json={"reaction": "clap"}).status_code == 200
     # Deleting the workout removes its reactions and notifications.
     assert client.delete(f"/api/workouts/{workout['id']}").status_code == 204
@@ -169,9 +200,9 @@ def test_shared_profile_totals_follow_access_and_ignore_history_filters(client, 
     workout = log_workout(client, "Training", 0)
     profile_url = f"/api/sharing/profiles/{target}"
     assert other_client.get(profile_url).json()["training_time"] is None
-    other_client.post(f"/api/sharing/follows/{target}")
+    other_client.post(f"/api/sharing/friends/{target}")
     assert other_client.get(profile_url).json()["training_time"] is None
-    client.post(f"/api/sharing/followers/{other_client.user['id']}")
+    client.post(f"/api/sharing/friends/{other_client.user['id']}/accept")
     own = client.get("/api/training-time").json()
     assert other_client.get(profile_url).json()["training_time"] == own
     assert own["workout_count"] == 1
@@ -195,7 +226,7 @@ def test_opening_notifications_reads_exact_events_and_keeps_requests_actionable(
 ):
     share(client, "followers")
     target = client.user["id"]
-    other_client.post(f"/api/sharing/follows/{target}")
+    other_client.post(f"/api/sharing/friends/{target}")
     notice = client.get("/api/sharing/notifications").json()["requests"][0]
     reference = {"kind": "request", "id": notice["id"], "since": notice["since"]}
     assert (
@@ -205,7 +236,7 @@ def test_opening_notifications_reads_exact_events_and_keeps_requests_actionable(
     requests = client.get("/api/sharing/notifications").json()["requests"]
     assert len(requests) == 1 and requests[0]["is_read"] is True
     assert other_client.get(f"/api/sharing/profiles/{target}").json()["can_view"] is False
-    client.post(f"/api/sharing/followers/{other_client.user['id']}")
+    client.post(f"/api/sharing/friends/{other_client.user['id']}/accept")
     workout = log_workout(client, "Leg day", 0)
     reaction_url = f"/api/sharing/workouts/{workout['id']}/reaction"
     other_client.put(reaction_url, json={"reaction": "love"})
@@ -224,18 +255,16 @@ def test_opening_notifications_reads_exact_events_and_keeps_requests_actionable(
     other_client.put(reaction_url, json={"reaction": "fire"})
     client.post("/api/sharing/notifications/read", json={"items": [reference]})
     assert client.get("/api/sharing/notifications").json()["reactions"][0]["is_read"] is False
-    # New followers are read in the same bulk request as workout reactions.
-    share(client, "public")
-    third_client.post(f"/api/sharing/follows/{target}")
-    follower = next(
-        item
-        for item in client.get("/api/sharing/notifications").json()["followers"]
-        if item["id"] == third_client.user["id"]
-    )
+    # Accepted requests are read in the same bulk request as workout reactions.
+    client.post(f"/api/sharing/friends/{third_client.user['id']}")
+    third_client.post(f"/api/sharing/friends/{target}/accept")
+    [accepted] = client.get("/api/sharing/notifications").json()["accepted"]
+    assert accepted["id"] == third_client.user["id"] and accepted["is_read"] is False
+    # The member who accepted cannot mark the requester's notice read.
+    own = {"kind": "accepted", "id": target, "since": accepted["since"]}
+    third_client.post("/api/sharing/notifications/read", json={"items": [own]})
     client.post(
         "/api/sharing/notifications/read",
-        json={"items": [{"kind": "follower", "id": follower["id"], "since": follower["since"]}]},
+        json={"items": [{"kind": "accepted", "id": accepted["id"], "since": accepted["since"]}]},
     )
-    assert all(
-        item["is_read"] for item in client.get("/api/sharing/notifications").json()["followers"]
-    )
+    assert client.get("/api/sharing/notifications").json()["accepted"][0]["is_read"] is True

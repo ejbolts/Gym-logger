@@ -8,8 +8,8 @@ import type { useHomeLayout } from './useHomeLayout';
 
 const TABS: Array<{ tab: MainTab; label: string; icon: IconName }> = [
   { tab: 'dashboard', label: 'Home', icon: 'home' },
-  { tab: 'history', label: 'History', icon: 'calendar' },
-  { tab: 'progress', label: 'Progress', icon: 'trend' },
+  { tab: 'training', label: 'Training', icon: 'calendar' },
+  { tab: 'social', label: 'Social', icon: 'people' },
   { tab: 'body', label: 'Body', icon: 'body' },
 ];
 

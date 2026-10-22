@@ -71,11 +71,11 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "account_backups": None,
     # Feedback is sent to administrators, rather than part of a user's training archive.
     "app_feedback": None,
-    # Follows are relationships with other accounts, which a snapshot does not contain.
-    "profile_follows": None,
+    # Friendships are relationships with other accounts, which a snapshot does not contain.
+    "friendships": None,
     # Blocks involve other accounts, which are not restored from an account snapshot.
     "profile_blocks": None,
-    # Reactions are exchanged with other accounts, like follows.
+    # Reactions are exchanged with other accounts, like friendships.
     "workout_reactions": None,
     "youtube_connections": None,
     "youtube_oauth_states": None,

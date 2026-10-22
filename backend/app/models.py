@@ -139,9 +139,10 @@ class AppFeedback(Base):
 class ProfileSharing(Base):
     """Who can see an account's profile, and what it shares beyond workouts and its photo.
 
-    ``visibility`` is ``private`` (nobody), ``followers`` (followers it approves) or ``public``
-    (every sharing member). Only accounts that share can see or follow others. The optional
-    choices are kept while the profile is private, so sharing again restores them.
+    ``visibility`` is ``private`` (nobody), ``followers`` (its friends; the stored name predates
+    friendships) or ``public`` (every sharing member). Only accounts that share can see or add
+    others. The optional choices are kept while the profile is private, so sharing again restores
+    them.
     """
 
     __tablename__ = "profile_sharing"
@@ -167,27 +168,39 @@ class ProfileSharing(Base):
     )
 
 
-class ProfileFollow(Base):
-    """One account following another: ``pending`` until the followed account approves it."""
+class Friendship(Base):
+    """Two members' friendship: ``pending`` until the member who did not ask accepts it.
 
-    __tablename__ = "profile_follows"
+    Each pair has one row, stored with the lower account id first so a request in either
+    direction finds the same friendship. ``notification_seen`` belongs to whoever has news: the
+    recipient of a pending request, then the requester once it is accepted.
+    """
+
+    __tablename__ = "friendships"
     __table_args__ = (
-        CheckConstraint("follower_id != followee_id", name="profile_follow_not_self"),
-        CheckConstraint("status IN ('pending', 'accepted')", name="profile_follow_status_known"),
+        CheckConstraint("member_a_id < member_b_id", name="friendship_ordered_pair"),
+        CheckConstraint(
+            "requested_by_id IN (member_a_id, member_b_id)", name="friendship_requester_member"
+        ),
+        CheckConstraint("status IN ('pending', 'accepted')", name="friendship_status_known"),
     )
 
-    follower_id: Mapped[str] = mapped_column(
+    member_a_id: Mapped[str] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    followee_id: Mapped[str] = mapped_column(
+    member_b_id: Mapped[str] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
     )
+    requested_by_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     status: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     notification_seen: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+
+    def other(self, user_id: str) -> str:
+        return self.member_b_id if user_id == self.member_a_id else self.member_a_id
 
 
 WORKOUT_REACTIONS = ("like", "love", "strong", "fire", "clap", "trophy")

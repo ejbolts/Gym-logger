@@ -13,6 +13,9 @@ describe('app navigation history', () => {
     expect(isAppTab('history')).toBe(true);
     expect(isAppTab('unknown')).toBe(false);
     expect(appTabFromHash('#progress')).toBe('progress');
+    expect(appTabFromHash('#training')).toBe('training');
+    expect(appTabFromHash('#social')).toBe('social');
+    expect(appTabFromHash('#shared')).toBe('social');
     expect(appTabFromHash('#cardio')).toBe('cardio');
     expect(appTabFromHash('#log')).toBe('log');
     expect(appTabFromHash('#admin')).toBe('admin');
@@ -31,13 +34,16 @@ describe('app navigation history', () => {
 
   it('maps every screen to its history section and highlighted tab-bar item', () => {
     expect(historySectionForTab('history')).toBe('history');
+    expect(historySectionForTab('training')).toBe('history');
     expect(historySectionForTab('progress')).toBe('progress');
     expect(historySectionForTab('cardio')).toBe('cardio');
     expect(historySectionForTab('body')).toBeNull();
 
     expect(mainTabFor('dashboard')).toBe('dashboard');
-    expect(mainTabFor('cardio')).toBe('history');
-    expect(mainTabFor('progress')).toBe('progress');
+    expect(mainTabFor('cardio')).toBe('training');
+    expect(mainTabFor('history')).toBe('training');
+    expect(mainTabFor('progress')).toBe('training');
+    expect(mainTabFor('social')).toBe('social');
     expect(mainTabFor('body')).toBe('body');
     expect(mainTabFor('settings')).toBeNull();
     expect(mainTabFor('log')).toBeNull();

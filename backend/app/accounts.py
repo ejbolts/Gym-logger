@@ -53,10 +53,10 @@ from .models import (
     Clip,
     Exercise,
     ExerciseMuscleContribution,
+    Friendship,
     MachinePhoto,
     PersonalRecord,
     ProfileBlock,
-    ProfileFollow,
     ProfileSharing,
     PushSubscription,
     SupersetGroup,
@@ -327,8 +327,8 @@ def delete_account(db: Session, settings: Settings, user: User, app_state=None) 
         delete(PushSubscription).where(PushSubscription.user_id == user_id),
         delete(UserSetting).where(UserSetting.user_id == user_id),
         delete(ProfileSharing).where(ProfileSharing.user_id == user_id),
-        delete(ProfileFollow).where(
-            (ProfileFollow.follower_id == user_id) | (ProfileFollow.followee_id == user_id)
+        delete(Friendship).where(
+            (Friendship.member_a_id == user_id) | (Friendship.member_b_id == user_id)
         ),
         delete(ProfileBlock).where(
             (ProfileBlock.blocker_id == user_id) | (ProfileBlock.blocked_id == user_id)

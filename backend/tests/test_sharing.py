@@ -8,7 +8,7 @@ from sqlalchemy import func, select, update
 from test_auth import named, upload_photo
 
 from app.database import SessionLocal
-from app.models import PersonalRecord, ProfileFollow, ProfileSharing, TrainingWorkout, User
+from app.models import Friendship, PersonalRecord, ProfileSharing, TrainingWorkout, User
 
 NOTHING_EXTRA = {
     "share_notes": False,
@@ -27,6 +27,14 @@ def share(test_client: TestClient, visibility: str = "public", **choices: bool) 
 
 def profile(test_client: TestClient, owner: TestClient):
     return test_client.get(f"/api/sharing/profiles/{owner.user['id']}")
+
+
+def befriend(requester: TestClient, recipient: TestClient) -> None:
+    """Send a friend request and accept it."""
+    sent = requester.post(f"/api/sharing/friends/{recipient.user['id']}")
+    assert sent.status_code == 200, sent.text
+    accepted = recipient.post(f"/api/sharing/friends/{requester.user['id']}/accept")
+    assert accepted.json() == {"status": "friends"}, accepted.text
 
 
 def jpeg() -> bytes:
@@ -93,9 +101,9 @@ def test_shared_consistency_uses_owner_history_and_respects_access(client, other
     }
     share(other_client, "followers")
     assert profile(client, other_client).json()["consistency"] is None
-    assert client.post(f"/api/sharing/follows/{other_client.user['id']}").is_success
+    assert client.post(f"/api/sharing/friends/{other_client.user['id']}").is_success
     assert profile(client, other_client).json()["consistency"] is None
-    assert other_client.post(f"/api/sharing/followers/{client.user['id']}").is_success
+    assert other_client.post(f"/api/sharing/friends/{client.user['id']}/accept").is_success
     assert profile(client, other_client).json()["consistency"] == result
     # Going private hides the profile entirely, including the calendar.
     share(other_client, "private")
@@ -261,11 +269,11 @@ def test_private_members_neither_see_others_nor_appear(client, other_client):
     assert [item["is_you"] for item in client.get("/api/sharing/profiles").json()] == [True]
     assert profile(client, other_client).status_code == 404
     assert client.get("/api/sharing/profiles/missing").status_code == 404
-    assert client.post(f"/api/sharing/follows/{other_client.user['id']}").status_code == 404
-    assert client.post(f"/api/sharing/follows/{client.user['id']}").status_code == 422
+    assert client.post(f"/api/sharing/friends/{other_client.user['id']}").status_code == 404
+    assert client.post(f"/api/sharing/friends/{client.user['id']}").status_code == 422
 
 
-def test_public_profiles_are_open_to_sharing_members_and_follows_are_instant(client, other_client):
+def test_public_profiles_are_open_but_friend_requests_still_need_accepting(client, other_client):
     add_training_history(client)
     share(client, "public")
     share(other_client, "followers")
@@ -275,61 +283,67 @@ def test_public_profiles_are_open_to_sharing_members_and_follows_are_instant(cli
     ]
     assert owner["visibility"] == "public" and owner["can_view"] is True
     assert owner["workout_count"] == 1
-    assert owner["follow_status"] == "none"
+    assert owner["friend_status"] == "none"
     assert "username" not in owner
 
-    followed = other_client.post(f"/api/sharing/follows/{client.user['id']}")
-    assert followed.json() == {"status": "accepted"}
-    assert profile(other_client, client).json()["follow_status"] == "accepted"
-    followers = client.get("/api/sharing/followers").json()
-    assert [item["display_name"] for item in followers["followers"]] == ["Other"]
-    assert followers["requests"] == []
-    assert profile(client, other_client).json()["follows_you"] is True
+    sent = other_client.post(f"/api/sharing/friends/{client.user['id']}")
+    assert sent.json() == {"status": "outgoing"}
+    requester = profile(client, other_client).json()
+    assert requester["friend_status"] == "incoming"
+    # The public member still cannot see a friends-only requester before accepting.
+    assert requester["can_view"] is False
+    friends = client.get("/api/sharing/friends").json()
+    assert [item["display_name"] for item in friends["requests"]] == ["Other"]
+    assert friends["friends"] == [] and friends["sent"] == []
+    sent_by_other = other_client.get("/api/sharing/friends").json()["sent"]
+    assert [item["display_name"] for item in sent_by_other] == ["Owner"]
 
 
-def test_follow_dates_describe_each_direction_and_exclude_pending_requests(client, other_client):
-    share(client, "public")
+def test_friendships_are_mutual_and_start_when_accepted(client, other_client):
+    share(client, "followers")
     share(other_client, "followers")
-    client.post(f"/api/sharing/follows/{other_client.user['id']}")
-    other_client.post(f"/api/sharing/follows/{client.user['id']}")
-    started = datetime(2026, 10, 6, 12, tzinfo=UTC)
+    owner_id, other_id = client.user["id"], other_client.user["id"]
+    requested = datetime(2026, 10, 1, 12, tzinfo=UTC)
+    assert client.post(f"/api/sharing/friends/{other_id}").json() == {"status": "outgoing"}
     with SessionLocal() as db:
-        follow = db.get(ProfileFollow, (other_client.user["id"], client.user["id"]))
-        follow.created_at = datetime(2026, 10, 1, 12, tzinfo=UTC)
-        follow.accepted_at = started
+        friendship = db.scalar(select(Friendship))
+        friendship.created_at = requested
         db.commit()
-    expected = started.isoformat().replace("+00:00", "Z")
     detail = profile(client, other_client).json()
-    assert detail["follow_status"] == "pending"
-    assert detail["following_since"] is None
-    assert detail["follows_you_since"] == expected
+    assert detail["friend_status"] == "outgoing" and detail["friends_since"] is None
+    assert profile(other_client, client).json()["friend_status"] == "incoming"
+    # Asking again changes nothing; their own request accepts yours.
+    assert client.post(f"/api/sharing/friends/{other_id}").json() == {"status": "outgoing"}
+    assert other_client.post(f"/api/sharing/friends/{owner_id}").json() == {"status": "friends"}
+    mine = profile(client, other_client).json()
+    theirs = profile(other_client, client).json()
+    assert mine["friend_status"] == theirs["friend_status"] == "friends"
+    assert mine["can_view"] is True and theirs["can_view"] is True
+    # Accepting starts the friendship, rather than the request or signup date.
+    assert mine["friends_since"] == theirs["friends_since"]
+    assert datetime.fromisoformat(mine["friends_since"].replace("Z", "+00:00")) > requested
     listed = next(
-        item
-        for item in client.get("/api/sharing/profiles").json()
-        if item["id"] == other_client.user["id"]
+        item for item in client.get("/api/sharing/profiles").json() if item["id"] == other_id
     )
-    assert listed["follows_you_since"] == expected
-    assert listed["following_since"] is None
-    reverse = profile(other_client, client).json()
-    assert reverse["following_since"] == expected
-    assert reverse["follows_you_since"] is None
-    # Approval starts the relationship now, rather than on the request or signup date.
-    other_client.post(f"/api/sharing/followers/{client.user['id']}")
-    accepted = profile(client, other_client).json()["following_since"]
-    connections = other_client.get("/api/sharing/followers").json()
-    assert accepted == connections["followers"][0]["since"]
-    assert profile(other_client, client).json()["follows_you_since"] == accepted
-    other_client.delete(f"/api/sharing/follows/{client.user['id']}")
-    assert profile(client, other_client).json()["follows_you_since"] is None
+    assert listed["friends_since"] == mine["friends_since"]
+    [friend] = client.get("/api/sharing/friends").json()["friends"]
+    assert friend["id"] == other_id and friend["since"] == mine["friends_since"]
+    # Either member can end the friendship for both.
+    assert other_client.delete(f"/api/sharing/friends/{owner_id}").status_code == 204
+    ended = profile(client, other_client).json()
+    assert ended["friend_status"] == "none" and ended["can_view"] is False
+    with SessionLocal() as db:
+        assert db.scalar(select(func.count()).select_from(Friendship)) == 0
 
 
-def test_friends_only_profiles_need_an_approved_follow_request(client, other_client):
+def test_friends_only_profiles_need_an_accepted_friend_request(client, other_client):
     add_training_history(client)
     share(client, "followers", **EVERYTHING)
     share(other_client, "public")
     owner_id = client.user["id"]
+    other_id = other_client.user["id"]
 
-    # Before approval: name and photo only.
+    # Before accepting: name and photo only.
     locked = profile(other_client, client).json()
     assert locked["visibility"] == "followers"
     assert locked["can_view"] is False
@@ -339,41 +353,45 @@ def test_friends_only_profiles_need_an_approved_follow_request(client, other_cli
     assert other_client.get(locked["profile_photo_url"]).status_code == 200
     blocked = other_client.get(f"/api/sharing/profiles/{owner_id}/workouts")
     assert blocked.status_code == 403
-    assert blocked.json()["error"]["code"] == "follow_required"
+    assert blocked.json()["error"]["code"] == "friend_required"
 
-    assert other_client.post(f"/api/sharing/follows/{owner_id}").json() == {"status": "pending"}
-    assert other_client.post(f"/api/sharing/follows/{owner_id}").json() == {"status": "pending"}
+    assert other_client.post(f"/api/sharing/friends/{owner_id}").json() == {"status": "outgoing"}
+    assert other_client.post(f"/api/sharing/friends/{owner_id}").json() == {"status": "outgoing"}
     assert profile(other_client, client).json()["can_view"] is False
     assert client.get("/api/sharing").json()["pending_requests"] == 1
-    requests = client.get("/api/sharing/followers").json()["requests"]
+    requests = client.get("/api/sharing/friends").json()["requests"]
     assert [item["display_name"] for item in requests] == ["Other"]
+    # Only the member who was asked can accept.
+    assert other_client.post(f"/api/sharing/friends/{owner_id}/accept").status_code == 404
 
-    # Declining removes the request; approving a new one opens the profile.
-    assert client.delete(f"/api/sharing/followers/{other_client.user['id']}").status_code == 204
-    assert profile(other_client, client).json()["follow_status"] == "none"
-    other_client.post(f"/api/sharing/follows/{owner_id}")
-    assert client.post(f"/api/sharing/followers/{other_client.user['id']}").status_code == 204
+    # Declining removes the request; accepting a new one opens the profile.
+    assert client.delete(f"/api/sharing/friends/{other_id}").status_code == 204
+    assert profile(other_client, client).json()["friend_status"] == "none"
+    other_client.post(f"/api/sharing/friends/{owner_id}")
+    accepted = client.post(f"/api/sharing/friends/{other_id}/accept")
+    assert accepted.json() == {"status": "friends"}
     opened = profile(other_client, client).json()
-    assert opened["can_view"] is True and opened["follow_status"] == "accepted"
+    assert opened["can_view"] is True and opened["friend_status"] == "friends"
     assert opened["body_weight"] is not None
     assert other_client.get(f"/api/sharing/profiles/{owner_id}/workouts").status_code == 200
     assert client.get("/api/sharing").json()["pending_requests"] == 0
 
-    # Removing a follower locks the profile again.
-    assert client.delete(f"/api/sharing/followers/{other_client.user['id']}").status_code == 204
+    # Removing a friend locks the profile again.
+    assert client.delete(f"/api/sharing/friends/{other_id}").status_code == 204
     assert profile(other_client, client).json()["can_view"] is False
-    missing = client.post(f"/api/sharing/followers/{other_client.user['id']}")
+    missing = client.post(f"/api/sharing/friends/{other_id}/accept")
     assert missing.status_code == 404
 
 
-def test_making_a_profile_public_approves_waiting_requests(client, other_client):
+def test_making_a_profile_public_keeps_friend_requests_waiting(client, other_client):
     share(client, "followers")
     share(other_client, "public")
-    other_client.post(f"/api/sharing/follows/{client.user['id']}")
-    assert share(client, "public")["pending_requests"] == 0
-    assert profile(other_client, client).json()["follow_status"] == "accepted"
+    other_client.post(f"/api/sharing/friends/{client.user['id']}")
+    assert share(client, "public")["pending_requests"] == 1
+    assert profile(other_client, client).json()["friend_status"] == "outgoing"
+    client.post(f"/api/sharing/friends/{other_client.user['id']}/accept")
 
-    # Followers stay followers when the profile becomes friends-only again.
+    # Friends stay friends when the profile becomes friends-only again.
     share(client, "followers")
     assert profile(other_client, client).json()["can_view"] is True
 
@@ -568,17 +586,26 @@ def test_shared_filter_options_respect_profile_access_and_photo_sharing(client, 
 def test_going_private_hides_the_profile_and_others(client, other_client):
     share(client)
     share(other_client)
-    other_client.post(f"/api/sharing/follows/{client.user['id']}")
+    other_client.post(f"/api/sharing/friends/{client.user['id']}")
+    client.post(f"/api/sharing/friends/{other_client.user['id']}/accept")
     assert profile(other_client, client).status_code == 200
 
     share(client, "private")
     assert profile(other_client, client).status_code == 404
     assert [item["is_you"] for item in other_client.get("/api/sharing/profiles").json()] == [True]
+    assert other_client.get("/api/sharing/friends").json()["friends"] == []
     assert client.get("/api/sharing/profiles").status_code == 403
-    # Unfollowing is always possible.
-    assert other_client.delete(f"/api/sharing/follows/{client.user['id']}").status_code == 204
+    assert client.get("/api/sharing/friends").json() == {
+        "locked": True,
+        "friends": [],
+        "requests": [],
+        "sent": [],
+        "blocked": [],
+    }
+    # Removing a friend is always possible.
+    assert other_client.delete(f"/api/sharing/friends/{client.user['id']}").status_code == 204
     share(client)
-    assert profile(other_client, client).json()["follow_status"] == "none"
+    assert profile(other_client, client).json()["friend_status"] == "none"
 
 
 def test_disabled_and_deleted_accounts_are_not_shared(client, other_client):
@@ -594,12 +621,15 @@ def test_disabled_and_deleted_accounts_are_not_shared(client, other_client):
     third = TestClient(client.app)
     third.user = register_user(third, "third", "Third")
     share(third, "followers")
-    third.post(f"/api/sharing/follows/{client.user['id']}")
-    client.post(f"/api/sharing/follows/{third.user['id']}")
+    third.post(f"/api/sharing/friends/{client.user['id']}")
+    client.post(f"/api/sharing/friends/{third.user['id']}")
+    assert client.get("/api/sharing/profiles/" + third.user["id"]).json()["friend_status"] == (
+        "friends"
+    )
     assert third.request("DELETE", "/api/profile", json={"password": TEST_PASSWORD}).is_success
     with SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(ProfileSharing)) == 2
-        assert db.scalar(select(func.count()).select_from(ProfileFollow)) == 0
+        assert db.scalar(select(func.count()).select_from(Friendship)) == 0
     third.close()
 
 
@@ -621,82 +651,64 @@ def test_existing_accounts_without_choices_stay_private(client):
     assert client.get("/api/sharing").json()["visibility"] == "private"
 
 
-def test_notifications_ignore_a_follow_removed_after_the_connection_snapshot(
-    client, other_client, monkeypatch
-):
-    from sqlalchemy import delete
-
-    from app import sharing
-    from app.models import ProfileFollow
-
-    other_client.post(f"/api/sharing/follows/{client.user['id']}")
-    original = sharing.list_followers
-
-    def removed_follow(user, db):
-        snapshot = original(user, db)
-        db.execute(delete(ProfileFollow).where(ProfileFollow.followee_id == user.id))
-        db.commit()
-        return snapshot
-
-    monkeypatch.setattr(sharing, "list_followers", removed_follow)
-    assert client.get("/api/sharing/notifications").json() == {
-        "requests": [],
-        "followers": [],
-        "reactions": [],
-    }
-
-
-def test_follow_notifications_are_scoped_dismissible_and_not_duplicated(client, other_client):
+def test_friend_notifications_cover_requests_and_acceptances(client, other_client):
     target = client.user["id"]
-    follower = other_client.user["id"]
-    assert client.get("/api/sharing/notifications").json() == {
-        "requests": [],
-        "followers": [],
-        "reactions": [],
-    }
-    assert other_client.post(f"/api/sharing/follows/{target}").json()["status"] == "accepted"
+    requester = other_client.user["id"]
+    empty = {"requests": [], "accepted": [], "reactions": []}
+    assert client.get("/api/sharing/notifications").json() == empty
+    assert other_client.post(f"/api/sharing/friends/{target}").json()["status"] == "outgoing"
     # A retry does not create another event.
-    other_client.post(f"/api/sharing/follows/{target}")
+    other_client.post(f"/api/sharing/friends/{target}")
     notices = client.get("/api/sharing/notifications").json()
-    assert [item["id"] for item in notices["followers"]] == [follower]
-    assert other_client.get("/api/sharing/notifications").json()["followers"] == []
-    event = notices["followers"][0]
-    assert (
-        client.post(
-            f"/api/sharing/notifications/{follower}/dismiss", json={"since": event["since"]}
-        ).status_code
-        == 204
+    assert [item["id"] for item in notices["requests"]] == [requester]
+    assert notices["requests"][0]["is_read"] is False and notices["accepted"] == []
+    assert other_client.get("/api/sharing/notifications").json() == empty
+    # Reading a request keeps it actionable.
+    request = notices["requests"][0]
+    seen = {"kind": "request", "id": requester, "since": request["since"]}
+    assert client.post("/api/sharing/notifications/read", json={"items": [seen]}).is_success
+    [still_waiting] = client.get("/api/sharing/notifications").json()["requests"]
+    assert still_waiting["is_read"] is True
+
+    # Accepting tells the requester; the member who accepted gets no notice.
+    client.post(f"/api/sharing/friends/{requester}/accept")
+    assert client.get("/api/sharing/notifications").json() == empty
+    [accepted] = other_client.get("/api/sharing/notifications").json()["accepted"]
+    assert accepted["id"] == target and accepted["is_read"] is False
+    assert other_client.post(
+        f"/api/sharing/notifications/{target}/dismiss", json={"since": accepted["since"]}
+    ).is_success
+    assert other_client.get("/api/sharing/notifications").json()["accepted"][0]["is_read"] is True
+
+    # A stale dismissal cannot consume a later acceptance.
+    client.delete(f"/api/sharing/friends/{requester}")
+    other_client.post(f"/api/sharing/friends/{target}")
+    client.post(f"/api/sharing/friends/{requester}/accept")
+    other_client.post(
+        f"/api/sharing/notifications/{target}/dismiss", json={"since": accepted["since"]}
     )
-    assert all(
-        item["is_read"] for item in client.get("/api/sharing/notifications").json()["followers"]
-    )
-    assert len(client.get("/api/sharing/followers").json()["followers"]) == 1
-    other_client.delete(f"/api/sharing/follows/{target}")
-    other_client.post(f"/api/sharing/follows/{target}")
-    # A stale dismissal cannot consume the new follow.
-    client.post(f"/api/sharing/notifications/{follower}/dismiss", json={"since": event["since"]})
-    assert len(client.get("/api/sharing/notifications").json()["followers"]) == 1
+    [renewed] = other_client.get("/api/sharing/notifications").json()["accepted"]
+    assert renewed["is_read"] is False
 
 
-def test_friends_only_search_request_and_notification_approval(client, other_client):
+def test_friends_only_search_request_and_notification_accept(client, other_client):
     share(client, "followers")
     target = client.user["id"]
-    follower = other_client.user["id"]
+    requester = other_client.user["id"]
     for term in (client.user["display_name"], client.user["username"], target):
         found = other_client.get("/api/sharing/profiles", params={"q": term}).json()
         owner = next(item for item in found if item["id"] == target)
         assert owner["can_view"] is False and owner["workout_count"] is None
-    assert other_client.post(f"/api/sharing/follows/{target}").json()["status"] == "pending"
+    assert other_client.post(f"/api/sharing/friends/{target}").json()["status"] == "outgoing"
     assert other_client.get(f"/api/sharing/profiles/{target}/workouts").status_code == 403
     notices = client.get("/api/sharing/notifications").json()
-    assert [item["id"] for item in notices["requests"]] == [follower]
-    assert notices["followers"] == []
-    assert client.post(f"/api/sharing/followers/{follower}").status_code == 204
+    assert [item["id"] for item in notices["requests"]] == [requester]
+    assert notices["accepted"] == []
+    assert client.post(f"/api/sharing/friends/{requester}/accept").status_code == 200
     notices = client.get("/api/sharing/notifications").json()
-    assert notices["requests"] == []
-    assert notices["followers"][0]["is_read"] is True
+    assert notices["requests"] == [] and notices["accepted"] == []
     assert other_client.get(f"/api/sharing/profiles/{target}").json()["can_view"] is True
-    other_client.delete(f"/api/sharing/follows/{target}")
-    other_client.post(f"/api/sharing/follows/{target}")
-    assert client.delete(f"/api/sharing/followers/{follower}").status_code == 204
+    other_client.delete(f"/api/sharing/friends/{target}")
+    other_client.post(f"/api/sharing/friends/{target}")
+    assert client.delete(f"/api/sharing/friends/{requester}").status_code == 204
     assert client.get("/api/sharing/notifications").json()["requests"] == []

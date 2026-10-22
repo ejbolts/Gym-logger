@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { api, ApiError } from './api';
 import { friendSession, reactionSummary, relativeDay } from './friendFeedData';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
@@ -10,20 +10,27 @@ type ActivityState =
   | { kind: 'loading' }
   | { kind: 'locked' }
   | { kind: 'error' }
-  | { kind: 'ready'; items: FriendFeedItem[]; following: number };
+  | { kind: 'ready'; items: FriendFeedItem[]; friends: number };
 
 /** Home's Friends card: each friend's latest session, with one button to react to it. */
 export function FriendsActivityCard({
   active,
   onOpenFriend,
   onOpenFriends,
+  onChooseSharing,
+  title = 'Friends',
+  friendsLabel = 'See all',
   today = localDate(),
 }: {
   active: boolean;
   onOpenFriend: (friend: FriendFeedItem['friend']) => void;
   onOpenFriends: () => void;
+  onChooseSharing?: () => void;
+  title?: string;
+  friendsLabel?: string;
   today?: string;
 }) {
+  const titleId = useId();
   const [state, setState] = useState<ActivityState>({ kind: 'loading' });
   const [picking, setPicking] = useState<string | null>(null);
   const refresh = useRef<() => void>(() => undefined);
@@ -82,25 +89,29 @@ export function FriendsActivityCard({
   }
 
   return (
-    <section className="pulse-card friends-activity" aria-labelledby="friends-activity-title">
+    <section className="pulse-card friends-activity" aria-labelledby={titleId}>
       <header className="pulse-card-header">
-        <h2 id="friends-activity-title">Friends</h2>
-        <button type="button" className="text-link" onClick={onOpenFriends}>
-          {state.kind === 'locked' ? 'Share' : 'See all'}
+        <h2 id={titleId}>{title}</h2>
+        <button
+          type="button"
+          className="text-link"
+          onClick={state.kind === 'locked' ? (onChooseSharing ?? onOpenFriends) : onOpenFriends}
+        >
+          {state.kind === 'locked' ? 'Share' : friendsLabel}
         </button>
       </header>
       {state.kind === 'loading' ? (
         <p className="pulse-empty-line">Loading your friends’ sessions…</p>
       ) : state.kind === 'locked' ? (
         <p className="pulse-empty-line">
-          Share your profile to follow friends and react to their workouts here.
+          Share your profile to add friends and react to their workouts here.
         </p>
       ) : state.kind === 'error' ? (
         <p className="pulse-empty-line">Friends’ sessions could not be loaded.</p>
       ) : state.items.length === 0 ? (
         <p className="pulse-empty-line">
-          {state.following === 0
-            ? 'Follow friends from Profile to see their latest workouts here.'
+          {state.friends === 0
+            ? 'Add friends to see their latest workouts here.'
             : 'Your friends have not logged a workout yet.'}
         </p>
       ) : (
@@ -164,9 +175,9 @@ export function FriendsActivityCard({
           })}
         </ul>
       )}
-      {state.kind === 'ready' && state.items.length > 0 && state.following > state.items.length && (
+      {state.kind === 'ready' && state.items.length > 0 && state.friends > state.items.length && (
         <button type="button" className="friends-activity-more" onClick={onOpenFriends}>
-          +{state.following - state.items.length} more
+          +{state.friends - state.items.length} more
         </button>
       )}
     </section>

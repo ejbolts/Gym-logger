@@ -1,16 +1,19 @@
-"""Profile sharing and following between members.
+"""Profile sharing and friendships between members.
 
-Each account chooses who can see its profile: nobody (``private``), followers it
-approves (``followers``, shown as "Friends only"), or every sharing member (``public``). Only
-accounts that share their own profile can see or follow others. A shared profile always includes
-its workouts, cardio sessions and profile photo; notes, body weight, goals and machine photos are
-optional.
+Each account chooses who can see its profile: nobody (``private``), its friends (stored as
+``followers`` and shown as "Friends only"), or every sharing member (``public``). Only accounts
+that share their own profile can see or add others. A shared profile always includes its workouts,
+cardio sessions and profile photo; notes, body weight, goals and machine photos are optional.
+
+Friendships are mutual: one member sends a request and both become friends once the other accepts
+it. Requests always need accepting, even for public profiles, so nobody gains friends they did not
+choose.
 
 New accounts start public; existing accounts retain their choices, including private defaults.
 
 Private, disabled and missing profiles all answer "not found". A friends-only profile shows only
-its name and photo until its owner approves a follow request. Usernames can be searched but are
-not returned in shared profiles. Videos and sample data are never shared.
+its name and photo until the two members are friends. Usernames can be searched but are not
+returned in shared profiles. Videos and sample data are never shared.
 """
 
 from __future__ import annotations
@@ -23,7 +26,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import and_, case, delete, exists, func, or_, select, update
+from sqlalchemy import and_, case, delete, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -37,11 +40,11 @@ from .models import (
     BodyWeightGoal,
     CardioSession,
     Exercise,
+    Friendship,
     MachinePhoto,
     PersonalRecord,
     PersonalRecordType,
     ProfileBlock,
-    ProfileFollow,
     ProfileSharing,
     TrainingWorkout,
     User,
@@ -79,9 +82,11 @@ FEED_SIZE = 5
 MAX_REACTION_NOTICES = 20
 RECENT_CARDIO_SESSIONS = 20
 RECENT_DAYS = 30
+# Friends list training days; one spare day covers members in time zones ahead of the server.
+ACTIVITY_DAYS = 8
 
 Visibility = Literal["private", "followers", "public"]
-FollowStatus = Literal["none", "pending", "accepted"]
+FriendStatus = Literal["none", "incoming", "outgoing", "friends"]
 
 
 class SharingChoices(BaseModel):
@@ -114,12 +119,10 @@ class SharedProfileSummary(BaseModel):
     member_since: datetime
     visibility: Literal["followers", "public"]
     is_you: bool
-    # Your follow of them, and whether they follow you.
-    follow_status: FollowStatus
-    follows_you: bool
-    following_since: datetime | None = None
-    follows_you_since: datetime | None = None
-    # A friends-only profile you do not follow shows only its name and photo.
+    # Requests are ``incoming`` when they asked you, ``outgoing`` when you asked them.
+    friend_status: FriendStatus
+    friends_since: datetime | None = None
+    # A friends-only profile of someone who is not your friend shows only its name and photo.
     can_view: bool
     workout_count: int | None = None
     recent_workout_count: int | None = None
@@ -205,8 +208,8 @@ class SharedWorkoutFiltersRead(BaseModel):
     workout_types: list[WorkoutTypeRead] = []
 
 
-class FollowRead(BaseModel):
-    status: FollowStatus
+class FriendRequestRead(BaseModel):
+    status: FriendStatus
 
 
 class ConnectionRead(BaseModel):
@@ -214,12 +217,6 @@ class ConnectionRead(BaseModel):
     display_name: str
     profile_photo_url: str | None
     since: datetime
-
-
-class ConnectionsRead(BaseModel):
-    requests: list[ConnectionRead]
-    followers: list[ConnectionRead]
-    blocked: list[ConnectionRead] = []
 
 
 Reaction = Literal["like", "love", "strong", "fire", "clap", "trophy"]
@@ -252,14 +249,41 @@ class FriendFeedItem(BaseModel):
 
 
 class FriendFeedRead(BaseModel):
-    """Each followed member's latest session, plus how many members you follow."""
+    """Each friend's latest session, plus how many friends share their profile."""
 
     items: list[FriendFeedItem]
-    following: int
+    friends: int
+
+
+class FriendLatest(BaseModel):
+    workout: TrainingWorkoutRead
+    reactions: WorkoutReactions
+
+
+class FriendActivity(ConnectionRead):
+    """A friend, ``since`` you became friends, with their latest session and recent training."""
+
+    latest: FriendLatest | None = None
+    recent_workout_count: int = 0
+    # Days with a shared workout in the last week or so, for a compact activity strip.
+    training_dates: list[date] = []
+
+
+class FriendsRead(BaseModel):
+    """Friends with their latest activity, requests sent to you or by you, and blocked members.
+
+    A private account is ``locked``: it sees only its blocked members, so it can still unblock.
+    """
+
+    locked: bool = False
+    friends: list[FriendActivity] = []
+    requests: list[ConnectionRead] = []
+    sent: list[ConnectionRead] = []
+    blocked: list[ConnectionRead] = []
 
 
 class ReactionNotice(ConnectionRead):
-    """A follower's reaction to one of your workouts; ``since`` is when they reacted."""
+    """A member's reaction to one of your workouts; ``since`` is when they reacted."""
 
     workout_id: str
     workout_name: str
@@ -267,13 +291,14 @@ class ReactionNotice(ConnectionRead):
     is_read: bool = False
 
 
-class FollowNotice(ConnectionRead):
+class FriendNotice(ConnectionRead):
     is_read: bool = False
 
 
 class NotificationsRead(BaseModel):
-    requests: list[FollowNotice]
-    followers: list[FollowNotice]
+    # Requests waiting for you, and your requests that were accepted.
+    requests: list[FriendNotice]
+    accepted: list[FriendNotice]
     reactions: list[ReactionNotice] = []
 
 
@@ -298,8 +323,41 @@ def require_sharing(db: Session, viewer: User) -> None:
         )
 
 
-def find_follow(db: Session, follower_id: str, followee_id: str) -> ProfileFollow | None:
-    return db.get(ProfileFollow, (follower_id, followee_id))
+def member_pair(first_id: str, second_id: str) -> tuple[str, str]:
+    """A friendship's key: the two account ids, lowest first."""
+    return (first_id, second_id) if first_id < second_id else (second_id, first_id)
+
+
+def find_friendship(db: Session, user_id: str, other_id: str) -> Friendship | None:
+    return db.get(Friendship, member_pair(user_id, other_id))
+
+
+def friend_status(friendship: Friendship | None, viewer_id: str) -> FriendStatus:
+    if friendship is None:
+        return "none"
+    if friendship.status == ACCEPTED:
+        return "friends"
+    return "outgoing" if friendship.requested_by_id == viewer_id else "incoming"
+
+
+def involves(user_id: str):
+    return or_(Friendship.member_a_id == user_id, Friendship.member_b_id == user_id)
+
+
+def other_member(user_id: str):
+    """The other member of a friendship row, as a SQL expression."""
+    return case(
+        (Friendship.member_a_id == user_id, Friendship.member_b_id),
+        else_=Friendship.member_a_id,
+    )
+
+
+def friendships_of(db: Session, user_id: str) -> dict[str, Friendship]:
+    """Every friendship and request involving the account, keyed by the other member."""
+    return {
+        friendship.other(user_id): friendship
+        for friendship in db.scalars(select(Friendship).where(involves(user_id)))
+    }
 
 
 def blocked_member_ids(db: Session, user_id: str) -> set[str]:
@@ -329,21 +387,23 @@ def visible_member(db: Session, viewer: User, user_id: str) -> tuple[User, Profi
     return member, sharing
 
 
-def can_view(viewer: User, member: User, sharing: ProfileSharing, follow: ProfileFollow | None):
+def can_view(
+    viewer: User, member: User, sharing: ProfileSharing, friendship: Friendship | None
+) -> bool:
     return (
         member.id == viewer.id
         or sharing.visibility == PUBLIC
-        or (follow is not None and follow.status == ACCEPTED)
+        or (friendship is not None and friendship.status == ACCEPTED)
     )
 
 
 def viewable_member(db: Session, viewer: User, user_id: str) -> tuple[User, ProfileSharing]:
     member, sharing = visible_member(db, viewer, user_id)
-    if not can_view(viewer, member, sharing, find_follow(db, viewer.id, member.id)):
+    if not can_view(viewer, member, sharing, find_friendship(db, viewer.id, member.id)):
         raise api_error(
             403,
-            "follow_required",
-            f"{member.display_name} shares with friends only. Ask to follow them first.",
+            "friend_required",
+            f"{member.display_name} shares with friends only. Send them a friend request first.",
         )
     return member, sharing
 
@@ -417,16 +477,20 @@ def workout_stats(db: Session, user_ids: list[str]) -> dict[str, ActivityStats]:
     }
 
 
+def friends_since(friendship: Friendship) -> datetime:
+    return as_utc(friendship.accepted_at or friendship.created_at)
+
+
 def profile_summary(
     viewer: User,
     member: User,
     sharing: ProfileSharing,
-    follow: ProfileFollow | None,
-    follower: ProfileFollow | None,
+    friendship: Friendship | None,
     stats: ActivityStats | None,
 ) -> SharedProfileSummary:
-    viewable = can_view(viewer, member, sharing, follow)
+    viewable = can_view(viewer, member, sharing, friendship)
     stats = stats or ActivityStats()
+    status = "none" if member.id == viewer.id else friend_status(friendship, viewer.id)
     return SharedProfileSummary(
         id=member.id,
         display_name=member.display_name,
@@ -434,18 +498,8 @@ def profile_summary(
         member_since=as_utc(member.created_at),
         visibility=sharing.visibility,
         is_you=member.id == viewer.id,
-        follow_status=follow.status if follow else "none",
-        follows_you=follower is not None and follower.status == ACCEPTED,
-        following_since=(
-            as_utc(follow.accepted_at or follow.created_at)
-            if follow is not None and follow.status == ACCEPTED
-            else None
-        ),
-        follows_you_since=(
-            as_utc(follower.accepted_at or follower.created_at)
-            if follower is not None and follower.status == ACCEPTED
-            else None
-        ),
+        friend_status=status,
+        friends_since=friends_since(friendship) if friendship and status == "friends" else None,
         can_view=viewable,
         workout_count=stats.workouts if viewable else None,
         recent_workout_count=stats.recent_workouts if viewable else None,
@@ -538,14 +592,16 @@ def shared_cardio(db: Session, user_id: str, sharing: ProfileSharing) -> list[Sh
 
 
 def pending_request_count(db: Session, user_id: str) -> int:
+    """Friend requests other members sent this account, waiting for its answer."""
     return (
         db.scalar(
             select(func.count())
-            .select_from(ProfileFollow)
-            .join(User, User.id == ProfileFollow.follower_id)
+            .select_from(Friendship)
+            .join(User, User.id == Friendship.requested_by_id)
             .where(
-                ProfileFollow.followee_id == user_id,
-                ProfileFollow.status == PENDING,
+                involves(user_id),
+                Friendship.status == PENDING,
+                Friendship.requested_by_id != user_id,
                 User.disabled_at.is_(None),
                 User.id.not_in(blocked_member_ids(db, user_id)),
             )
@@ -574,13 +630,7 @@ def update_sharing(payload: SharingChoices, user: CurrentUser, db: Db) -> Sharin
         db.add(sharing)
     for key, value in payload.model_dump().items():
         setattr(sharing, key, value)
-    if payload.visibility == PUBLIC:
-        # Anyone may follow a public profile, so waiting requests are approved.
-        db.execute(
-            update(ProfileFollow)
-            .where(ProfileFollow.followee_id == user.id, ProfileFollow.status == PENDING)
-            .values(status=ACCEPTED, accepted_at=utc_now())
-        )
+    # Friend requests keep waiting: anyone can see a public profile, but friends are chosen.
     db.commit()
     db.refresh(sharing)
     return sharing_read(db, sharing)
@@ -619,44 +669,26 @@ def list_shared_profiles(
             or folded in member.display_name.casefold()
             or folded in member.username.casefold()
         ]
-    following = {
-        follow.followee_id: follow
-        for follow in db.scalars(select(ProfileFollow).where(ProfileFollow.follower_id == user.id))
-    }
-    followers = {
-        follow.follower_id: follow
-        for follow in db.scalars(
-            select(ProfileFollow).where(
-                ProfileFollow.followee_id == user.id, ProfileFollow.status == ACCEPTED
-            )
-        )
-    }
+    friendships = friendships_of(db, user.id)
     viewable_ids = [
         member.id
         for member, sharing in rows
-        if can_view(user, member, sharing, following.get(member.id))
+        if can_view(user, member, sharing, friendships.get(member.id))
     ]
     stats = workout_stats(db, viewable_ids)
     profiles = [
-        profile_summary(
-            user,
-            member,
-            sharing,
-            following.get(member.id),
-            followers.get(member.id),
-            stats.get(member.id),
-        )
+        profile_summary(user, member, sharing, friendships.get(member.id), stats.get(member.id))
         for member, sharing in rows
     ]
 
     def group(item: SharedProfileSummary) -> int:
         if item.is_you:
             return 0
-        if item.follow_status == ACCEPTED:
+        if item.friend_status == "friends":
             return 1
         return 2 if item.can_view else 3
 
-    # You, the people you follow, other public profiles, then friends-only profiles to request.
+    # You, your friends, other public profiles, then friends-only profiles to request.
     profiles.sort(key=lambda item: item.display_name.casefold())
     profiles.sort(key=lambda item: item.last_workout_date or date.min, reverse=True)
     profiles.sort(key=group)
@@ -698,14 +730,11 @@ def shared_consistency(db: Session, user_id: str) -> SharedConsistencyRead:
 @sharing_router.get("/profiles/{user_id}", response_model=SharedProfileRead)
 def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfileRead:
     member, sharing = visible_member(db, user, user_id)
-    follow = find_follow(db, user.id, member.id)
-    follower = find_follow(db, member.id, user.id)
     summary = profile_summary(
         user,
         member,
         sharing,
-        follow,
-        follower,
+        find_friendship(db, user.id, member.id),
         workout_stats(db, [member.id]).get(member.id),
     )
     if not summary.can_view:
@@ -848,7 +877,7 @@ def shared_workout_filters(user_id: str, user: CurrentUser, db: Db) -> SharedWor
 def get_shared_profile_photo(
     user_id: str, user: CurrentUser, db: Db, settings: AppSettings
 ) -> FileResponse:
-    # The profile photo is always shared, including on friends-only profiles you do not follow.
+    # The profile photo is always shared, including on friends-only profiles of non-friends.
     member, _sharing = visible_member(db, user, user_id)
     filename = member.profile_photo_filename
     path = profile_photo_path(settings, filename) if filename else None
@@ -901,39 +930,67 @@ def get_shared_machine_photo(
     )
 
 
-@sharing_router.post("/follows/{user_id}", response_model=FollowRead)
-def follow_member(user_id: str, user: CurrentUser, db: Db) -> FollowRead:
+def accept_request(friendship: Friendship) -> None:
+    friendship.status = ACCEPTED
+    friendship.accepted_at = utc_now()
+    # The requester now has news: their request was accepted.
+    friendship.notification_seen = False
+
+
+@sharing_router.post("/friends/{user_id}", response_model=FriendRequestRead)
+def add_friend(user_id: str, user: CurrentUser, db: Db) -> FriendRequestRead:
+    """Send a friend request, or accept theirs when they already asked you."""
     if user_id == user.id:
-        raise api_error(422, "cannot_follow_yourself", "You cannot follow yourself.")
-    member, sharing = visible_member(db, user, user_id)
-    follow = find_follow(db, user.id, member.id)
-    if follow is None:
-        public = sharing.visibility == PUBLIC
-        follow = ProfileFollow(
-            follower_id=user.id,
-            followee_id=member.id,
-            status=ACCEPTED if public else PENDING,
-            accepted_at=utc_now() if public else None,
+        raise api_error(422, "cannot_friend_yourself", "You cannot add yourself as a friend.")
+    member, _sharing = visible_member(db, user, user_id)
+    friendship = find_friendship(db, user.id, member.id)
+    if friendship is None:
+        member_a, member_b = member_pair(user.id, member.id)
+        db.add(
+            Friendship(
+                member_a_id=member_a,
+                member_b_id=member_b,
+                requested_by_id=user.id,
+                status=PENDING,
+            )
         )
-        db.add(follow)
         try:
             db.commit()
         except IntegrityError:
-            # A repeated tap raced this one; its request stands.
+            # A repeated tap, or their request, raced this one; that row stands.
             db.rollback()
-            follow = find_follow(db, user.id, member.id)
-    return FollowRead(status=follow.status if follow else "none")
+        friendship = find_friendship(db, user.id, member.id)
+    elif friendship.status == PENDING and friendship.requested_by_id != user.id:
+        accept_request(friendship)
+        db.commit()
+    return FriendRequestRead(status=friend_status(friendship, user.id))
 
 
-@sharing_router.delete("/follows/{user_id}", status_code=204)
-def unfollow_member(user_id: str, user: CurrentUser, db: Db) -> None:
-    """Unfollow, or withdraw a follow request. Always allowed, even after sharing stops."""
-    db.execute(
-        delete(ProfileFollow).where(
-            ProfileFollow.follower_id == user.id, ProfileFollow.followee_id == user_id
-        )
-    )
+@sharing_router.post("/friends/{user_id}/accept", response_model=FriendRequestRead)
+def accept_friend(user_id: str, user: CurrentUser, db: Db) -> FriendRequestRead:
+    friendship = find_friendship(db, user.id, user_id)
+    if (
+        friendship is None
+        or (friendship.status == PENDING and friendship.requested_by_id == user.id)
+        or user_id in blocked_member_ids(db, user.id)
+    ):
+        raise api_error(404, "friend_request_not_found", "That friend request was withdrawn.")
+    if friendship.status == PENDING:
+        accept_request(friendship)
+        db.commit()
+    return FriendRequestRead(status="friends")
+
+
+@sharing_router.delete("/friends/{user_id}", status_code=204)
+def remove_friend(user_id: str, user: CurrentUser, db: Db) -> None:
+    """Remove a friend, cancel your request or decline theirs. Always allowed."""
+    db.execute(delete(Friendship).where(*friendship_key(user.id, user_id)))
     db.commit()
+
+
+def friendship_key(user_id: str, other_id: str):
+    member_a, member_b = member_pair(user_id, other_id)
+    return Friendship.member_a_id == member_a, Friendship.member_b_id == member_b
 
 
 def reaction_summaries(
@@ -968,23 +1025,25 @@ def reaction_summaries(
     return summaries
 
 
-@sharing_router.get("/feed", response_model=FriendFeedRead)
-def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
-    """Home's Friends card: the latest session from each member you follow, most recent first."""
-    require_sharing(db, user)
-    followed = (
-        select(ProfileFollow.followee_id)
-        .join(User, User.id == ProfileFollow.followee_id)
-        .join(ProfileSharing, ProfileSharing.user_id == ProfileFollow.followee_id)
+def shared_friend_ids(db: Session, user_id: str):
+    """Friends who still share their profile and are neither disabled nor blocked."""
+    friend_id = other_member(user_id)
+    return (
+        select(friend_id)
+        .join(User, User.id == friend_id)
+        .join(ProfileSharing, ProfileSharing.user_id == friend_id)
         .where(
-            ProfileFollow.follower_id == user.id,
-            ProfileFollow.status == ACCEPTED,
+            involves(user_id),
+            Friendship.status == ACCEPTED,
             User.disabled_at.is_(None),
             ProfileSharing.visibility != PRIVATE,
-            User.id.not_in(blocked_member_ids(db, user.id)),
+            User.id.not_in(blocked_member_ids(db, user_id)),
         )
     )
-    following = db.scalar(select(func.count()).select_from(followed.subquery())) or 0
+
+
+def latest_workouts(db: Session, user_ids) -> list[tuple[TrainingWorkout, User, ProfileSharing]]:
+    """Each member's newest real workout, newest first."""
     newest = (
         select(
             TrainingWorkout.id,
@@ -999,25 +1058,37 @@ def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
             )
             .label("position"),
         )
-        .where(TrainingWorkout.user_id.in_(followed), TrainingWorkout.is_sample.is_(False))
+        .where(TrainingWorkout.user_id.in_(user_ids), TrainingWorkout.is_sample.is_(False))
         .subquery()
     )
-    rows = db.execute(
-        select(TrainingWorkout, User, ProfileSharing)
-        .join(newest, newest.c.id == TrainingWorkout.id)
-        .join(User, User.id == TrainingWorkout.user_id)
-        .join(ProfileSharing, ProfileSharing.user_id == TrainingWorkout.user_id)
-        .where(newest.c.position == 1)
-        .options(*workout_options())
-        .order_by(
-            TrainingWorkout.workout_date.desc(),
-            TrainingWorkout.created_at.desc(),
-            TrainingWorkout.id.desc(),
-        )
-        .limit(FEED_SIZE)
-    ).all()
+    return [
+        tuple(row)
+        for row in db.execute(
+            select(TrainingWorkout, User, ProfileSharing)
+            .join(newest, newest.c.id == TrainingWorkout.id)
+            .join(User, User.id == TrainingWorkout.user_id)
+            .join(ProfileSharing, ProfileSharing.user_id == TrainingWorkout.user_id)
+            .where(newest.c.position == 1)
+            .options(*workout_options())
+            .order_by(
+                TrainingWorkout.workout_date.desc(),
+                TrainingWorkout.created_at.desc(),
+                TrainingWorkout.id.desc(),
+            )
+        ).all()
+    ]
+
+
+@sharing_router.get("/feed", response_model=FriendFeedRead)
+def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
+    """Home's Friends card: each friend's latest session, most recent first."""
+    require_sharing(db, user)
+    friend_ids = shared_friend_ids(db, user.id)
+    friends = db.scalar(select(func.count()).select_from(friend_ids.subquery())) or 0
+    rows = latest_workouts(db, friend_ids)[:FEED_SIZE]
     reactions = reaction_summaries(db, user.id, [workout.id for workout, _, _ in rows])
     return FriendFeedRead(
+        friends=friends,
         items=[
             FriendFeedItem(
                 friend=FeedFriend(
@@ -1030,7 +1101,6 @@ def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
             )
             for workout, member, sharing in rows
         ],
-        following=following,
     )
 
 
@@ -1076,54 +1146,156 @@ def remove_workout_reaction(workout_id: str, user: CurrentUser, db: Db) -> Worko
     return reaction_summaries(db, user.id, [workout.id])[workout.id]
 
 
-@sharing_router.get("/followers", response_model=ConnectionsRead)
-def list_followers(user: CurrentUser, db: Db) -> ConnectionsRead:
-    rows = db.execute(
-        select(User, ProfileFollow)
-        .join(ProfileFollow, ProfileFollow.follower_id == User.id)
-        .where(
-            ProfileFollow.followee_id == user.id,
-            User.disabled_at.is_(None),
-            User.id.not_in(blocked_member_ids(db, user.id)),
-        )
-        .order_by(ProfileFollow.created_at.desc())
-    ).all()
+def connection(member: User, since: datetime) -> ConnectionRead:
+    return ConnectionRead(
+        id=member.id,
+        display_name=member.display_name,
+        profile_photo_url=photo_url(member),
+        since=as_utc(since),
+    )
 
-    def connection(member: User, follow: ProfileFollow) -> ConnectionRead:
-        return ConnectionRead(
+
+def friend_requests(db: Session, user: User) -> list[tuple[User, Friendship]]:
+    """Requests involving the account, newest first, from members who are still reachable."""
+    other_id = other_member(user.id)
+    return [
+        (member, friendship)
+        for member, friendship in db.execute(
+            select(User, Friendship)
+            .join(Friendship, User.id == other_id)
+            .where(
+                involves(user.id),
+                Friendship.status == PENDING,
+                User.disabled_at.is_(None),
+                User.id.not_in(blocked_member_ids(db, user.id)),
+            )
+            .order_by(Friendship.created_at.desc())
+        )
+    ]
+
+
+def training_dates(db: Session, user_ids: list[str]) -> dict[str, list[date]]:
+    if not user_ids:
+        return {}
+    cutoff = date.today() - timedelta(days=ACTIVITY_DAYS - 1)
+    dates: dict[str, list[date]] = {user_id: [] for user_id in user_ids}
+    for user_id, day in db.execute(
+        select(TrainingWorkout.user_id, TrainingWorkout.workout_date)
+        .where(
+            TrainingWorkout.user_id.in_(user_ids),
+            TrainingWorkout.is_sample.is_(False),
+            TrainingWorkout.workout_date >= cutoff,
+        )
+        .distinct()
+        .order_by(TrainingWorkout.workout_date)
+    ):
+        dates[user_id].append(day)
+    return dates
+
+
+def blocked_connections(db: Session, user: User) -> list[ConnectionRead]:
+    return [
+        ConnectionRead(
             id=member.id,
             display_name=member.display_name,
-            profile_photo_url=photo_url(member),
-            since=as_utc(follow.accepted_at or follow.created_at),
+            profile_photo_url=None,
+            since=as_utc(block.created_at),
         )
+        for member, block in db.execute(
+            select(User, ProfileBlock)
+            .join(ProfileBlock, ProfileBlock.blocked_id == User.id)
+            .where(ProfileBlock.blocker_id == user.id)
+            .order_by(ProfileBlock.created_at.desc())
+        )
+    ]
 
-    return ConnectionsRead(
-        requests=[connection(*row) for row in rows if row[1].status == PENDING],
-        followers=[connection(*row) for row in rows if row[1].status == ACCEPTED],
-        blocked=[
-            ConnectionRead(
-                id=member.id,
-                display_name=member.display_name,
-                profile_photo_url=None,
-                since=as_utc(block.created_at),
+
+@sharing_router.get("/friends", response_model=FriendsRead)
+def list_friends(user: CurrentUser, db: Db) -> FriendsRead:
+    """Social's Friends and Find tabs: friends by latest activity, requests and blocks."""
+    if sharing_choices(db, user.id).visibility == PRIVATE:
+        return FriendsRead(locked=True, blocked=blocked_connections(db, user))
+    friendships = friendships_of(db, user.id)
+    members = list(db.scalars(select(User).where(User.id.in_(shared_friend_ids(db, user.id)))))
+    ids = [member.id for member in members]
+    latest = {
+        workout.user_id: (workout, sharing) for workout, _, sharing in latest_workouts(db, ids)
+    }
+    reactions = reaction_summaries(db, user.id, [workout.id for workout, _ in latest.values()])
+    stats = workout_stats(db, ids)
+    dates = training_dates(db, ids)
+    friends = []
+    for member in members:
+        newest = latest.get(member.id)
+        friends.append(
+            FriendActivity(
+                **connection(member, friends_since(friendships[member.id])).model_dump(),
+                latest=(
+                    FriendLatest(
+                        workout=shared_workout(newest[0], newest[1]),
+                        reactions=reactions[newest[0].id],
+                    )
+                    if newest
+                    else None
+                ),
+                recent_workout_count=stats[member.id].recent_workouts,
+                training_dates=dates[member.id],
             )
-            for member, block in db.execute(
-                select(User, ProfileBlock)
-                .join(ProfileBlock, ProfileBlock.blocked_id == User.id)
-                .where(ProfileBlock.blocker_id == user.id)
-                .order_by(ProfileBlock.created_at.desc())
-            )
+        )
+    # Most recent activity first; friends without a session come last, by name.
+    friends.sort(key=lambda item: item.display_name.casefold())
+    friends.sort(
+        key=lambda item: item.latest.workout.workout_date if item.latest else date.min,
+        reverse=True,
+    )
+    requests = friend_requests(db, user)
+    return FriendsRead(
+        friends=friends,
+        requests=[
+            connection(member, friendship.created_at)
+            for member, friendship in requests
+            if friendship.requested_by_id != user.id
         ],
+        sent=[
+            connection(member, friendship.created_at)
+            for member, friendship in requests
+            if friendship.requested_by_id == user.id
+        ],
+        blocked=blocked_connections(db, user),
     )
 
 
 @sharing_router.get("/notifications", response_model=NotificationsRead)
-def follow_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
-    connections = list_followers(user, db)
-    follows = {
-        follow.follower_id: follow
-        for follow in db.scalars(select(ProfileFollow).where(ProfileFollow.followee_id == user.id))
-    }
+def friend_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
+    blocked = blocked_member_ids(db, user.id)
+    requests = [
+        FriendNotice(
+            **connection(member, friendship.created_at).model_dump(),
+            is_read=friendship.notification_seen,
+        )
+        for member, friendship in friend_requests(db, user)
+        if friendship.requested_by_id != user.id
+    ]
+    other_id = other_member(user.id)
+    accepted = [
+        FriendNotice(
+            **connection(member, friends_since(friendship)).model_dump(),
+            is_read=friendship.notification_seen,
+        )
+        for member, friendship in db.execute(
+            select(User, Friendship)
+            .join(Friendship, User.id == other_id)
+            .where(
+                involves(user.id),
+                Friendship.status == ACCEPTED,
+                Friendship.requested_by_id == user.id,
+                User.disabled_at.is_(None),
+                User.id.not_in(blocked),
+            )
+            .order_by(Friendship.accepted_at.desc())
+            .limit(MAX_REACTION_NOTICES)
+        )
+    ]
     reactions = db.execute(
         select(WorkoutReaction, User, TrainingWorkout.name)
         .join(User, User.id == WorkoutReaction.user_id)
@@ -1131,22 +1303,14 @@ def follow_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
         .where(
             TrainingWorkout.user_id == user.id,
             User.disabled_at.is_(None),
-            User.id.not_in(blocked_member_ids(db, user.id)),
+            User.id.not_in(blocked),
         )
         .order_by(WorkoutReaction.created_at.desc())
         .limit(MAX_REACTION_NOTICES)
     ).all()
     return NotificationsRead(
-        requests=[
-            FollowNotice(**person.model_dump(), is_read=follows[person.id].notification_seen)
-            for person in connections.requests
-            if person.id in follows
-        ],
-        followers=[
-            FollowNotice(**person.model_dump(), is_read=follows[person.id].notification_seen)
-            for person in connections.followers[:MAX_REACTION_NOTICES]
-            if person.id in follows
-        ],
+        requests=requests,
+        accepted=accepted,
         reactions=[
             ReactionNotice(
                 id=member.id,
@@ -1164,7 +1328,7 @@ def follow_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
 
 
 class NotificationReadReference(BaseModel):
-    kind: Literal["request", "follower", "reaction"]
+    kind: Literal["request", "accepted", "reaction"]
     id: str
     since: datetime
     workout_id: str | None = None
@@ -1174,18 +1338,27 @@ class NotificationsSeen(BaseModel):
     items: list[NotificationReadReference]
 
 
+def notice_matches(friendship: Friendship | None, user_id: str, kind: str, since: datetime) -> bool:
+    """Whether the friendship still is the request or acceptance the client saw."""
+    if friendship is None:
+        return False
+    if kind == "request":
+        return (
+            friendship.status == PENDING
+            and friendship.requested_by_id != user_id
+            and as_utc(friendship.created_at) == as_utc(since)
+        )
+    return (
+        friendship.status == ACCEPTED
+        and friendship.requested_by_id == user_id
+        and friends_since(friendship) == as_utc(since)
+    )
+
+
 @sharing_router.post("/notifications/read", status_code=204)
 def mark_notifications_read(payload: NotificationsSeen, user: CurrentUser, db: Db) -> None:
     """Mark the displayed events read; newer events and other accounts stay unread."""
-    follow_ids = {item.id for item in payload.items if item.kind != "reaction"}
-    follows = {
-        follow.follower_id: follow
-        for follow in db.scalars(
-            select(ProfileFollow).where(
-                ProfileFollow.followee_id == user.id, ProfileFollow.follower_id.in_(follow_ids)
-            )
-        )
-    }
+    friendships = friendships_of(db, user.id)
     workout_ids = {item.workout_id for item in payload.items if item.kind == "reaction"}
     reactions = {
         (reaction.workout_id, reaction.user_id): reaction
@@ -1201,14 +1374,9 @@ def mark_notifications_read(payload: NotificationsSeen, user: CurrentUser, db: D
             if reaction is not None and as_utc(reaction.created_at) == as_utc(item.since):
                 reaction.notification_seen = True
         else:
-            follow = follows.get(item.id)
-            expected_status = PENDING if item.kind == "request" else ACCEPTED
-            if (
-                follow is not None
-                and follow.status == expected_status
-                and as_utc(follow.accepted_at or follow.created_at) == as_utc(item.since)
-            ):
-                follow.notification_seen = True
+            friendship = friendships.get(item.id)
+            if notice_matches(friendship, user.id, item.kind, item.since):
+                friendship.notification_seen = True
     db.commit()
 
 
@@ -1234,42 +1402,14 @@ def dismiss_reaction_notification(
 
 
 @sharing_router.post("/notifications/{user_id}/dismiss", status_code=204)
-def dismiss_follow_notification(
+def dismiss_friend_notification(
     user_id: str, payload: NotificationDismiss, user: CurrentUser, db: Db
 ) -> None:
-    follow = find_follow(db, user_id, user.id)
-    # Match the event the client saw so a later re-follow cannot be dismissed by a stale tab.
-    if (
-        follow is not None
-        and follow.status == ACCEPTED
-        and as_utc(follow.accepted_at or follow.created_at) == as_utc(payload.since)
-    ):
-        follow.notification_seen = True
+    friendship = find_friendship(db, user.id, user_id)
+    # Match the acceptance the client saw so a later friendship cannot be dismissed by a stale tab.
+    if notice_matches(friendship, user.id, "accepted", payload.since):
+        friendship.notification_seen = True
         db.commit()
-
-
-@sharing_router.post("/followers/{user_id}", status_code=204)
-def approve_follower(user_id: str, user: CurrentUser, db: Db) -> None:
-    follow = find_follow(db, user_id, user.id)
-    if follow is None or user_id in blocked_member_ids(db, user.id):
-        raise api_error(404, "follow_request_not_found", "That follow request was withdrawn.")
-    if follow.status == PENDING:
-        follow.status = ACCEPTED
-        follow.accepted_at = utc_now()
-        # The owner just approved this request, so it needs no second notification.
-        follow.notification_seen = True
-        db.commit()
-
-
-@sharing_router.delete("/followers/{user_id}", status_code=204)
-def remove_follower(user_id: str, user: CurrentUser, db: Db) -> None:
-    """Decline a follow request or remove a follower."""
-    db.execute(
-        delete(ProfileFollow).where(
-            ProfileFollow.follower_id == user_id, ProfileFollow.followee_id == user.id
-        )
-    )
-    db.commit()
 
 
 @sharing_router.post("/blocks/{user_id}", status_code=204)
@@ -1285,14 +1425,7 @@ def block_member(user_id: str, user: CurrentUser, db: Db) -> None:
             db.flush()
         except IntegrityError:
             db.rollback()
-    db.execute(
-        delete(ProfileFollow).where(
-            or_(
-                and_(ProfileFollow.follower_id == user.id, ProfileFollow.followee_id == user_id),
-                and_(ProfileFollow.follower_id == user_id, ProfileFollow.followee_id == user.id),
-            )
-        )
-    )
+    db.execute(delete(Friendship).where(*friendship_key(user.id, user_id)))
     # Reactions and their notifications between these two accounts disappear together.
     db.execute(
         delete(WorkoutReaction).where(

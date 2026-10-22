@@ -139,6 +139,20 @@ body {
   display: flex;
   flex-shrink: 0;
   gap: 0.5rem;
+  margin-left: auto;
+}
+
+.account-header-actions {
+  display: flex;
+  gap: inherit;
+}
+
+.page-header:has(.account-header-actions) {
+  flex-wrap: wrap;
+}
+
+.page-header:has(.account-header-actions) > div:first-child {
+  flex: 1 1 7.5rem;
 }
 
 .icon-button-pulse {
@@ -1972,6 +1986,217 @@ html[data-reduce-motion] .app-tab-items[aria-hidden] {
   background: transparent;
 }
 
+.history-screen > .segmented-control,
+.social-screen > .segmented-control {
+  margin-bottom: 1rem;
+}
+
+.training-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0;
+}
+
+.training-back .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.history-screen .progress-screen .page-header h2 {
+  margin: 0;
+  color: var(--p-ink);
+  font-size: 1.375rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.progress-screen .progress-exercise-field.is-browsing .progress-exercise-results {
+  position: static;
+  max-height: 17rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+  margin-top: 0;
+  border-color: var(--p-line);
+  background: var(--p-surface);
+  box-shadow: none;
+}
+
+.exercise-library-workspace {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.exercise-library-panel,
+.exercise-progress-preview {
+  min-width: 0;
+}
+
+.exercise-library-panel[hidden] {
+  display: none;
+}
+
+.exercise-library-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.875rem 0 0.5rem;
+}
+
+.exercise-library-heading h2 {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.exercise-library-heading span {
+  color: var(--p-muted);
+  font-size: 0.6875rem;
+}
+
+.exercise-library-panel:focus-within .keyboard-active {
+  outline: 1px solid var(--p-accent);
+  outline-offset: -2px;
+}
+
+.exercise-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.exercise-preview-header p,
+.exercise-preview-header small {
+  margin: 0;
+  color: var(--p-muted);
+  font-size: 0.6875rem;
+}
+
+.exercise-preview-header h2 {
+  margin: 0.1875rem 0;
+  font-size: 1.125rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.exercise-progress-preview .progress-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.375rem 0.5rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.exercise-progress-preview .progress-hero-summary {
+  display: contents;
+}
+
+.exercise-progress-preview .progress-hero-value {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 2.125rem;
+}
+
+.exercise-progress-preview .progress-hero-caption,
+.exercise-progress-preview .progress-delta {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.exercise-progress-preview .range-chips {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  gap: 0.125rem;
+  margin: 0;
+}
+
+.exercise-progress-preview .range-chips button {
+  min-width: 1.875rem;
+  min-height: 2.125rem;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.6875rem;
+}
+
+@media (max-width: 380px) {
+  .exercise-progress-preview .range-chips {
+    display: grid;
+    grid-template-columns: repeat(3, 2rem);
+  }
+
+  .exercise-progress-preview .progress-hero-value {
+    align-self: center;
+    font-size: 1.75rem;
+  }
+}
+
+.exercise-progress-preview
+  .landscape-chart-frame:not(.landscape-chart-expanded)
+  .landscape-chart-toolbar {
+  margin: 0 0 0.25rem;
+}
+
+.exercise-open-progress {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--p-line);
+  border-radius: 11px;
+  padding: 0.75rem;
+  background: var(--p-accent-soft);
+  color: var(--p-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.exercise-open-progress .pulse-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (min-width: 900px) {
+  .exercise-library-workspace {
+    grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .exercise-library-panel {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .progress-screen .progress-exercise-field.is-browsing .progress-exercise-results {
+    max-height: min(30rem, 65dvh);
+  }
+}
+
+.progress-exercise-field.is-browsing .progress-exercise-combobox input {
+  padding-right: 0.875rem;
+}
+
+@media (max-width: 480px) {
+  .social-screen .friend-group li {
+    flex-wrap: wrap;
+  }
+
+  .social-screen .friend-group li:has(.shared-connection-actions) .friend-open {
+    flex-basis: 100%;
+  }
+
+  .social-screen .shared-connection-actions {
+    margin-left: auto;
+  }
+}
+
 .progress-screen .progress-exercise-field > label {
   position: absolute;
   width: 1px;
@@ -2059,6 +2284,10 @@ html[data-reduce-motion] .app-tab-items[aria-hidden] {
 
 .progress-delta.up {
   color: var(--p-good);
+}
+
+.progress-delta.down {
+  color: var(--p-danger);
 }
 
 .progress-delta .pulse-icon {

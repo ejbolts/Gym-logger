@@ -1,3 +1,5 @@
+import { addDays, weekStartFor } from './trainingSummary';
+
 export function workoutPageForId(
   workouts: ReadonlyArray<{ id: string }>,
   workoutId: string | null,
@@ -16,4 +18,13 @@ export function upsertWorkoutByRecency<
       right.workout_date.localeCompare(left.workout_date) ||
       right.created_at.localeCompare(left.created_at),
   );
+}
+/** Show the latest workout's calendar week and the two preceding weeks, in full. */
+export function initialHistoryVisibleCount(
+  workouts: ReadonlyArray<{ workout_date: string }>,
+  weekStartDay: number,
+): number {
+  if (!workouts.length) return 0;
+  const start = addDays(weekStartFor(workouts[0].workout_date, weekStartDay), -14);
+  return workouts.filter((workout) => workout.workout_date >= start).length;
 }

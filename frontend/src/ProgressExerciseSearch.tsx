@@ -8,22 +8,50 @@ export function ProgressExerciseSearch({
   exerciseId,
   onChange,
   openRequest = 0,
+  browseOnly = false,
 }: {
   exercises: Exercise[];
   exerciseId: string;
   onChange: (exerciseId: string) => void;
   openRequest?: number;
+  /** A bounded library in Training; selection updates the adjacent preview. */
+  browseOnly?: boolean;
 }) {
-  const selected = exercises.find((exercise) => exercise.id === exerciseId) ?? null;
+  const selected = browseOnly
+    ? null
+    : (exercises.find((exercise) => exercise.id === exerciseId) ?? null);
   const inputId = useId();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const handledOpenRequestRef = useRef(openRequest);
   const blurFrameRef = useRef<number | null>(null);
   const [query, setQuery] = useState(selected?.name ?? '');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(browseOnly);
   const [activeIndex, setActiveIndex] = useState(0);
   const matches = useMemo(() => progressExerciseMatches(exercises, query), [exercises, query]);
+
+  useEffect(() => {
+    if (!browseOnly) return;
+    const list = listRef.current;
+    const option = list?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!list || !option || !list.clientHeight) return;
+    const bounds = list.getBoundingClientRect();
+    const item = option.getBoundingClientRect();
+    if (item.top < bounds.top) list.scrollTop -= bounds.top - item.top;
+    else if (item.bottom > bounds.bottom) list.scrollTop += item.bottom - bounds.bottom;
+  }, [browseOnly, exerciseId, matches]);
+
+  useEffect(() => {
+    if (browseOnly && document.activeElement !== inputRef.current) return;
+    const list = listRef.current;
+    const option = list?.children[activeIndex];
+    if (!list || !(option instanceof HTMLElement)) return;
+    const bounds = list.getBoundingClientRect();
+    const item = option.getBoundingClientRect();
+    if (item.top < bounds.top) list.scrollTop -= bounds.top - item.top;
+    else if (item.bottom > bounds.bottom) list.scrollTop += item.bottom - bounds.bottom;
+  }, [activeIndex, browseOnly, matches, open]);
 
   useEffect(() => {
     setQuery(selected?.name ?? '');
@@ -57,9 +85,11 @@ export function ProgressExerciseSearch({
       blurFrameRef.current = null;
     }
     onChange(exercise.id);
-    setQuery(exercise.name);
-    setOpen(false);
-    setActiveIndex(0);
+    if (!browseOnly) {
+      setQuery(exercise.name);
+      setOpen(false);
+      setActiveIndex(0);
+    }
     // Let the browser finish the activating gesture before dismissing the
     // keyboard. In particular, iOS can otherwise swallow the option's click.
     window.requestAnimationFrame(() => inputRef.current?.blur());
@@ -67,8 +97,9 @@ export function ProgressExerciseSearch({
 
   return (
     <div
-      className="progress-exercise-field"
+      className={`progress-exercise-field${browseOnly ? ' is-browsing' : ''}`}
       onBlur={(event) => {
+        if (browseOnly) return;
         if (
           event.relatedTarget instanceof Node &&
           event.currentTarget.contains(event.relatedTarget)
@@ -129,39 +160,56 @@ export function ProgressExerciseSearch({
               choose(matches[activeIndex]);
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              setOpen(false);
+              setOpen(browseOnly);
               setQuery(selected?.name ?? '');
             }
           }}
         />
-        <button
-          type="button"
-          aria-label={open ? 'Close exercise search' : 'Browse exercises'}
-          aria-expanded={open}
-          onClick={() => {
-            if (open) {
-              setOpen(false);
-              setQuery(selected?.name ?? '');
-            } else {
-              setQuery('');
-              setActiveIndex(0);
-              setOpen(true);
-              inputRef.current?.focus();
-            }
-          }}
-        >
-          <Icon name={open ? 'close' : 'chevron-down'} />
-        </button>
+        {!browseOnly && (
+          <button
+            type="button"
+            aria-label={open ? 'Close exercise search' : 'Browse exercises'}
+            aria-expanded={open}
+            onClick={() => {
+              if (open) {
+                setOpen(false);
+                setQuery(selected?.name ?? '');
+              } else {
+                setQuery('');
+                setActiveIndex(0);
+                setOpen(true);
+                inputRef.current?.focus();
+              }
+            }}
+          >
+            <Icon name={open ? 'close' : 'chevron-down'} />
+          </button>
+        )}
       </div>
-      {open && (
-        <div className="progress-exercise-results" id={listId} role="listbox">
+      {browseOnly && (
+        <div className="exercise-library-heading">
+          <h2>Library</h2>
+          <span>
+            {matches.length} {matches.length === 1 ? 'lift' : 'lifts'}
+          </span>
+        </div>
+      )}
+      {(browseOnly || open) && (
+        <div
+          ref={listRef}
+          className="progress-exercise-results"
+          id={listId}
+          role="listbox"
+          aria-label={browseOnly ? 'Exercise library' : 'Exercise search results'}
+          tabIndex={browseOnly ? 0 : undefined}
+        >
           {matches.map((exercise, index) => (
             <button
               type="button"
               id={`${listId}-${index}`}
               role="option"
               aria-selected={exercise.id === exerciseId}
-              className={index === activeIndex ? 'active' : ''}
+              className={`${(browseOnly ? exercise.id === exerciseId : index === activeIndex) ? 'active' : ''}${index === activeIndex ? ' keyboard-active' : ''}`}
               key={exercise.id}
               onPointerMove={(event) => {
                 if (event.pointerType === 'mouse') setActiveIndex(index);

@@ -13,8 +13,7 @@ const ada: SharedProfileSummary = {
   member_since: '2026-10-01T12:00:00Z',
   visibility: 'public',
   is_you: false,
-  follow_status: 'none',
-  follows_you: false,
+  friend_status: 'none',
   can_view: true,
   workout_count: 1,
   recent_workout_count: 1,
@@ -43,13 +42,13 @@ async function submit(value: string) {
 beforeEach(async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.spyOn(api.sharing, 'profiles').mockResolvedValue([ada]);
-  vi.spyOn(api.sharing, 'follow').mockResolvedValue({ status: 'accepted' });
+  vi.spyOn(api.sharing, 'addFriend').mockResolvedValue({ status: 'outgoing' });
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
   await act(async () =>
     root.render(
-      <PeopleSearch active refreshKey="0" onOpenProfile={open} onFollowChanged={changed} />,
+      <PeopleSearch active refreshKey="0" onOpenProfile={open} onFriendChanged={changed} />,
     ),
   );
 });
@@ -62,7 +61,7 @@ afterEach(async () => {
   changed.mockClear();
 });
 describe('People search', () => {
-  it('waits for a search, trims the query and supports opening and following a result', async () => {
+  it('waits for a search, trims the query and supports opening and adding a result', async () => {
     expect(api.sharing.profiles).not.toHaveBeenCalled();
     expect(container.textContent).not.toContain('Ada Lifter');
     await submit('  Ada  ');
@@ -75,10 +74,38 @@ describe('People search', () => {
     );
     expect(open).toHaveBeenCalledWith(ada);
     await act(async () =>
-      container.querySelector<HTMLButtonElement>('[aria-label="Follow: Ada Lifter"]')!.click(),
+      container.querySelector<HTMLButtonElement>('[aria-label="Add friend: Ada Lifter"]')!.click(),
     );
-    expect(api.sharing.follow).toHaveBeenCalledWith(ada.id);
+    expect(api.sharing.addFriend).toHaveBeenCalledWith(ada.id);
     expect(changed).toHaveBeenCalled();
+  });
+  it('accepts requests, cancels your own and labels existing friends', async () => {
+    const accept = vi.spyOn(api.sharing, 'acceptFriend').mockResolvedValue({ status: 'friends' });
+    const remove = vi.spyOn(api.sharing, 'removeFriend').mockResolvedValue(undefined);
+    vi.mocked(api.sharing.profiles).mockResolvedValue([
+      { ...ada, friend_status: 'incoming' },
+      { ...ada, id: 'grace', display_name: 'Grace Lifter', friend_status: 'outgoing' },
+      { ...ada, id: 'lin', display_name: 'Lin Lifter', friend_status: 'friends' },
+    ]);
+    await submit('Lifter');
+    expect(container.textContent).toContain('Sent you a friend request');
+    expect(container.textContent).toContain('Friend request sent');
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Accept: Ada Lifter"]')!.click(),
+    );
+    expect(accept).toHaveBeenCalledWith(ada.id);
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Cancel request: Grace Lifter"]')!
+        .click(),
+    );
+    expect(remove).toHaveBeenCalledWith('grace');
+    expect(changed).toHaveBeenCalledTimes(2);
+    const friend = [...container.querySelectorAll('li')].find((item) =>
+      item.textContent?.includes('Lin Lifter'),
+    )!;
+    expect(friend.querySelector('.friend-status-label')?.textContent?.trim()).toBe('Friends');
+    expect(friend.querySelector('.shared-connection-actions button')).toBeNull();
   });
   it('ignores stale search responses and clears results without listing all accounts', async () => {
     let resolveOld!: (profiles: SharedProfileSummary[]) => void;

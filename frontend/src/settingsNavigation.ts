@@ -159,14 +159,6 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
     reveal: ['Profile sharing', 'What you share'],
   },
   {
-    id: 'friends',
-    title: 'Friends',
-    page: 'profile',
-    keywords: 'people search follow followers requests approve',
-    selector: '.friends-panel, .sharing-locked',
-    reveal: ['Friends'],
-  },
-  {
     id: 'password',
     title: 'Change password',
     page: 'profile',

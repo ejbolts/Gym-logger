@@ -35,7 +35,7 @@ import type {
 import { localDate } from './utils';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
-import { profileButtonLabel } from './friendsActivityData';
+import { ProfileButton } from './AccountHeaderActions';
 import { useUpNextSession } from './upNext';
 import {
   formatWeight,
@@ -52,22 +52,28 @@ export function PageHeader({
   eyebrow,
   title,
   actions,
+  accountActions,
   onOpenSettings,
+  headingLevel = 1,
 }: {
   eyebrow?: string;
   title: string;
   actions?: ReactNode;
+  accountActions?: ReactNode;
   onOpenSettings?: () => void;
+  headingLevel?: 1 | 2;
 }) {
+  const Heading = headingLevel === 1 ? 'h1' : 'h2';
   return (
     <header className="page-header">
       <div>
         {eyebrow && <p className="page-eyebrow">{eyebrow}</p>}
-        <h1>{title}</h1>
+        <Heading>{title}</Heading>
       </div>
-      {(actions || onOpenSettings) && (
+      {(actions || accountActions || onOpenSettings) && (
         <div className="page-header-actions">
           {actions}
+          {accountActions}
           {onOpenSettings && <SettingsButton onClick={onOpenSettings} />}
         </div>
       )}
@@ -123,10 +129,11 @@ export interface TodayScreenProps {
   profilePhotoUrl?: string | null;
   /** The signed-in account for the Profile section; omitted outside the signed-in app. */
   profile?: Pick<User, 'display_name' | 'username' | 'profile_photo_url' | 'created_at'>;
-  /** Follow requests waiting for approval, shown as a count on the profile button. */
-  followRequests?: number;
+  /** Friend requests waiting for an answer, shown as a count on the profile button. */
+  friendRequests?: number;
   notifications?: ReactNode;
-  /** Unresolved app feedback, shown to administrators beside follow requests. */
+  accountActions?: ReactNode;
+  /** Unresolved app feedback, shown to administrators beside friend requests. */
   openFeedback?: number;
   calendar?: ReactNode;
   /** The Friends card with friends' latest sessions; omitted outside the signed-in app. */
@@ -161,8 +168,9 @@ export function TodayScreen({
   profileLabel,
   profilePhotoUrl,
   profile,
-  followRequests = 0,
+  friendRequests = 0,
   notifications,
+  accountActions,
   openFeedback = 0,
   calendar,
   friendsActivity,
@@ -518,6 +526,22 @@ export function TodayScreen({
         })}
         title="Home"
         onOpenSettings={onOpenSettings}
+        accountActions={
+          accountActions ?? (
+            <div className="account-header-actions">
+              {notifications}
+              {onOpenProfile && (
+                <ProfileButton
+                  onClick={onOpenProfile}
+                  name={profileLabel}
+                  photoUrl={profilePhotoUrl}
+                  friendRequests={friendRequests}
+                  openFeedback={openFeedback}
+                />
+              )}
+            </div>
+          )
+        }
         actions={
           <>
             <button
@@ -533,33 +557,6 @@ export function TodayScreen({
             >
               <Icon name="edit" />
             </button>
-            {notifications}
-            {onOpenProfile && (
-              <button
-                className="icon-button-pulse profile-button"
-                type="button"
-                onClick={onOpenProfile}
-                aria-label={profileButtonLabel(profileLabel, followRequests, openFeedback)}
-              >
-                {followRequests + openFeedback > 0 && (
-                  <span className="profile-request-badge" aria-hidden="true">
-                    {followRequests + openFeedback > 9 ? '9+' : followRequests + openFeedback}
-                  </span>
-                )}
-                {profileLabel ? (
-                  <ProfileAvatar
-                    className="profile-button-initial"
-                    user={{
-                      display_name: profileLabel,
-                      username: '',
-                      profile_photo_url: profilePhotoUrl,
-                    }}
-                  />
-                ) : (
-                  <Icon name="user" />
-                )}
-              </button>
-            )}
             {onOpenVideos && (
               <button
                 className="icon-button-pulse"

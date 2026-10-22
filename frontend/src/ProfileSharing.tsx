@@ -10,12 +10,15 @@ import type { ProfileVisibility, SharingChoices, SharingSettings } from './types
 type OptionalChoice = Exclude<keyof SharingChoices, 'visibility'>;
 
 const VISIBILITY_OPTIONS: Array<{ value: ProfileVisibility; description: string }> = [
-  { value: 'private', description: 'Only you. You cannot see or follow other members.' },
+  { value: 'private', description: 'Only you. You cannot see or add other members.' },
   {
     value: 'followers',
-    description: 'Followers you approve. Others see only your name and photo.',
+    description: 'Your friends. Others see only your name and photo.',
   },
-  { value: 'public', description: 'Every member who shares. Anyone sharing can follow you.' },
+  {
+    value: 'public',
+    description: 'Every member who shares. Friends still need your approval.',
+  },
 ];
 
 const ALWAYS_SHARED = [
@@ -23,7 +26,7 @@ const ALWAYS_SHARED = [
     label: 'Workouts + cardio',
     description: 'Exercises, sets, dates and durations, plus cardio time, distance and heart rate',
   },
-  { label: 'Profile photo', description: 'Shown with your name, even before someone follows you' },
+  { label: 'Profile photo', description: 'Shown with your name, even before you become friends' },
 ];
 
 const SHARING_OPTIONS: Array<{ key: OptionalChoice; label: string; description: string }> = [
@@ -51,7 +54,7 @@ const SHARING_OPTIONS: Array<{ key: OptionalChoice; label: string; description: 
 
 const VISIBILITY_SAVED: Record<ProfileVisibility, string> = {
   private: 'Your profile is private. Nobody else can see it.',
-  followers: 'Your profile is shared with followers you approve.',
+  followers: 'Your profile is shared with your friends.',
   public: 'Your profile is public to every member who shares.',
 };
 
@@ -174,8 +177,8 @@ export function ProfileSharingPanel({ onSaved }: { onSaved?: () => void }) {
       }
     >
       <p>
-        Choose who can see your training. Only members who share their own profile can see or follow
-        others.
+        Choose who can see your training. Only members who share their own profile can see or add
+        others as friends.
       </p>
       {loadError ? (
         <div className="sharing-load-error">

@@ -1,19 +1,67 @@
 {
-  "version": "0.9.1",
+  "version": "0.10.0",
   "date": "2026-10-21",
-  "title": "Bigger quick-start buttons and swipeable muscle details",
-  "summary": "Choose a session from larger quick-start circles, and swipe down to close muscle-set details.",
+  "title": "Training in one place, and friends in Social",
+  "summary": "Keep your calendar, sessions, exercise progress and cardio together in Training. Social now uses mutual friends: send one request, and once it is accepted you both see each other’s training.",
   "changes": [
+    "Notifications and Profile now sit beside Settings in the same order on Home, Training, Social and Body. Removed the duplicate blue plus buttons from Training and Body headers; use Start for workouts and Log weigh-in for bodyweight entries.",
+    "Training combines Sessions, Exercises and Cardio. Sessions keeps the existing calendar, day details, machine filters and workout cards, with the latest three weeks shown first and Show more for older workouts.",
+    "Exercises has a bounded, searchable library with a live progress preview below on phones and beside it on wider screens. Date-range buttons sit beside the preview value. Open full progress for records and session history, then return with your search, list position and range intact. Older History, Progress and Cardio links still work.",
+    "Follows are now friendships. Send a friend request, and once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles. Existing follows in either direction became friendships, and waiting follow requests became friend requests.",
+    "Social has its own bottom tab. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members. Remove or block a friend from their profile. Home keeps its compact friends card.",
+    "Removed the redundant Friends shortcut from Profile settings. Friends, requests and people search are available in Social.",
+    "Progress changes are green for increases, red for decreases, and neutral when unchanged across estimated 1RM, top set and volume.",
+    "Training’s Sessions view starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
     "Quick-start circles are now 52 px across, up from 44 px, with larger icons to make each option easier to see and tap.",
     "Swipe down from the muscle details handle or header to close the sheet. You can also pull down on its content when the list is at the top; short pulls return to place and scrolling still works.",
     "Removed the redundant Contributing exercises heading and count from muscle details. Done, Escape and tapping outside still close the sheet."
   ],
-  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#091",
+  "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#0100",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/0e754082c31546e44a878066a2365fb66cff3872/docs/screenshots/releases/0.9.1-quick-start-circles.png",
-    "alt": "Quick-start menu with larger Cardio, Up next and Empty circles."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
+    "alt": "Training Sessions retains the calendar above the latest three weeks of synthetic workouts."
   },
   "highlights": [
+    {
+      "title": "Your training, together",
+      "description": "Sessions keeps the calendar and saved workouts. Exercises opens familiar progress tools, and Cardio stays within reach. Switch tabs and return to the view you were using.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
+        "alt": "Training Sessions retains the calendar above the latest three weeks of workouts."
+      }
+    },
+    {
+      "title": "Library + preview",
+      "description": "Scroll the exercise library without losing your place. Select a lift to update its preview and use 1M, 3M, 9M or 1Y beside the value. Open full progress for records and saved sessions.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/21500abe4be9ef48159c2aff923f25a548a8e1f4/docs/screenshots/releases/0.9.1-training-exercises.png",
+        "alt": "A bounded exercise library above its live progress preview on a phone, with range controls beside the value and synthetic training data."
+      }
+    },
+    {
+      "title": "Friends, not followers",
+      "description": "Send one friend request; once it is accepted you both see each other. Friends lists everyone once with their latest session and week. Find holds requests and people search.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/8b48cf8fa2a112899ecc6c7c248a1a7879315ce2/docs/screenshots/releases/0.10.0-social-friends.png",
+        "alt": "Social Friends tab listing synthetic friends once each, with a seven-day activity strip, latest session and reaction button."
+      }
+    },
+    {
+      "title": "Your account, on every tab",
+      "description": "Open Notifications or Profile beside Settings on Home, Training, Social and Body. Matching buttons keep the same order and wrap neatly on smaller screens.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-header-controls.png",
+        "alt": "Body with matching Notifications, Profile and Settings buttons at the top right and no duplicate header plus, using synthetic account data."
+      }
+    },
+    {
+      "title": "Progress at a glance",
+      "description": "Green means an increase and red means a decrease. Unchanged values stay neutral across estimated 1RM, top set and volume.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/612828eb54def2aec60411bef95c93f2f9d58cea/docs/screenshots/releases/0.9.1-training-exercises.png",
+        "alt": "Training Exercises uses the existing Pec Deck chart, records and red decrease comparison with synthetic data."
+      }
+    },
     {
       "title": "Larger quick-start circles",
       "description": "The bottom quick-start menu has slightly larger circles and icons for Cardio, Up next and Empty.",

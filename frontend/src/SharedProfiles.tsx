@@ -5,7 +5,6 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'rea
 import { api, ApiError } from './api';
 import { authErrorMessage } from './authForm';
 import { clipBodyWeightGoalPath } from './bodyTrend';
-import { CollapsibleSection } from './CollapsibleSection';
 import { Icon } from './Icon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileAccountId } from './ProfileAccountId';
@@ -18,18 +17,17 @@ import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { PopupDialog } from './PopupDialog';
 import { formatMemberSince } from './profileDisplay';
 import { TrendChart, type GoalPath } from './PulseCharts';
+import type { FriendConnectionsState } from './friendConnections';
 import {
-  followActionLabel,
-  followSinceLabel,
+  friendStatusLabel,
   plural,
   SHARED_WORKOUT_PAGE_SIZE,
   sinceMonthLabel,
-  VISIBILITY_LABELS,
-  workoutActivitySummary,
 } from './sharedProfileDisplay';
 import { addDays, dayMonth, parseLocalDate } from './trainingSummary';
 import type {
-  FollowStatus,
+  FriendConnections,
+  FriendStatus,
   MachinePhoto,
   PersonalRecord,
   SharedBodyMeasurement,
@@ -41,7 +39,6 @@ import type {
   SharedWorkoutFilters as WorkoutFilters,
   SharedWorkoutFilterOptions,
   SharingConnection,
-  SharingConnections,
   TrackedWorkout,
   WorkoutReactions,
 } from './types';
@@ -49,7 +46,7 @@ import { formatMinutesDuration } from './utils';
 
 const BODY_WEIGHT_CHART_DAYS = 90;
 
-type LoadState = 'loading' | 'ready' | 'locked' | 'missing' | 'error';
+type LoadState = 'loading' | 'ready' | 'locked' | 'missing' | 'blocked' | 'error';
 
 function loadStateFor(reason: unknown): LoadState {
   if (reason instanceof ApiError && reason.code === 'sharing_required') return 'locked';
@@ -73,7 +70,7 @@ function avatarUser(member: { display_name: string; profile_photo_url: string | 
   };
 }
 
-function SharingLocked({ onChooseSharing }: { onChooseSharing: () => void }) {
+export function SharingLocked({ onChooseSharing }: { onChooseSharing: () => void }) {
   return (
     <section className="settings-panel panel sharing-locked" aria-labelledby="sharing-locked-title">
       <header>
@@ -83,8 +80,8 @@ function SharingLocked({ onChooseSharing }: { onChooseSharing: () => void }) {
         </div>
       </header>
       <p>
-        Your profile is private. Share it with friends or everyone in Profile to see and follow
-        other members; your workouts and profile photo are always part of it.
+        Your profile is private. Share it with friends or everyone in Profile to see and add other
+        members as friends; your workouts and profile photo are always part of it.
       </p>
       <button type="button" className="profile-primary" onClick={onChooseSharing}>
         Choose who can see your profile
@@ -93,7 +90,7 @@ function SharingLocked({ onChooseSharing }: { onChooseSharing: () => void }) {
   );
 }
 
-function LoadProblem({ message, onRetry }: { message: string; onRetry: () => void }) {
+export function LoadProblem({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <section className="settings-panel panel">
       <p className="inline-error" role="alert">
@@ -106,38 +103,41 @@ function LoadProblem({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
-/** Follow, request to follow, withdraw a request, or unfollow. */
-function FollowButton({
+/** A search result's friend action: Add friend, Accept, Cancel request, or a Friends label. */
+function FriendButton({
   profile,
-  compact = false,
   onChange,
 }: {
   profile: SharedProfileSummary;
-  compact?: boolean;
-  onChange: (status: FollowStatus) => void;
+  onChange: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (profile.is_you) return null;
-  const following = profile.follow_status !== 'none';
-  const label =
-    profile.follow_status === 'pending'
-      ? 'Cancel request'
-      : profile.follow_status === 'accepted'
-        ? 'Unfollow'
-        : followActionLabel(profile);
+  if (profile.friend_status === 'friends') {
+    return (
+      <span className="friend-status-label">
+        <Icon name="check" /> Friends
+      </span>
+    );
+  }
+  const action = {
+    none: { label: 'Add friend', primary: true, run: () => api.sharing.addFriend(profile.id) },
+    incoming: { label: 'Accept', primary: true, run: () => api.sharing.acceptFriend(profile.id) },
+    outgoing: {
+      label: 'Cancel request',
+      primary: false,
+      run: () => api.sharing.removeFriend(profile.id),
+    },
+  }[profile.friend_status];
 
   async function run() {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      if (following) {
-        await api.sharing.unfollow(profile.id);
-        onChange('none');
-      } else {
-        onChange((await api.sharing.follow(profile.id)).status);
-      }
+      await action.run();
+      onChange();
     } catch (reason) {
       setError(authErrorMessage(reason));
     } finally {
@@ -146,22 +146,16 @@ function FollowButton({
   }
 
   return (
-    <div className={compact ? 'shared-follow compact' : 'shared-follow'}>
+    <div className="shared-follow compact">
       <button
         type="button"
-        className={
-          profile.follow_status === 'accepted'
-            ? 'profile-danger'
-            : following
-              ? 'profile-secondary'
-              : 'profile-primary'
-        }
+        className={action.primary ? 'profile-primary' : 'profile-secondary'}
         disabled={busy}
-        aria-label={compact ? `${label}: ${profile.display_name}` : undefined}
+        aria-label={`${action.label}: ${profile.display_name}`}
         onClick={() => void run()}
       >
         {busy && <span className="auth-spinner" aria-hidden="true" />}
-        <span>{label}</span>
+        <span>{action.label}</span>
       </button>
       {error && (
         <p className="inline-error" role="alert">
@@ -172,17 +166,23 @@ function FollowButton({
   );
 }
 
-/** A profile page's follow control: Follow, then Following or Requested with a menu to undo it. */
-function ProfileFollowControl({
+/**
+ * A profile page's friend control: Add friend, Accept or Decline, or Requested and Friends pills.
+ * Its menu cancels a request, removes a friend or blocks the member.
+ */
+function ProfileFriendControl({
   profile,
   onChange,
+  onBlocked,
 }: {
   profile: SharedProfileSummary;
-  onChange: (status: FollowStatus) => void;
+  onChange: (status: FriendStatus) => void;
+  onBlocked: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menuId = useId();
@@ -208,17 +208,42 @@ function ProfileFollowControl({
   }, [open]);
 
   if (profile.is_you) return null;
-  const pending = profile.follow_status === 'pending';
-  const since = pending ? null : sinceMonthLabel(profile.following_since);
+  const status = profile.friend_status;
+  const since = status === 'friends' ? sinceMonthLabel(profile.friends_since) : null;
+  const pill = status === 'friends' ? 'Friends' : status === 'outgoing' ? 'Requested' : null;
+  const spinner = <span className="auth-spinner" aria-hidden="true" />;
 
-  async function run(action: () => Promise<FollowStatus>) {
+  async function run(action: () => Promise<FriendStatus>) {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      const status = await action();
+      const next = await action();
       setOpen(false);
-      onChange(status);
+      onChange(next);
+    } catch (reason) {
+      setError(authErrorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const add = () => run(async () => (await api.sharing.addFriend(profile.id)).status);
+  const accept = () => run(async () => (await api.sharing.acceptFriend(profile.id)).status);
+  const remove = () =>
+    run(async () => {
+      await api.sharing.removeFriend(profile.id);
+      return 'none';
+    });
+
+  async function block() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.sharing.blockMember(profile.id);
+      setConfirmBlock(false);
+      onBlocked();
     } catch (reason) {
       setError(authErrorMessage(reason));
     } finally {
@@ -228,23 +253,46 @@ function ProfileFollowControl({
 
   return (
     <div className="shared-follow profile-follow">
-      {profile.follow_status === 'none' ? (
-        <button
-          type="button"
-          className="profile-follow-button is-follow"
-          disabled={busy}
-          onClick={() => void run(async () => (await api.sharing.follow(profile.id)).status)}
-        >
-          {busy && <span className="auth-spinner" aria-hidden="true" />}
-          <span>{followActionLabel(profile)}</span>
-        </button>
-      ) : (
+      <div className="profile-friend-actions">
+        {status === 'none' && (
+          <button
+            type="button"
+            className="profile-follow-button is-follow"
+            disabled={busy}
+            onClick={() => void add()}
+          >
+            {busy && spinner}
+            <span>Add friend</span>
+          </button>
+        )}
+        {status === 'incoming' && (
+          <>
+            <button
+              type="button"
+              className="profile-follow-button is-follow"
+              disabled={busy}
+              onClick={() => void accept()}
+            >
+              {busy && spinner}
+              <span>Accept</span>
+            </button>
+            <button
+              type="button"
+              className="profile-follow-button"
+              disabled={busy}
+              onClick={() => void remove()}
+            >
+              <span>Decline</span>
+            </button>
+          </>
+        )}
         <div className="profile-follow-menu-wrap">
           <button
             ref={trigger}
             type="button"
-            className="profile-follow-button"
+            className={`profile-follow-button${pill ? '' : ' is-more'}`}
             disabled={busy}
+            aria-label={pill ? undefined : `More options for ${profile.display_name}`}
             aria-haspopup="menu"
             aria-expanded={open}
             aria-controls={open ? menuId : undefined}
@@ -253,38 +301,77 @@ function ProfileFollowControl({
               setOpen(!open);
             }}
           >
-            {busy ? (
-              <span className="auth-spinner" aria-hidden="true" />
+            {pill ? (
+              <>
+                {busy ? spinner : status === 'friends' && <Icon name="check" />}
+                <span>{pill}</span>
+                <Icon name="chevron-down" />
+              </>
             ) : (
-              !pending && <Icon name="check" />
+              <Icon name="more" />
             )}
-            <span>{pending ? 'Requested' : 'Following'}</span>
-            <Icon name="chevron-down" />
           </button>
           {open && (
             <div ref={menu} id={menuId} className="profile-follow-menu" role="menu">
               {since && <p>{since}</p>}
+              {status === 'friends' && (
+                <button type="button" role="menuitem" disabled={busy} onClick={() => void remove()}>
+                  Remove friend
+                </button>
+              )}
+              {status === 'outgoing' && (
+                <button type="button" role="menuitem" disabled={busy} onClick={() => void remove()}>
+                  Cancel request
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"
                 disabled={busy}
-                onClick={() =>
-                  void run(async () => {
-                    await api.sharing.unfollow(profile.id);
-                    return 'none';
-                  })
-                }
+                onClick={() => {
+                  setOpen(false);
+                  setConfirmBlock(true);
+                }}
               >
-                {pending ? 'Cancel request' : 'Unfollow'}
+                Block
               </button>
             </div>
           )}
         </div>
-      )}
+      </div>
       {error && (
         <p className="inline-error" role="alert">
           {error}
         </p>
+      )}
+      {confirmBlock && (
+        <PopupDialog
+          title={`Block ${profile.display_name}?`}
+          className="friend-block-dialog"
+          onClose={() => setConfirmBlock(false)}
+        >
+          <p>
+            They will no longer find you or see your profile, data and activity, and you stop being
+            friends. You can unblock them in Social, under Find.
+          </p>
+          <div className="friend-block-actions">
+            <button
+              type="button"
+              className="profile-secondary"
+              onClick={() => setConfirmBlock(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="profile-danger"
+              disabled={busy}
+              onClick={() => void block()}
+            >
+              Block
+            </button>
+          </div>
+        </PopupDialog>
       )}
     </div>
   );
@@ -325,15 +412,11 @@ function FriendRow({
 function FriendGroup({
   title,
   count,
-  emptyText,
-  help,
   highlighted = false,
   children,
 }: {
   title: string;
   count?: number;
-  emptyText: string;
-  help?: ReactNode;
   highlighted?: boolean;
   children: ReactNode[];
 }) {
@@ -342,13 +425,8 @@ function FriendGroup({
       <h3>
         {title}
         {count !== undefined && <span>{count}</span>}
-        {help}
       </h3>
-      {children.length === 0 ? (
-        <p className="shared-card-empty">{emptyText}</p>
-      ) : (
-        <ul>{children}</ul>
-      )}
+      <ul>{children}</ul>
     </div>
   );
 }
@@ -357,12 +435,12 @@ export function PeopleSearch({
   active,
   refreshKey,
   onOpenProfile,
-  onFollowChanged,
+  onFriendChanged,
 }: {
   active: boolean;
   refreshKey: string;
   onOpenProfile: (profile: SharedProfileSummary) => void;
-  onFollowChanged: () => void;
+  onFriendChanged: () => void;
 }) {
   const id = useId();
   const [input, setInput] = useState('');
@@ -469,9 +547,9 @@ export function PeopleSearch({
                 <FriendRow
                   key={profile.id}
                   person={profile}
-                  detail={VISIBILITY_LABELS[profile.visibility]}
+                  detail={friendStatusLabel(profile)}
                   onOpen={() => onOpenProfile(profile)}
-                  actions={<FollowButton compact profile={profile} onChange={onFollowChanged} />}
+                  actions={<FriendButton profile={profile} onChange={onFriendChanged} />}
                 />
               ))}
             </ul>
@@ -482,81 +560,65 @@ export function PeopleSearch({
   );
 }
 
-/** Profile's Friends section: requests, follows, followers and account search. */
-export function FriendsPanel({
+/** Social's Find tab: requests waiting for you, people search, your requests and blocks. */
+export function FindPanel({
   active,
-  refreshKey,
+  connections,
+  state,
+  error,
+  onRetry,
+  onChanged,
   onOpenProfile,
+  onChooseSharing,
 }: {
   active: boolean;
-  refreshKey: number;
-  onOpenProfile: (profile: SharedProfileSummary) => void;
+  connections: FriendConnections | null;
+  state: FriendConnectionsState;
+  error: string | null;
+  onRetry: () => void;
+  onChanged: () => void;
+  onOpenProfile: (profile: Pick<SharedProfileSummary, 'id' | 'display_name'>) => void;
+  onChooseSharing: () => void;
 }) {
-  const [profiles, setProfiles] = useState<SharedProfileSummary[] | null>(null);
-  const [connections, setConnections] = useState<SharingConnections | null>(null);
-  const [state, setState] = useState<LoadState>('loading');
-  const [error, setError] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [blockHelpOpen, setBlockHelpOpen] = useState(false);
+  const [searchVersion, setSearchVersion] = useState(0);
 
-  useEffect(() => {
-    // Refreshed whenever Profile is shown or sharing changes, so follows appear straight away.
-    if (!active) return;
-    let cancelled = false;
-    api.sharing
-      .connections()
-      .then((next) => {
-        if (!cancelled) setConnections(next);
-      })
-      .catch(() => undefined);
-    api.sharing
-      .profiles()
-      .then((next) => {
-        if (cancelled) return;
-        setProfiles(next);
-        setState('ready');
-      })
-      .catch((reason: unknown) => {
-        if (cancelled) return;
-        setProfiles(null);
-        setState(loadStateFor(reason));
-        setError(authErrorMessage(reason));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [active, attempt, refreshKey]);
-
-  function updateProfile(id: string, change: Partial<SharedProfileSummary>) {
-    setProfiles(
-      (current) => current?.map((item) => (item.id === id ? { ...item, ...change } : item)) ?? null,
+  function blockedGroup(blocked: SharingConnection[]) {
+    return (
+      <FriendGroup title="Blocked" count={blocked.length}>
+        {blocked.map((person) => (
+          <FriendRow
+            key={person.id}
+            person={person}
+            detail={`Blocked ${longDate(person.since.slice(0, 10))}`}
+            actions={
+              <button
+                type="button"
+                className="profile-secondary"
+                disabled={busyId !== null}
+                aria-label={`Unblock ${person.display_name}`}
+                onClick={() => void respond(person, 'unblock')}
+              >
+                Unblock
+              </button>
+            }
+          />
+        ))}
+      </FriendGroup>
     );
   }
 
-  async function respond(
-    person: SharingConnection,
-    action: 'approve' | 'remove' | 'block' | 'unblock',
-  ) {
+  async function respond(person: SharingConnection, action: 'accept' | 'remove' | 'unblock') {
     if (busyId) return;
     setBusyId(person.id);
     setActionError(null);
     try {
-      if (action === 'approve') await api.sharing.approveFollower(person.id);
-      else if (action === 'block') await api.sharing.blockMember(person.id);
+      if (action === 'accept') await api.sharing.acceptFriend(person.id);
       else if (action === 'unblock') await api.sharing.unblockMember(person.id);
-      else await api.sharing.removeFollower(person.id);
-      const next = await api.sharing.connections();
-      setConnections(next);
-      if (action === 'block' || action === 'unblock') {
-        if (profiles !== null) setProfiles(await api.sharing.profiles());
-        return;
-      }
-      updateProfile(person.id, {
-        follows_you: action === 'approve',
-        follows_you_since: next.followers.find((item) => item.id === person.id)?.since ?? null,
-      });
+      else await api.sharing.removeFriend(person.id);
+      onChanged();
+      setSearchVersion((version) => version + 1);
     } catch (reason) {
       setActionError(authErrorMessage(reason));
     } finally {
@@ -564,199 +626,114 @@ export function FriendsPanel({
     }
   }
 
-  const others = profiles?.filter((profile) => !profile.is_you) ?? [];
-  const following = others.filter((profile) => profile.follow_status !== 'none');
-  const openFor = (id: string) => {
-    const profile = others.find((item) => item.id === id);
-    return profile ? () => onOpenProfile(profile) : undefined;
-  };
-  const requestCount = state === 'locked' ? 0 : (connections?.requests.length ?? 0);
-
-  return (
-    <CollapsibleSection
-      className="settings-panel panel sharing-connections friends-panel"
-      kicker="SOCIAL"
-      title="Friends"
-      defaultExpanded
-      badge={
-        requestCount > 0 && (
-          <span className="sharing-state is-on">
-            {requestCount} {requestCount === 1 ? 'request' : 'requests'}
-          </span>
-        )
-      }
-    >
-      {state === 'locked' ? (
-        <p className="shared-card-empty">
-          Share your profile above to see and follow other members.
-        </p>
-      ) : state === 'error' && !profiles ? (
-        <div className="sharing-load-error">
-          <p className="inline-error" role="alert">
-            {error ?? 'Could not load your friends.'}
-          </p>
-          <button
-            type="button"
-            className="profile-secondary"
-            onClick={() => setAttempt((count) => count + 1)}
-          >
-            Try again
-          </button>
-        </div>
-      ) : !profiles ? (
-        <p className="sharing-loading" role="status">
-          Loading your friends…
-        </p>
-      ) : (
+  if (!connections || state === 'locked') {
+    if (state === 'locked') {
+      return (
         <>
-          {actionError && (
-            <p className="inline-error" role="alert">
-              {actionError}
-            </p>
+          <SharingLocked onChooseSharing={onChooseSharing} />
+          {(connections?.blocked.length ?? 0) > 0 && (
+            <section className="settings-panel panel sharing-connections find-panel">
+              {actionError && (
+                <p className="inline-error" role="alert">
+                  {actionError}
+                </p>
+              )}
+              {blockedGroup(connections!.blocked)}
+            </section>
           )}
-          {connections && connections.requests.length > 0 && (
-            <FriendGroup
-              title="Follow requests"
-              count={connections.requests.length}
-              emptyText=""
-              highlighted
-            >
-              {connections.requests.map((person) => (
-                <FriendRow
-                  key={person.id}
-                  person={person}
-                  detail={`Asked ${longDate(person.since.slice(0, 10))}`}
-                  onOpen={openFor(person.id)}
-                  actions={
-                    <>
-                      <button
-                        type="button"
-                        className="profile-primary"
-                        disabled={busyId !== null}
-                        aria-label={`Approve ${person.display_name}`}
-                        onClick={() => void respond(person, 'approve')}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        className="profile-secondary"
-                        disabled={busyId !== null}
-                        aria-label={`Decline ${person.display_name}`}
-                        onClick={() => void respond(person, 'remove')}
-                      >
-                        Decline
-                      </button>
-                    </>
-                  }
-                />
-              ))}
-            </FriendGroup>
-          )}
-          <FriendGroup
-            title="Following"
-            count={following.length}
-            emptyText="You are not following anyone yet."
-          >
-            {following.map((profile) => (
-              <FriendRow
-                key={profile.id}
-                person={profile}
-                detail={[
-                  profile.follow_status === 'accepted'
-                    ? followSinceLabel('Following', profile.following_since)
-                    : null,
-                  workoutActivitySummary(profile),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-                onOpen={() => onOpenProfile(profile)}
-              />
-            ))}
-          </FriendGroup>
-          <FriendGroup
-            title="Followers"
-            count={connections?.followers.length ?? 0}
-            emptyText="Nobody follows you yet."
-            help={
-              <button
-                type="button"
-                className="friend-block-help"
-                aria-label="About blocking"
-                aria-haspopup="dialog"
-                onClick={() => setBlockHelpOpen(true)}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4" />
-                  <path d="M12 16.5h.01" />
-                </svg>
-              </button>
-            }
-          >
-            {(connections?.followers ?? []).map((person) => (
-              <FriendRow
-                key={person.id}
-                person={person}
-                detail={followSinceLabel('Follows you', person.since)}
-                onOpen={openFor(person.id)}
-                actions={
+        </>
+      );
+    }
+    return state === 'error' ? (
+      <LoadProblem message={error ?? 'Could not load your friends.'} onRetry={onRetry} />
+    ) : (
+      <p className="sharing-loading" role="status">
+        Loading friend requests…
+      </p>
+    );
+  }
+  const open = (person: SharingConnection) => () => onOpenProfile(person);
+  const people = [
+    ...connections.friends,
+    ...connections.requests,
+    ...connections.sent,
+    ...connections.blocked,
+  ];
+  return (
+    <section
+      className="settings-panel panel sharing-connections find-panel"
+      aria-label="Find friends"
+    >
+      {actionError && (
+        <p className="inline-error" role="alert">
+          {actionError}
+        </p>
+      )}
+      {connections.requests.length > 0 && (
+        <FriendGroup title="Friend requests" count={connections.requests.length} highlighted>
+          {connections.requests.map((person) => (
+            <FriendRow
+              key={person.id}
+              person={person}
+              detail={`Asked ${longDate(person.since.slice(0, 10))}`}
+              onOpen={open(person)}
+              actions={
+                <>
+                  <button
+                    type="button"
+                    className="profile-primary"
+                    disabled={busyId !== null}
+                    aria-label={`Accept ${person.display_name}`}
+                    onClick={() => void respond(person, 'accept')}
+                  >
+                    Accept
+                  </button>
                   <button
                     type="button"
                     className="profile-secondary"
                     disabled={busyId !== null}
-                    aria-label={`Block ${person.display_name}`}
-                    onClick={() => void respond(person, 'block')}
+                    aria-label={`Decline ${person.display_name}`}
+                    onClick={() => void respond(person, 'remove')}
                   >
-                    Block
+                    Decline
                   </button>
-                }
-              />
-            ))}
-          </FriendGroup>
-          <PeopleSearch
-            active={active}
-            refreshKey={`${refreshKey}:${attempt}:${connections?.blocked?.map((person) => person.id).join(',') ?? ''}`}
-            onOpenProfile={onOpenProfile}
-            onFollowChanged={() => setAttempt((count) => count + 1)}
-          />
-        </>
+                </>
+              }
+            />
+          ))}
+        </FriendGroup>
       )}
-      {(connections?.blocked?.length ?? 0) > 0 && (
-        <FriendGroup title="Blocked" count={connections!.blocked!.length} emptyText="">
-          {connections!.blocked!.map((person) => (
+      <PeopleSearch
+        active={active}
+        refreshKey={`${searchVersion}:${people.map((person) => person.id).join(',')}`}
+        onOpenProfile={onOpenProfile}
+        onFriendChanged={onChanged}
+      />
+      {connections.sent.length > 0 && (
+        <FriendGroup title="Sent requests" count={connections.sent.length}>
+          {connections.sent.map((person) => (
             <FriendRow
               key={person.id}
               person={person}
-              detail={`Blocked ${longDate(person.since.slice(0, 10))}`}
+              detail={`Sent ${longDate(person.since.slice(0, 10))}`}
+              onOpen={open(person)}
               actions={
                 <button
                   type="button"
                   className="profile-secondary"
                   disabled={busyId !== null}
-                  aria-label={`Unblock ${person.display_name}`}
-                  onClick={() => void respond(person, 'unblock')}
+                  aria-label={`Cancel request to ${person.display_name}`}
+                  onClick={() => void respond(person, 'remove')}
                 >
-                  Unblock
+                  Cancel
                 </button>
               }
             />
           ))}
         </FriendGroup>
       )}
-      {blockHelpOpen && (
-        <PopupDialog
-          title="About blocking"
-          className="friend-block-dialog"
-          onClose={() => setBlockHelpOpen(false)}
-        >
-          <p>
-            Blocking stops this person from seeing your profile, data and recent activity. You also
-            stop following each other. You can unblock them in Blocked.
-          </p>
-        </PopupDialog>
-      )}
-    </CollapsibleSection>
+      {connections.blocked.length > 0 && blockedGroup(connections.blocked)}
+    </section>
   );
 }
 
@@ -1056,7 +1033,7 @@ export function SharedProfileScreen({
     setMoreError(null);
     async function load() {
       const nextProfile = await api.sharing.profile(profileId);
-      // A friends-only profile you do not follow shares only its name and photo.
+      // A friends-only profile of a non-friend shares only its name and photo.
       const [page, options] = nextProfile.can_view
         ? await Promise.all([
             api.sharing.workouts(profileId, 0, SHARED_WORKOUT_PAGE_SIZE, filters),
@@ -1117,10 +1094,10 @@ export function SharedProfileScreen({
     }
   }
 
-  function followChanged(status: FollowStatus) {
+  function friendChanged(status: FriendStatus) {
     if (!profile) return;
     // Gaining or losing access to a friends-only profile changes what it shows.
-    setProfile({ ...profile, follow_status: status, following_since: null });
+    setProfile({ ...profile, friend_status: status, friends_since: null });
     setAttempt((count) => count + 1);
   }
 
@@ -1128,6 +1105,23 @@ export function SharedProfileScreen({
     return (
       <section className="settings-screen shared-profile-screen content-page">
         <SharingLocked onChooseSharing={onChooseSharing} />
+      </section>
+    );
+  }
+  if (state === 'blocked' && profile) {
+    return (
+      <section className="settings-screen shared-profile-screen content-page">
+        <section className="settings-panel panel">
+          <header>
+            <div>
+              <p className="section-kicker">BLOCKED</p>
+              <h2>You blocked {profile.display_name}</h2>
+            </div>
+          </header>
+          <p>
+            They can no longer find you or see your profile. Unblock them in Social, under Find.
+          </p>
+        </section>
       </section>
     );
   }
@@ -1179,13 +1173,16 @@ export function SharedProfileScreen({
               {profile.display_name}
               {profile.is_you && <span className="profile-badge">You</span>}
             </strong>
-            {(memberSince || profile.follows_you) && (
+            {memberSince && (
               <span className="shared-status-chips profile-joined">
-                {memberSince && <small>Joined {memberSince}</small>}
-                {profile.follows_you && <em>Follows you</em>}
+                <small>Joined {memberSince}</small>
               </span>
             )}
-            <ProfileFollowControl profile={profile} onChange={followChanged} />
+            <ProfileFriendControl
+              profile={profile}
+              onChange={friendChanged}
+              onBlocked={() => setState('blocked')}
+            />
           </div>
         </div>
         <ProfileAccountId accountId={profile.id} />
@@ -1219,16 +1216,20 @@ export function SharedProfileScreen({
             <div>
               <p className="section-kicker">FRIENDS ONLY</p>
               <h2>
-                {profile.follow_status === 'pending'
-                  ? 'Follow request sent'
-                  : `Follow ${profile.display_name} to see their training`}
+                {profile.friend_status === 'outgoing'
+                  ? 'Friend request sent'
+                  : profile.friend_status === 'incoming'
+                    ? `${profile.display_name} sent you a friend request`
+                    : `Add ${profile.display_name} as a friend to see their training`}
               </h2>
             </div>
           </header>
           <p>
-            {profile.follow_status === 'pending'
-              ? `Their workouts appear here once ${profile.display_name} approves your request.`
-              : `${profile.display_name} shares with followers they approve. Send a request and their workouts appear here once they accept.`}
+            {profile.friend_status === 'outgoing'
+              ? `Their workouts appear here once ${profile.display_name} accepts your request.`
+              : profile.friend_status === 'incoming'
+                ? 'Accept it to see each other’s training.'
+                : `${profile.display_name} shares with friends only. Send a friend request and their workouts appear here once they accept.`}
           </p>
         </section>
       ) : (

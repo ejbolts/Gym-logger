@@ -34,29 +34,29 @@ export function useRefreshedCount(
   return enabled ? count : 0;
 }
 
-const loadFollowRequestCount = () =>
+const loadFriendRequestCount = () =>
   api.sharing
     .choices()
     .then((settings) => (settings.visibility === 'private' ? 0 : settings.pending_requests));
 
-/** The profile button's label, including follow requests and feedback waiting for review. */
+/** The profile button's label, including friend requests and feedback waiting for review. */
 export function profileButtonLabel(
   name: string | undefined,
-  followRequests: number,
+  friendRequests: number,
   openFeedback: number,
 ): string {
   const waiting = [
-    followRequests > 0 &&
-      `${followRequests} follow ${followRequests === 1 ? 'request' : 'requests'}`,
+    friendRequests > 0 &&
+      `${friendRequests} friend ${friendRequests === 1 ? 'request' : 'requests'}`,
     openFeedback > 0 &&
       `${openFeedback} feedback ${openFeedback === 1 ? 'message' : 'messages'} to review`,
   ].filter(Boolean);
   return [name ? `Profile: ${name}` : 'Profile', ...waiting].join(', ');
 }
 
-/** Follow requests waiting for approval, refreshed whenever `active` turns on. */
-export function useFollowRequestCount(active: boolean, enabled: boolean): number {
-  return useRefreshedCount(loadFollowRequestCount, active, enabled);
+/** Friend requests waiting for an answer, refreshed whenever `active` turns on. */
+export function useFriendRequestCount(active: boolean, enabled: boolean): number {
+  return useRefreshedCount(loadFriendRequestCount, active, enabled);
 }
 
 const loadOpenFeedbackCount = () => api.admin.feedbackSummary().then((summary) => summary.open);

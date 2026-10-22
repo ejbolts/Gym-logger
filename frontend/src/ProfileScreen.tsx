@@ -7,8 +7,6 @@ import { ProfileTrainingTime } from './ProfileTrainingTime';
 import { SettingsSearch } from './SettingsSearch';
 import { useSettingsPageJump } from './settingsNavigation';
 import { ProfileSharingPanel } from './ProfileSharing';
-import { FriendsPanel } from './SharedProfiles';
-import type { SharedProfileSummary } from './types';
 import { useUserSession } from './userContext';
 
 function Spinner() {
@@ -313,17 +311,14 @@ export function FeedbackReviewPanel({
 
 export function ProfileScreen({
   active,
-  onOpenProfile,
   openFeedback = 0,
   onOpenAdmin,
 }: {
   active: boolean;
-  onOpenProfile: (profile: SharedProfileSummary) => void;
   openFeedback?: number;
   onOpenAdmin?: () => void;
 }) {
   const { user, updateUser } = useUserSession();
-  const [sharingVersion, setSharingVersion] = useState(0);
   useSettingsPageJump('profile', active);
   if (!user) return null;
 
@@ -335,8 +330,7 @@ export function ProfileScreen({
       {onOpenAdmin && openFeedback > 0 && (
         <FeedbackReviewPanel openFeedback={openFeedback} onOpenAdmin={onOpenAdmin} />
       )}
-      <ProfileSharingPanel onSaved={() => setSharingVersion((version) => version + 1)} />
-      <FriendsPanel active={active} refreshKey={sharingVersion} onOpenProfile={onOpenProfile} />
+      <ProfileSharingPanel />
       <PasswordForm />
       <SessionPanel />
       <DangerZone />

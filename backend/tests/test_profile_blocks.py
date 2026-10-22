@@ -1,10 +1,10 @@
 import pytest
 from sqlalchemy import select
-from test_sharing import EVERYTHING, add_training_history, share
+from test_sharing import EVERYTHING, add_training_history, befriend, share
 from test_workout_reactions import log_workout
 
 from app.database import SessionLocal
-from app.models import ProfileFollow
+from app.models import Friendship
 
 
 @pytest.mark.parametrize("visibility", ["public", "followers"])
@@ -16,9 +16,7 @@ def test_block_hides_every_shared_route_search_feed_and_notifications(
     share(client, visibility, **EVERYTHING)
     share(other_client, "public")
     other_workout = log_workout(other_client, "Other session", 0)
-    client.post(f"/api/sharing/follows/{other}")
-    other_client.post(f"/api/sharing/follows/{owner}")
-    client.post(f"/api/sharing/followers/{other}")
+    befriend(client, other_client)
     other_client.put(
         f"/api/sharing/workouts/{history['workout']['id']}/reaction", json={"reaction": "love"}
     )
@@ -42,13 +40,14 @@ def test_block_hides_every_shared_route_search_feed_and_notifications(
         assert target not in [person["id"] for person in viewer.get("/api/sharing/profiles").json()]
         for suffix in ["", "/workouts", "/workout-filters", "/photo"]:
             assert viewer.get(f"/api/sharing/profiles/{target}{suffix}").status_code == 404
-        assert viewer.post(f"/api/sharing/follows/{target}").status_code == 404
-        assert viewer.get("/api/sharing/feed").json() == {"items": [], "following": 0}
-        connections = viewer.get("/api/sharing/followers").json()
-        assert connections["followers"] == connections["requests"] == []
+        assert viewer.post(f"/api/sharing/friends/{target}").status_code == 404
+        assert viewer.post(f"/api/sharing/friends/{target}/accept").status_code == 404
+        assert viewer.get("/api/sharing/feed").json() == {"items": [], "friends": 0}
+        connections = viewer.get("/api/sharing/friends").json()
+        assert connections["friends"] == connections["requests"] == connections["sent"] == []
         assert viewer.get("/api/sharing/notifications").json() == {
             "requests": [],
-            "followers": [],
+            "accepted": [],
             "reactions": [],
         }
     assert other_client.get(profile["profile_photo_url"]).status_code == 404
@@ -58,30 +57,31 @@ def test_block_hides_every_shared_route_search_feed_and_notifications(
     url = f"/api/sharing/workouts/{history['workout']['id']}/reaction"
     assert other_client.put(url, json={"reaction": "fire"}).status_code == 404
     assert other_client.delete(url).status_code == 404
-    blocked = client.get("/api/sharing/followers").json()["blocked"]
+    blocked = client.get("/api/sharing/friends").json()["blocked"]
     assert [person["id"] for person in blocked] == [other]
-    assert other_client.get("/api/sharing/followers").json()["blocked"] == []
+    assert other_client.get("/api/sharing/friends").json()["blocked"] == []
     # Going private and back to public never bypasses a stored block.
     share(client, "private")
-    assert client.get("/api/sharing/followers").json()["blocked"] == blocked
+    locked = client.get("/api/sharing/friends").json()
+    assert locked["locked"] is True and locked["blocked"] == blocked
     share(client, "public")
     assert other_client.get(f"/api/sharing/profiles/{owner}").status_code == 404
     with SessionLocal() as db:
-        assert list(db.scalars(select(ProfileFollow))) == []
+        assert list(db.scalars(select(Friendship))) == []
 
 
-def test_unblock_is_owner_scoped_and_does_not_restore_old_follows(client, other_client):
+def test_unblock_is_owner_scoped_and_does_not_restore_old_friendships(client, other_client):
     owner, other = client.user["id"], other_client.user["id"]
-    other_client.post(f"/api/sharing/follows/{owner}")
+    befriend(other_client, client)
     client.post(f"/api/sharing/blocks/{other}")
     # The blocked member cannot remove the other account's block.
     assert other_client.delete(f"/api/sharing/blocks/{owner}").status_code == 204
     assert other_client.get(f"/api/sharing/profiles/{owner}").status_code == 404
     assert client.delete(f"/api/sharing/blocks/{other}").status_code == 204
     assert client.delete(f"/api/sharing/blocks/{other}").status_code == 204
-    assert other_client.get(f"/api/sharing/profiles/{owner}").json()["follow_status"] == "none"
-    assert client.get("/api/sharing/followers").json()["blocked"] == []
-    assert other_client.post(f"/api/sharing/follows/{owner}").status_code == 200
+    assert other_client.get(f"/api/sharing/profiles/{owner}").json()["friend_status"] == "none"
+    assert client.get("/api/sharing/friends").json()["blocked"] == []
+    assert other_client.post(f"/api/sharing/friends/{owner}").status_code == 200
     assert client.post(f"/api/sharing/blocks/{owner}").status_code == 422
     assert client.post("/api/sharing/blocks/missing").status_code == 404
 
@@ -128,7 +128,7 @@ def test_account_deletion_removes_blocks_in_both_directions(client, other_client
     assert response.status_code == 204
     with SessionLocal() as db:
         assert list(db.scalars(select(ProfileBlock))) == []
-    assert client.get("/api/sharing/followers").json()["blocked"] == []
+    assert client.get("/api/sharing/friends").json()["blocked"] == []
 
 
 def test_reacting_to_an_old_workout_never_pins_the_friend_above_newer_workouts(
@@ -140,8 +140,8 @@ def test_reacting_to_an_old_workout_never_pins_the_friend_above_newer_workouts(
     third = TestClient(client.app)
     third.user = register_user(third, "third", "Third")
     older = log_workout(other_client, "Old reacted session", 0)
-    client.post(f"/api/sharing/follows/{other_client.user['id']}")
-    client.post(f"/api/sharing/follows/{third.user['id']}")
+    befriend(client, other_client)
+    befriend(client, third)
     client.put(f"/api/sharing/workouts/{older['id']}/reaction", json={"reaction": "love"})
     newest_third = log_workout(third, "Third latest", 0)
     assert [item["workout"]["id"] for item in client.get("/api/sharing/feed").json()["items"]] == [
