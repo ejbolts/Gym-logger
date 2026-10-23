@@ -23,6 +23,7 @@ vi.mock('./api', async (importOriginal) => {
     ...original,
     api: {
       ...original.api,
+      workoutRevision: vi.fn().mockResolvedValue({ revision: 'initial' }),
       dashboard: vi.fn(),
       listExercises: vi.fn(),
       listWorkouts: vi.fn(),
@@ -167,6 +168,7 @@ function historyCardTitles(): string[] {
 }
 
 beforeEach(() => {
+  vi.mocked(api.workoutRevision).mockResolvedValue({ revision: 'initial' });
   vi.clearAllMocks();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('matchMedia', () => ({ matches: false }));

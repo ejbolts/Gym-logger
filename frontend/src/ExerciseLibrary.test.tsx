@@ -163,3 +163,25 @@ it('offers retry after a failed preview request', async () => {
   expect(host.querySelector('[role="alert"]')).toBeNull();
   expect(host.querySelector('.progress-hero-value')?.textContent).toContain('100');
 });
+
+it('refreshes the selected exercise after remote training changes without losing the search', async () => {
+  await render();
+  await search('Pec');
+  vi.mocked(api.exerciseProgress).mockResolvedValue(progress(pec, 130));
+  await act(async () =>
+    root.render(
+      <ProgressScreen
+        exercises={catalogue}
+        measurements={[]}
+        personalRecords={[]}
+        onOpenWorkout={vi.fn()}
+        embedded
+        browseFirst
+        defaultExerciseId="pec"
+        dataRevision="remote-change"
+      />,
+    ),
+  );
+  expect(host.querySelector<HTMLInputElement>('.is-browsing input')?.value).toBe('Pec');
+  expect(host.querySelector('.progress-hero-value')?.textContent).toContain('130');
+});

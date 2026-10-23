@@ -2,9 +2,11 @@
   "version": "0.10.0",
   "date": "2026-10-23",
   "title": "Training, friends and settings that make sense",
-  "summary": "Keep training together, catch up with friends in Social, and find your preferences in a reorganized Settings hub with focused sections.",
+  "summary": "Keep training together, catch up with friends in Social, and find your preferences in a reorganized Settings hub with focused sections. Keep navigating while workouts save, and see saved training changes from your other devices automatically.",
   "changes": [
     "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
+    "Finish a workout or save an old session and keep navigating while the save completes. Routine notices and completion PRs no longer lock the page; failed saves retain your entries for retry and respect a screen you have moved to.",
+    "Saved workouts, bodyweight, goals and cardio refresh automatically across signed-in devices. The visible app checks every five seconds and when you return or reconnect, refreshes changed data quietly, and preserves active workouts, unsaved edits and filters. In-progress workouts stay on the device where you are logging.",
     "Notifications and Profile now sit beside Settings in the same order on Home, Training, Social and Body. Removed the duplicate blue plus buttons from Training and Body headers; use Start for workouts and Log weigh-in for bodyweight entries.",
     "Training combines Sessions, Exercises and Cardio. Sessions keeps the existing calendar, day details, machine filters and workout cards, with the latest three weeks shown first and Show more for older workouts.",
     "Exercises has a bounded, searchable library with a live progress preview below on phones and beside it on wider screens. Date-range buttons sit beside the preview value. Open full progress for records and session history, then return with your search, list position and range intact. Older History, Progress and Cardio links still work.",
@@ -31,6 +33,22 @@
       "image": {
         "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f1e3a10d6e6bc1b5242ab2e3e9abe62b840b1968/docs/screenshots/releases/0.10.0-settings-overview.png",
         "alt": "The redesigned Settings overview with six focused categories, search and synthetic account preferences."
+      }
+    },
+    {
+      "title": "Keep moving while saves finish",
+      "description": "Finish a workout or save an old session, then keep browsing. Saving indicators, completion PRs and routine notices leave navigation and scrolling available. Failed saves keep your entries for retry.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/be78314388da9595c5cbdd18b51dba0d24afac5b/docs/screenshots/releases/0.10.0-nonblocking-saves.gif",
+        "alt": "Finish a synthetic workout, navigate during its save, then open Body while the completion PR notice remains visible."
+      }
+    },
+    {
+      "title": "Your training stays in sync",
+      "description": "Saved training changes from your other devices appear automatically. The visible app checks every five seconds and when you return or reconnect, while keeping your active workout and unsaved entries.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/be78314388da9595c5cbdd18b51dba0d24afac5b/docs/screenshots/releases/0.10.0-cross-device-refresh.gif",
+        "alt": "A workout saved in a separate signed-in sample session appears on the desktop without reloading the page."
       }
     },
     {

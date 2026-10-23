@@ -1006,12 +1006,14 @@ function ProfileStats({ profile }: { profile: SharedProfile }) {
 }
 
 export function SharedProfileScreen({
+  dataRevision = null,
   profileId,
   renderWorkouts,
   onChooseSharing,
   active = true,
   ownProfile,
 }: {
+  dataRevision?: string | null;
   profileId: string;
   active?: boolean;
   ownProfile?: { user: User; onSaved: (user: User) => void };
@@ -1046,7 +1048,7 @@ export function SharedProfileScreen({
   const invalidDates = Boolean(
     filters.start_date && filters.end_date && filters.start_date > filters.end_date,
   );
-  const queryKey = JSON.stringify([profileId, attempt, filters, active]);
+  const queryKey = JSON.stringify([profileId, attempt, filters, active, dataRevision]);
   const currentQuery = useRef(queryKey);
   currentQuery.current = queryKey;
 
@@ -1094,7 +1096,7 @@ export function SharedProfileScreen({
     return () => {
       cancelled = true;
     };
-  }, [profileId, attempt, filters, invalidDates, active]);
+  }, [profileId, attempt, filters, invalidDates, active, dataRevision]);
 
   async function loadMore() {
     if (loadingMore || loadingWorkouts || invalidDates) return;
