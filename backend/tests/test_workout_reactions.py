@@ -65,7 +65,7 @@ def test_feed_shows_each_friends_latest_session(client, other_client, third_clie
     }
     # Notes stay hidden unless the owner shares them.
     assert other["workout"]["notes"] is None
-    assert other["reactions"] == {"counts": [], "yours": None}
+    assert other["reactions"] == {"counts": [], "yours": None, "comment_count": 0}
 
 
 def test_feed_counts_friends_without_sessions_and_hides_private_ones(client, other_client):
@@ -93,7 +93,7 @@ def test_friends_list_shows_latest_activity_for_every_friend(client, other_clien
     other, third = friends["friends"]
     assert other["latest"]["workout"]["name"] == "Other 1"
     assert other["latest"]["workout"]["notes"] is None
-    assert other["latest"]["reactions"] == {"counts": [], "yours": None}
+    assert other["latest"]["reactions"] == {"counts": [], "yours": None, "comment_count": 0}
     assert other["recent_workout_count"] == 3
     assert other["training_dates"] == [
         (date.today() - timedelta(days=days)).isoformat() for days in (5, 1)
@@ -126,12 +126,14 @@ def test_reactions_are_one_per_member_and_notify_the_owner(client, other_client,
     assert other_client.put(url, json={"reaction": "fire"}).json() == {
         "counts": [{"reaction": "fire", "count": 1}],
         "yours": "fire",
+        "comment_count": 0,
     }
     # Reacting again replaces the earlier reaction rather than adding another.
     other_client.put(url, json={"reaction": "strong"})
     assert third_client.put(url, json={"reaction": "fire"}).json() == {
         "counts": [{"reaction": "strong", "count": 1}, {"reaction": "fire", "count": 1}],
         "yours": "fire",
+        "comment_count": 0,
     }
     feed = other_client.get("/api/sharing/feed").json()["items"]
     assert feed[0]["reactions"]["yours"] == "strong"
@@ -162,12 +164,14 @@ def test_reactions_are_one_per_member_and_notify_the_owner(client, other_client,
     assert third_client.put(url, json={"reaction": "like"}).json() == {
         "counts": [{"reaction": "like", "count": 1}, {"reaction": "love", "count": 1}],
         "yours": "like",
+        "comment_count": 0,
     }
     third_client.put(url, json={"reaction": "fire"})
 
     assert other_client.delete(url).json() == {
         "counts": [{"reaction": "fire", "count": 1}],
         "yours": None,
+        "comment_count": 0,
     }
     assert len(client.get("/api/sharing/notifications").json()["reactions"]) == 1
 
@@ -210,7 +214,11 @@ def test_shared_profile_totals_follow_access_and_ignore_history_filters(client, 
     other_client.put(reaction_url, json={"reaction": "love"})
     page = other_client.get(profile_url + "/workouts").json()
     assert page["reactions"] == {
-        workout["id"]: {"counts": [{"reaction": "love", "count": 1}], "yours": "love"}
+        workout["id"]: {
+            "counts": [{"reaction": "love", "count": 1}],
+            "yours": "love",
+            "comment_count": 0,
+        }
     }
     assert (
         other_client.get(profile_url + "/workouts", params={"category": "pull"}).json()["reactions"]

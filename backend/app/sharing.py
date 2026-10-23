@@ -235,6 +235,7 @@ class ReactionCount(BaseModel):
 class WorkoutReactions(BaseModel):
     counts: list[ReactionCount]
     yours: Reaction | None = None
+    comment_count: int = 0
 
 
 class FeedFriend(BaseModel):
@@ -301,6 +302,7 @@ class NotificationsRead(BaseModel):
     requests: list[FriendNotice]
     accepted: list[FriendNotice]
     reactions: list[ReactionNotice] = []
+    comments: list[dict] = []
 
 
 def sharing_choices(db: Session, user_id: str) -> ProfileSharing:
@@ -1026,6 +1028,11 @@ def reaction_summaries(
             for reaction in get_args(Reaction)
             if counter[reaction]
         ]
+    from .comments import visible_comments
+
+    viewer = db.get(User, viewer_id)
+    for workout_id in workout_ids:
+        summaries[workout_id].comment_count = len(visible_comments(db, viewer, workout_id))
     return summaries
 
 
@@ -1271,6 +1278,8 @@ def list_friends(user: CurrentUser, db: Db) -> FriendsRead:
 
 @sharing_router.get("/notifications", response_model=NotificationsRead)
 def friend_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
+    from .comments import comment_notices
+
     blocked = blocked_member_ids(db, user.id)
     requests = [
         FriendNotice(
@@ -1315,6 +1324,7 @@ def friend_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
     return NotificationsRead(
         requests=requests,
         accepted=accepted,
+        comments=comment_notices(db, user),
         reactions=[
             ReactionNotice(
                 id=member.id,
@@ -1332,7 +1342,7 @@ def friend_notifications(user: CurrentUser, db: Db) -> NotificationsRead:
 
 
 class NotificationReadReference(BaseModel):
-    kind: Literal["request", "accepted", "reaction"]
+    kind: Literal["request", "accepted", "reaction", "comment"]
     id: str
     since: datetime
     workout_id: str | None = None
@@ -1373,7 +1383,17 @@ def mark_notifications_read(payload: NotificationsSeen, user: CurrentUser, db: D
         )
     }
     for item in payload.items:
-        if item.kind == "reaction":
+        if item.kind == "comment":
+            from .models import CommentNotification
+
+            notice = db.get(CommentNotification, item.id)
+            if (
+                notice
+                and notice.recipient_id == user.id
+                and as_utc(notice.created_at) == as_utc(item.since)
+            ):
+                notice.is_read = True
+        elif item.kind == "reaction":
             reaction = reactions.get((item.workout_id, item.id))
             if reaction is not None and as_utc(reaction.created_at) == as_utc(item.since):
                 reaction.notification_seen = True

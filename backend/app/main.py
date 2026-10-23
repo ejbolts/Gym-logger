@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from . import comments  # noqa: F401 -- registers discussion routes on sharing_router
 from .account_limits import SaveRateLimiter
 from .accounts import auth_router, profile_router
 from .admin import admin_router
@@ -182,6 +183,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         details = exc.errors()
         for detail in details:
             detail.pop("ctx", None)
+            # Malformed non-JSON requests can carry bytes, which JSONResponse cannot encode.
+            if isinstance(detail.get("input"), bytes):
+                detail.pop("input")
         return JSONResponse(
             status_code=422,
             content={

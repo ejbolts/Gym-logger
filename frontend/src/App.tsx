@@ -1751,6 +1751,7 @@ function AppContent() {
           {user && (tab === 'profile' || visitedTabs.has('profile')) && (
             <CachedTabPanel active={tab === 'profile'}>
               <ProfileScreen
+                onOpenMember={openSharedProfile}
                 dataRevision={dataRevision}
                 active={tab === 'profile'}
                 onChooseSharing={openSharingSettings}
@@ -1770,6 +1771,7 @@ function AppContent() {
               <CachedTabPanel active={tab === 'shared-profile'}>
                 <SharedProfileScreen
                   key={`${sharedProfile.id}-${sharedProfile.opened}`}
+                  onOpenMember={openSharedProfile}
                   profileId={sharedProfile.id}
                   onChooseSharing={openSharingSettings}
                   renderWorkouts={(props) => (

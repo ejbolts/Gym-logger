@@ -698,7 +698,7 @@ def test_existing_accounts_without_choices_stay_private(client):
 def test_friend_notifications_cover_requests_and_acceptances(client, other_client):
     target = client.user["id"]
     requester = other_client.user["id"]
-    empty = {"requests": [], "accepted": [], "reactions": []}
+    empty = {"requests": [], "accepted": [], "reactions": [], "comments": []}
     assert client.get("/api/sharing/notifications").json() == empty
     assert other_client.post(f"/api/sharing/friends/{target}").json()["status"] == "outgoing"
     # A retry does not create another event.

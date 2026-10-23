@@ -762,6 +762,38 @@ export type WorkoutReactionKind = 'like' | 'love' | 'strong' | 'fire' | 'clap' |
 export interface WorkoutReactions {
   counts: Array<{ reaction: WorkoutReactionKind; count: number }>;
   yours: WorkoutReactionKind | null;
+  comment_count?: number;
+}
+
+export interface WorkoutComment {
+  id: string;
+  author: Pick<SharingConnection, 'id' | 'display_name' | 'profile_photo_url'>;
+  body: string;
+  reaction?: WorkoutReactionKind | null;
+  parent_id: string | null;
+  reply_to: WorkoutComment['author'] | null;
+  created_at: string;
+  edited_at: string | null;
+  can_edit: boolean;
+  can_delete: boolean;
+  reactions: WorkoutReactions;
+}
+
+export interface CommentPage {
+  reactions?: WorkoutReactions;
+  total: number;
+  next_offset: number | null;
+  items: WorkoutComment[];
+}
+
+export interface CommentNotice extends SharingConnection {
+  notice_id: string;
+  kind: 'comment' | 'reply' | 'comment_reaction';
+  comment_id: string;
+  workout_id: string;
+  workout_name: string;
+  body: string;
+  reaction: WorkoutReactionKind | null;
 }
 
 /** A friend's latest workout or cardio session. */
@@ -785,6 +817,7 @@ export interface ReactionNotice extends SharingConnection {
 }
 
 export interface SharingNotifications {
+  comments?: CommentNotice[];
   /** Friend requests waiting for you. */
   requests: SharingConnection[];
   /** Your friend requests that were accepted; `since` is when. */
@@ -793,7 +826,7 @@ export interface SharingNotifications {
 }
 
 export interface NotificationReadReference {
-  kind: 'request' | 'accepted' | 'reaction';
+  kind: 'request' | 'accepted' | 'reaction' | 'comment';
   id: string;
   since: string;
   workout_id?: string;

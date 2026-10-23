@@ -102,7 +102,10 @@ export function FollowNotifications({
 
   const count = items ? unreadNotificationReferences(items).length : 0;
   const total =
-    (items?.requests.length ?? 0) + (items?.accepted.length ?? 0) + (items?.reactions?.length ?? 0);
+    (items?.comments?.length ?? 0) +
+    (items?.requests.length ?? 0) +
+    (items?.accepted.length ?? 0) +
+    (items?.reactions?.length ?? 0);
   return (
     <>
       <button
@@ -149,6 +152,29 @@ export function FollowNotifications({
             </p>
           )}
           <ul className="follow-notification-list">
+            {items?.comments?.map((notice) => (
+              <li key={notice.notice_id}>
+                <ProfileAvatar className="profile-avatar" user={{ ...notice, username: '' }} />
+                <div className="follow-notification-copy">
+                  <p>
+                    <strong>{notice.display_name}</strong>
+                    {notice.kind === 'comment_reaction'
+                      ? ' reacted to your comment on '
+                      : notice.kind === 'reply'
+                        ? ' replied on '
+                        : ' commented on '}
+                    <b>{notice.workout_name}</b>
+                    <NotificationDate since={notice.since} />
+                  </p>
+                  <p>{notice.body}</p>
+                </div>
+                {notice.reaction && (
+                  <span className="follow-notification-emoji">
+                    {reactionEmoji(notice.reaction)}
+                  </span>
+                )}
+              </li>
+            ))}
             {items?.requests.map((person) => (
               <li key={`request-${person.id}`}>
                 <ProfileAvatar className="profile-avatar" user={{ ...person, username: '' }} />

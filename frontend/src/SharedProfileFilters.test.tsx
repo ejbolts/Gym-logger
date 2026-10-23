@@ -219,7 +219,9 @@ describe('own profile', () => {
     expect(container.textContent).not.toContain('Change password');
     expect(container.textContent).not.toContain('Profile sharing');
     expect(container.querySelector('.profile-account-id')).toBeNull();
-    expect(container.querySelector('.friend-react-button')).toBeNull();
+    expect(
+      container.querySelector('.combined-discussion-button')?.getAttribute('aria-label'),
+    ).toContain('Reactions and comments');
     expect(container.querySelector('.profile-friend-actions')).toBeNull();
     await act(async () => button('Edit profile').click());
     expect(container.querySelector('input[autocomplete="name"]')).not.toBeNull();
@@ -348,12 +350,9 @@ it('shows lifetime time separately from history filters and reacts on a shared w
       .click(),
   );
   expect(react).toHaveBeenCalledWith('first', 'love');
-  expect(container.querySelector('.friend-react-button')?.textContent).toBe('❤️');
+  expect(container.querySelector('.friend-react-button')?.textContent).toBe('❤️ 1 · 0 comments');
   expect(container.querySelector('.friend-react-button')?.getAttribute('aria-label')).toContain(
     'Love',
-  );
-  await act(async () =>
-    container.querySelector<HTMLButtonElement>('.friend-react-button')!.click(),
   );
   await act(async () =>
     [...container.querySelectorAll<HTMLButtonElement>('.friend-react-picker button')]
@@ -363,7 +362,7 @@ it('shows lifetime time separately from history filters and reacts on a shared w
   expect(remove).toHaveBeenCalledWith('first');
   await chooseType('push');
   expect(container.querySelector('.profile-training-time')?.textContent).toContain('4h 33min');
-  expect(container.querySelector('.friend-react-button')).toBeNull();
+  expect(container.querySelector('.combined-discussion-button')).toBeNull();
 });
 
 it('shows the viewed account calendar, toggles its legend and selects a day without truncating stats', async () => {

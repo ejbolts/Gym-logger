@@ -248,6 +248,66 @@ class WorkoutReaction(Base):
     notification_seen: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
 
+class WorkoutComment(Base):
+    __tablename__ = "workout_comments"
+    __table_args__ = (CheckConstraint("length(body) BETWEEN 1 AND 280", name="comment_length"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    workout_id: Mapped[str] = mapped_column(
+        ForeignKey("training_workouts.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    parent_id: Mapped[str | None] = mapped_column(
+        ForeignKey("workout_comments.id", ondelete="CASCADE")
+    )
+    reply_to_id: Mapped[str | None] = mapped_column(
+        ForeignKey("workout_comments.id", ondelete="SET NULL")
+    )
+    body: Mapped[str] = mapped_column(String(280))
+    reaction: Mapped[str | None] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class CommentReaction(Base):
+    __tablename__ = "comment_reactions"
+    __table_args__ = (
+        CheckConstraint(
+            "reaction IN ('like', 'love', 'strong', 'fire', 'clap', 'trophy')",
+            name="comment_reaction_known",
+        ),
+    )
+
+    comment_id: Mapped[str] = mapped_column(
+        ForeignKey("workout_comments.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    reaction: Mapped[str] = mapped_column(String(20))
+
+
+class CommentNotification(Base):
+    __tablename__ = "comment_notifications"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    comment_id: Mapped[str] = mapped_column(
+        ForeignKey("workout_comments.id", ondelete="CASCADE"), index=True
+    )
+    recipient_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    actor_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(20))
+    reaction: Mapped[str | None] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+
+
 class ServerSetting(Base):
     """Deployment-wide switches an admin changes at runtime; unset keys fall back to .env."""
 

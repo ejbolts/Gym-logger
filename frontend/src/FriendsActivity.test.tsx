@@ -134,8 +134,8 @@ it("shows each friend's latest session with one reaction button and opens their 
 
   const rows = [...host.querySelectorAll('.friend-activity-list li')];
   expect(rows.map((row) => row.textContent)).toEqual([
-    'JJordan PreviewStrengthLeg day · 1h 11minToday · 2 sets❤️👍3',
-    'AAlex PreviewCardioIncline walk · 35minYesterday · 2.8 km',
+    'JJordan PreviewStrengthLeg day · 1h 11minToday · 2 sets❤️👍 3 · 0 comments',
+    'AAlex PreviewCardioIncline walk · 35minYesterday · 2.8 km · 0 comments',
   ]);
   // One reaction button per friend rather than every reaction.
   expect(host.querySelectorAll('.friend-react-button')).toHaveLength(2);
@@ -167,14 +167,12 @@ it('reacts from the picker, shows your reaction, and removes it when chosen agai
   });
   await act(async () => button('Love').click());
   expect(react).toHaveBeenCalledWith('w2', 'love');
-  expect(host.querySelector('.friend-react-picker')).toBeNull();
+  expect(host.querySelector('.workout-comments')).toBeTruthy();
   const mine = button('Your reaction to Alex Preview’s Incline walk: Love. Change reaction');
-  expect(mine.textContent).toBe('❤️');
+  expect(mine.textContent).toBe('❤️ 1 · 0 comments');
   expect(document.activeElement).toBe(mine);
 
-  await act(async () => mine.click());
   expect(button('Love').getAttribute('aria-pressed')).toBe('true');
-  expect(document.activeElement).toBe(button('Love'));
   feed.mockResolvedValue({ items: [alex], friends: 1 });
   await act(async () => button('Love').click());
   expect(remove).toHaveBeenCalledWith('w2');
