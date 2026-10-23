@@ -252,6 +252,23 @@ describe('rest timer start', () => {
     ).toBeNull();
   });
 
+  it('does not reuse the previous rest when the same save explicitly removes it', () => {
+    expect(
+      restTimerSecondsAfterSetUpdate(
+        'strength',
+        { completed: false, rest_seconds: 180 },
+        { completed: true, rest_seconds: null },
+      ),
+    ).toBeNull();
+    expect(
+      restTimerSecondsAfterSetUpdate(
+        'strength',
+        { completed: false, rest_seconds: 180 },
+        { completed: true, rest_seconds: 0 },
+      ),
+    ).toBeNull();
+  });
+
   it('does not start for ordinary edits or a missing rest duration', () => {
     expect(
       restTimerSecondsAfterSetUpdate('strength', { completed: false, rest_seconds: 180 }, {}),

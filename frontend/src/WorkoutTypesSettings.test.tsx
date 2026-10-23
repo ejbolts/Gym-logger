@@ -97,6 +97,20 @@ afterEach(async () => {
 });
 
 describe('Workout type settings', () => {
+  it('can fold the editor without discarding an unfinished workout type', async () => {
+    await act(async () =>
+      root.render(<WorkoutTypesSettings collapsible types={[upper]} onTypesChange={changed} />),
+    );
+    const toggle = container.querySelector<HTMLButtonElement>('.collapsible-toggle')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    await act(async () => toggle.click());
+    await enterName('Recovery');
+    await act(async () => toggle.click());
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelector<HTMLInputElement>('input[type="text"]')!.value).toBe('Recovery');
+    expect(api.createWorkoutType).not.toHaveBeenCalled();
+  });
   it('adds Arms, Legs, Limbs and Torso as their own types without replacing the existing catalog', async () => {
     await act(async () => root.render(<Harness />));
     for (const name of ['Arms', 'Legs', 'Limbs', 'Torso']) {

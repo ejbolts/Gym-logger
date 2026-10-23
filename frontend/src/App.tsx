@@ -144,7 +144,13 @@ import {
   progressPointsForChart,
   type ProgressMetric,
 } from './progressChart';
-import { restTimerPreferenceEnabled, saveRestTimerPreference } from './restTimerPreference';
+import {
+  restTimerPreferenceEnabled,
+  saveRestTimerPreference,
+  restTimesPreferenceEnabled,
+  saveRestTimesPreference,
+} from './restTimerPreference';
+import { RestTimeSelect } from './RestTimeSelect';
 import { cancelRestTimerPushSchedule, restSecondsLeft } from './restTimer';
 import {
   disablePhonePushNotifications,
@@ -237,7 +243,7 @@ import { ProfileAccountId } from './ProfileAccountId';
 import { SharedProfileScreen, type SharedWorkoutListProps } from './SharedProfiles';
 import { FriendsActivityCard } from './FriendsActivity';
 import { SocialScreen } from './SocialScreen';
-import { SettingsSearch } from './SettingsSearch';
+import { SettingsHub } from './SettingsHub';
 import { ColourThemePanel } from './ColourThemePanel';
 import {
   SettingsNavigationContext,
@@ -261,7 +267,6 @@ import {
   completeRemainingSets,
   createSuggestedWorkoutSet,
   createWorkoutSet,
-  DEFAULT_REST_SECONDS,
   isCompletedWorkingSet,
   latestExerciseSets,
   restTimerSecondsAfterSetUpdate,
@@ -302,7 +307,6 @@ const categoryNames: Record<WorkoutCategory, string> = {
   other: 'Other',
 };
 
-const restOptions = [60, 90, 120, 150, 180, 210, 240, 270, 300];
 const HISTORY_PAGE_SIZE = 8;
 
 /** Each exercise's history before `before`, the start of the window loaded at the time. */
@@ -599,6 +603,7 @@ function AppContent() {
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [completionRecords, setCompletionRecords] = useState<PersonalRecord[]>([]);
   const [restTimerEnabled, setRestTimerEnabled] = useState(restTimerPreferenceEnabled);
+  const [showRestTimes, setShowRestTimes] = useState(restTimesPreferenceEnabled);
   // The live workout's rest end, so the tab bar can count it down away from the workout.
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [reduceMotion, setReduceMotion] = useState(reduceMotionPreference);
@@ -1211,6 +1216,11 @@ function AppContent() {
     setRestTimerEnabled(enabled);
   }
 
+  function updateRestTimesPreference(enabled: boolean) {
+    saveRestTimesPreference(enabled);
+    setShowRestTimes(enabled);
+  }
+
   function openSetting(destination: SettingsDestination) {
     setSettingsJump((current) => ({ destination, serial: (current?.serial ?? 0) + 1 }));
     setTab(destination.page);
@@ -1229,7 +1239,7 @@ function AppContent() {
 
   const nestedHeader =
     tab === 'settings'
-      ? { title: 'Settings', subtitle: 'Timers • notifications • data' }
+      ? { title: 'Settings', subtitle: 'Preferences • privacy • data' }
       : tab === 'videos' && videosAllowed
         ? { title: 'Videos', subtitle: 'Workout clips • uploads' }
         : tab === 'profile'
@@ -1569,6 +1579,7 @@ function AppContent() {
                         historicalWorkouts={workouts}
                         historyBaselines={historyBaselines}
                         restTimerEnabled={restTimerEnabled}
+                        showRestTimes={showRestTimes}
                         categoryColors={workoutTypeColors}
                         onExerciseHistory={(exerciseId) =>
                           openHistorySection('progress', exerciseId)
@@ -1686,11 +1697,14 @@ function AppContent() {
             <CachedTabPanel active={tab === 'settings'}>
               <SettingsScreen
                 active={tab === 'settings'}
+                guideActive={prompt === 'tour'}
                 workouts={workouts}
                 historySummary={historySummary}
                 measurements={measurements}
                 restTimerEnabled={restTimerEnabled}
                 onRestTimerEnabledChange={updateRestTimerPreference}
+                showRestTimes={showRestTimes}
+                onShowRestTimesChange={updateRestTimesPreference}
                 reduceMotion={reduceMotion}
                 onReduceMotionChange={updateReduceMotion}
                 bodyTrendPreference={bodyTrendPreference}
@@ -2308,6 +2322,7 @@ function WorkoutLogger({
   historicalWorkouts,
   historyBaselines = null,
   restTimerEnabled,
+  showRestTimes,
   onExerciseHistory,
   onExerciseFavorite,
   onCreateExercise,
@@ -2335,6 +2350,7 @@ function WorkoutLogger({
   historicalWorkouts: TrackedWorkout[];
   historyBaselines?: HistoryBaselines | null;
   restTimerEnabled: boolean;
+  showRestTimes: boolean;
   onExerciseHistory: (exerciseId: string) => void;
   onExerciseFavorite: (exerciseId: string, isFavorite: boolean) => Promise<void>;
   onCreateExercise: (input: ExerciseCreateInput) => Promise<Exercise>;
@@ -2693,6 +2709,7 @@ function WorkoutLogger({
   }, [restLeft]);
 
   const [undoDeletion, setUndoDeletion] = useState<{
+    kind: 'set' | 'rest';
     movementKey: string;
     set: DraftSet;
     index: number;
@@ -2882,14 +2899,29 @@ function WorkoutLogger({
           : item,
       ),
     );
-    setUndoDeletion({ movementKey: movement.key, set: deleted, index });
+    setUndoDeletion({ kind: 'set', movementKey: movement.key, set: deleted, index });
   }
 
-  function undoSetDeletion() {
+  function removeRestTime(movement: DraftMovement, item: DraftSet) {
+    if (!item.rest_seconds) return;
+    updateSet(movement.key, item.key, { rest_seconds: null });
+  }
+
+  function undoLastDeletion() {
     if (!undoDeletion) return;
     setMovements((current) =>
       current.map((movement) => {
         if (movement.key !== undoDeletion.movementKey) return movement;
+        if (undoDeletion.kind === 'rest') {
+          return {
+            ...movement,
+            sets: movement.sets.map((item) =>
+              item.key === undoDeletion.set.key
+                ? { ...item, rest_seconds: undoDeletion.set.rest_seconds }
+                : item,
+            ),
+          };
+        }
         const sets = [...movement.sets];
         sets.splice(undoDeletion.index, 0, undoDeletion.set);
         return { ...movement, sets };
@@ -3007,6 +3039,14 @@ function WorkoutLogger({
   function updateSet(movementKey: string, setKey: string, update: Partial<DraftSet>) {
     const movement = movements.find((item) => item.key === movementKey);
     const currentSet = movement?.sets.find((item) => item.key === setKey);
+    if (movement && currentSet?.rest_seconds && update.rest_seconds === null) {
+      setUndoDeletion({
+        kind: 'rest',
+        movementKey,
+        set: currentSet,
+        index: movement.sets.findIndex((item) => item.key === setKey),
+      });
+    }
     const restSeconds =
       movement && currentSet
         ? restTimerSecondsAfterSetUpdate(movement.exercise.kind, currentSet, update)
@@ -3553,6 +3593,7 @@ function WorkoutLogger({
             <MovementCard
               key={movement.key}
               movement={movement}
+              showRestTimes={showRestTimes}
               number={movementIndex + 1}
               prBadges={prBadges.get(movement.key) ?? new Map()}
               supersetLabel={
@@ -3600,6 +3641,7 @@ function WorkoutLogger({
               canMoveDown={movementIndex < movements.length - 1}
               onMoveSet={(fromIndex, toIndex) => moveSet(movement.key, fromIndex, toIndex)}
               onDeleteSet={(index) => deleteSet(movement, index)}
+              onRemoveRestTime={(item) => removeRestTime(movement, item)}
               onSuperset={(button) => openSupersetPicker(movement.key, button)}
               onMachinePhotos={(machinePhotoIds) =>
                 setMovements((current) =>
@@ -3631,15 +3673,15 @@ function WorkoutLogger({
               role="status"
               style={{ '--undo-toast-duration': `${UNDO_TOAST_MS}ms` } as CSSProperties}
             >
-              <span>Set deleted</span>
-              <button className="undo-toast-action" type="button" onClick={undoSetDeletion}>
+              <span>{undoDeletion.kind === 'rest' ? 'Rest time removed' : 'Set deleted'}</span>
+              <button className="undo-toast-action" type="button" onClick={undoLastDeletion}>
                 Undo
               </button>
               <button
                 className="undo-toast-close"
                 type="button"
                 onClick={() => setUndoDeletion(null)}
-                aria-label="Dismiss set deletion notification"
+                aria-label="Dismiss deletion notification"
               >
                 <Icon name="close" />
               </button>
@@ -4077,6 +4119,7 @@ function ExerciseIcon({ exercise, number }: { exercise: Exercise; number?: numbe
 
 function MovementCard({
   movement,
+  showRestTimes,
   number,
   history,
   onExerciseHistory,
@@ -4096,9 +4139,11 @@ function MovementCard({
   canMoveDown,
   onMoveSet,
   onDeleteSet,
+  onRemoveRestTime,
   onSuperset,
 }: {
   movement: DraftMovement;
+  showRestTimes: boolean;
   number: number;
   history: ExerciseHistoryEntry[];
   onExerciseHistory: () => void;
@@ -4118,6 +4163,7 @@ function MovementCard({
   canMoveDown: boolean;
   onMoveSet: (fromIndex: number, toIndex: number) => void;
   onDeleteSet: (index: number) => void;
+  onRemoveRestTime: (item: DraftSet) => void;
   onSuperset: (button: HTMLButtonElement) => void;
 }) {
   const cardio = movement.exercise.kind === 'cardio';
@@ -4131,6 +4177,7 @@ function MovementCard({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [openSetActionsKey, setOpenSetActionsKey] = useState<string | null>(null);
   const [openOverrides, setOpenOverrides] = useState<Readonly<Record<string, boolean>>>({});
+  const [restEdits, setRestEdits] = useState<Readonly<Record<string, number>>>({});
   const [typeMenuSetKey, setTypeMenuSetKey] = useState<string | null>(null);
   const [draggingSetKey, setDraggingSetKey] = useState<string | null>(null);
   const [dragTargetSetKey, setDragTargetSetKey] = useState<string | null>(null);
@@ -4218,15 +4265,44 @@ function MovementCard({
   }
 
   function completeSet(item: DraftSet) {
-    onToggleSet(item);
+    onUpdateSet(item.key, { completed: !item.completed, rest_seconds: item.rest_seconds });
+    clearRestEdit(item.key);
     setOpenOverride(item.key, null);
+  }
+
+  function clearRestEdit(setKey: string) {
+    setRestEdits((current) => {
+      const next = { ...current };
+      delete next[setKey];
+      return next;
+    });
+  }
+
+  function editedRestSeconds(item: DraftSet) {
+    const seconds = restEdits[item.key] ?? item.rest_seconds ?? 0;
+    return seconds > 0 ? seconds : null;
+  }
+
+  function removeRest(item: DraftSet) {
+    clearRestEdit(item.key);
+    onRemoveRestTime(item);
   }
 
   /** The tick logs an open set and folds it away; on a folded logged set it unticks and opens it. */
   function checkSet(item: DraftSet, index: number) {
     const finishingEdit = item.completed && isSetOpen(item);
     if (item.completed) setOpenOverride(item.key, null);
-    if (!finishingEdit) requestSetCompletion(item, index);
+    if (finishingEdit) {
+      if (!cardio) onUpdateSet(item.key, { rest_seconds: editedRestSeconds(item) });
+      clearRestEdit(item.key);
+    } else {
+      requestSetCompletion(
+        !cardio && !item.completed && isSetOpen(item)
+          ? { ...item, rest_seconds: editedRestSeconds(item) }
+          : item,
+        index,
+      );
+    }
   }
 
   function requestSetCompletion(item: DraftSet, index: number) {
@@ -4626,6 +4702,18 @@ function MovementCard({
         {renderRowCompleteButton(item, index)}
         {renderCompletedSetActions(item, index)}
         <div className="set-editor-extras">
+          {!cardio && (
+            <label className="set-editor-rest">
+              Rest after set
+              <RestTimeSelect
+                seconds={restEdits[item.key] ?? item.rest_seconds ?? 0}
+                label={`Rest time for set ${index + 1}`}
+                onChange={(seconds) =>
+                  setRestEdits((current) => ({ ...current, [item.key]: seconds }))
+                }
+              />
+            </label>
+          )}
           {cardio && (
             <div className="set-editor-metrics">
               <label>
@@ -4981,27 +5069,29 @@ function MovementCard({
                   {open ? renderSetEditor(item, index) : renderSetSummary(item, index)}
                 </div>
               </SwipeToDeleteSetRow>
-              {!cardio && (
-                <div className="rest-between" data-flip-key={`${item.key}:rest`}>
-                  <i />
-                  <label>
-                    <select
-                      value={item.rest_seconds ?? DEFAULT_REST_SECONDS}
-                      onChange={(event) =>
-                        onUpdateSet(item.key, { rest_seconds: Number(event.target.value) })
-                      }
-                      aria-label={`Rest after set ${index + 1}`}
-                    >
-                      {restOptions.map((seconds) => (
-                        <option key={seconds} value={seconds}>
-                          {formatDuration(seconds)}
-                        </option>
-                      ))}
-                    </select>
-                    <span>rest</span>
-                  </label>
-                  <i />
-                </div>
+              {!cardio && showRestTimes && (item.rest_seconds ?? 0) > 0 && (
+                <SwipeToDeleteSetRow
+                  flipKey={`${item.key}:rest`}
+                  label={`rest after set ${index + 1}`}
+                  onDelete={() => removeRest(item)}
+                >
+                  <div className="rest-between">
+                    <i />
+                    <label>
+                      <RestTimeSelect
+                        seconds={item.rest_seconds!}
+                        label={`Rest after set ${index + 1}`}
+                        onChange={(seconds) => {
+                          clearRestEdit(item.key);
+                          if (seconds === 0) removeRest(item);
+                          else onUpdateSet(item.key, { rest_seconds: seconds });
+                        }}
+                      />
+                      <span>rest</span>
+                    </label>
+                    <i />
+                  </div>
+                </SwipeToDeleteSetRow>
               )}
             </Fragment>
           );
@@ -6536,11 +6626,14 @@ export function ProgressScreen({
 
 function SettingsScreen({
   active,
+  guideActive,
   workouts,
   historySummary,
   measurements,
   restTimerEnabled,
   onRestTimerEnabledChange,
+  showRestTimes,
+  onShowRestTimesChange,
   reduceMotion,
   onReduceMotionChange,
   bodyTrendPreference,
@@ -6561,6 +6654,7 @@ function SettingsScreen({
   onOpenAppGuide,
 }: {
   active: boolean;
+  guideActive: boolean;
   releaseVersion: string;
   onOpenReleaseNotes: () => void;
   updateCheck: ReactNode;
@@ -6576,6 +6670,8 @@ function SettingsScreen({
   measurements: BodyMeasurement[];
   restTimerEnabled: boolean;
   onRestTimerEnabledChange: (enabled: boolean) => void;
+  showRestTimes: boolean;
+  onShowRestTimesChange: (enabled: boolean) => void;
   reduceMotion: boolean;
   onReduceMotionChange: (reduced: boolean) => void;
   bodyTrendPreference: BodyTrendPreference;
@@ -6587,10 +6683,11 @@ function SettingsScreen({
   onDataChange: () => Promise<void>;
 }) {
   useSettingsPageJump('settings', active);
+  const [returningFromYouTube] = useState(() =>
+    new URLSearchParams(window.location.search).has('youtube'),
+  );
   const workoutDataSection = useRef<HTMLElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const [workoutImportSource, setWorkoutImportSource] =
-    useState<WorkoutImportOptions['source']>('gym');
   const [notificationStatus, setNotificationStatus] = useState<RestAlertStatus>(() =>
     pushNotificationsSupported() ? 'checking' : 'unsupported',
   );
@@ -6713,402 +6810,540 @@ function SettingsScreen({
 
   return (
     <section className="settings-screen content-page" data-settings-page="settings">
-      <SettingsSearch includeProfile={account !== null} />
-      <ColourThemePanel />
-      <section className="settings-panel panel" aria-labelledby="release-settings-title">
-        <header>
-          <div>
-            <p className="section-kicker">VERSION {releaseVersion}</p>
-            <h2 id="release-settings-title">What's new</h2>
-          </div>
-          <button
-            type="button"
-            className="profile-secondary release-settings-action"
-            onClick={onOpenReleaseNotes}
-          >
-            View changes
-          </button>
-        </header>
-        <p>Read the latest release notes and see what's changed in Gym Logger.</p>
-        {updateCheck}
-      </section>
-      <section className="settings-panel panel" aria-labelledby="app-guide-settings-title">
-        <header>
-          <div>
-            <p className="section-kicker">GET STARTED</p>
-            <h2 id="app-guide-settings-title">App guide</h2>
-          </div>
-          <button
-            type="button"
-            className="profile-secondary release-settings-action"
-            onClick={onOpenAppGuide}
-          >
-            Replay guide
-          </button>
-        </header>
-        <p>Walk through the features again or find out how to contribute.</p>
-        <div className="guide-contribute">
-          <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
-            GitHub repository <Icon name="external" />
-          </a>
-          <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
-            How to contribute <Icon name="external" />
-          </a>
-        </div>
-      </section>
-      <section className="settings-panel panel" aria-labelledby="feedback-settings-title">
-        <header>
-          <div>
-            <p className="section-kicker">YOUR IDEAS</p>
-            <h2 id="feedback-settings-title">Feedback &amp; feature requests</h2>
-          </div>
-        </header>
-        <p>Tell us what could be better, report a problem or suggest a feature.</p>
-        <FeedbackForm allowAnother />
-      </section>
-      <section
-        className="settings-panel panel"
-        aria-labelledby="home-screen-settings-title"
-        data-guide-target="installation"
-      >
-        <header>
-          <div>
-            <p className="section-kicker">PHONE APP</p>
-            <h2 id="home-screen-settings-title">Add to Home Screen</h2>
-          </div>
-          <button
-            type="button"
-            className="profile-secondary release-settings-action"
-            onClick={onOpenHomeScreenGuide}
-          >
-            Show steps
-          </button>
-        </header>
-        <p>
-          {runningAsInstalledApp()
-            ? 'You are already using the installed app. View the steps to set up another browser or device.'
-            : 'Open Gym Logger full screen from an icon on your phone, like an app.'}
-        </p>
-      </section>
-      {account && (
-        <section className="settings-panel panel" aria-labelledby="account-settings-title">
-          <header>
-            <div>
-              <p className="section-kicker">ACCOUNT</p>
-              <h2 id="account-settings-title">{account.display_name}</h2>
-            </div>
-          </header>
-          <p>{account.username}</p>
-          <ProfileAccountId accountId={account.id} />
-          <button type="button" className="profile-secondary" onClick={onOpenProfile}>
-            View profile
-          </button>
-        </section>
-      )}
-      {account && <AccountSettings openFeedback={openFeedback} onOpenAdmin={onOpenAdmin} />}
-      {onOpenAdmin && (
-        <section className="settings-panel panel" aria-labelledby="admin-settings-title">
-          <header>
-            <div>
-              <p className="section-kicker">ADMIN</p>
-              <h2 id="admin-settings-title">Admin console</h2>
-            </div>
-          </header>
-          <p>Manage accounts, turn video uploads and sign-ups on or off, and check the server.</p>
-          <button type="button" className="profile-secondary" onClick={onOpenAdmin}>
-            Open admin console
-          </button>
-        </section>
-      )}
-      <YouTubeConnectionPanel canConnect={canUploadVideos(account)} />
-      <section className="settings-panel panel" aria-labelledby="notification-settings-title">
-        <header>
-          <div>
-            <p className="section-kicker">ALERTS</p>
-            <h2 id="notification-settings-title">Timers &amp; notifications</h2>
-          </div>
-        </header>
-        <p>Control workout timers and alerts from the installed PWA.</p>
-        <div className="notification-setting-row">
-          <div>
-            <strong>Rest timer</strong>
-            <small>
-              {restTimerEnabled
-                ? 'Starts automatically after a completed set'
-                : 'Automatic rest countdowns are disabled'}
-            </small>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-label="Rest timer"
-            aria-checked={restTimerEnabled}
-            className={restTimerEnabled ? 'is-on' : ''}
-            onClick={() => onRestTimerEnabledChange(!restTimerEnabled)}
-          >
-            <span />
-            {restTimerEnabled ? 'On' : 'Off'}
-          </button>
-        </div>
-        <div className="notification-setting-row">
-          <div>
-            <strong>Phone alerts</strong>
-            <small>
-              {notificationStatus === 'enabled'
-                ? 'Rest timers, 2-hour workout reminders, and completed-video alerts are enabled'
+      <SettingsHub
+        active={active}
+        includeAccount={account !== null}
+        accountName={account?.display_name}
+        onOpenProfile={onOpenProfile}
+        revealData={csvGuideOpen}
+        revealHelp={active && guideActive}
+        initialGroup={returningFromYouTube ? 'data' : null}
+        groups={[
+          {
+            id: 'training',
+            icon: 'timer',
+            description: 'Units, weekly goals, rest timers and workout types.',
+            summary: sharedPreferences.preferences
+              ? `${sharedPreferences.preferences.preferred_weight_unit} · ${sharedPreferences.preferences.week_start[0].toUpperCase() + sharedPreferences.preferences.week_start.slice(1)} start · Rest timer ${restTimerEnabled ? 'on' : 'off'}`
+              : 'Set your training defaults',
+            content: (
+              <>
+                <section
+                  className="settings-panel panel"
+                  aria-labelledby="training-preferences-title"
+                >
+                  <header>
+                    <div>
+                      <p className="section-kicker">TRAINING</p>
+                      <h2 id="training-preferences-title">Units &amp; weekly goals</h2>
+                    </div>
+                  </header>
+                  <p>Set your units, week start and muscle-set goal. Saved to your account.</p>
+                  {trainingPreferences && (
+                    <div className="training-preferences-grid">
+                      <label>
+                        Weight unit
+                        <select
+                          value={trainingPreferences.preferred_weight_unit}
+                          onChange={(event) => {
+                            setTrainingPreferences({
+                              ...trainingPreferences,
+                              preferred_weight_unit: event.target.value as 'kg' | 'lb',
+                            });
+                            setTrainingPreferencesStatus(null);
+                          }}
+                        >
+                          <option value="kg">Kilograms</option>
+                          <option value="lb">Pounds</option>
+                        </select>
+                      </label>
+                      <label>
+                        Week starts
+                        <select
+                          value={trainingPreferences.week_start}
+                          onChange={(event) => {
+                            setTrainingPreferences({
+                              ...trainingPreferences,
+                              week_start: event.target.value as 'monday' | 'sunday' | 'saturday',
+                            });
+                            setTrainingPreferencesStatus(null);
+                          }}
+                        >
+                          <option value="monday">Monday</option>
+                          <option value="sunday">Sunday</option>
+                          <option value="saturday">Saturday</option>
+                        </select>
+                      </label>
+                      <label>
+                        Weekly sets per muscle
+                        <input
+                          type="number"
+                          min="1"
+                          max="1000"
+                          step="1"
+                          value={trainingPreferences.weekly_muscle_set_goal || ''}
+                          aria-describedby="muscle-set-goal-help"
+                          onChange={(event) => {
+                            setTrainingPreferences({
+                              ...trainingPreferences,
+                              weekly_muscle_set_goal: Number(event.target.value),
+                            });
+                            setTrainingPreferencesStatus(null);
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={savingTrainingPreferences}
+                        onClick={() => void saveTrainingPreferences()}
+                      >
+                        {savingTrainingPreferences ? 'Saving…' : 'Save preferences'}
+                      </button>
+                    </div>
+                  )}
+                  <p id="muscle-set-goal-help">
+                    Counts working sets, excluding warmups. Shown as the goal on Home’s Sets per
+                    muscle bars.
+                  </p>
+                  {trainingPreferencesStatus && (
+                    <p className="training-preference-status" role="status">
+                      {trainingPreferencesStatus}
+                    </p>
+                  )}
+                  {trainingPreferencesError && (
+                    <p className="inline-error" role="alert">
+                      {trainingPreferencesError}
+                    </p>
+                  )}
+                </section>
+
+                <section className="settings-panel panel" aria-labelledby="rest-settings-title">
+                  <header>
+                    <h2 id="rest-settings-title">Between sets</h2>
+                  </header>
+                  <div className="notification-setting-row">
+                    <div>
+                      <strong>Rest timer</strong>
+                      <small>
+                        {restTimerEnabled
+                          ? 'Starts automatically after a completed set'
+                          : 'Automatic rest countdowns are disabled'}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Rest timer"
+                      aria-checked={restTimerEnabled}
+                      className={restTimerEnabled ? 'is-on' : ''}
+                      onClick={() => onRestTimerEnabledChange(!restTimerEnabled)}
+                    >
+                      <span />
+                      {restTimerEnabled ? 'On' : 'Off'}
+                    </button>
+                  </div>
+                  <div className="notification-setting-row">
+                    <div>
+                      <strong>Show rest times</strong>
+                      <small>
+                        {showRestTimes
+                          ? 'Display rest times between sets'
+                          : 'Rest times between sets are hidden'}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Show rest times"
+                      aria-checked={showRestTimes}
+                      className={showRestTimes ? 'is-on' : ''}
+                      onClick={() => onShowRestTimesChange(!showRestTimes)}
+                    >
+                      <span />
+                      {showRestTimes ? 'On' : 'Off'}
+                    </button>
+                  </div>
+                </section>
+                <WorkoutTypesSettings
+                  collapsible
+                  types={workoutTypes.types}
+                  onTypesChange={workoutTypes.applySaved}
+                  loading={workoutTypes.loading}
+                  error={workoutTypes.error}
+                  onRetry={() => void workoutTypes.reload()}
+                />
+
+                <section className="settings-panel panel" aria-labelledby="bodyweight-trend-title">
+                  <header>
+                    <div>
+                      <p className="section-kicker">BODYWEIGHT</p>
+                      <h2 id="bodyweight-trend-title">Bodyweight chart</h2>
+                    </div>
+                  </header>
+                  <p>Set the bodyweight chart shown in Body. Saved on this device.</p>
+                  <div className="body-trend-default-fields">
+                    <label>
+                      Default statistic
+                      <select
+                        aria-label="Default bodyweight trend statistic"
+                        value={bodyTrendPreference.statistic}
+                        onChange={(event) =>
+                          onBodyTrendPreferenceChange({
+                            ...bodyTrendPreference,
+                            statistic: event.target.value as BodyTrendStatistic,
+                          })
+                        }
+                      >
+                        <option value="average">Average</option>
+                        <option value="median">Median</option>
+                      </select>
+                    </label>
+                    <label>
+                      Default duration
+                      <select
+                        aria-label="Default bodyweight trend duration"
+                        value={bodyTrendPreference.duration}
+                        onChange={(event) =>
+                          onBodyTrendPreferenceChange({
+                            ...bodyTrendPreference,
+                            duration: event.target.value as BodyTrendDuration,
+                          })
+                        }
+                      >
+                        {BODY_TREND_DURATION_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </section>
+              </>
+            ),
+          },
+          {
+            id: 'appearance',
+            icon: 'sun',
+            description: 'Light or dark, accent colours and reduced motion.',
+            summary:
+              reduceMotion || systemPrefersReducedMotion()
+                ? 'Reduced motion on'
+                : 'Full animations',
+            content: (
+              <>
+                <ColourThemePanel />
+                <section className="settings-panel panel" aria-labelledby="motion-settings-title">
+                  <header>
+                    <div>
+                      <p className="section-kicker">MOTION</p>
+                      <h2 id="motion-settings-title">Animations</h2>
+                    </div>
+                  </header>
+                  <div className="notification-setting-row">
+                    <div>
+                      <strong>Reduce animations</strong>
+                      <small>
+                        {reduceMotion
+                          ? 'Screens, sheets and charts change without sliding or fading'
+                          : systemPrefersReducedMotion()
+                            ? 'Your phone already asks for reduced motion, so the app follows it'
+                            : 'Screens slide, sheets glide and charts draw in'}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Reduce animations"
+                      aria-checked={reduceMotion}
+                      className={reduceMotion ? 'is-on' : ''}
+                      onClick={() => onReduceMotionChange(!reduceMotion)}
+                    >
+                      <span />
+                      {reduceMotion ? 'On' : 'Off'}
+                    </button>
+                  </div>
+                </section>
+              </>
+            ),
+          },
+          {
+            id: 'notifications',
+            icon: 'bell',
+            description: 'Rest alerts, workout reminders and video updates.',
+            summary:
+              notificationStatus === 'enabled'
+                ? 'Phone alerts on'
                 : notificationStatus === 'unsupported'
-                  ? 'Install the PWA to enable notifications'
+                  ? 'Check device support'
                   : notificationStatus === 'blocked'
-                    ? 'Blocked in phone settings'
-                    : 'Rest timers, 2-hour workout reminders, and completed-video alerts are disabled'}
-            </small>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={notificationStatus === 'enabled'}
-            className={notificationStatus === 'enabled' ? 'is-on' : ''}
-            disabled={
-              notificationStatus === 'checking' ||
-              notificationStatus === 'enabling' ||
-              notificationStatus === 'unsupported'
-            }
-            onClick={() => void togglePhoneNotifications()}
-          >
-            <span />
-            {notificationStatus === 'enabled' ? 'On' : 'Off'}
-          </button>
-        </div>
-        {notificationMessage && (
-          <p className="notification-setting-status" role="status">
-            {notificationMessage}
-          </p>
-        )}
-        {notificationError && (
-          <p className="inline-error" role="alert">
-            {notificationError}
-          </p>
-        )}
-      </section>
+                    ? 'Blocked in device settings'
+                    : notificationStatus === 'checking'
+                      ? 'Checking device…'
+                      : 'Phone alerts off',
+            content: (
+              <>
+                <section
+                  className="settings-panel panel"
+                  aria-labelledby="notification-settings-title"
+                >
+                  <header>
+                    <div>
+                      <p className="section-kicker">ALERTS</p>
+                      <h2 id="notification-settings-title">Phone alerts</h2>
+                    </div>
+                  </header>
+                  <p>Manage notifications on this device.</p>
+                  <div className="notification-setting-row">
+                    <div>
+                      <strong>Phone alerts</strong>
+                      <small>
+                        {notificationStatus === 'enabled'
+                          ? 'Rest timers, 2-hour workout reminders, and completed-video alerts are enabled'
+                          : notificationStatus === 'unsupported'
+                            ? 'Use an installed app and a supported browser to enable notifications'
+                            : notificationStatus === 'blocked'
+                              ? 'Blocked in phone settings'
+                              : 'Rest timers, 2-hour workout reminders, and completed-video alerts are disabled'}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Phone alerts"
+                      aria-checked={notificationStatus === 'enabled'}
+                      className={notificationStatus === 'enabled' ? 'is-on' : ''}
+                      disabled={
+                        notificationStatus === 'checking' ||
+                        notificationStatus === 'enabling' ||
+                        notificationStatus === 'unsupported'
+                      }
+                      onClick={() => void togglePhoneNotifications()}
+                    >
+                      <span />
+                      {notificationStatus === 'enabled' ? 'On' : 'Off'}
+                    </button>
+                  </div>
+                  {notificationMessage && (
+                    <p className="notification-setting-status" role="status">
+                      {notificationMessage}
+                    </p>
+                  )}
+                  {notificationError && (
+                    <p className="inline-error" role="alert">
+                      {notificationError}
+                    </p>
+                  )}
+                </section>
 
-      <section className="settings-panel panel" aria-labelledby="training-preferences-title">
-        <header>
-          <div>
-            <p className="section-kicker">TRAINING</p>
-            <h2 id="training-preferences-title">Training preferences</h2>
-          </div>
-        </header>
-        <p>Choose your units, weekly schedule and set goal.</p>
-        {trainingPreferences && (
-          <div className="training-preferences-grid">
-            <label>
-              Weight unit
-              <select
-                value={trainingPreferences.preferred_weight_unit}
-                onChange={(event) => {
-                  setTrainingPreferences({
-                    ...trainingPreferences,
-                    preferred_weight_unit: event.target.value as 'kg' | 'lb',
-                  });
-                  setTrainingPreferencesStatus(null);
-                }}
-              >
-                <option value="kg">Kilograms</option>
-                <option value="lb">Pounds</option>
-              </select>
-            </label>
-            <label>
-              Week starts
-              <select
-                value={trainingPreferences.week_start}
-                onChange={(event) => {
-                  setTrainingPreferences({
-                    ...trainingPreferences,
-                    week_start: event.target.value as 'monday' | 'sunday' | 'saturday',
-                  });
-                  setTrainingPreferencesStatus(null);
-                }}
-              >
-                <option value="monday">Monday</option>
-                <option value="sunday">Sunday</option>
-                <option value="saturday">Saturday</option>
-              </select>
-            </label>
-            <label>
-              Weekly sets per muscle
-              <input
-                type="number"
-                min="1"
-                max="1000"
-                step="1"
-                value={trainingPreferences.weekly_muscle_set_goal || ''}
-                aria-describedby="muscle-set-goal-help"
-                onChange={(event) => {
-                  setTrainingPreferences({
-                    ...trainingPreferences,
-                    weekly_muscle_set_goal: Number(event.target.value),
-                  });
-                  setTrainingPreferencesStatus(null);
-                }}
-              />
-            </label>
-            <button
-              type="button"
-              disabled={savingTrainingPreferences}
-              onClick={() => void saveTrainingPreferences()}
-            >
-              {savingTrainingPreferences ? 'Saving…' : 'Save preferences'}
-            </button>
-          </div>
-        )}
-        <p id="muscle-set-goal-help">
-          Default: 10 working sets per muscle each week. Warmups do not count. The dotted line on
-          Today’s Sets per muscle bars marks this goal.
-        </p>
-        {trainingPreferencesStatus && (
-          <p className="training-preference-status" role="status">
-            {trainingPreferencesStatus}
-          </p>
-        )}
-        {trainingPreferencesError && (
-          <p className="inline-error" role="alert">
-            {trainingPreferencesError}
-          </p>
-        )}
-      </section>
+                <button type="button" className="profile-secondary" onClick={onOpenHomeScreenGuide}>
+                  How to install the app
+                </button>
+              </>
+            ),
+          },
+          ...(account
+            ? [
+                {
+                  id: 'account' as const,
+                  icon: 'user' as const,
+                  description: 'Profile details, sharing, password and sign-in.',
+                  summary: `Signed in as @${account.username}`,
+                  content: (
+                    <>
+                      {account && (
+                        <section
+                          className="settings-panel panel"
+                          aria-labelledby="account-settings-title"
+                        >
+                          <header>
+                            <div>
+                              <p className="section-kicker">ACCOUNT</p>
+                              <h2 id="account-settings-title">{account.display_name}</h2>
+                            </div>
+                          </header>
+                          <p>{account.username}</p>
+                          <ProfileAccountId accountId={account.id} />
+                          <button
+                            type="button"
+                            className="profile-secondary"
+                            onClick={onOpenProfile}
+                          >
+                            View profile
+                          </button>
+                        </section>
+                      )}
+                      <AccountSettings />
+                      <AccountSessionSettings />
+                    </>
+                  ),
+                },
+              ]
+            : []),
+          {
+            id: 'data',
+            icon: 'link',
+            description: 'Import history, export your data and connect YouTube.',
+            summary: 'Workouts, bodyweight & video',
+            content: (
+              <>
+                <section
+                  ref={workoutDataSection}
+                  className="settings-panel panel workout-data-panel"
+                  aria-labelledby="workout-data-title"
+                >
+                  <header>
+                    <div>
+                      <p className="section-kicker">DATA</p>
+                      <h2 id="workout-data-title">Import &amp; export</h2>
+                    </div>
+                  </header>
+                  <p>Bring in workout history and bodyweight, or download a copy of your data.</p>
+                  <button
+                    type="button"
+                    className="profile-secondary workout-data-guide-button"
+                    onClick={() => onCsvGuideOpenChange(true)}
+                  >
+                    Show guide
+                  </button>
+                  <div className="settings-actions data-transfer-actions">
+                    <WorkoutCsvImport
+                      onImport={onImportWorkouts}
+                      guideOpen={csvGuideOpen}
+                      onGuideOpenChange={onCsvGuideOpenChange}
+                    />
+                    <button type="button" onClick={() => setExportOpen(true)}>
+                      ↓ Export data
+                    </button>
+                    {(historySummary?.has_sample_workouts ??
+                      workouts.some((workout) => workout.is_sample)) && (
+                      <InlineConfirmButton
+                        className="sample-clear"
+                        label="Remove sample workouts"
+                        confirmLabel="Confirm removal"
+                        onConfirm={onDeleteSamples}
+                      />
+                    )}
+                  </div>
+                </section>
 
-      <section className="settings-panel panel" aria-labelledby="motion-settings-title">
-        <header>
-          <div>
-            <p className="section-kicker">MOTION</p>
-            <h2 id="motion-settings-title">Animations</h2>
-          </div>
-        </header>
-        <div className="notification-setting-row">
-          <div>
-            <strong>Reduce animations</strong>
-            <small>
-              {reduceMotion
-                ? 'Screens, sheets and charts change without sliding or fading'
-                : systemPrefersReducedMotion()
-                  ? 'Your phone already asks for reduced motion, so the app follows it'
-                  : 'Screens slide, sheets glide and charts draw in'}
-            </small>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-label="Reduce animations"
-            aria-checked={reduceMotion}
-            className={reduceMotion ? 'is-on' : ''}
-            onClick={() => onReduceMotionChange(!reduceMotion)}
-          >
-            <span />
-            {reduceMotion ? 'On' : 'Off'}
-          </button>
-        </div>
-      </section>
-
-      <WorkoutTypesSettings
-        types={workoutTypes.types}
-        onTypesChange={workoutTypes.applySaved}
-        loading={workoutTypes.loading}
-        error={workoutTypes.error}
-        onRetry={() => void workoutTypes.reload()}
+                <YouTubeConnectionPanel canConnect={canUploadVideos(account)} />
+              </>
+            ),
+          },
+          {
+            id: 'help',
+            icon: 'heart',
+            description: 'App guides, installation, updates and feedback.',
+            summary:
+              onOpenAdmin && openFeedback > 0
+                ? `Gym Logger ${releaseVersion} · ${openFeedback} feedback to review`
+                : `Gym Logger ${releaseVersion}`,
+            content: (
+              <>
+                <section
+                  className="settings-panel panel"
+                  aria-labelledby="home-screen-settings-title"
+                  data-guide-target="installation"
+                >
+                  <header>
+                    <div>
+                      <p className="section-kicker">PHONE APP</p>
+                      <h2 id="home-screen-settings-title">Add to Home Screen</h2>
+                    </div>
+                    <button
+                      type="button"
+                      className="profile-secondary release-settings-action"
+                      onClick={onOpenHomeScreenGuide}
+                    >
+                      Show steps
+                    </button>
+                  </header>
+                  <p>
+                    {runningAsInstalledApp()
+                      ? 'You are already using the installed app. View the steps to set up another browser or device.'
+                      : 'Open Gym Logger full screen from an icon on your phone, like an app.'}
+                  </p>
+                </section>
+                <section
+                  className="settings-panel panel"
+                  aria-labelledby="app-guide-settings-title"
+                >
+                  <header>
+                    <div>
+                      <p className="section-kicker">GET STARTED</p>
+                      <h2 id="app-guide-settings-title">App guide</h2>
+                    </div>
+                    <button
+                      type="button"
+                      className="profile-secondary release-settings-action"
+                      onClick={onOpenAppGuide}
+                    >
+                      Replay guide
+                    </button>
+                  </header>
+                  <p>Walk through the features again or find out how to contribute.</p>
+                  <div className="guide-contribute">
+                    <a href={PROJECT_URL} target="_blank" rel="noopener noreferrer">
+                      GitHub repository <Icon name="external" />
+                    </a>
+                    <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
+                      How to contribute <Icon name="external" />
+                    </a>
+                  </div>
+                </section>
+                <section className="settings-panel panel" aria-labelledby="release-settings-title">
+                  <header>
+                    <div>
+                      <p className="section-kicker">VERSION {releaseVersion}</p>
+                      <h2 id="release-settings-title">What's new</h2>
+                    </div>
+                    <button
+                      type="button"
+                      className="profile-secondary release-settings-action"
+                      onClick={onOpenReleaseNotes}
+                    >
+                      View changes
+                    </button>
+                  </header>
+                  <p>Read the latest release notes and see what's changed in Gym Logger.</p>
+                  {updateCheck}
+                </section>
+                <section className="settings-panel panel" aria-labelledby="feedback-settings-title">
+                  <header>
+                    <div>
+                      <p className="section-kicker">YOUR IDEAS</p>
+                      <h2 id="feedback-settings-title">Feedback &amp; feature requests</h2>
+                    </div>
+                  </header>
+                  <p>Tell us what could be better, report a problem or suggest a feature.</p>
+                  <FeedbackForm allowAnother />
+                </section>
+                {onOpenAdmin && (
+                  <section className="settings-panel panel" aria-labelledby="admin-settings-title">
+                    <header>
+                      <div>
+                        <p className="section-kicker">ADMIN</p>
+                        <h2 id="admin-settings-title">Admin console</h2>
+                      </div>
+                    </header>
+                    <p>Manage accounts, video access, sign-ups and server health.</p>
+                    {openFeedback > 0 && (
+                      <p>
+                        {openFeedback} feedback {openFeedback === 1 ? 'message' : 'messages'}{' '}
+                        waiting for review.
+                      </p>
+                    )}
+                    <button type="button" className="profile-secondary" onClick={onOpenAdmin}>
+                      Open admin console
+                    </button>
+                  </section>
+                )}
+              </>
+            ),
+          },
+        ]}
       />
-
-      <section className="settings-panel panel" aria-labelledby="bodyweight-trend-title">
-        <header>
-          <div>
-            <p className="section-kicker">BODYWEIGHT</p>
-            <h2 id="bodyweight-trend-title">Trend defaults</h2>
-          </div>
-        </header>
-        <p>Choose the bodyweight trend shown when you open Measurements.</p>
-        <div className="body-trend-default-fields">
-          <label>
-            Default statistic
-            <select
-              aria-label="Default bodyweight trend statistic"
-              value={bodyTrendPreference.statistic}
-              onChange={(event) =>
-                onBodyTrendPreferenceChange({
-                  ...bodyTrendPreference,
-                  statistic: event.target.value as BodyTrendStatistic,
-                })
-              }
-            >
-              <option value="average">Average</option>
-              <option value="median">Median</option>
-            </select>
-          </label>
-          <label>
-            Default duration
-            <select
-              aria-label="Default bodyweight trend duration"
-              value={bodyTrendPreference.duration}
-              onChange={(event) =>
-                onBodyTrendPreferenceChange({
-                  ...bodyTrendPreference,
-                  duration: event.target.value as BodyTrendDuration,
-                })
-              }
-            >
-              {BODY_TREND_DURATION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section
-        ref={workoutDataSection}
-        className="settings-panel panel workout-data-panel"
-        aria-labelledby="workout-data-title"
-      >
-        <header>
-          <div>
-            <p className="section-kicker">DATA</p>
-            <h2 id="workout-data-title">Workouts &amp; bodyweight</h2>
-          </div>
-        </header>
-        <button
-          type="button"
-          className="profile-secondary workout-data-guide-button"
-          onClick={() => onCsvGuideOpenChange(true)}
-        >
-          Show guide
-        </button>
-        <div
-          className={`settings-actions data-transfer-actions${workoutImportSource !== 'gym' ? ' data-transfer-import-only' : ''}`}
-        >
-          <WorkoutCsvImport
-            onImport={onImportWorkouts}
-            guideOpen={csvGuideOpen}
-            onGuideOpenChange={onCsvGuideOpenChange}
-            onSourceChange={setWorkoutImportSource}
-          />
-          {workoutImportSource === 'gym' && (
-            <button type="button" onClick={() => setExportOpen(true)}>
-              ↓ Export data
-            </button>
-          )}
-          {(historySummary?.has_sample_workouts ??
-            workouts.some((workout) => workout.is_sample)) && (
-            <InlineConfirmButton
-              className="sample-clear"
-              label="Remove sample workouts"
-              confirmLabel="Confirm removal"
-              onConfirm={onDeleteSamples}
-            />
-          )}
-        </div>
-      </section>
-
-      {account && <AccountSessionSettings />}
       {exportOpen && (
         <DataExportDialog
           workoutDates={workoutDates}

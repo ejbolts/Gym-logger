@@ -2,6 +2,7 @@ import { useContext, useId, useState } from 'react';
 import { Icon } from './Icon';
 import {
   searchSettings,
+  SETTINGS_GROUP_LABELS,
   SettingsNavigationContext,
   type SettingsDestination,
 } from './settingsNavigation';
@@ -56,7 +57,13 @@ export function SettingsSearch({ includeProfile = true }: { includeProfile?: boo
                   >
                     <span>
                       <strong>{entry.title}</strong>
-                      <small>{entry.page === 'profile' ? 'Profile' : 'Settings'}</small>
+                      <small>
+                        {entry.page === 'profile'
+                          ? 'Profile'
+                          : entry.group
+                            ? SETTINGS_GROUP_LABELS[entry.group]
+                            : 'Settings'}
+                      </small>
                     </span>
                     <Icon name="chevron-right" />
                   </button>

@@ -1,9 +1,20 @@
 import { createContext, useContext, useEffect, useRef } from 'react';
 
+export const SETTINGS_GROUP_LABELS = {
+  training: 'Training',
+  appearance: 'Appearance',
+  notifications: 'Notifications',
+  account: 'Account & privacy',
+  data: 'Data & connections',
+  help: 'Help & about',
+} as const;
+export type SettingsGroupId = keyof typeof SETTINGS_GROUP_LABELS;
+
 export interface SettingsDestination {
   id: string;
   title: string;
   page: 'settings' | 'profile';
+  group?: SettingsGroupId;
   keywords: string;
   selector: string;
   reveal?: string[];
@@ -14,13 +25,23 @@ export interface SettingsDestination {
 export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   {
     id: 'rest',
+    group: 'training',
     title: 'Rest timer',
     page: 'settings',
     keywords: 'automatic countdown between sets',
     selector: '[aria-label="Rest timer"]',
   },
   {
+    id: 'rest-times',
+    group: 'training',
+    title: 'Show rest times',
+    page: 'settings',
+    keywords: 'hide display between sets rest duration',
+    selector: '[aria-label="Show rest times"]',
+  },
+  {
     id: 'alerts',
+    group: 'notifications',
     title: 'Phone alerts',
     page: 'settings',
     keywords: 'notifications reminders push',
@@ -28,6 +49,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'appearance',
+    group: 'appearance',
     title: 'App theme',
     page: 'settings',
     keywords:
@@ -36,6 +58,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'training',
+    group: 'training',
     title: 'Training preferences',
     page: 'settings',
     keywords:
@@ -44,6 +67,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'motion',
+    group: 'appearance',
     title: 'Animations',
     page: 'settings',
     keywords: 'reduce motion accessibility',
@@ -51,13 +75,16 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'colours',
+    group: 'training',
     title: 'Workout types',
     page: 'settings',
     keywords: 'colour color category calendar legend custom add remove arms legs limbs torso',
     selector: '#workout-types-title',
+    reveal: ['Workout types'],
   },
   {
     id: 'trend',
+    group: 'training',
     title: 'Bodyweight trend defaults',
     page: 'settings',
     keywords: 'body weight average median duration statistic measurements',
@@ -65,13 +92,16 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'workouts',
-    title: 'Workouts & bodyweight',
+    group: 'data',
+    title: 'Import & export',
     page: 'settings',
-    keywords: 'import export csv backup sample workouts body weight measurements check-ins',
+    keywords:
+      'import export csv backup sample workouts bodyweight body weight measurements check-ins',
     selector: '#workout-data-title',
   },
   {
     id: 'youtube',
+    group: 'data',
     title: 'YouTube connection',
     page: 'settings',
     keywords: 'video uploads channel connect disconnect',
@@ -79,6 +109,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'release',
+    group: 'help',
     title: "What's new",
     page: 'settings',
     keywords: 'version updates release changelog changes',
@@ -86,6 +117,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'guide',
+    group: 'help',
     title: 'App guide',
     page: 'settings',
     keywords: 'tour help replay',
@@ -93,6 +125,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'install',
+    group: 'help',
     title: 'Add to Home Screen',
     page: 'settings',
     keywords: 'install phone pwa app icon',
@@ -100,6 +133,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'feedback',
+    group: 'help',
     title: 'Feedback & feature requests',
     page: 'settings',
     keywords: 'suggestion bug report ideas support',
@@ -131,6 +165,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'uuid',
+    group: 'account',
     title: 'Account UUID',
     page: 'settings',
     requiresAccount: true,
@@ -146,6 +181,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'sharing',
+    group: 'account',
     title: 'Profile sharing',
     page: 'settings',
     requiresAccount: true,
@@ -155,6 +191,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'shared-fields',
+    group: 'account',
     title: 'What you share',
     page: 'settings',
     requiresAccount: true,
@@ -164,6 +201,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'password',
+    group: 'account',
     title: 'Change password',
     page: 'settings',
     requiresAccount: true,
@@ -173,6 +211,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'signout',
+    group: 'account',
     title: 'Sign out',
     page: 'settings',
     requiresAccount: true,
@@ -181,6 +220,7 @@ export const SETTINGS_DESTINATIONS: SettingsDestination[] = [
   },
   {
     id: 'delete',
+    group: 'account',
     title: 'Delete account',
     page: 'settings',
     requiresAccount: true,
@@ -245,7 +285,7 @@ export function useSettingsPageJump(page: 'settings' | 'profile', active: boolea
           queued = false;
           const root = document.querySelector(`[data-settings-page="${page}"]`);
           const target = root?.querySelector<HTMLElement>(destination.selector);
-          if (!target || target.closest('.is-collapsed')) return;
+          if (!target || target.closest('.is-collapsed, [hidden]')) return;
           handled.current = serial;
           observer.disconnect();
           clearTimeout(expiry);
@@ -260,7 +300,7 @@ export function useSettingsPageJump(page: 'settings' | 'profile', active: boolea
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['class'],
+      attributeFilter: ['class', 'hidden'],
     });
     queueFocus();
     return () => {

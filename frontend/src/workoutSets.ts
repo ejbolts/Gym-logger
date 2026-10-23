@@ -115,7 +115,7 @@ export function restTimerSecondsAfterSetUpdate(
 ): number | null {
   if (kind === 'cardio' || current.completed || update.completed !== true) return null;
 
-  const seconds = update.rest_seconds ?? current.rest_seconds;
+  const seconds = update.rest_seconds !== undefined ? update.rest_seconds : current.rest_seconds;
   return seconds !== null && seconds > 0 ? seconds : null;
 }
 

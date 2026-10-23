@@ -1,9 +1,10 @@
 {
   "version": "0.10.0",
-  "date": "2026-10-21",
-  "title": "Training in one place, and friends in Social",
-  "summary": "Keep your calendar, sessions, exercise progress and cardio together in Training, with mutual friends in Social. Keep navigating while workouts save, and see saved training changes from your other devices automatically.",
+  "date": "2026-10-23",
+  "title": "Training, friends and settings that make sense",
+  "summary": "Keep training together, catch up with friends in Social, and find your preferences in a reorganized Settings hub with focused sections. Keep navigating while workouts save, and see saved training changes from your other devices automatically.",
   "changes": [
+    "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
     "Finish a workout or save an old session and keep navigating while the save completes. Routine notices and completion PRs no longer lock the page; failed saves retain your entries for retry and respect a screen you have moved to.",
     "Saved workouts, bodyweight, goals and cardio refresh automatically across signed-in devices. The visible app checks every five seconds and when you return or reconnect, refreshes changed data quietly, and preserves active workouts, unsaved edits and filters. In-progress workouts stay on the device where you are logging.",
     "Notifications and Profile now sit beside Settings in the same order on Home, Training, Social and Body. Removed the duplicate blue plus buttons from Training and Body headers; use Start for workouts and Log weigh-in for bodyweight entries.",
@@ -17,7 +18,8 @@
     "Training’s Sessions view starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
     "Quick-start circles are now 52 px across, up from 44 px, with larger icons to make each option easier to see and tap.",
     "Swipe down from the muscle details handle or header to close the sheet. You can also pull down on its content when the list is at the top; short pulls return to place and scrolling still works.",
-    "Removed the redundant Contributing exercises heading and count from muscle details. Done, Escape and tapping outside still close the sheet."
+    "Removed the redundant Contributing exercises heading and count from muscle details. Done, Escape and tapping outside still close the sheet.",
+    "Remove an individual rest by choosing 0:00 (no rest) or swiping left on its row. Undo restores it; removed rests remain removed when editing, saving or reopening the workout. Rest choices include 0:30. Show rest times in Settings hides the rows independently of the automatic rest timer."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#0100",
   "image": {
@@ -25,6 +27,14 @@
     "alt": "Training Sessions retains the calendar above the latest three weeks of synthetic workouts."
   },
   "highlights": [
+    {
+      "title": "Settings, with a place for everything",
+      "description": "Browse six focused sections with saved-value summaries. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f1e3a10d6e6bc1b5242ab2e3e9abe62b840b1968/docs/screenshots/releases/0.10.0-settings-overview.png",
+        "alt": "The redesigned Settings overview with six focused categories, search and synthetic account preferences."
+      }
+    },
     {
       "title": "Keep moving while saves finish",
       "description": "Finish a workout or save an old session, then keep browsing. Saving indicators, completion PRs and routine notices leave navigation and scrolling available. Failed saves keep your entries for retry.",
@@ -103,6 +113,14 @@
       "image": {
         "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/40685e5417b9ec73ff55b104b34a9ef10e611bf2/docs/screenshots/releases/0.9.1-muscle-sheet-swipe.gif",
         "alt": "A short downward pull returns muscle details to place; a longer pull dismisses the sheet, with exercises listed without a redundant heading."
+      }
+    },
+    {
+      "title": "Remove a rest, keep the set",
+      "description": "Choose 0:00 (no rest) or swipe left on a rest row. Undo restores it. Removed rests stay removed when editing, saving or reopening; edit the set to add one back. Show rest times in Settings hides rows independently of the countdown.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/a53226ebff66b5f4c16bbeca293b80911fd9948e/docs/screenshots/releases/0.10.0-rest-removal.gif",
+        "alt": "An isolated sample workout removes a rest with zero time, restores it with Undo, then removes it with a left swipe while retaining both sets."
       }
     }
   ]
