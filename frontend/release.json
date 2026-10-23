@@ -24,10 +24,18 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#0100",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
-    "alt": "Training Sessions retains the calendar above the latest three weeks of synthetic workouts."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/72ae786b6422a3d46c7bef2fa063b2b46b7ef490/docs/screenshots/releases/0.10.0-inline-comments.png",
+    "alt": "An inline workout conversation with nested replies, tappable mentions, comment reactions and the combined activity button, using synthetic accounts."
   },
   "highlights": [
+    {
+      "title": "Talk beside the workout",
+      "description": "Open the combined reactions and comments button for an inline conversation. Add up to 280 characters, reply with tappable @names, and react to comments. Replies and reactions appear in Notifications; existing sharing and block rules still apply.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/72ae786b6422a3d46c7bef2fa063b2b46b7ef490/docs/screenshots/releases/0.10.0-inline-comments.png",
+        "alt": "An inline workout conversation with nested replies, tappable mentions, comment reactions and the combined activity button, using synthetic accounts."
+      }
+    },
     {
       "title": "Settings, with a place for everything",
       "description": "Browse six focused sections with saved-value summaries. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
