@@ -66,7 +66,7 @@ from .tracker_schemas import (
     Zone2WeekRead,
 )
 from .training_metrics import start_of_week
-from .training_time import training_time_totals
+from .training_time import past_year_start, training_time_totals
 from .workout_types import workout_type_catalog
 
 Db = Annotated[Session, Depends(get_db)]
@@ -188,6 +188,7 @@ class SharedProfileRead(SharedProfileSummary):
     goals: SharedGoals | None = None
     cardio_sessions: list[SharedCardioSession] | None = None
     training_time: TrainingTimeRead | None = None
+    training_time_past_year: TrainingTimeRead | None = None
     consistency: SharedConsistencyRead | None = None
 
 
@@ -762,6 +763,9 @@ def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfile
         # Cardio is shared with workouts; its notes still follow the notes choice.
         cardio_sessions=shared_cardio(db, member.id, sharing),
         training_time=training_time_totals(db, member.id),
+        training_time_past_year=training_time_totals(
+            db, member.id, since=past_year_start(date.today())
+        ),
         consistency=shared_consistency(db, member.id),
     )
 
