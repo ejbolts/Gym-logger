@@ -30,6 +30,14 @@
 
 *Find holds friend requests to accept or decline, people search, requests you sent and blocked members. All previews use isolated synthetic accounts and workouts.*
 
+![Notifications showing 15 friend requests on the first page with previous, page-picker and next controls and Page 1 of 2](screenshots/releases/0.10.0-notifications-pagination.png)
+
+*Notifications show 15 at a time. Use the arrows or the page picker to move between pages; the Manage friends link is gone.*
+
+![A friend's shared profile with the Social tab highlighted in the bottom bar](screenshots/releases/0.10.0-shared-profile-social-tab.png)
+
+*Social stays highlighted while you view another member's profile.*
+
 ![Your own training profile with name and photo editing, workout totals and the consistency calendar](screenshots/releases/0.10.0-own-profile.png)
 
 *Your profile uses the same training layout as other members. Edit your name and photo above the calendar, training totals and workouts. A private account can preview its own profile without enabling sharing; the header omits the private-profile reminder.*
@@ -78,7 +86,8 @@
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
 - **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views.
 - **Friends instead of followers:** send one friend request; once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles, and either friend can remove the friendship. Existing follows in either direction became friendships, and waiting follow requests became friend requests. Notifications show requests to you and requests that were accepted.
-- **Social:** a dedicated bottom tab with **Friends** and **Find**. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members, with a badge for waiting requests. Profiles offer **Add friend**, **Accept** or **Decline**, and a menu to cancel a request, remove a friend or block. Home keeps its compact friends card.
+- **Social:** a dedicated bottom tab with **Friends** and **Find**. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members, with a badge for waiting requests. Profiles offer **Add friend**, **Accept** or **Decline**, and a menu to cancel a request, remove a friend or block. The **Social** tab stays highlighted while you view another member's profile. Home keeps its compact friends card.
+- **Notifications:** the inbox shows 15 notifications per page, with previous, next and page-picker controls when there are more. The **Manage friends** link is removed; friend management stays in **Social > Find**.
 - **Your profile:** tapping your avatar opens the same calendar, training totals and workout layout used for other members, with the existing name, username and photo editor. Sharing, account UUID, password, sign-out, account deletion and administrator feedback controls move to **Settings**. Search opens their new locations; choosing sharing from Social goes directly to its settings section. Private accounts can view their own profile while remaining hidden from other members.
 - **Help when you need it:** tap **?** beside **Time trained** or **Profile sharing** for their explanations. The descriptions no longer take space in the cards. Collapsed **What you share** shows a downward arrow, even when its parent is expanded.
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.

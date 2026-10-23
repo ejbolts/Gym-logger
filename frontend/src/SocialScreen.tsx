@@ -42,7 +42,6 @@ export function SocialScreen({
             profile={account}
             openFeedback={openFeedback}
             onOpenProfile={onOpenOwnProfile}
-            onOpenFriends={() => setSection('find')}
           />
         }
       />
