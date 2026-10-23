@@ -251,6 +251,7 @@ import {
   useSettingsPageJump,
   type SettingsDestination,
   type SettingsJump,
+  type SettingsGroupId,
 } from './settingsNavigation';
 import { useOpenFeedbackCount } from './friendsActivityData';
 import { AccountHeaderActions } from './AccountHeaderActions';
@@ -532,6 +533,9 @@ export function App() {
 
 function AppContent() {
   const [settingsJump, setSettingsJump] = useState<SettingsJump | null>(null);
+  const [settingsGroup, setSettingsGroup] = useState<SettingsGroupId | null>(() =>
+    new URLSearchParams(window.location.search).has('youtube') ? 'data' : null,
+  );
   const { user, signingIn = false } = useUserSession();
   const announcement = useReleaseAnnouncement(user?.id ?? null);
   const appUpdates = useAppUpdates();
@@ -720,6 +724,10 @@ function AppContent() {
   }, []);
 
   function navigateBack() {
+    if (tab === 'settings' && settingsGroup !== null) {
+      setSettingsGroup(null);
+      return;
+    }
     const currentState = window.history.state;
     if (tab === 'log') {
       if (!workoutSaving) setEditingWorkout(null);
@@ -1239,7 +1247,9 @@ function AppContent() {
 
   const nestedHeader =
     tab === 'settings'
-      ? { title: 'Settings', subtitle: 'Preferences • privacy • data' }
+      ? settingsGroup
+        ? { title: 'All settings', subtitle: null }
+        : { title: 'Settings', subtitle: 'Preferences • privacy • data' }
       : tab === 'videos' && videosAllowed
         ? { title: 'Videos', subtitle: 'Workout clips • uploads' }
         : tab === 'profile'
@@ -1431,6 +1441,7 @@ function AppContent() {
             title={nestedHeader.title}
             subtitle={nestedHeader.subtitle}
             onBack={navigateBack}
+            backLabel={tab === 'settings' && settingsGroup ? 'All settings' : undefined}
             actions={
               tab !== 'settings' ? <SettingsButton onClick={() => setTab('settings')} /> : undefined
             }
@@ -1697,6 +1708,8 @@ function AppContent() {
             <CachedTabPanel active={tab === 'settings'}>
               <SettingsScreen
                 active={tab === 'settings'}
+                selectedGroup={settingsGroup}
+                onSelectGroup={setSettingsGroup}
                 guideActive={prompt === 'tour'}
                 workouts={workouts}
                 historySummary={historySummary}
@@ -1936,6 +1949,7 @@ function OverlayScreenHeader({
   actions,
   onTitleClick,
   titleActionLabel,
+  backLabel = 'Go back',
 }: {
   title: string;
   subtitle: ReactNode;
@@ -1943,10 +1957,11 @@ function OverlayScreenHeader({
   actions?: ReactNode;
   onTitleClick?: () => void;
   titleActionLabel?: string;
+  backLabel?: string;
 }) {
   return (
     <header className="overlay-screen-header">
-      <button className="overlay-header-back" type="button" onClick={onBack} aria-label="Go back">
+      <button className="overlay-header-back" type="button" onClick={onBack} aria-label={backLabel}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M14.5 5.5 8 12l6.5 6.5" />
         </svg>
@@ -1967,7 +1982,7 @@ function OverlayScreenHeader({
         ) : (
           <strong>{title}</strong>
         )}
-        <span>{subtitle}</span>
+        {subtitle && <span>{subtitle}</span>}
       </div>
       {actions && <div className="overlay-header-actions">{actions}</div>}
     </header>
@@ -6626,6 +6641,8 @@ export function ProgressScreen({
 
 function SettingsScreen({
   active,
+  selectedGroup,
+  onSelectGroup,
   guideActive,
   workouts,
   historySummary,
@@ -6654,6 +6671,8 @@ function SettingsScreen({
   onOpenAppGuide,
 }: {
   active: boolean;
+  selectedGroup: SettingsGroupId | null;
+  onSelectGroup: (group: SettingsGroupId | null) => void;
   guideActive: boolean;
   releaseVersion: string;
   onOpenReleaseNotes: () => void;
@@ -6683,9 +6702,6 @@ function SettingsScreen({
   onDataChange: () => Promise<void>;
 }) {
   useSettingsPageJump('settings', active);
-  const [returningFromYouTube] = useState(() =>
-    new URLSearchParams(window.location.search).has('youtube'),
-  );
   const workoutDataSection = useRef<HTMLElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [notificationStatus, setNotificationStatus] = useState<RestAlertStatus>(() =>
@@ -6817,15 +6833,13 @@ function SettingsScreen({
         onOpenProfile={onOpenProfile}
         revealData={csvGuideOpen}
         revealHelp={active && guideActive}
-        initialGroup={returningFromYouTube ? 'data' : null}
+        selected={selectedGroup}
+        onSelect={onSelectGroup}
         groups={[
           {
             id: 'training',
             icon: 'timer',
             description: 'Units, weekly goals, rest timers and workout types.',
-            summary: sharedPreferences.preferences
-              ? `${sharedPreferences.preferences.preferred_weight_unit} · ${sharedPreferences.preferences.week_start[0].toUpperCase() + sharedPreferences.preferences.week_start.slice(1)} start · Rest timer ${restTimerEnabled ? 'on' : 'off'}`
-              : 'Set your training defaults',
             content: (
               <>
                 <section
@@ -7026,10 +7040,6 @@ function SettingsScreen({
             id: 'appearance',
             icon: 'sun',
             description: 'Light or dark, accent colours and reduced motion.',
-            summary:
-              reduceMotion || systemPrefersReducedMotion()
-                ? 'Reduced motion on'
-                : 'Full animations',
             content: (
               <>
                 <ColourThemePanel />
@@ -7071,16 +7081,6 @@ function SettingsScreen({
             id: 'notifications',
             icon: 'bell',
             description: 'Rest alerts, workout reminders and video updates.',
-            summary:
-              notificationStatus === 'enabled'
-                ? 'Phone alerts on'
-                : notificationStatus === 'unsupported'
-                  ? 'Check device support'
-                  : notificationStatus === 'blocked'
-                    ? 'Blocked in device settings'
-                    : notificationStatus === 'checking'
-                      ? 'Checking device…'
-                      : 'Phone alerts off',
             content: (
               <>
                 <section
@@ -7148,7 +7148,6 @@ function SettingsScreen({
                   id: 'account' as const,
                   icon: 'user' as const,
                   description: 'Profile details, sharing, password and sign-in.',
-                  summary: `Signed in as @${account.username}`,
                   content: (
                     <>
                       {account && (
@@ -7184,7 +7183,6 @@ function SettingsScreen({
             id: 'data',
             icon: 'link',
             description: 'Import history, export your data and connect YouTube.',
-            summary: 'Workouts, bodyweight & video',
             content: (
               <>
                 <section
@@ -7235,10 +7233,6 @@ function SettingsScreen({
             id: 'help',
             icon: 'heart',
             description: 'App guides, installation, updates and feedback.',
-            summary:
-              onOpenAdmin && openFeedback > 0
-                ? `Gym Logger ${releaseVersion} · ${openFeedback} feedback to review`
-                : `Gym Logger ${releaseVersion}`,
             content: (
               <>
                 <section

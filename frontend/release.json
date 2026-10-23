@@ -4,7 +4,7 @@
   "title": "Training, friends and settings that make sense",
   "summary": "Keep training together, catch up with friends in Social, and find your preferences in a reorganized Settings hub with focused sections. Keep navigating while workouts save, and see saved training changes from your other devices automatically.",
   "changes": [
-    "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
+    "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. All settings stays at the top of each section and returns to the overview. Browse cards omit preference summaries and the extra search hint. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
     "Finish a workout or save an old session and keep navigating while the save completes. Routine notices and completion PRs no longer lock the page; failed saves retain your entries for retry and respect a screen you have moved to.",
     "Saved workouts, bodyweight, goals and cardio refresh automatically across signed-in devices. The visible app checks every five seconds and when you return or reconnect, refreshes changed data quietly, and preserves active workouts, unsaved edits and filters. In-progress workouts stay on the device where you are logging.",
     "Notifications and Profile now sit beside Settings in the same order on Home, Training, Social and Body. Removed the duplicate blue plus buttons from Training and Body headers; use Start for workouts and Log weigh-in for bodyweight entries.",
@@ -29,10 +29,10 @@
   "highlights": [
     {
       "title": "Settings, with a place for everything",
-      "description": "Browse six focused sections with saved-value summaries. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
+      "description": "Browse six focused sections with streamlined cards and an All settings return button at the top. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f1e3a10d6e6bc1b5242ab2e3e9abe62b840b1968/docs/screenshots/releases/0.10.0-settings-overview.png",
-        "alt": "The redesigned Settings overview with six focused categories, search and synthetic account preferences."
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/50ad2676a256068f6aa12eb22409b88dd7781647/docs/screenshots/releases/0.10.0-settings-overview-clean.png",
+        "alt": "The streamlined Settings overview with six focused categories and search, using a synthetic sample account."
       }
     },
     {
