@@ -38,7 +38,7 @@ Choose kilograms or pounds for weight entry and display.
 
 **Training > Exercises** pairs a bounded, searchable exercise library with a live progress preview, stacked on phones and side by side on wider screens. Date-range controls sit beside the preview value. **Open full progress** shows the familiar charts, personal records and previous sessions, and **Back to library** retains your search, list position and range. A **Weight PR** celebrates a heavier completed working set; a **Volume PR** celebrates more reps in a set at a weight you have used before. You can also follow estimated one-rep max and weekly muscle-group set totals. **Cardio** remains in Training alongside Sessions and Exercises.
 
-Import original **Strength Level**, **Hevy** or **Strong** workout CSVs: choose the app in **Settings > Workouts & bodyweight**, select its export, then review before saving. Strong body-weight measurement exports work there too and keep existing check-ins. Gym Logger workout and bodyweight CSVs use the same picker, preserving check-in notes and body-fat values and skipping existing dates. You can also import a spreadsheet. Select Gym Logger and **Export data** to choose workout history, bodyweight check-ins or both, and a date range; both downloads two CSVs. A built-in CSV guide shows the columns and one-row-per-set layout and offers a template; files you make yourself need only date, exercise and reps columns, plus weight for weighted sets. Workout CSVs are for set history rather than a full backup of notes, photos, videos and other account data.
+Import original **Strength Level**, **Hevy** or **Strong** workout CSVs: choose the app in **Settings > Data & connections > Import & export**, select its export, then review before saving. Strong body-weight measurement exports work there too and keep existing check-ins. Gym Logger workout and bodyweight CSVs use the same picker, preserving check-in notes and body-fat values and skipping existing dates. You can also import a spreadsheet. Choose **Export data** beside any import source to select workout history, bodyweight check-ins or both, and a date range; both downloads two CSVs. A built-in CSV guide shows the columns and one-row-per-set layout and offers a template; files you make yourself need only date, exercise and reps columns, plus weight for weighted sets. Workout CSVs are for set history rather than a full backup of notes, photos, videos and other account data.
 
 <p>
   <a href="docs/screenshots/readme/progress.png"><img src="docs/screenshots/readme/progress.png" alt="Exercise progress screen with estimated one-rep max, personal records and previous sessions" width="360"></a>
@@ -84,8 +84,10 @@ The **Social** tab has two parts. **Friends** lists each friend once with their 
 
 Administrators can manage accounts, registration, video access and private app feedback from the admin console.
 
-Use **Search settings & profile** on either page to jump to rest timers, username changes,
-sharing, data tools and other sections. **Settings > App theme** offers five accent colours;
+Settings opens with **Training**, **Appearance**, **Notifications**, **Account & privacy**,
+**Data & connections** and **Help & about**. Open a focused section without losing unfinished edits.
+Use **Search settings & profile** in Settings to jump to rest timers, username changes,
+sharing, data tools and other sections. **Settings > Appearance > App theme** offers five accent colours;
 the selection applies immediately and stays on that device.
 
 ## Getting started

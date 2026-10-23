@@ -1,10 +1,12 @@
 import { useId, useRef, useState } from 'react';
 import { api } from './api';
+import { CollapsibleSection } from './CollapsibleSection';
 import type { WorkoutType } from './types';
 import './WorkoutTypesSettings.css';
 
 export type WorkoutTypesSettingsProps = {
   types: WorkoutType[];
+  collapsible?: boolean;
   onTypesChange: (types: WorkoutType[]) => void;
   loading?: boolean;
   error?: string | null;
@@ -13,6 +15,7 @@ export type WorkoutTypesSettingsProps = {
 
 export function WorkoutTypesSettings({
   types,
+  collapsible = false,
   onTypesChange,
   loading = false,
   error = null,
@@ -107,17 +110,8 @@ export function WorkoutTypesSettings({
     });
   }
 
-  return (
-    <section
-      className="settings-panel panel workout-types-settings"
-      aria-labelledby="workout-types-title"
-    >
-      <header>
-        <div>
-          <p className="section-kicker">TRAINING</p>
-          <h2 id="workout-types-title">Workout types</h2>
-        </div>
-      </header>
+  const content = (
+    <>
       <p>Add your own workout names and choose the colours shown in your calendar and history.</p>
       <p className="workout-types-help">
         Removing a type hides it from new workouts. Your saved workouts stay intact, and you can
@@ -266,6 +260,31 @@ export function WorkoutTypesSettings({
           </ul>
         </details>
       )}
+    </>
+  );
+  if (collapsible) {
+    return (
+      <CollapsibleSection
+        className="settings-panel panel workout-types-settings"
+        title="Workout types"
+        headingId="workout-types-title"
+      >
+        {content}
+      </CollapsibleSection>
+    );
+  }
+  return (
+    <section
+      className="settings-panel panel workout-types-settings"
+      aria-labelledby="workout-types-title"
+    >
+      <header>
+        <div>
+          <p className="section-kicker">TRAINING</p>
+          <h2 id="workout-types-title">Workout types</h2>
+        </div>
+      </header>
+      {content}
     </section>
   );
 }

@@ -1,9 +1,10 @@
 {
   "version": "0.10.0",
-  "date": "2026-10-21",
-  "title": "Training in one place, and friends in Social",
-  "summary": "Keep your calendar, sessions, exercise progress and cardio together in Training. Social now uses mutual friends: send one request, and once it is accepted you both see each other’s training.",
+  "date": "2026-10-23",
+  "title": "Training, friends and settings that make sense",
+  "summary": "Keep training together, catch up with friends in Social, and find your preferences in a reorganized Settings hub with focused sections.",
   "changes": [
+    "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
     "Notifications and Profile now sit beside Settings in the same order on Home, Training, Social and Body. Removed the duplicate blue plus buttons from Training and Body headers; use Start for workouts and Log weigh-in for bodyweight entries.",
     "Training combines Sessions, Exercises and Cardio. Sessions keeps the existing calendar, day details, machine filters and workout cards, with the latest three weeks shown first and Show more for older workouts.",
     "Exercises has a bounded, searchable library with a live progress preview below on phones and beside it on wider screens. Date-range buttons sit beside the preview value. Open full progress for records and session history, then return with your search, list position and range intact. Older History, Progress and Cardio links still work.",
@@ -23,6 +24,14 @@
     "alt": "Training Sessions retains the calendar above the latest three weeks of synthetic workouts."
   },
   "highlights": [
+    {
+      "title": "Settings, with a place for everything",
+      "description": "Browse six focused sections with saved-value summaries. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f1e3a10d6e6bc1b5242ab2e3e9abe62b840b1968/docs/screenshots/releases/0.10.0-settings-overview.png",
+        "alt": "The redesigned Settings overview with six focused categories, search and synthetic account preferences."
+      }
+    },
     {
       "title": "Your profile, focused on training",
       "description": "View your calendar, training totals and workouts in the same layout as your friends. Edit your name and photo here; manage privacy, your account and security in Settings. Your own page stays available when your profile is private.",

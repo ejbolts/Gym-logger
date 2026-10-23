@@ -25,7 +25,7 @@ const account = {
   created_at: '2026-10-01',
 };
 
-function Harness() {
+function Harness({ identityKey = 'initial' }: { identityKey?: string }) {
   const [request, setRequest] = useState<SettingsJump | null>(null);
   const page = request?.destination.page ?? 'settings';
   return (
@@ -49,7 +49,7 @@ function Harness() {
         </CollapsibleSection>
       </section>
       <section data-settings-page="profile" className="profile-screen" hidden={page !== 'profile'}>
-        <ProfileIdentity user={account} onSaved={vi.fn()} />
+        <ProfileIdentity key={identityKey} user={account} onSaved={vi.fn()} />
       </section>
     </SettingsNavigationContext.Provider>
   );
@@ -117,6 +117,14 @@ it('opens profile editing and focuses Username, then jumps back to Rest timer wi
   await jump('rest timer');
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Rest timer');
   expect(restChanged).not.toHaveBeenCalled();
+});
+it('keeps the searched field focused when loaded profile data remounts the editor', async () => {
+  await act(async () => root.render(<Harness />));
+  await jump('username');
+  await act(async () => root.render(<Harness identityKey="loaded" />));
+  await act(async () => vi.runAllTimers());
+  expect(document.activeElement?.getAttribute('autocomplete')).toBe('username');
+  expect((document.activeElement as HTMLInputElement).value).toBe('sample');
 });
 it('reveals a folded password form and offers an empty-result message and Escape clear', async () => {
   await act(async () => root.render(<Harness />));
