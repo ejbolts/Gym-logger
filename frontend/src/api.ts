@@ -262,7 +262,7 @@ export const api = {
         headers: jsonHeaders,
         body: JSON.stringify({ items }),
       }),
-    feed: () => request<FriendFeed>('/api/sharing/feed'),
+    feed: (limit = 5) => request<FriendFeed>(`/api/sharing/feed?limit=${limit}`),
     react: (workoutId: string, reaction: WorkoutReactionKind) =>
       request<WorkoutReactions>(`/api/sharing/workouts/${encodeURIComponent(workoutId)}/reaction`, {
         method: 'PUT',

@@ -44,7 +44,7 @@ def test_feed_shows_each_friends_latest_session(client, other_client, third_clie
     log_workout(client, "Mine", 0)
 
     # No friends yet; public profiles still need a friendship to appear.
-    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 0}
+    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 0, "with_sessions": 0}
     befriend(client, other_client)
     client.post(f"/api/sharing/friends/{third_client.user['id']}")
     # The request to Third is still waiting, so only Other appears.
@@ -57,6 +57,11 @@ def test_feed_shows_each_friends_latest_session(client, other_client, third_clie
     # One latest session per friend, most recent first.
     assert [item["workout"]["name"] for item in feed["items"]] == ["Third 0", "Other 0"]
     assert feed["friends"] == 2
+    assert feed["with_sessions"] == 2
+    limited = client.get("/api/sharing/feed?limit=1").json()
+    assert len(limited["items"]) == 1 and limited["with_sessions"] == 2
+    assert client.get("/api/sharing/feed?limit=0").status_code == 422
+    assert client.get("/api/sharing/feed?limit=8").json() == feed
     other = feed["items"][1]
     assert other["friend"] == {
         "id": other_client.user["id"],
@@ -71,10 +76,10 @@ def test_feed_shows_each_friends_latest_session(client, other_client, third_clie
 def test_feed_counts_friends_without_sessions_and_hides_private_ones(client, other_client):
     share(other_client, "public")
     befriend(client, other_client)
-    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 1}
+    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 1, "with_sessions": 0}
     log_workout(other_client, "First", 0)
     share(other_client, "private")
-    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 0}
+    assert client.get("/api/sharing/feed").json() == {"items": [], "friends": 0, "with_sessions": 0}
 
 
 def test_friends_list_shows_latest_activity_for_every_friend(client, other_client, third_client):

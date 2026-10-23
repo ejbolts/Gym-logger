@@ -42,7 +42,11 @@ def test_block_hides_every_shared_route_search_feed_and_notifications(
             assert viewer.get(f"/api/sharing/profiles/{target}{suffix}").status_code == 404
         assert viewer.post(f"/api/sharing/friends/{target}").status_code == 404
         assert viewer.post(f"/api/sharing/friends/{target}/accept").status_code == 404
-        assert viewer.get("/api/sharing/feed").json() == {"items": [], "friends": 0}
+        assert viewer.get("/api/sharing/feed").json() == {
+            "items": [],
+            "friends": 0,
+            "with_sessions": 0,
+        }
         connections = viewer.get("/api/sharing/friends").json()
         assert connections["friends"] == connections["requests"] == connections["sent"] == []
         assert viewer.get("/api/sharing/notifications").json() == {

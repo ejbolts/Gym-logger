@@ -6,6 +6,14 @@
 
 ### Training, friends and settings that make sense
 
+![Daily check-in with Body weight, Body fat and Combined display options](screenshots/releases/0.10.0-daily-check-in.png)
+
+*Choose weight, body fat or both on the existing Home card. The account’s choice stays on this device. Weight can be saved without a body-fat value; logging body fat still requires today’s weight.*
+
+![Recent Friends Activity loads three additional friends inline with a loading spinner](screenshots/releases/0.10.0-friends-load-three.gif)
+
+*Tap +N more to add three friends without leaving Home. The spinner runs while loading, the remaining count excludes friends without sessions, and refreshes preserve the expanded list. All media uses isolated synthetic accounts.*
+
 ![Body with matching Notifications, Profile and Settings buttons and no duplicate header plus](screenshots/releases/0.9.1-header-controls.png)
 
 *Notifications and Profile stay beside Settings in the same order on Home, Training, Social and Body. The existing inbox, account photo or initial and profile controls are reused. Body uses Log weigh-in for new entries, without a duplicate header plus button.*
