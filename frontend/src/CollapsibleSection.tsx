@@ -13,6 +13,7 @@ export function CollapsibleSection({
   kicker,
   title,
   headingLevel = 2,
+  headingId,
   headingClassName,
   badge,
   help,
@@ -23,6 +24,7 @@ export function CollapsibleSection({
   kicker?: string;
   title: string;
   headingLevel?: 2 | 3;
+  headingId?: string;
   headingClassName?: string;
   /** Status shown beside the chevron, so it stays visible while the section is folded. */
   badge?: ReactNode;
@@ -32,6 +34,7 @@ export function CollapsibleSection({
   children: ReactNode;
 }) {
   const id = useId();
+  const titleId = headingId ?? `${id}-title`;
   const ref = useRef<HTMLElement>(null);
   const [expanded, setExpanded] = useState(defaultExpanded);
   useSettingsReveal(title, () => setExpanded(true));
@@ -48,13 +51,13 @@ export function CollapsibleSection({
     <section
       ref={ref}
       className={`${className} collapsible-section${expanded ? '' : ' is-collapsed'}`}
-      aria-labelledby={`${id}-title`}
+      aria-labelledby={titleId}
     >
       <header onClick={() => setExpanded((current) => !current)}>
         <div>
           {kicker && <p className="section-kicker">{kicker}</p>}
           <Heading
-            id={`${id}-title`}
+            id={titleId}
             className={
               [headingClassName, help && 'collapsible-heading-with-help']
                 .filter(Boolean)

@@ -37,7 +37,7 @@ export function ImportHistoryPrompt({
             suggestions start from your real training.
           </p>
           <p className="import-history-later">
-            You can do this later in Settings → Workouts &amp; bodyweight.
+            You can do this later in Settings → Data &amp; connections → Import &amp; export.
           </p>
         </div>
       </div>

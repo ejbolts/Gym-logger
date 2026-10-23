@@ -2,9 +2,9 @@
 
 ## 0.10.0
 
-21 October 2026
+23 October 2026
 
-### Training in one place, and friends in Social
+### Training, friends and settings that make sense
 
 ![Body with matching Notifications, Profile and Settings buttons and no duplicate header plus](screenshots/releases/0.9.1-header-controls.png)
 
@@ -34,9 +34,13 @@
 
 *Your profile uses the same training layout as other members. Edit your name and photo above the calendar, training totals and workouts. A private account can preview its own profile without enabling sharing; the header omits the private-profile reminder.*
 
-![Account details, profile sharing and security controls in Settings](screenshots/releases/0.10.0-account-settings.png)
+![The redesigned Settings overview with six purposeful categories and saved-preference summaries](screenshots/releases/0.10.0-settings-overview.png)
 
-*Settings holds account details, sharing choices, password changes, sign-out and account deletion. Settings search opens the moved controls and can still take you to edit your profile.*
+*Find Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about from one searchable overview. Search opens the right section and focuses its control; account editing still opens your profile.*
+
+![Training settings on a phone with units, weekly goals, rest timer, folded workout types and bodyweight chart defaults](screenshots/releases/0.10.0-settings-training-mobile.png)
+
+*Focused panels keep related options together. Return to All settings without losing unfinished edits. Device preferences stay immediate, account training defaults use Save preferences, and destructive account actions stay inside Account & privacy.*
 
 ![Time trained help popup explaining workout and cardio duration totals](screenshots/releases/0.10.0-training-time-help.png)
 
@@ -58,7 +62,8 @@
 
 *Choose 0:00 (no rest) or swipe left to remove just the rest. Undo restores it, and both sets stay in the workout. This recording uses isolated sample data.*
 
-- **Rest times:** choose **0:00 (no rest)** or swipe left on a rest row to remove it without deleting its set. **Undo** restores the previous duration. Removed rests stay removed through set edits, workout saves and reopening. Edit the set and save **Rest after set** to add one back. Choices include **0:30**; **Settings > Timers & notifications > Show rest times** hides the rows independently of the automatic countdown.
+- **Rest times:** choose **0:00 (no rest)** or swipe left on a rest row to remove it without deleting its set. **Undo** restores the previous duration. Removed rests stay removed through set edits, workout saves and reopening. Edit the set and save **Rest after set** to add one back. Choices include **0:30**; **Settings > Training > Rest timers > Show rest times** hides the rows independently of the automatic countdown.
+- **Settings, reorganized:** six focused sections replace the long stack of controls, with saved-value summaries, category labels in search results, and a persistent section menu on wider screens. Training brings units, weekly muscle-set goals, automatic rest timers, workout types and bodyweight chart defaults together. Appearance combines theme and reduced motion; Notifications holds phone alerts and installation help; Account & privacy keeps sharing, password, sign-out and deletion together. Import/export and YouTube live in Data & connections; guides, updates and feedback live in Help & about. Search reveals hidden panels and folded editors without activating their controls. Unfinished forms survive section changes, and Export stays available for every import source. The app tour and import onboarding open their matching panels.
 - **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls. Removed the duplicate blue plus buttons from Training and Body headers; use **Start** for workouts and **Log weigh-in** for bodyweight entries.
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
 - **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views.

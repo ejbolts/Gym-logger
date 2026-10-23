@@ -34,6 +34,8 @@ export function ProfileIdentity({
   children?: ReactNode;
 }) {
   const id = useId();
+  const section = useRef<HTMLElement>(null);
+  const requestedFocus = useRef<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
@@ -54,6 +56,7 @@ export function ProfileIdentity({
     if (!editRequest || handledJump.current === editRequest.serial) return;
     handledJump.current = editRequest.serial;
     if (!editing) {
+      requestedFocus.current = editRequest.destination.selector;
       setDisplayName(user.display_name);
       setUsername(user.username);
       setStatus(null);
@@ -73,7 +76,15 @@ export function ProfileIdentity({
   }, [photo]);
 
   useEffect(() => {
-    if (editing) nameInput.current?.focus();
+    if (!editing) return;
+    const target = requestedFocus.current
+      ? section.current?.querySelector<HTMLElement>(requestedFocus.current)
+      : null;
+    requestedFocus.current = null;
+    if (target) {
+      if (!target.matches('input,button,select,textarea,a')) target.tabIndex = -1;
+      target.focus({ preventScroll: true });
+    } else nameInput.current?.focus();
   }, [editing]);
 
   const photoUrl = editing
@@ -148,6 +159,7 @@ export function ProfileIdentity({
 
   return (
     <section
+      ref={section}
       className={`settings-panel panel profile-summary profile-identity${editing ? ' is-editing' : ''}`}
       aria-label={editing ? 'Edit profile' : 'Signed-in account'}
     >

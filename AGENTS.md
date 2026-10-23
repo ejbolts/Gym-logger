@@ -4,6 +4,14 @@ Follow this repository's README and checks, together with the user's shared veri
 
 Keep server release runbooks and private operator notes local. Do not commit them or include their contents in pull requests. Consult the operator's local instructions before an explicitly authorized deployment.
 
+## Efficient development verification
+
+- Follow the scoped local commands in [the technical reference](docs/TECHNICAL-REFERENCE.md#checks). During implementation, run tests and file-level formatting/lint checks for changed behaviour and its affected dependencies; reuse passing results while their inputs remain unchanged.
+- The full frontend/backend checks run in GitHub's **Checks** workflow for every PR and `main` push. Require both **Frontend checks** and **Backend checks** to pass on the current PR revision before merging; do not infer that a branch push passed CI. The workflow alone does not make checks mandatory in a GitHub ruleset or authorise changes to branch protection.
+- Run broader local verification for shared authentication, persistence, migrations, test fixtures or other changes with a broad regression risk. Run the full affected suite when changing its test infrastructure. Documentation-only edits do not require application test suites. A pending remote check must be reported as pending.
+- Preserve meaningful recovery, account isolation, import, backup and migration coverage. Do not remove tests merely to shorten a run, lower production password-hashing costs, or replace real authentication in tests intended to exercise it.
+- Visible changes still need proportionate sample-data interaction checks and reviewed feature media under the shared verification skill. CI does not replace that review.
+
 ## Private URLs in repository content and pull requests
 
 - Keep personal Tailscale hostnames, tailnet identifiers, private IP addresses and other installation-specific URLs out of new or updated committed content, including documentation, source examples, tests and release notes. Use generic examples such as `https://gym.example.com` or loopback URLs such as `http://127.0.0.1:8000`; obtain actual deployment addresses from local configuration or `tailscale serve status`.
