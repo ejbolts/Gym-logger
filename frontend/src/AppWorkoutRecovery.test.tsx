@@ -331,8 +331,164 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+describe('rest time controls', () => {
+  function restControl() {
+    return (
+      container
+        .querySelector('.movement-card')
+        ?.querySelector<HTMLSelectElement>('[aria-label="Rest after set 1"]') ?? null
+    );
+  }
+
+  async function click(label: string) {
+    const button = container.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`);
+    expect(button).not.toBeNull();
+    await act(async () => button!.click());
+  }
+
+  async function choose(label: string, value: string) {
+    const select = container.querySelector<HTMLSelectElement>(`[aria-label="${label}"]`)!;
+    await act(async () => {
+      select.value = value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  it('removes only a rest, offers Undo, persists removal and restores it only on a saved edit', async () => {
+    vi.useFakeTimers();
+    writeActiveWorkoutDraft(storedDraft());
+    await mount();
+    expect(restControl()?.value).toBe('180');
+    expect(container.querySelector('.rest-between button')).toBeNull();
+    await choose('Rest after set 1', '0');
+    expect(restControl()).toBeNull();
+    expect(container.querySelector('.undo-toast')?.textContent).toContain('Rest time removed');
+    expect(container.querySelectorAll('.set-details')).toHaveLength(2);
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('.undo-toast-action')!.click(),
+    );
+    expect(restControl()?.value).toBe('180');
+    await choose('Rest after set 1', '0');
+    expect(restControl()).toBeNull();
+    await act(async () => vi.advanceTimersByTimeAsync(6000));
+    expect(container.querySelector('.undo-toast')).toBeNull();
+    expect(readActiveWorkoutDraft()?.movements[0].sets[0].rest_seconds).toBeNull();
+    // Reload the app to prove no default rest row is recreated from the saved draft.
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await mount();
+    expect(restControl()).toBeNull();
+    await click('Options for set 1');
+    const edit = [
+      ...container.querySelectorAll<HTMLButtonElement>('.set-actions-menu-popover button'),
+    ].find((button) => button.textContent?.includes('Edit set'))!;
+    await act(async () => edit.click());
+    expect(
+      container.querySelector<HTMLSelectElement>('[aria-label="Rest time for set 1"]')?.value,
+    ).toBe('0');
+    await click('Done editing set 1');
+    expect(restControl()).toBeNull();
+    expect(readActiveWorkoutDraft()?.movements[0].sets[0].rest_seconds).toBeNull();
+    await click('Options for set 1');
+    await act(async () =>
+      [...container.querySelectorAll<HTMLButtonElement>('.set-actions-menu-popover button')]
+        .find((button) => button.textContent?.includes('Edit set'))!
+        .click(),
+    );
+    await choose('Rest time for set 1', '30');
+    expect(restControl()).toBeNull();
+    await click('Done editing set 1');
+    expect(restControl()?.value).toBe('30');
+    expect(container.querySelector('[role="timer"]')).toBeNull();
+    await click('Options for set 1');
+    await act(async () =>
+      [...container.querySelectorAll<HTMLButtonElement>('.set-actions-menu-popover button')]
+        .find((button) => button.textContent?.includes('Edit set'))!
+        .click(),
+    );
+    await choose('Rest time for set 1', '0');
+    await click('Done editing set 1');
+    expect(restControl()).toBeNull();
+    expect(container.querySelector('.undo-toast')?.textContent).toContain('Rest time removed');
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('.undo-toast-action')!.click(),
+    );
+    expect(restControl()?.value).toBe('30');
+  });
+
+  it('logs a set with no rest without starting a timer or restoring the removed rest', async () => {
+    const draft = storedDraft();
+    draft.movements[0].sets[0].completed = false;
+    draft.movements[0].sets[0].rest_seconds = null;
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    expect(
+      container.querySelector<HTMLSelectElement>('[aria-label="Rest time for set 1"]')?.value,
+    ).toBe('0');
+    await click('Complete set 1');
+    expect(restControl()).toBeNull();
+    expect(container.querySelector('[role="timer"]')).toBeNull();
+    const savedSet = readActiveWorkoutDraft()?.movements[0].sets[0];
+    expect(savedSet?.rest_seconds).toBeNull();
+    expect(savedSet?.completed).toBe(true);
+  });
+
+  it('hides rest rows without removing saved durations or disabling the countdown', async () => {
+    window.localStorage.setItem('gym-logger-show-rest-times', 'disabled');
+    const draft = storedDraft();
+    draft.movements[0].sets[0].completed = false;
+    writeActiveWorkoutDraft(draft);
+    await mount();
+    expect(restControl()).toBeNull();
+    await click('Complete set 1');
+    expect(container.querySelector('[role="timer"]')).not.toBeNull();
+    expect(readActiveWorkoutDraft()?.movements[0].sets[0].rest_seconds).toBe(180);
+  });
+
+  it('keeps cancelled swipes and removes rest with a completed touch swipe and Undo', async () => {
+    vi.useFakeTimers();
+    writeActiveWorkoutDraft(storedDraft());
+    await mount();
+    const shell = restControl()!.closest<HTMLElement>('.set-swipe-shell')!;
+    shell.setPointerCapture = vi.fn();
+    shell.hasPointerCapture = vi.fn().mockReturnValue(false);
+    async function swipe(x: number, y = 0) {
+      await act(async () => {
+        for (const [type, clientX, clientY] of [
+          ['pointerdown', 220, 10],
+          ['pointermove', 220 + x, 10 + y],
+          ['pointerup', 220 + x, 10 + y],
+        ] as const) {
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          Object.assign(event, {
+            pointerId: 1,
+            isPrimary: true,
+            pointerType: 'touch',
+            clientX,
+            clientY,
+          });
+          shell.dispatchEvent(event);
+        }
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(300));
+    }
+    await swipe(-30);
+    expect(restControl()).not.toBeNull();
+    await swipe(-120, 180);
+    expect(restControl()).not.toBeNull();
+    await swipe(-160);
+    expect(restControl()).toBeNull();
+    expect(container.querySelectorAll('.set-details')).toHaveLength(2);
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('.undo-toast-action')!.click(),
+    );
+    expect(restControl()?.value).toBe('180');
+  });
 });
 
 describe('active workout recovery at startup', () => {

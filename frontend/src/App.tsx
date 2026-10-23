@@ -143,7 +143,13 @@ import {
   progressPointsForChart,
   type ProgressMetric,
 } from './progressChart';
-import { restTimerPreferenceEnabled, saveRestTimerPreference } from './restTimerPreference';
+import {
+  restTimerPreferenceEnabled,
+  saveRestTimerPreference,
+  restTimesPreferenceEnabled,
+  saveRestTimesPreference,
+} from './restTimerPreference';
+import { RestTimeSelect } from './RestTimeSelect';
 import { cancelRestTimerPushSchedule, restSecondsLeft } from './restTimer';
 import {
   disablePhonePushNotifications,
@@ -260,7 +266,6 @@ import {
   completeRemainingSets,
   createSuggestedWorkoutSet,
   createWorkoutSet,
-  DEFAULT_REST_SECONDS,
   isCompletedWorkingSet,
   latestExerciseSets,
   restTimerSecondsAfterSetUpdate,
@@ -301,7 +306,6 @@ const categoryNames: Record<WorkoutCategory, string> = {
   other: 'Other',
 };
 
-const restOptions = [60, 90, 120, 150, 180, 210, 240, 270, 300];
 const HISTORY_PAGE_SIZE = 8;
 
 /** Each exercise's history before `before`, the start of the window loaded at the time. */
@@ -620,6 +624,7 @@ function AppContent() {
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [completionRecords, setCompletionRecords] = useState<PersonalRecord[]>([]);
   const [restTimerEnabled, setRestTimerEnabled] = useState(restTimerPreferenceEnabled);
+  const [showRestTimes, setShowRestTimes] = useState(restTimesPreferenceEnabled);
   // The live workout's rest end, so the tab bar can count it down away from the workout.
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [reduceMotion, setReduceMotion] = useState(reduceMotionPreference);
@@ -1178,6 +1183,11 @@ function AppContent() {
     setRestTimerEnabled(enabled);
   }
 
+  function updateRestTimesPreference(enabled: boolean) {
+    saveRestTimesPreference(enabled);
+    setShowRestTimes(enabled);
+  }
+
   function openSetting(destination: SettingsDestination) {
     setSettingsJump((current) => ({ destination, serial: (current?.serial ?? 0) + 1 }));
     setTab(destination.page);
@@ -1536,6 +1546,7 @@ function AppContent() {
                         historicalWorkouts={workouts}
                         historyBaselines={historyBaselines}
                         restTimerEnabled={restTimerEnabled}
+                        showRestTimes={showRestTimes}
                         categoryColors={workoutTypeColors}
                         onExerciseHistory={(exerciseId) =>
                           openHistorySection('progress', exerciseId)
@@ -1657,6 +1668,8 @@ function AppContent() {
                 measurements={measurements}
                 restTimerEnabled={restTimerEnabled}
                 onRestTimerEnabledChange={updateRestTimerPreference}
+                showRestTimes={showRestTimes}
+                onShowRestTimesChange={updateRestTimesPreference}
                 reduceMotion={reduceMotion}
                 onReduceMotionChange={updateReduceMotion}
                 bodyTrendPreference={bodyTrendPreference}
@@ -2273,6 +2286,7 @@ function WorkoutLogger({
   historicalWorkouts,
   historyBaselines = null,
   restTimerEnabled,
+  showRestTimes,
   onExerciseHistory,
   onExerciseFavorite,
   onCreateExercise,
@@ -2300,6 +2314,7 @@ function WorkoutLogger({
   historicalWorkouts: TrackedWorkout[];
   historyBaselines?: HistoryBaselines | null;
   restTimerEnabled: boolean;
+  showRestTimes: boolean;
   onExerciseHistory: (exerciseId: string) => void;
   onExerciseFavorite: (exerciseId: string, isFavorite: boolean) => Promise<void>;
   onCreateExercise: (input: ExerciseCreateInput) => Promise<Exercise>;
@@ -2658,6 +2673,7 @@ function WorkoutLogger({
   }, [restLeft]);
 
   const [undoDeletion, setUndoDeletion] = useState<{
+    kind: 'set' | 'rest';
     movementKey: string;
     set: DraftSet;
     index: number;
@@ -2847,14 +2863,29 @@ function WorkoutLogger({
           : item,
       ),
     );
-    setUndoDeletion({ movementKey: movement.key, set: deleted, index });
+    setUndoDeletion({ kind: 'set', movementKey: movement.key, set: deleted, index });
   }
 
-  function undoSetDeletion() {
+  function removeRestTime(movement: DraftMovement, item: DraftSet) {
+    if (!item.rest_seconds) return;
+    updateSet(movement.key, item.key, { rest_seconds: null });
+  }
+
+  function undoLastDeletion() {
     if (!undoDeletion) return;
     setMovements((current) =>
       current.map((movement) => {
         if (movement.key !== undoDeletion.movementKey) return movement;
+        if (undoDeletion.kind === 'rest') {
+          return {
+            ...movement,
+            sets: movement.sets.map((item) =>
+              item.key === undoDeletion.set.key
+                ? { ...item, rest_seconds: undoDeletion.set.rest_seconds }
+                : item,
+            ),
+          };
+        }
         const sets = [...movement.sets];
         sets.splice(undoDeletion.index, 0, undoDeletion.set);
         return { ...movement, sets };
@@ -2972,6 +3003,14 @@ function WorkoutLogger({
   function updateSet(movementKey: string, setKey: string, update: Partial<DraftSet>) {
     const movement = movements.find((item) => item.key === movementKey);
     const currentSet = movement?.sets.find((item) => item.key === setKey);
+    if (movement && currentSet?.rest_seconds && update.rest_seconds === null) {
+      setUndoDeletion({
+        kind: 'rest',
+        movementKey,
+        set: currentSet,
+        index: movement.sets.findIndex((item) => item.key === setKey),
+      });
+    }
     const restSeconds =
       movement && currentSet
         ? restTimerSecondsAfterSetUpdate(movement.exercise.kind, currentSet, update)
@@ -3518,6 +3557,7 @@ function WorkoutLogger({
             <MovementCard
               key={movement.key}
               movement={movement}
+              showRestTimes={showRestTimes}
               number={movementIndex + 1}
               prBadges={prBadges.get(movement.key) ?? new Map()}
               supersetLabel={
@@ -3565,6 +3605,7 @@ function WorkoutLogger({
               canMoveDown={movementIndex < movements.length - 1}
               onMoveSet={(fromIndex, toIndex) => moveSet(movement.key, fromIndex, toIndex)}
               onDeleteSet={(index) => deleteSet(movement, index)}
+              onRemoveRestTime={(item) => removeRestTime(movement, item)}
               onSuperset={(button) => openSupersetPicker(movement.key, button)}
               onMachinePhotos={(machinePhotoIds) =>
                 setMovements((current) =>
@@ -3596,15 +3637,15 @@ function WorkoutLogger({
               role="status"
               style={{ '--undo-toast-duration': `${UNDO_TOAST_MS}ms` } as CSSProperties}
             >
-              <span>Set deleted</span>
-              <button className="undo-toast-action" type="button" onClick={undoSetDeletion}>
+              <span>{undoDeletion.kind === 'rest' ? 'Rest time removed' : 'Set deleted'}</span>
+              <button className="undo-toast-action" type="button" onClick={undoLastDeletion}>
                 Undo
               </button>
               <button
                 className="undo-toast-close"
                 type="button"
                 onClick={() => setUndoDeletion(null)}
-                aria-label="Dismiss set deletion notification"
+                aria-label="Dismiss deletion notification"
               >
                 <Icon name="close" />
               </button>
@@ -4042,6 +4083,7 @@ function ExerciseIcon({ exercise, number }: { exercise: Exercise; number?: numbe
 
 function MovementCard({
   movement,
+  showRestTimes,
   number,
   history,
   onExerciseHistory,
@@ -4061,9 +4103,11 @@ function MovementCard({
   canMoveDown,
   onMoveSet,
   onDeleteSet,
+  onRemoveRestTime,
   onSuperset,
 }: {
   movement: DraftMovement;
+  showRestTimes: boolean;
   number: number;
   history: ExerciseHistoryEntry[];
   onExerciseHistory: () => void;
@@ -4083,6 +4127,7 @@ function MovementCard({
   canMoveDown: boolean;
   onMoveSet: (fromIndex: number, toIndex: number) => void;
   onDeleteSet: (index: number) => void;
+  onRemoveRestTime: (item: DraftSet) => void;
   onSuperset: (button: HTMLButtonElement) => void;
 }) {
   const cardio = movement.exercise.kind === 'cardio';
@@ -4096,6 +4141,7 @@ function MovementCard({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [openSetActionsKey, setOpenSetActionsKey] = useState<string | null>(null);
   const [openOverrides, setOpenOverrides] = useState<Readonly<Record<string, boolean>>>({});
+  const [restEdits, setRestEdits] = useState<Readonly<Record<string, number>>>({});
   const [typeMenuSetKey, setTypeMenuSetKey] = useState<string | null>(null);
   const [draggingSetKey, setDraggingSetKey] = useState<string | null>(null);
   const [dragTargetSetKey, setDragTargetSetKey] = useState<string | null>(null);
@@ -4183,15 +4229,44 @@ function MovementCard({
   }
 
   function completeSet(item: DraftSet) {
-    onToggleSet(item);
+    onUpdateSet(item.key, { completed: !item.completed, rest_seconds: item.rest_seconds });
+    clearRestEdit(item.key);
     setOpenOverride(item.key, null);
+  }
+
+  function clearRestEdit(setKey: string) {
+    setRestEdits((current) => {
+      const next = { ...current };
+      delete next[setKey];
+      return next;
+    });
+  }
+
+  function editedRestSeconds(item: DraftSet) {
+    const seconds = restEdits[item.key] ?? item.rest_seconds ?? 0;
+    return seconds > 0 ? seconds : null;
+  }
+
+  function removeRest(item: DraftSet) {
+    clearRestEdit(item.key);
+    onRemoveRestTime(item);
   }
 
   /** The tick logs an open set and folds it away; on a folded logged set it unticks and opens it. */
   function checkSet(item: DraftSet, index: number) {
     const finishingEdit = item.completed && isSetOpen(item);
     if (item.completed) setOpenOverride(item.key, null);
-    if (!finishingEdit) requestSetCompletion(item, index);
+    if (finishingEdit) {
+      if (!cardio) onUpdateSet(item.key, { rest_seconds: editedRestSeconds(item) });
+      clearRestEdit(item.key);
+    } else {
+      requestSetCompletion(
+        !cardio && !item.completed && isSetOpen(item)
+          ? { ...item, rest_seconds: editedRestSeconds(item) }
+          : item,
+        index,
+      );
+    }
   }
 
   function requestSetCompletion(item: DraftSet, index: number) {
@@ -4591,6 +4666,18 @@ function MovementCard({
         {renderRowCompleteButton(item, index)}
         {renderCompletedSetActions(item, index)}
         <div className="set-editor-extras">
+          {!cardio && (
+            <label className="set-editor-rest">
+              Rest after set
+              <RestTimeSelect
+                seconds={restEdits[item.key] ?? item.rest_seconds ?? 0}
+                label={`Rest time for set ${index + 1}`}
+                onChange={(seconds) =>
+                  setRestEdits((current) => ({ ...current, [item.key]: seconds }))
+                }
+              />
+            </label>
+          )}
           {cardio && (
             <div className="set-editor-metrics">
               <label>
@@ -4946,27 +5033,29 @@ function MovementCard({
                   {open ? renderSetEditor(item, index) : renderSetSummary(item, index)}
                 </div>
               </SwipeToDeleteSetRow>
-              {!cardio && (
-                <div className="rest-between" data-flip-key={`${item.key}:rest`}>
-                  <i />
-                  <label>
-                    <select
-                      value={item.rest_seconds ?? DEFAULT_REST_SECONDS}
-                      onChange={(event) =>
-                        onUpdateSet(item.key, { rest_seconds: Number(event.target.value) })
-                      }
-                      aria-label={`Rest after set ${index + 1}`}
-                    >
-                      {restOptions.map((seconds) => (
-                        <option key={seconds} value={seconds}>
-                          {formatDuration(seconds)}
-                        </option>
-                      ))}
-                    </select>
-                    <span>rest</span>
-                  </label>
-                  <i />
-                </div>
+              {!cardio && showRestTimes && (item.rest_seconds ?? 0) > 0 && (
+                <SwipeToDeleteSetRow
+                  flipKey={`${item.key}:rest`}
+                  label={`rest after set ${index + 1}`}
+                  onDelete={() => removeRest(item)}
+                >
+                  <div className="rest-between">
+                    <i />
+                    <label>
+                      <RestTimeSelect
+                        seconds={item.rest_seconds!}
+                        label={`Rest after set ${index + 1}`}
+                        onChange={(seconds) => {
+                          clearRestEdit(item.key);
+                          if (seconds === 0) removeRest(item);
+                          else onUpdateSet(item.key, { rest_seconds: seconds });
+                        }}
+                      />
+                      <span>rest</span>
+                    </label>
+                    <i />
+                  </div>
+                </SwipeToDeleteSetRow>
               )}
             </Fragment>
           );
@@ -6505,6 +6594,8 @@ function SettingsScreen({
   measurements,
   restTimerEnabled,
   onRestTimerEnabledChange,
+  showRestTimes,
+  onShowRestTimesChange,
   reduceMotion,
   onReduceMotionChange,
   bodyTrendPreference,
@@ -6541,6 +6632,8 @@ function SettingsScreen({
   measurements: BodyMeasurement[];
   restTimerEnabled: boolean;
   onRestTimerEnabledChange: (enabled: boolean) => void;
+  showRestTimes: boolean;
+  onShowRestTimesChange: (enabled: boolean) => void;
   reduceMotion: boolean;
   onReduceMotionChange: (reduced: boolean) => void;
   bodyTrendPreference: BodyTrendPreference;
@@ -6809,6 +6902,27 @@ function SettingsScreen({
                     >
                       <span />
                       {restTimerEnabled ? 'On' : 'Off'}
+                    </button>
+                  </div>
+                  <div className="notification-setting-row">
+                    <div>
+                      <strong>Show rest times</strong>
+                      <small>
+                        {showRestTimes
+                          ? 'Display rest times between sets'
+                          : 'Rest times between sets are hidden'}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="Show rest times"
+                      aria-checked={showRestTimes}
+                      className={showRestTimes ? 'is-on' : ''}
+                      onClick={() => onShowRestTimesChange(!showRestTimes)}
+                    >
+                      <span />
+                      {showRestTimes ? 'On' : 'Off'}
                     </button>
                   </div>
                 </section>

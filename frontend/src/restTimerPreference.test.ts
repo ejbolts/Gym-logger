@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { restTimerPreferenceEnabled, saveRestTimerPreference } from './restTimerPreference';
+import {
+  restTimerPreferenceEnabled,
+  saveRestTimerPreference,
+  restTimesPreferenceEnabled,
+  saveRestTimesPreference,
+} from './restTimerPreference';
 
 describe('rest timer preference', () => {
   const values = new Map<string, string>();
@@ -26,5 +31,16 @@ describe('rest timer preference', () => {
 
     saveRestTimerPreference(true);
     expect(restTimerPreferenceEnabled()).toBe(true);
+  });
+
+  it('persists rest visibility independently of the countdown', () => {
+    expect(restTimesPreferenceEnabled()).toBe(true);
+    saveRestTimesPreference(false);
+    expect(restTimesPreferenceEnabled()).toBe(false);
+    expect(restTimerPreferenceEnabled()).toBe(true);
+    saveRestTimerPreference(false);
+    saveRestTimesPreference(true);
+    expect(restTimesPreferenceEnabled()).toBe(true);
+    expect(restTimerPreferenceEnabled()).toBe(false);
   });
 });
