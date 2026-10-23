@@ -221,8 +221,9 @@ include relevant integration tests yourself when the relationship is indirect. O
 use the actual worktree directory rather than a junction alias if Vite cannot resolve files.
 
 Check formatting/lint for edited files and exercise changed UI behaviour with isolated
-sample data. Run wider suites locally when changing authentication, shared state, database
-fixtures, migrations or other shared behaviour. Do not rerun unrelated passing checks after
+sample data. New and changed tests must pass locally before pushing. Leave the full suites
+to CI: run one locally only when changing its test infrastructure or configuration, or to
+rerun the specific tests behind a CI failure. Do not rerun unrelated passing checks after
 every small edit. Documentation-only changes need documentation checks, not application suites.
 
 The GitHub **Checks** workflow runs full frontend and backend jobs in parallel on every PR
@@ -232,7 +233,8 @@ and cancels superseded runs. Before merging, require both **Frontend checks** an
 GitHub ruleset is a separate maintainer action after the workflow is available; adding the
 workflow does not change existing branch protection or authorise a merge or deployment.
 
-For a full local verification, run these from the repository root:
+CI runs the full verification below. Run it locally only for the exceptions above, from
+the repository root:
 
 ```powershell
 ruff format --check backend
