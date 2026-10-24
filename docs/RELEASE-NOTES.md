@@ -6,9 +6,9 @@
 
 ### Your training together. More ways to connect.
 
-![A 28-second 0.10 trailer showing the Training and Social tabs, friends, workout conversations, background saves, cross-device sync and refined settings](screenshots/releases/0.10.0-trailer.gif)
+![The one-minute 0.10 trailer: before-and-after wipes and close-ups of Training, Exercises, Cardio, friends, workout conversations, background saves, a weigh-in syncing from phone to desktop, Settings and profiles](screenshots/releases/0.10.0-trailer.gif)
 
-*The 0.10 trailer. In the app, What's new plays a vertical version above the summary. Every scene uses isolated synthetic accounts and training data.*
+*The 0.10 trailer. What's new plays the same video in the app, above the summary. Before views come from tagged 0.9.0; every scene uses isolated synthetic accounts and training data, and the desktop updates from the phone's saved weigh-in without a reload.*
 
 ![Before and after navigation: History and Progress in 0.9.0 become Training and Social in 0.10.0](screenshots/releases/0.10.0-navigation-before-after.png)
 
