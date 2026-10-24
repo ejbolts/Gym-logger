@@ -49,9 +49,9 @@
     },
     {
       "title": "Cardio, week by week",
-      "description": "Choose time, distance, MET-minutes or calories and tap a week for its totals and averages. History stays grouped by week. Log session and Import screenshot open the existing logging and scan-review flows.",
+      "description": "Choose time, distance, MET-minutes or calories and tap a week for its totals and averages. History stays grouped by week. Log session and Import screenshot sit just below the Training tabs and open the existing logging and scan-review flows.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fe12adc7dcbc4dbaa8dd2cee2bc31d0e17bf239f/docs/screenshots/releases/0.10.0-cardio-weekly-trend.png",
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/270ddcbf5bbc8537ce2b599a5ed5ebbc7e9c717f/docs/screenshots/releases/0.10.0-cardio-weekly-trend-spacing.png",
         "alt": "Cardio weekly trend with metric tabs, selectable week bars, grouped history and labeled Log session and Import screenshot actions using synthetic sessions."
       }
     },
