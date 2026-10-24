@@ -1,16 +1,17 @@
 import { useState } from 'react';
+import { HelpPopup } from './HelpPopup';
 import type { CardioEnergyPeriod } from './types';
 import { fatEnergyEquivalent } from './cardioEnergy';
 import { useWeightUnit } from './trainingPreferencesContext';
 import { weightFromKg } from './weightUnits';
 
 const periods: { value: CardioEnergyPeriod['period']; label: string }[] = [
-  { value: 'week', label: 'This week' },
-  { value: 'month', label: 'This month' },
-  { value: '3m', label: '3 months' },
-  { value: '6m', label: '6 months' },
-  { value: 'year', label: 'This year' },
-  { value: 'all', label: 'All time' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: '3m', label: '3M' },
+  { value: '6m', label: '6M' },
+  { value: 'year', label: 'Year' },
+  { value: 'all', label: 'All' },
 ];
 
 function prettyDate(value: string): string {
@@ -31,13 +32,17 @@ function comparison(current: number | null, previous: number | null, unit = ''):
   return `${prefix} ${Math.abs(difference).toFixed(decimals)}${unit ? ` ${unit}` : ''} vs prior`;
 }
 
-export function CardioEnergyCard({ summaries }: { summaries: CardioEnergyPeriod[] | undefined }) {
+export function CardioEnergyCard({
+  summaries,
+  weekEnd,
+}: {
+  summaries: CardioEnergyPeriod[] | undefined;
+  weekEnd?: string;
+}) {
   const weightUnit = useWeightUnit();
   const [period, setPeriod] = useState<CardioEnergyPeriod['period']>('week');
-  const [expanded, setExpanded] = useState(false);
   const summary = summaries?.find((item) => item.period === period);
   if (!summary) return null;
-  const missing = summary.total_sessions - summary.logged_sessions;
   const caloriesRecorded = summary.logged_sessions > 0;
   const previousDates =
     summary.previous_start_date && summary.previous_end_date
@@ -67,144 +72,191 @@ export function CardioEnergyCard({ summaries }: { summaries: CardioEnergyPeriod[
 
   return (
     <section className="panel cardio-energy-card cardio-progress-card" aria-label="Cardio progress">
-      <button
-        type="button"
-        className="cardio-progress-toggle"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((current) => !current)}
-      >
-        <div>
-          <p className="section-kicker">METABOLIC WORKLOAD</p>
-          <h2>Cardio METs</h2>
-          <div className="cardio-met-summary" aria-live="polite">
+      <div className="pulse-card-header">
+        <h2 className="profile-help-row">
+          Progress{' '}
+          <HelpPopup title="Cardio progress">
+            <p>
+              MET-minutes are average METs × session minutes. Average METs describes
+              duration-weighted intensity. Only sessions through {prettyDate(summary.end_date)}{' '}
+              count; future sessions are excluded.
+            </p>
+            <p>
+              Each metric uses the sessions where it was logged. Comparisons use the preceding
+              period{previousDates ? ` (${previousDates})` : ''}. Fat energy equivalent is
+              calculated from logged calories at 7,700 kcal per kilogram; it is not measured fat
+              loss.
+            </p>
+            <p>
+              {summary.logged_sessions} of {summary.total_sessions}{' '}
+              {summary.total_sessions === 1 ? 'session has' : 'sessions have'} calories logged.{' '}
+              {metsSessions} {metsSessions === 1 ? 'session has' : 'sessions have'} METs logged.
+            </p>
+          </HelpPopup>
+        </h2>
+      </div>
+      <div className="cardio-progress-content">
+        <div
+          className="segmented-control cardio-energy-periods"
+          role="group"
+          aria-label="Cardio progress period"
+        >
+          {periods.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              aria-pressed={period === item.value}
+              onClick={() => setPeriod(item.value)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <div className="cardio-progress-dates">
+          <strong>
+            {prettyDate(summary.start_date)} –{' '}
+            {prettyDate(period === 'week' ? (weekEnd ?? summary.end_date) : summary.end_date)}
+          </strong>
+        </div>
+        <div className="cardio-progress-grid" aria-live="polite" aria-atomic="true">
+          <article>
+            <span>MET-minutes</span>
             <strong>
-              {metsRecorded ? metMinutes.toLocaleString() : '—'}
-              <small> MET-min</small>
+              {metsRecorded ? (
+                <>
+                  {metMinutes.toLocaleString()} <small className="cardio-stat-unit">MET-min</small>
+                </>
+              ) : (
+                '—'
+              )}
             </strong>
-            <span>
+            <small>
+              {metsSessions} {metsSessions === 1 ? 'session' : 'sessions'} logged
+            </small>
+            <small className="cardio-progress-comparison">
               {metsRecorded
-                ? `${averageMets?.toFixed(1)} average METs · ${metsSessions} of ${summary.total_sessions} sessions logged`
-                : 'Log average METs to track metabolic workload'}
-            </span>
-          </div>
-        </div>
-        <span className="cardio-energy-estimate">
-          {expanded ? 'Hide details −' : 'Show details +'}
-        </span>
-      </button>
-      {expanded && (
-        <div className="cardio-progress-content">
-          <div className="cardio-energy-periods" role="group" aria-label="Cardio progress period">
-            {periods.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                aria-pressed={period === item.value}
-                onClick={() => setPeriod(item.value)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <div className="cardio-progress-dates">
+                ? comparison(metMinutes, summary.previous_met_minutes ?? null, 'MET-min')
+                : 'No METs logged'}
+            </small>
+          </article>
+          <article>
+            <span>Average METs</span>
+            <strong>{averageMets === null ? '—' : averageMets.toFixed(1)}</strong>
+            <small className="cardio-progress-comparison">
+              {averageMets === null
+                ? 'No METs logged'
+                : comparison(averageMets, summary.previous_average_mets ?? null, 'METs')}
+            </small>
+          </article>
+          <article>
+            <span>Calories</span>
             <strong>
-              {prettyDate(summary.start_date)} – {prettyDate(summary.end_date)}
+              {caloriesRecorded ? (
+                <>
+                  {summary.calories_kcal.toLocaleString()}{' '}
+                  <small className="cardio-stat-unit">kcal</small>
+                </>
+              ) : (
+                '—'
+              )}
             </strong>
-            <span>{previousDates ? `Compared with ${previousDates}` : 'All recorded history'}</span>
-          </div>
-          <div className="cardio-progress-grid" aria-live="polite" aria-atomic="true">
-            <article>
-              <span>MET-minutes</span>
-              <strong>{metsRecorded ? `${metMinutes.toLocaleString()} MET-min` : '—'}</strong>
-              <small>{metsSessions} sessions logged</small>
-              <small className="cardio-progress-comparison">
-                {metsRecorded
-                  ? comparison(metMinutes, summary.previous_met_minutes ?? null, 'MET-min')
-                  : 'No METs logged'}
-              </small>
-            </article>
-            <article>
-              <span>Average METs</span>
-              <strong>{averageMets === null ? '—' : averageMets.toFixed(1)}</strong>
-              <small>Duration-weighted intensity</small>
-              <small className="cardio-progress-comparison">
-                {averageMets === null
-                  ? 'No METs logged'
-                  : comparison(averageMets, summary.previous_average_mets ?? null, 'METs')}
-              </small>
-            </article>
-            <article>
-              <span>Calories</span>
-              <strong>
-                {caloriesRecorded ? `${summary.calories_kcal.toLocaleString()} kcal` : '—'}
-              </strong>
-              <small>
-                {summary.logged_sessions} of {summary.total_sessions} sessions logged
-              </small>
-              <small className="cardio-progress-comparison">
-                {caloriesRecorded ? caloriesComparison : 'No calories logged'}
-              </small>
-            </article>
-            <article>
-              <span>Fat burnt</span>
-              <strong>
-                {caloriesRecorded
-                  ? `≈ ${fatEnergyEquivalent(summary.calories_kcal, weightUnit)}`
-                  : '—'}
-              </strong>
-              <small>Calculated from logged calories</small>
-              <small className="cardio-progress-comparison">
-                {caloriesRecorded ? fatComparison : 'Not measured fat loss'}
-              </small>
-            </article>
-            <article>
-              <span>Average HR</span>
-              <strong>{heartRate === null ? '—' : `${heartRate.toFixed(0)} bpm`}</strong>
-              <small>{summary.heart_rate_sessions ?? 0} sessions logged</small>
-              <small className="cardio-progress-comparison">
-                {heartRate === null
-                  ? 'No heart rate logged'
-                  : comparison(heartRate, summary.previous_average_heart_rate_bpm ?? null, 'bpm')}
-              </small>
-            </article>
-            <article>
-              <span>Distance</span>
-              <strong>
-                {(summary.distance_sessions ?? 0) === 0 ? '—' : `${distance.toFixed(2)} km`}
-              </strong>
-              <small>{summary.distance_sessions ?? 0} sessions logged</small>
-              <small className="cardio-progress-comparison">
-                {(summary.distance_sessions ?? 0) === 0
-                  ? 'No distance logged'
-                  : comparison(distance, summary.previous_distance_km ?? null, 'km')}
-              </small>
-            </article>
-            <article>
-              <span>Average speed</span>
-              <strong>{speed === null ? '—' : `${speed.toFixed(1)} km/h`}</strong>
-              <small>{summary.speed_sessions ?? 0} sessions logged</small>
-              <small className="cardio-progress-comparison">
-                {speed === null
-                  ? 'No speed logged'
-                  : comparison(speed, summary.previous_average_speed_kph ?? null, 'km/h')}
-              </small>
-            </article>
-            <article>
-              <span>Average incline</span>
-              <strong>{incline === null ? '—' : `${incline.toFixed(1)}%`}</strong>
-              <small>{summary.incline_sessions ?? 0} sessions logged</small>
-              <small className="cardio-progress-comparison">
-                {incline === null
-                  ? 'No incline logged'
-                  : comparison(incline, summary.previous_average_incline_percent ?? null, '%')}
-              </small>
-            </article>
-          </div>
-          {missing > 0 && (
-            <p className="cardio-energy-note">{missing} sessions are missing calories.</p>
-          )}
+            <small>
+              {summary.logged_sessions} of {summary.total_sessions}{' '}
+              {summary.total_sessions === 1 ? 'session' : 'sessions'} logged
+            </small>
+            <small className="cardio-progress-comparison">
+              {caloriesRecorded ? caloriesComparison : 'No calories logged'}
+            </small>
+          </article>
+          <article>
+            <span>Fat energy equivalent</span>
+            <strong>
+              {caloriesRecorded
+                ? `≈ ${fatEnergyEquivalent(summary.calories_kcal, weightUnit)}`
+                : '—'}
+            </strong>
+            <small className="cardio-progress-comparison">
+              {caloriesRecorded ? fatComparison : 'Not measured fat loss'}
+            </small>
+          </article>
+          <article>
+            <span>Average HR</span>
+            <strong>
+              {heartRate === null ? (
+                '—'
+              ) : (
+                <>
+                  {heartRate.toFixed(0)} <small className="cardio-stat-unit">bpm</small>
+                </>
+              )}
+            </strong>
+            <small>
+              {summary.heart_rate_sessions ?? 0}{' '}
+              {(summary.heart_rate_sessions ?? 0) === 1 ? 'session' : 'sessions'} logged
+            </small>
+            <small className="cardio-progress-comparison">
+              {heartRate === null
+                ? 'No heart rate logged'
+                : comparison(heartRate, summary.previous_average_heart_rate_bpm ?? null, 'bpm')}
+            </small>
+          </article>
+          <article>
+            <span>Distance</span>
+            <strong>
+              {(summary.distance_sessions ?? 0) === 0 ? (
+                '—'
+              ) : (
+                <>
+                  {distance.toFixed(2)} <small className="cardio-stat-unit">km</small>
+                </>
+              )}
+            </strong>
+            <small>
+              {summary.distance_sessions ?? 0}{' '}
+              {(summary.distance_sessions ?? 0) === 1 ? 'session' : 'sessions'} logged
+            </small>
+            <small className="cardio-progress-comparison">
+              {(summary.distance_sessions ?? 0) === 0
+                ? 'No distance logged'
+                : comparison(distance, summary.previous_distance_km ?? null, 'km')}
+            </small>
+          </article>
+          <article>
+            <span>Average speed</span>
+            <strong>
+              {speed === null ? (
+                '—'
+              ) : (
+                <>
+                  {speed.toFixed(1)} <small className="cardio-stat-unit">km/h</small>
+                </>
+              )}
+            </strong>
+            <small>
+              {summary.speed_sessions ?? 0}{' '}
+              {(summary.speed_sessions ?? 0) === 1 ? 'session' : 'sessions'} logged
+            </small>
+            <small className="cardio-progress-comparison">
+              {speed === null
+                ? 'No speed logged'
+                : comparison(speed, summary.previous_average_speed_kph ?? null, 'km/h')}
+            </small>
+          </article>
+          <article>
+            <span>Average incline</span>
+            <strong>{incline === null ? '—' : `${incline.toFixed(1)}%`}</strong>
+            <small>
+              {summary.incline_sessions ?? 0}{' '}
+              {(summary.incline_sessions ?? 0) === 1 ? 'session' : 'sessions'} logged
+            </small>
+            <small className="cardio-progress-comparison">
+              {incline === null
+                ? 'No incline logged'
+                : comparison(incline, summary.previous_average_incline_percent ?? null, '%')}
+            </small>
+          </article>
         </div>
-      )}
+      </div>
     </section>
   );
 }

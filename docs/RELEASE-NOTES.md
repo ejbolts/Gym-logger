@@ -18,6 +18,14 @@
 
 *Wider screens keep the searchable library beside the chart. Returning from full progress preserves your search, list position, selected exercise, metric and date range. Previews use synthetic training data.*
 
+![Cardio weekly trend with metric tabs, week bars, grouped history and labeled logging and screenshot-import actions](screenshots/releases/0.10.0-cardio-weekly-trend.png)
+
+*Choose time, distance, MET-minutes or calories, then tap a week for its totals and duration-weighted averages. Log session and Import screenshot sit above the chart; history is grouped by your week-start preference.*
+
+![Expanded Cardio All stats with compact date-range controls, MET-minutes and the matching metric grid](screenshots/releases/0.10.0-cardio-all-stats.png)
+
+*All stats keeps longer date ranges and prior-period comparisons in the same card. Unlogged metrics stay empty, session counts use the correct plural, and the question mark explains METs and the calorie-based fat energy equivalent.*
+
 ![Social Friends tab listing each friend once with a seven-day activity strip, latest session and reaction button](screenshots/releases/0.10.0-social-friends.png)
 
 *Friends lists each friend once, most recently active first, with their week at a glance, latest session and a reaction button.*
@@ -104,6 +112,8 @@
 
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab. Sessions initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. Show more reveals older sessions; calendar and exercise links can still open older workouts directly. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
 - **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
+
+- **Cardio weekly trends:** one card replaces the separate cardio-time, METs and previous-weeks cards. Switch between time, distance, MET-minutes and calories; tap any of the last eight weeks for its totals, previous-week comparison and duration-weighted averages. **All stats** opens the familiar metrics and longer date ranges in a compact grid. The displayed week uses the full calendar range while totals exclude future sessions. History groups expandable session rows by your preferred week start, retaining filters, pagination, source-workout links and editing actions. **Log session** and **Import screenshot** are available above the chart; screenshot OCR still fills the form for review before saving.
 
 ### Friends and workout conversations
 
