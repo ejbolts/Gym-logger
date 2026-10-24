@@ -3,7 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { api } from './api';
-import { FollowNotifications } from './FollowNotifications';
+import { FollowNotifications, NOTIFICATIONS_PER_PAGE } from './FollowNotifications';
 import {
   markNotificationSnapshotRead,
   unreadNotificationReferences,
@@ -26,7 +26,6 @@ const reaction = {
 let root: Root;
 let host: HTMLDivElement;
 let snapshot: SharingNotifications;
-const friends = vi.fn();
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   HTMLDialogElement.prototype.showModal = function () {
@@ -49,7 +48,6 @@ afterEach(async () => {
   host.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  friends.mockClear();
 });
 async function click(label: string) {
   const b = [...document.querySelectorAll('button')].find(
@@ -59,7 +57,7 @@ async function click(label: string) {
   await act(async () => b!.click());
 }
 async function render() {
-  await act(async () => root.render(<FollowNotifications active onOpenFriends={friends} />));
+  await act(async () => root.render(<FollowNotifications active />));
 }
 it('reads requests, accepted requests and reactions on open without removing their contents or adding Dismiss buttons', async () => {
   snapshot = { requests: [person], accepted: [{ ...person, id: 'riley' }], reactions: [reaction] };
@@ -81,8 +79,43 @@ it('reads requests, accepted requests and reactions on open without removing the
   await click('Notifications');
   expect(document.querySelector('dialog')?.textContent).toContain('Leg day');
   expect(api.sharing.markNotificationsRead).toHaveBeenCalledTimes(1);
-  await click('Manage friends');
-  expect(friends).toHaveBeenCalledOnce();
+  expect(document.querySelector('dialog')?.textContent).not.toContain('Manage friends');
+});
+it('shows 15 notifications per page with pagination instead of a Manage friends link', async () => {
+  snapshot = {
+    requests: [person],
+    accepted: [],
+    reactions: Array.from({ length: 19 }, (_, index) => ({
+      ...reaction,
+      id: `friend-${index}`,
+      display_name: `Friend ${index + 1}`,
+    })),
+  };
+  await render();
+  await click('Notifications, 20 unread');
+  const rows = () => document.querySelectorAll('.follow-notification-list li');
+  const dialog = () => document.querySelector('dialog')!.textContent;
+  expect(rows()).toHaveLength(NOTIFICATIONS_PER_PAGE);
+  expect(dialog()).toContain('Sam Preview');
+  expect(dialog()).toContain('Page 1 of 2');
+  expect(dialog()).not.toContain('Manage friends');
+  await click('Next notifications page');
+  expect(rows()).toHaveLength(5);
+  expect(dialog()).toContain('Friend 19');
+  expect(dialog()).not.toContain('Sam Preview');
+  await click('Choose a notifications page');
+  await click('Go to page 1');
+  expect(dialog()).toContain('Page 1 of 2');
+  await click('Next notifications page');
+  await click('Close Notifications');
+  await click('Notifications');
+  expect(dialog()).toContain('Page 1 of 2');
+});
+it('hides pagination when every notification fits on one page', async () => {
+  snapshot = { requests: [person], accepted: [], reactions: [reaction] };
+  await render();
+  await click('Notifications, 2 unread');
+  expect(document.querySelector('.pagination-controls')).toBeNull();
 });
 it('keeps the unread badge when reading fails and retries without losing notices', async () => {
   snapshot = { requests: [], accepted: [], reactions: [reaction] };

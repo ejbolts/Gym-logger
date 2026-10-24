@@ -38,21 +38,33 @@
 
 *Find holds friend requests to accept or decline, people search, requests you sent and blocked members. All previews use isolated synthetic accounts and workouts.*
 
+![Notifications showing 15 friend requests on the first page with previous, page-picker and next controls and Page 1 of 2](screenshots/releases/0.10.0-notifications-pagination.png)
+
+*Notifications show 15 at a time. Use the arrows or the page picker to move between pages; the Manage friends link is gone.*
+
+![A friend's shared profile with the Social tab highlighted in the bottom bar](screenshots/releases/0.10.0-shared-profile-social-tab.png)
+
+*Social stays highlighted while you view another member's profile.*
+
 ![Your own training profile with name and photo editing, workout totals and the consistency calendar](screenshots/releases/0.10.0-own-profile.png)
 
 *Your profile uses the same training layout as other members. Edit your name and photo above the calendar, training totals and workouts. A private account can preview its own profile without enabling sharing; the header omits the private-profile reminder.*
 
-![The redesigned Settings overview with six purposeful categories and saved-preference summaries](screenshots/releases/0.10.0-settings-overview.png)
+![The Settings overview with six focused categories](screenshots/releases/0.10.0-settings-overview-clean.png)
 
 *Find Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about from one searchable overview. Search opens the right section and focuses its control; account editing still opens your profile.*
 
-![Training settings on a phone with units, weekly goals, rest timer, folded workout types and bodyweight chart defaults](screenshots/releases/0.10.0-settings-training-mobile.png)
+![Appearance settings with All settings in the top header](screenshots/releases/0.10.0-settings-appearance-navigation.png)
 
-*Focused panels keep related options together. Return to All settings without losing unfinished edits. Device preferences stay immediate, account training defaults use Save preferences, and destructive account actions stay inside Account & privacy.*
+*All settings stays in the top header inside every section. Return to the overview without losing unfinished edits. The previews use an isolated sample account.*
 
 ![Time trained help popup explaining workout and cardio duration totals](screenshots/releases/0.10.0-training-time-help.png)
 
 *Tap the question mark beside Time trained to read how the totals avoid counting cardio twice.*
+
+![Time trained switched to Past year, showing workout, cardio and combined totals since the same day last year](screenshots/releases/0.10.0-time-trained-range.png)
+
+*Time trained opens on All time; choose Past year for totals since this day last year.*
 
 ![Profile sharing help popup explaining who can see shared training](screenshots/releases/0.10.0-sharing-help.png)
 
@@ -81,16 +93,18 @@
 - **Daily check-in choices:** select **Body weight**, **Body fat** or **Combined** on the existing Home card. The choice is remembered for your account on this device. Weight entry needs no body-fat value; body-fat entry still requires today’s weight.
 - **Recent Friends Activity:** the renamed Home card loads three additional friends inline when you tap **+N more**, with a spinner and duplicate-click protection while loading. Refreshes preserve the expanded list, a failed expansion keeps existing activity and allows retry, and the remaining count excludes friends without sessions.
 - **Rest times:** choose **0:00 (no rest)** or swipe left on a rest row to remove it without deleting its set. **Undo** restores the previous duration. Removed rests stay removed through set edits, workout saves and reopening. Edit the set and save **Rest after set** to add one back. Choices include **0:30**; **Settings > Training > Rest timers > Show rest times** hides the rows independently of the automatic countdown.
-- **Settings, reorganized:** six focused sections replace the long stack of controls, with saved-value summaries, category labels in search results, and a persistent section menu on wider screens. Training brings units, weekly muscle-set goals, automatic rest timers, workout types and bodyweight chart defaults together. Appearance combines theme and reduced motion; Notifications holds phone alerts and installation help; Account & privacy keeps sharing, password, sign-out and deletion together. Import/export and YouTube live in Data & connections; guides, updates and feedback live in Help & about. Search reveals hidden panels and folded editors without activating their controls. Unfinished forms survive section changes, and Export stays available for every import source. The app tour and import onboarding open their matching panels.
+- **Settings, reorganized:** six focused sections replace the long stack of controls, with category labels in search results and a persistent section menu on wider screens. Training brings units, weekly muscle-set goals, automatic rest timers, workout types and bodyweight chart defaults together. Appearance combines theme and reduced motion; Notifications holds phone alerts and installation help; Account & privacy keeps sharing, password, sign-out and deletion together. Import/export and YouTube live in Data & connections; guides, updates and feedback live in Help & about. Search reveals hidden panels and folded editors without activating their controls. All settings replaces the top back button inside a section and returns to the overview before leaving Settings. Browse cards omit the blue preference summaries, and the extra search hint is removed. Unfinished forms survive section changes, and Export stays available for every import source. The app tour and import onboarding open their matching panels.
 - **Keep moving while saving:** finishing a workout returns to Home immediately; saving an old session returns to Sessions while the save continues. Completion PRs and routine notices are dismissible, non-blocking messages. A completed or failed save respects a screen you have moved to, and failed saves retain your entries for retry.
 - **Training across devices:** saved workout creates, edits and deletions appear automatically while the app is visible, normally within a five-second check plus the request time. Returning or reconnecting checks immediately. Bodyweight, goals and standalone cardio changes also signal a refresh; loaded progress, cardio and your own profile stay current. Refreshes preserve your active workout, unsaved edits and filters, pause when hidden/offline, skip unchanged data and retry temporary failures quietly. In-progress workouts remain on the device where you are logging, and simultaneous edits to the same saved workout retain the existing last-save behavior.
 - **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls. Removed the duplicate blue plus buttons from Training and Body headers; use **Start** for workouts and **Log weigh-in** for bodyweight entries.
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab.
 - **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views.
 - **Friends instead of followers:** send one friend request; once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles, and either friend can remove the friendship. Existing follows in either direction became friendships, and waiting follow requests became friend requests. Notifications show requests to you and requests that were accepted.
-- **Social:** a dedicated bottom tab with **Friends** and **Find**. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members, with a badge for waiting requests. Profiles offer **Add friend**, **Accept** or **Decline**, and a menu to cancel a request, remove a friend or block. Home keeps its compact friends card.
+- **Social:** a dedicated bottom tab with **Friends** and **Find**. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members, with a badge for waiting requests. Profiles offer **Add friend**, **Accept** or **Decline**, and a menu to cancel a request, remove a friend or block. The **Social** tab stays highlighted while you view another member's profile. Home keeps its compact friends card.
+- **Notifications:** the inbox shows 15 notifications per page, with previous, next and page-picker controls when there are more. The **Manage friends** link is removed; friend management stays in **Social > Find**.
 - **Your profile:** tapping your avatar opens the same calendar, training totals and workout layout used for other members, with the existing name, username and photo editor. Sharing, account UUID, password, sign-out, account deletion and administrator feedback controls move to **Settings**. Search opens their new locations; choosing sharing from Social goes directly to its settings section. Private accounts can view their own profile while remaining hidden from other members.
 - **Help when you need it:** tap **?** beside **Time trained** or **Profile sharing** for their explanations. The descriptions no longer take space in the cards. Collapsed **What you share** shows a downward arrow, even when its parent is expanded.
+- **Time trained ranges:** switch between **All time** (the default) and **Past year** on your own and shared profiles. Past year counts workouts and cardio dated from the same day last year onwards.
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.
 - **Sessions:** initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. **Show more** reveals older sessions; calendar and exercise links can still open older workouts directly.
 - Enlarged the Cardio, Up next and Empty circles from 44 px to 52 px and their icons from 20 px to 24 px.

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import {
   SETTINGS_GROUP_LABELS,
@@ -12,7 +12,6 @@ export interface SettingsGroup {
   id: SettingsGroupId;
   icon: IconName;
   description: string;
-  summary: string;
   content: ReactNode;
 }
 
@@ -25,7 +24,8 @@ export function SettingsHub({
   onOpenProfile,
   revealData,
   revealHelp,
-  initialGroup = null,
+  selected,
+  onSelect,
 }: {
   active: boolean;
   groups: SettingsGroup[];
@@ -34,10 +34,11 @@ export function SettingsHub({
   onOpenProfile: () => void;
   revealData: boolean;
   revealHelp?: boolean;
-  initialGroup?: SettingsGroupId | null;
+  selected: SettingsGroupId | null;
+  onSelect: (group: SettingsGroupId | null) => void;
 }) {
   const navigation = useContext(SettingsNavigationContext);
-  const [selected, setSelected] = useState<SettingsGroupId | null>(initialGroup);
+  const previousSelection = useRef(selected);
   const heading = useRef<HTMLHeadingElement>(null);
   const overviewButtons = useRef(new Map<SettingsGroupId, HTMLButtonElement>());
   const handled = useRef(0);
@@ -48,31 +49,31 @@ export function SettingsHub({
     if (!active || !request || handled.current === request.serial) return;
     if (request.destination.page !== 'settings' || !request.destination.group) return;
     handled.current = request.serial;
-    setSelected(request.destination.group);
-  }, [active, navigation?.request]);
+    onSelect(request.destination.group);
+  }, [active, navigation?.request, onSelect]);
 
   useEffect(() => {
-    if (revealData) setSelected('data');
-  }, [revealData]);
+    if (revealData) onSelect('data');
+  }, [revealData, onSelect]);
 
   useEffect(() => {
-    if (revealHelp) setSelected('help');
-  }, [revealHelp]);
+    if (revealHelp) onSelect('help');
+  }, [revealHelp, onSelect]);
+
+  useEffect(() => {
+    const previous = previousSelection.current;
+    previousSelection.current = selected;
+    if (selected !== null || previous === null) return;
+    const frame = requestAnimationFrame(() => overviewButtons.current.get(previous)?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [selected]);
 
   function choose(id: SettingsGroupId) {
-    setSelected(id);
+    onSelect(id);
     // Search handles its own destination focus; category navigation focuses the panel title.
     requestAnimationFrame(() => {
       heading.current?.focus({ preventScroll: true });
       heading.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
-    });
-  }
-
-  function showOverview() {
-    const previous = selected;
-    setSelected(null);
-    requestAnimationFrame(() => {
-      if (previous) overviewButtons.current.get(previous)?.focus();
     });
   }
 
@@ -120,22 +121,15 @@ export function SettingsHub({
               <span className="settings-category-copy">
                 <strong>{SETTINGS_GROUP_LABELS[entry.id]}</strong>
                 <span>{entry.description}</span>
-                <small>{entry.summary}</small>
               </span>
               <Icon name="chevron-right" />
             </button>
           ))}
         </nav>
-        <p className="settings-overview-hint">
-          <Icon name="search" /> Know what you need? Search takes you straight there.
-        </p>
       </div>
 
       <div className="settings-workspace" hidden={!group}>
         <nav className="settings-section-nav" aria-label="Settings sections">
-          <button type="button" className="settings-all-button" onClick={showOverview}>
-            <Icon name="chevron-left" /> All settings
-          </button>
           <div className="settings-section-links">
             {groups.map((entry) => (
               <button

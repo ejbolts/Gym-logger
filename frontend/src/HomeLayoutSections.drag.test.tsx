@@ -157,7 +157,9 @@ describe('Home empty-space dragging', () => {
     expect(document.querySelector('.home-section-picker')!.textContent).not.toContain('Move');
     expect(document.querySelector('[aria-label="Add Workouts here"]')).toBeNull();
     await act(async () =>
-      document.querySelector<HTMLButtonElement>('[aria-label="Add Friends here"]')!.click(),
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="Add Recent Friends Activity here"]')!
+        .click(),
     );
     expect(changed.mock.lastCall![0]).toEqual({
       order: ['workouts', 'cardio-sessions', 'friends', 'consistency'],

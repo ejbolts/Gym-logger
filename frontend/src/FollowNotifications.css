@@ -85,16 +85,8 @@
   font-size: 0.75rem;
   white-space: nowrap;
 }
-.follow-notifications > .follow-notification-manage {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0.75rem 0.875rem;
-  font-size: 0.8125rem;
+.follow-notifications > .pagination-controls {
   margin: 0;
-}
-.follow-notification-manage .pulse-icon {
-  width: 1rem;
-  height: 1rem;
+  border-top: 0;
+  padding: 0.75rem 0.875rem;
 }

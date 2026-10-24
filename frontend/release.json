@@ -6,16 +6,17 @@
   "changes": [
     "Home’s Daily check-in offers Body weight, Body fat or Combined, remembering the display choice for your account on this device. Log weight without knowing body-fat percentage; body-fat entries still require today’s weight.",
     "Home’s Friends card is now Recent Friends Activity. Tap +N more to show a loading spinner and add three friends inline. Expanded activity stays visible during refreshes, and the count includes only friends with sessions available.",
-    "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
+    "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. All settings stays at the top of each section and returns to the overview. Browse cards omit preference summaries and the extra search hint. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
     "Finish a workout or save an old session and keep navigating while the save completes. Routine notices and completion PRs no longer lock the page; failed saves retain your entries for retry and respect a screen you have moved to.",
     "Saved workouts, bodyweight, goals and cardio refresh automatically across signed-in devices. The visible app checks every five seconds and when you return or reconnect, refreshes changed data quietly, and preserves active workouts, unsaved edits and filters. In-progress workouts stay on the device where you are logging.",
     "Notifications and Profile now sit beside Settings in the same order on Home, Training, Social and Body. Removed the duplicate blue plus buttons from Training and Body headers; use Start for workouts and Log weigh-in for bodyweight entries.",
     "Training combines Sessions, Exercises and Cardio. Sessions keeps the existing calendar, day details, machine filters and workout cards, with the latest three weeks shown first and Show more for older workouts.",
     "Exercises has a bounded, searchable library with a live progress preview below on phones and beside it on wider screens. Date-range buttons sit beside the preview value. Open full progress for records and session history, then return with your search, list position and range intact. Older History, Progress and Cardio links still work.",
     "Follows are now friendships. Send a friend request, and once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles. Existing follows in either direction became friendships, and waiting follow requests became friend requests.",
-    "Social has its own bottom tab. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members. Remove or block a friend from their profile. Home keeps its compact friends card.",
+    "Social has its own bottom tab. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members. Remove or block a friend from their profile, and Social stays highlighted while you view it. Home keeps its compact friends card.",
+    "Notifications show 15 at a time, with page controls when there are more. The Manage friends link is gone; manage friends from Social.",
     "Your profile now uses the same training layout as other members, with your calendar, training totals and workouts. Edit your name and photo here. Sharing, account ID, password, sign-out and account deletion are now in Settings. Private profiles can preview their own page without enabling sharing, without a private-profile reminder in the header.",
-    "Time trained and Profile sharing keep their explanations behind question-mark help buttons. The collapsed What you share arrow points down, independently of its parent section.",
+    "Time trained switches between All time and Past year. Time trained and Profile sharing keep their explanations behind question-mark help buttons. The collapsed What you share arrow points down, independently of its parent section.",
     "Progress changes are green for increases, red for decreases, and neutral when unchanged across estimated 1RM, top set and volume.",
     "Training’s Sessions view starts with the latest workout week and the two preceding calendar weeks, using your week-start preference. Show more reveals older workouts, and links to older sessions still open them directly.",
     "Quick-start circles are now 52 px across, up from 44 px, with larger icons to make each option easier to see and tap.",
@@ -31,7 +32,7 @@
   "highlights": [
     {
       "title": "Your daily check-in, your choice",
-      "description": "Choose Body weight, Body fat or Combined on Home. Your choice stays on this device for your account. Weight needs no body-fat value; body-fat entries still require today?s weight.",
+      "description": "Choose Body weight, Body fat or Combined on Home. Your choice stays on this device for your account. Weight needs no body-fat value; body-fat entries still require today’s weight.",
       "image": {
         "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/03bdf550b8cdaef85422851aca699a555b58cb5e/docs/screenshots/releases/0.10.0-daily-check-in.png",
         "alt": "Daily check-in offers Body weight, Body fat and Combined, with synthetic saved measurements."
@@ -47,10 +48,10 @@
     },
     {
       "title": "Settings, with a place for everything",
-      "description": "Browse six focused sections with saved-value summaries. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
+      "description": "Browse six focused sections with streamlined cards and an All settings return button at the top. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/f1e3a10d6e6bc1b5242ab2e3e9abe62b840b1968/docs/screenshots/releases/0.10.0-settings-overview.png",
-        "alt": "The redesigned Settings overview with six focused categories, search and synthetic account preferences."
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/50ad2676a256068f6aa12eb22409b88dd7781647/docs/screenshots/releases/0.10.0-settings-overview-clean.png",
+        "alt": "The streamlined Settings overview with six focused categories and search, using a synthetic sample account."
       }
     },
     {
