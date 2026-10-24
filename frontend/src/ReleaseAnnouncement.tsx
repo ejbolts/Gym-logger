@@ -1,7 +1,12 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { PopupDialog } from './PopupDialog';
-import { formatReleaseDate, type Release, type ReleaseHighlight } from './releaseMetadata';
+import {
+  formatReleaseDate,
+  type Release,
+  type ReleaseHighlight,
+  type ReleaseVideo,
+} from './releaseMetadata';
 
 function ReleaseDate({ release }: { release: Release }) {
   return release.date ? (
@@ -10,6 +15,52 @@ function ReleaseDate({ release }: { release: Release }) {
     </time>
   ) : (
     <span className="release-date">Date not recorded</span>
+  );
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== 'undefined' &&
+    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+function ReleaseTrailer({ video }: { video: ReleaseVideo }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [failed, setFailed] = useState(false);
+  const [autoPlay] = useState(() => !prefersReducedMotion());
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    // React does not render the muted attribute, which mobile browsers need for autoplay.
+    element.muted = true;
+    element.setAttribute('muted', '');
+    if (autoPlay) element.play()?.catch(() => undefined);
+  }, [autoPlay]);
+
+  return (
+    <figure className="release-trailer">
+      {failed ? (
+        <img src={video.poster} alt={video.alt} decoding="async" />
+      ) : (
+        <video
+          ref={ref}
+          src={video.url}
+          poster={video.poster}
+          aria-label={video.alt}
+          autoPlay={autoPlay}
+          muted
+          loop
+          playsInline
+          controls
+          controlsList="nodownload noplaybackrate noremoteplayback"
+          disablePictureInPicture
+          preload={autoPlay ? 'auto' : 'metadata'}
+          onError={() => setFailed(true)}
+        />
+      )}
+    </figure>
   );
 }
 
@@ -115,6 +166,7 @@ function EarlierRelease({ release }: { release: Release }) {
       <div id={detailsId} className="release-history-details" hidden={!open}>
         {open && (
           <>
+            {release.video && <ReleaseTrailer video={release.video} />}
             <p>{release.summary}</p>
             <ReleaseDetails
               release={release}
@@ -151,6 +203,7 @@ export function ReleaseAnnouncement({
       <div className="release-announcement-body">
         <h3>{release.title}</h3>
         <ReleaseDate release={release} />
+        {release.video && <ReleaseTrailer video={release.video} />}
         <p>{release.summary}</p>
         <button
           type="button"

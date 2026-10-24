@@ -51,6 +51,21 @@
   padding: 1rem 1.25rem;
 }
 
+.release-trailer {
+  width: min(100%, 26rem, calc(60dvh * 4 / 5));
+  margin: 1rem auto 1.25rem;
+}
+
+.release-trailer video,
+.release-trailer img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 0.875rem;
+  background: #05070b;
+}
+
 .release-screenshot {
   margin: 0 0 1.25rem;
 }
