@@ -76,8 +76,8 @@
       "title": "Friends, not followers",
       "description": "Send one friend request; once it is accepted you both see each other. Friends lists everyone once with their latest session and week. Find holds requests and people search.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/8b48cf8fa2a112899ecc6c7c248a1a7879315ce2/docs/screenshots/releases/0.10.0-social-friends.png",
-        "alt": "Social Friends tab listing synthetic friends once each, with a seven-day activity strip, latest session and reaction button."
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/eb7ac22a30766d58e159573f512e9378de7e8eba/docs/screenshots/releases/0.10.0-social-friends-day-letters.png",
+        "alt": "Social Friends tab listing synthetic friends once each, with a seven-day activity strip labelled by day initial, latest session and reaction button."
       }
     },
     {
