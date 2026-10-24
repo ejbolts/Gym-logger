@@ -1,6 +1,9 @@
 .exercise-list-detail {
   min-width: 0;
 }
+.history-screen.exercise-header-view {
+  padding-top: var(--overlay-header-content-offset);
+}
 .exercise-list-library {
   margin-top: 0.75rem;
 }

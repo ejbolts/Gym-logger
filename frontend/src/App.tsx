@@ -6105,6 +6105,12 @@ const RANGE_LABELS: Record<BodyTrendRange, string> = {
   all: 'All',
 };
 
+interface ExerciseDetailHeader {
+  exercise: Exercise;
+  sessionCount: number | null;
+  onBack: () => void;
+}
+
 export function ProgressScreen({
   dataRevision = null,
   exercises,
@@ -6116,6 +6122,7 @@ export function ProgressScreen({
   defaultExerciseId = null,
   browseFirst = false,
   onOpenSettings,
+  onDetailChange,
 }: {
   dataRevision?: string | null;
   exercises: Exercise[];
@@ -6127,6 +6134,7 @@ export function ProgressScreen({
   defaultExerciseId?: string | null;
   browseFirst?: boolean;
   onOpenSettings?: () => void;
+  onDetailChange?: (header: ExerciseDetailHeader | null) => void;
 }) {
   const weightUnit = useWeightUnit();
   const strengthExercises = useMemo(
@@ -6156,6 +6164,37 @@ export function ProgressScreen({
   const metricIndicatorRef = useSlidingIndicator<HTMLDivElement>(metric);
   const rangeIndicatorRef = useSlidingIndicator<HTMLDivElement>(displayRange);
   const selectedExercise = strengthExercises.find((exercise) => exercise.id === exerciseId) ?? null;
+
+  const backToExercises = useCallback(() => {
+    setFullProgress(false);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: libraryScroll.current, behavior: 'instant' });
+      const button = [
+        ...(libraryRoot.current?.querySelectorAll<HTMLButtonElement>('[data-exercise-id]') ?? []),
+      ].find((item) => item.dataset.exerciseId === exerciseId);
+      button?.focus({ preventScroll: true });
+    });
+  }, [exerciseId]);
+  const progressSessionCount = progress?.points.length ?? null;
+  useEffect(() => {
+    onDetailChange?.(
+      browseFirst && fullProgress && selectedExercise
+        ? {
+            exercise: selectedExercise,
+            sessionCount: progressSessionCount,
+            onBack: backToExercises,
+          }
+        : null,
+    );
+  }, [
+    onDetailChange,
+    browseFirst,
+    fullProgress,
+    selectedExercise,
+    progressSessionCount,
+    backToExercises,
+  ]);
+  useEffect(() => () => onDetailChange?.(null), [onDetailChange]);
 
   useEffect(() => {
     if (!exerciseId || libraryMode) return;
@@ -6257,23 +6296,8 @@ export function ProgressScreen({
     <section
       className={`progress-screen ${embedded ? '' : 'content-page'}${browseFirst ? ' exercise-list-detail' : ''}`}
     >
-      {browseFirst && fullProgress && (
-        <button
-          type="button"
-          className="training-back text-link"
-          onClick={() => {
-            setFullProgress(false);
-            requestAnimationFrame(() => {
-              window.scrollTo({ top: libraryScroll.current, behavior: 'instant' });
-              const button = [
-                ...(libraryRoot.current?.querySelectorAll<HTMLButtonElement>(
-                  '[data-exercise-id]',
-                ) ?? []),
-              ].find((item) => item.dataset.exerciseId === exerciseId);
-              button?.focus({ preventScroll: true });
-            });
-          }}
-        >
+      {browseFirst && fullProgress && !onDetailChange && (
+        <button type="button" className="training-back text-link" onClick={backToExercises}>
           <Icon name="chevron-left" /> Exercises
         </button>
       )}
@@ -6286,9 +6310,10 @@ export function ProgressScreen({
               libraryScroll.current = window.scrollY;
               setExerciseId(id);
               setFullProgress(true);
-              requestAnimationFrame(() =>
-                libraryRoot.current?.parentElement?.scrollIntoView?.({ block: 'start' }),
-              );
+              requestAnimationFrame(() => {
+                if (onDetailChange) window.scrollTo({ top: 0, behavior: 'instant' });
+                else libraryRoot.current?.parentElement?.scrollIntoView?.({ block: 'start' });
+              });
             }}
           />
         </div>
@@ -6311,39 +6336,41 @@ export function ProgressScreen({
         aria-label="Full exercise progress"
         hidden={libraryMode}
       >
-        <PageHeader
-          headingLevel={embedded ? 2 : 1}
-          eyebrow={
-            selectedExercise
-              ? [
-                  selectedExercise.muscle_group,
-                  selectedExercise.equipment,
-                  progress
-                    ? `${progress.points.length} ${progress.points.length === 1 ? 'session' : 'sessions'}`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              : 'Exercise progress'
-          }
-          title={selectedExercise?.name ?? 'Progress'}
-          onOpenSettings={embedded ? undefined : onOpenSettings}
-          actions={
-            <>
-              {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
-              {!browseFirst && (
-                <button
-                  className="icon-button-pulse"
-                  type="button"
-                  aria-label="Select exercise"
-                  onClick={() => setPickerRequest((request) => request + 1)}
-                >
-                  <Icon name="search" />
-                </button>
-              )}
-            </>
-          }
-        />
+        {!onDetailChange && (
+          <PageHeader
+            headingLevel={embedded ? 2 : 1}
+            eyebrow={
+              selectedExercise
+                ? [
+                    selectedExercise.muscle_group,
+                    selectedExercise.equipment,
+                    progress
+                      ? `${progress.points.length} ${progress.points.length === 1 ? 'session' : 'sessions'}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : 'Exercise progress'
+            }
+            title={selectedExercise?.name ?? 'Progress'}
+            onOpenSettings={embedded ? undefined : onOpenSettings}
+            actions={
+              <>
+                {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
+                {!browseFirst && (
+                  <button
+                    className="icon-button-pulse"
+                    type="button"
+                    aria-label="Select exercise"
+                    onClick={() => setPickerRequest((request) => request + 1)}
+                  >
+                    <Icon name="search" />
+                  </button>
+                )}
+              </>
+            }
+          />
+        )}
         {!browseFirst && (
           <section className="progress-controls">
             <ProgressExerciseSearch
@@ -8849,6 +8876,7 @@ function HistoryScreen({
   accountActions?: ReactNode;
 }) {
   const weightUnit = useWeightUnit();
+  const [exerciseHeader, setExerciseHeader] = useState<ExerciseDetailHeader | null>(null);
   const { types } = useWorkoutTypes();
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
   const [extraVisibleCount, setExtraVisibleCount] = useState(0);
@@ -9013,54 +9041,76 @@ function HistoryScreen({
   }, [section, openId, visibleCount, targetExerciseId]);
 
   return (
-    <section className="history-screen content-page">
-      <PageHeader
-        eyebrow={
-          section === 'progress'
-            ? 'Exercise charts · records · sessions'
-            : section === 'cardio'
-              ? 'Zone 2 · energy · sessions'
-              : `${totalWorkouts} ${totalWorkouts === 1 ? 'workout' : 'workouts'} logged`
-        }
-        title="Training"
-        onOpenSettings={onOpenSettings}
-        accountActions={accountActions}
-      />
-      <div
-        ref={sectionIndicatorRef}
-        className="segmented-control slide-indicator"
-        role="tablist"
-        aria-label="Training sections"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={section === 'history'}
-          className={section === 'history' ? 'active' : ''}
-          onClick={() => onSectionChange('history')}
-        >
-          Sessions
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={section === 'progress'}
-          className={section === 'progress' ? 'active' : ''}
-          data-guide-target="progress"
-          onClick={() => onSectionChange('progress')}
-        >
-          Exercises
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={section === 'cardio'}
-          className={section === 'cardio' ? 'active' : ''}
-          onClick={() => onSectionChange('cardio')}
-        >
-          Cardio
-        </button>
-      </div>
+    <section
+      className={`history-screen content-page${section === 'progress' && exerciseHeader ? ' exercise-header-view' : ''}`}
+    >
+      {section === 'progress' && exerciseHeader ? (
+        <OverlayScreenHeader
+          title={exerciseHeader.exercise.name}
+          subtitle={[
+            exerciseHeader.exercise.muscle_group,
+            exerciseHeader.exercise.equipment,
+            exerciseHeader.sessionCount === null
+              ? null
+              : `${exerciseHeader.sessionCount} ${exerciseHeader.sessionCount === 1 ? 'session' : 'sessions'}`,
+          ]
+            .filter(Boolean)
+            .join(' \u00b7 ')}
+          onBack={exerciseHeader.onBack}
+          backLabel="Back to exercises"
+          actions={<ExerciseMuscleHelp exercise={exerciseHeader.exercise} />}
+        />
+      ) : (
+        <>
+          <PageHeader
+            eyebrow={
+              section === 'progress'
+                ? 'Exercise charts · records · sessions'
+                : section === 'cardio'
+                  ? 'Zone 2 · energy · sessions'
+                  : `${totalWorkouts} ${totalWorkouts === 1 ? 'workout' : 'workouts'} logged`
+            }
+            title="Training"
+            onOpenSettings={onOpenSettings}
+            accountActions={accountActions}
+          />
+          <div
+            ref={sectionIndicatorRef}
+            className="segmented-control slide-indicator"
+            role="tablist"
+            aria-label="Training sections"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={section === 'history'}
+              className={section === 'history' ? 'active' : ''}
+              onClick={() => onSectionChange('history')}
+            >
+              Sessions
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={section === 'progress'}
+              className={section === 'progress' ? 'active' : ''}
+              data-guide-target="progress"
+              onClick={() => onSectionChange('progress')}
+            >
+              Exercises
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={section === 'cardio'}
+              className={section === 'cardio' ? 'active' : ''}
+              onClick={() => onSectionChange('cardio')}
+            >
+              Cardio
+            </button>
+          </div>
+        </>
+      )}
       {visitedSections.has('progress') && (
         <CachedTabPanel active={section === 'progress'}>
           <ProgressScreen
@@ -9071,6 +9121,7 @@ function HistoryScreen({
             onOpenWorkout={(workoutId, exerciseId) => onOpenWorkout(workoutId, exerciseId)}
             embedded
             browseFirst
+            onDetailChange={setExerciseHeader}
             initialExerciseId={initialExerciseId}
             defaultExerciseId={defaultExerciseId}
             onOpenSettings={onOpenSettings}

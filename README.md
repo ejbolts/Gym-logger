@@ -50,7 +50,7 @@ Import original **Strength Level**, **Hevy** or **Strong** workout CSVs: choose 
 
 **Cardio** records sessions on their own or alongside a workout. Add duration and optional machine or watch metrics such as distance, calories, average heart rate, speed, incline and cycling power. Compare activity across date ranges and work towards a weekly Zone 2 target.
 
-**Body** tracks body weight and optional body-fat measurements, with trends and a weight goal to help you follow changes over time. Home’s **Daily check-in** offers **Body weight**, **Body fat** or **Combined**, remembering the choice for your account on this device. Weight can be logged without body-fat percentage; logging body fat requires today’s weight.
+**Body** tracks body weight and optional body-fat measurements, with trends and a weight goal to help you follow changes over time. Home offers separate **Body weight check-in**, **Body fat check-in** and **Combined check-in** sections. Add, hide, resize and arrange them through **Edit Home layout**. Weight can be logged without body-fat percentage; logging body fat requires today’s weight.
 
 <p>
   <a href="docs/screenshots/readme/body.png"><img src="docs/screenshots/readme/body.png" alt="Body screen with a weight goal, trend chart and daily check-in history" width="360"></a>

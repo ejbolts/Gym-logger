@@ -35,6 +35,8 @@ vi.mock('./api', async (importOriginal) => {
       uploadMachinePhoto: vi.fn(),
       listAllMachinePhotos: vi.fn(),
       machinePhotoWorkouts: vi.fn(),
+      exerciseLibrary: vi.fn().mockResolvedValue([]),
+      exerciseProgress: vi.fn(),
     },
   };
 });
@@ -189,6 +191,13 @@ beforeEach(() => {
     heatmap: [],
   } as unknown as DashboardData);
   vi.mocked(api.listExercises).mockResolvedValue([legPress]);
+  vi.mocked(api.exerciseLibrary).mockResolvedValue([]);
+  vi.mocked(api.exerciseProgress).mockResolvedValue({
+    exercise: legPress,
+    points: [],
+    personal_best_weight_kg: 0,
+    personal_best_estimated_1rm: 0,
+  });
   vi.mocked(readDashboardCache).mockResolvedValue(null);
   vi.mocked(writeDashboardCache).mockResolvedValue(undefined);
   vi.mocked(optimisePhoto).mockImplementation(async (file: File) => file);
@@ -327,6 +336,29 @@ describe('saving and pinning a machine photo while logging', () => {
 
 describe('filtering History by machine', () => {
   beforeEach(() => window.history.replaceState(null, '', '#history'));
+
+  it('replaces the Training header with an exercise back header and restores the searched list', async () => {
+    await act(async () => root.render(<App />));
+    await click(button('Exercises'));
+    await type(
+      container.querySelector<HTMLInputElement>('[aria-label="Search exercises"]')!,
+      'Leg',
+    );
+    await click(
+      container.querySelector<HTMLButtonElement>('[data-exercise-id="leg-press"]') ??
+        container.querySelector<HTMLButtonElement>('.exercise-list-rows button')!,
+    );
+    expect(
+      container.querySelector('.history-screen .overlay-header-copy strong')?.textContent,
+    ).toBe('Leg Press');
+    expect(container.querySelector('[aria-label="Training sections"]')).toBeNull();
+    expect(container.querySelector('.training-back')).toBeNull();
+    await click(container.querySelector<HTMLButtonElement>('[aria-label="Back to exercises"]')!);
+    expect(container.querySelector('[aria-label="Training sections"]')).not.toBeNull();
+    expect(
+      container.querySelector<HTMLInputElement>('[aria-label="Search exercises"]')?.value,
+    ).toBe('Leg');
+  });
 
   it('keeps the calendar and open session when switching Training views and returning from Social', async () => {
     await act(async () => root.render(<App />));

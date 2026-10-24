@@ -65,9 +65,23 @@ export const HOME_SECTIONS = [
     size: 'half',
   },
   {
-    id: 'daily-check-in',
-    title: 'Daily check-in',
-    description: 'Log today’s bodyweight',
+    id: 'combined-check-in',
+    title: 'Combined check-in',
+    description: 'Log body weight and body fat',
+    icon: 'body',
+    size: 'full',
+  },
+  {
+    id: 'bodyweight-check-in',
+    title: 'Body weight check-in',
+    description: 'Log body weight',
+    icon: 'body',
+    size: 'full',
+  },
+  {
+    id: 'body-fat-check-in',
+    title: 'Body fat check-in',
+    description: 'Log body fat',
     icon: 'body',
     size: 'full',
   },
@@ -104,7 +118,11 @@ export interface HomeLayout {
 }
 
 export function defaultHomeLayout(): HomeLayout {
-  return { order: HOME_SECTIONS.map((section) => section.id), hidden: [], widths: {} };
+  return {
+    order: HOME_SECTIONS.map((section) => section.id),
+    hidden: ['bodyweight-check-in', 'body-fat-check-in'],
+    widths: {},
+  };
 }
 
 /** Fill each row when hiding or moving a small card leaves fewer neighbours. */

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal, get_args
+from typing import Annotated, Any, Literal, get_args
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, ValidationError, model_validator
@@ -21,11 +21,14 @@ HomeSection = Literal[
     "muscle-sets",
     "zone2",
     "bodyweight-trend",
-    "daily-check-in",
+    "combined-check-in",
+    "bodyweight-check-in",
+    "body-fat-check-in",
     "records",
     "friends",
 ]
 SECTION_IDS = list(get_args(HomeSection))
+OPTIONAL_CHECK_INS = ["bodyweight-check-in", "body-fat-check-in"]
 LAYOUT_KEY = "home_layout"
 
 
@@ -33,10 +36,38 @@ class HomeLayout(BaseModel):
     order: list[HomeSection] = Field(
         default_factory=lambda: SECTION_IDS.copy(), max_length=len(SECTION_IDS)
     )
-    hidden: list[HomeSection] = Field(default_factory=list, max_length=len(SECTION_IDS))
+    hidden: list[HomeSection] = Field(
+        default_factory=lambda: OPTIONAL_CHECK_INS.copy(), max_length=len(SECTION_IDS)
+    )
     widths: dict[HomeSection, Literal["compact", "full", "third"]] = Field(
         default_factory=dict, max_length=len(SECTION_IDS)
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_check_in_sections(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        result = dict(value)
+        # Keep the old card's exact position, visibility and width. New alternatives
+        # start in Add sections rather than appearing alongside the migrated card.
+        for key in ("order", "hidden"):
+            if isinstance(result.get(key), list):
+                result[key] = [
+                    "combined-check-in" if item == "daily-check-in" else item
+                    for item in result[key]
+                ]
+        if isinstance(result.get("widths"), dict):
+            result["widths"] = {
+                "combined-check-in" if key == "daily-check-in" else key: width
+                for key, width in result["widths"].items()
+            }
+        if isinstance(result.get("order"), list) and isinstance(result.get("hidden", []), list):
+            missing = [section for section in OPTIONAL_CHECK_INS if section not in result["order"]]
+            result["hidden"] = list(result.get("hidden", [])) + [
+                section for section in missing if section not in result.get("hidden", [])
+            ]
+        return result
 
     @model_validator(mode="after")
     def validate_sections(self) -> HomeLayout:
