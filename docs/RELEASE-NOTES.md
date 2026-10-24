@@ -10,13 +10,13 @@
 
 *The calendar, date details, machine filter and session cards stay together in Sessions. Show more reveals older workouts.*
 
-![Training Exercises on a phone with a bounded library and live Pec Deck preview](screenshots/releases/0.9.1-training-exercises.png)
+![Exercises list with search, muscle filters, sorting, and eight-week estimated 1RM trends](screenshots/releases/0.10.0-exercise-list.png)
 
-*Scroll or search the library to update the preview. Range buttons sit beside the value; Open full progress retains the familiar records and session history.*
+*Search or filter the full exercise list, then sort by recent use, name or percentage improvement. Each trained lift shows its latest estimated 1RM and eight-week trend; untrained exercises remain available.*
 
-![Exercise library and progress preview side by side on a wider screen](screenshots/releases/0.9.1-exercise-library-wide.png)
+![Focused exercise detail with metric controls, chart and personal bests](screenshots/releases/0.10.0-exercise-detail.png)
 
-*Wider screens keep the searchable library beside the chart. Returning from full progress preserves your search, list position, selected exercise, metric and date range. Previews use synthetic training data.*
+*Tap a lift for per-session charts, personal bests and session history. Session rows open completed sets before Open workout. Return to Exercises with the list's search, filters, sort and scroll position intact. These previews use isolated synthetic workouts.*
 
 ![Social Friends tab listing each friend once with a seven-day activity strip, latest session and reaction button](screenshots/releases/0.10.0-social-friends.png)
 
@@ -103,7 +103,7 @@
 ### Training in one place
 
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab. Sessions initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. Show more reveals older sessions; calendar and exercise links can still open older workouts directly. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
-- **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
+- **Exercises:** option A replaces the library/preview split with a full exercise list and a focused detail view. Search by exercise or equipment, filter by muscle group, and cycle Recent first, A-Z and Most improved sorting. Rows show recent estimated 1RM, an eight-week trend and change; untrained lifts remain available. Tap a lift for per-session charts, personal bests and session history. Session rows open a set sheet with weight, reps, RPE and an Open workout action. Back to Exercises retains the query, filter, sort, scroll, metric and range. The list loads its account-owned trends in one request, excluding future sessions, warmups and unfinished sets.
 
 ### Friends and workout conversations
 

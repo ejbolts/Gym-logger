@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ProgressScreen } from './App';
 import { api } from './api';
-import type { Exercise, ExerciseProgress } from './types';
+import type { Exercise, ExerciseLibrarySummary, ExerciseProgress, TrackedWorkout } from './types';
 
 const pec: Exercise = {
   id: 'pec',
@@ -25,36 +25,86 @@ function progress(exercise: Exercise, value = 100): ExerciseProgress {
     exercise,
     personal_best_weight_kg: value,
     personal_best_estimated_1rm: value,
-    points: [
-      {
-        workout_id: 'old',
-        workout_date: '2026-07-01',
-        estimated_1rm: value - 20,
-        best_weight_kg: value - 30,
-        best_reps: 6,
-        volume_kg: 1000,
-        best_rpe: null,
-      },
-      {
-        workout_id: 'last',
-        workout_date: '2026-10-21',
-        estimated_1rm: value,
-        best_weight_kg: value - 10,
-        best_reps: 8,
-        volume_kg: 1200,
-        best_rpe: null,
-      },
-    ],
+    points: Array.from({ length: 10 }, (_, index) => ({
+      workout_id: `session-${index}`,
+      workout_date: `2026-10-${String(index + 1).padStart(2, '0')}`,
+      estimated_1rm: value - 10 + index,
+      best_weight_kg: 60 + index,
+      best_reps: 8,
+      volume_kg: 1000 + index * 10,
+      best_rpe: 8,
+    })),
   };
 }
-let root: Root;
-let host: HTMLDivElement;
+const summaries: ExerciseLibrarySummary[] = [
+  {
+    exercise_id: 'pec',
+    session_count: 10,
+    last_date: '2026-10-24',
+    latest_estimated_1rm: 100,
+    change_kg: 20,
+    change_percent: 25,
+    trend: [
+      { date: '2026-10-01', estimated_1rm: 80 },
+      { date: '2026-10-24', estimated_1rm: 100 },
+    ],
+  },
+  {
+    exercise_id: 'row',
+    session_count: 5,
+    last_date: '2026-10-23',
+    latest_estimated_1rm: 90,
+    change_kg: 30,
+    change_percent: 50,
+    trend: [
+      { date: '2026-10-01', estimated_1rm: 60 },
+      { date: '2026-10-23', estimated_1rm: 90 },
+    ],
+  },
+];
+let root: Root, host: HTMLDivElement;
+const onOpenWorkout = vi.fn();
+const named = (name: string) =>
+  [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!;
+const click = async (element: Element) => act(async () => (element as HTMLElement).click());
+async function render(revision: string | null = null) {
+  await act(async () =>
+    root.render(
+      <ProgressScreen
+        exercises={catalogue}
+        measurements={[]}
+        personalRecords={[]}
+        onOpenWorkout={onOpenWorkout}
+        embedded
+        browseFirst
+        dataRevision={revision}
+      />,
+    ),
+  );
+}
+async function search(value: string) {
+  const input = host.querySelector<HTMLInputElement>('[aria-label="Search exercises"]')!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  return input;
+}
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
+  vi.spyOn(api, 'exerciseLibrary').mockResolvedValue(summaries);
   vi.spyOn(api, 'exerciseProgress').mockImplementation(async (id) =>
     progress(catalogue.find((e) => e.id === id)!),
   );
+  onOpenWorkout.mockReset();
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -65,123 +115,178 @@ afterEach(async () => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
-async function render() {
-  await act(async () =>
-    root.render(
-      <ProgressScreen
-        exercises={catalogue}
-        measurements={[]}
-        personalRecords={[]}
-        onOpenWorkout={vi.fn()}
-        embedded
-        browseFirst
-        defaultExerciseId="pec"
-      />,
-    ),
+
+it('opens on a full list, with one summary request and no automatically selected detail', async () => {
+  await render();
+  expect(host.querySelectorAll('.exercise-list-rows li')).toHaveLength(3);
+  expect(api.exerciseLibrary).toHaveBeenCalledTimes(1);
+  expect(api.exerciseProgress).not.toHaveBeenCalled();
+  expect(host.querySelector('[aria-label="Full exercise progress"]')?.hasAttribute('hidden')).toBe(
+    true,
   );
-}
-async function click(selector: string) {
-  const target = host.querySelector<HTMLButtonElement>(selector);
-  expect(target, selector).not.toBeNull();
-  await act(async () => target!.click());
-}
-async function search(value: string) {
-  await act(async () => {
-    const input = host.querySelector<HTMLInputElement>('.is-browsing input')!;
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-}
-
-it('keeps the library, query, scroll position and range when opening full progress and returning', async () => {
-  await render();
-  await search('Pec');
-  const library = host.querySelector<HTMLElement>('[aria-label="Exercise library"]')!;
-  library.scrollTop = 120;
-  await click('.is-browsing [role="option"]');
-  expect(host.querySelector<HTMLInputElement>('.is-browsing input')?.value).toBe('Pec');
-  expect(library.scrollTop).toBe(120);
-  expect(
-    host.querySelector('.exercise-progress-preview .progress-hero .range-chips'),
-  ).not.toBeNull();
-  await click('[aria-label="1 year"]');
-  await click('.exercise-open-progress');
-  expect(host.querySelector('.exercise-library-panel')?.hasAttribute('hidden')).toBe(true);
-  expect(host.querySelector('[aria-label="Personal bests"]')?.closest('[hidden]')).toBeNull();
-  await click('.training-back');
-  expect(host.querySelector<HTMLInputElement>('.is-browsing input')?.value).toBe('Pec');
-  expect(host.querySelector<HTMLElement>('[aria-label="Exercise library"]')?.scrollTop).toBe(120);
-  expect(host.querySelector('[aria-label="1 year"]')?.getAttribute('aria-selected')).toBe('true');
-  expect(api.exerciseProgress).toHaveBeenCalledTimes(1);
+  expect(host.querySelector('.exercise-list-rows button')?.textContent).toContain('Pec Deck');
 });
-
-it('clears the old preview and ignores stale responses when switching exercises quickly', async () => {
-  let finishRow!: (value: ExerciseProgress) => void;
-  let finishPec!: (value: ExerciseProgress) => void;
+it('searches, filters, clears and cycles through recent, alphabetical and improvement ordering', async () => {
   await render();
-  vi.mocked(api.exerciseProgress).mockImplementation(
-    (id) =>
-      new Promise((resolve) => {
-        if (id === 'row') finishRow = resolve;
-        else finishPec = resolve;
-      }),
-  );
-  await search('Cable');
-  await click('.is-browsing [role="option"]');
-  expect(host.querySelector('.exercise-preview-header h2')?.textContent).toBe('Cable Row');
-  expect(host.querySelector('.progress-hero-value')).toBeNull();
-  await search('Pec');
-  await click('.is-browsing [role="option"]');
-  await act(async () => finishRow(progress(row, 200)));
-  expect(host.querySelector('.exercise-preview-header h2')?.textContent).toBe('Pec Deck');
-  expect(host.querySelector('.progress-hero-value')?.textContent).not.toContain('200');
-  await act(async () => finishPec(progress(pec, 110)));
-  expect(host.querySelector('.progress-hero-value')?.textContent).toContain('110');
-});
-
-it('keeps search usable after no matches and shows an empty preview for untrained lifts', async () => {
-  vi.mocked(api.exerciseProgress).mockImplementation(async (exerciseId) => ({
-    ...progress(catalogue.find((e) => e.id === exerciseId)!),
-    points: [],
-  }));
-  await render();
-  await search('nothing matches');
+  const input = await search('Press');
+  expect(host.querySelectorAll('.exercise-list-rows li')).toHaveLength(1);
+  await click(host.querySelector('[aria-label="Clear search"]')!);
+  expect(document.activeElement).toBe(input);
+  await click(named('Back'));
+  expect(host.querySelectorAll('.exercise-list-rows li')).toHaveLength(1);
+  await click(named('All'));
+  await click(host.querySelector('[aria-label="Sort exercises: Recent first"]')!);
+  expect(host.querySelector('.exercise-list-rows button')?.textContent).toContain('Cable Row');
+  await click(host.querySelector('[aria-label="Sort exercises: A–Z"]')!);
+  expect(host.querySelector('.exercise-list-rows button')?.textContent).toContain('Cable Row');
+  await click(host.querySelector('[aria-label="Sort exercises: Most improved"]')!);
+  expect(host.querySelector('.exercise-list-rows button')?.textContent).toContain('Pec Deck');
+  await search('<nothing>');
   expect(host.querySelector('[role="status"]')?.textContent).toContain('No exercises match');
-  await search('Untrained');
-  await click('.is-browsing [role="option"]');
-  expect(host.querySelector('.exercise-preview-header h2')?.textContent).toBe('Untrained Press');
-  expect(host.querySelector('.exercise-progress-preview')?.textContent).toContain('No data yet');
 });
-
-it('offers retry after a failed preview request', async () => {
-  vi.mocked(api.exerciseProgress).mockRejectedValueOnce(new Error('Offline'));
+it('opens detail immediately and preserves search, range and scroll on returning', async () => {
   await render();
+  await search('Pec');
+  vi.spyOn(window, 'scrollY', 'get').mockReturnValue(240);
+  await click(host.querySelector('[data-exercise-id="pec"]')!);
+  expect(host.querySelector('[aria-label="Full exercise progress"]')?.hasAttribute('hidden')).toBe(
+    false,
+  );
+  expect(host.querySelector('[aria-label="Personal bests"]')).not.toBeNull();
+  await click(host.querySelector('[aria-label="1 year"]')!);
+  await click(host.querySelector('.training-back')!);
+  await act(async () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: 240, behavior: 'instant' });
+  expect(host.querySelector<HTMLInputElement>('[aria-label="Search exercises"]')?.value).toBe(
+    'Pec',
+  );
+  await click(host.querySelector('[data-exercise-id="pec"]')!);
+  expect(host.querySelector('[aria-label="1 year"]')?.getAttribute('aria-selected')).toBe('true');
+});
+it('loads the selected session sets in a sheet before opening the actual workout', async () => {
+  const workout = {
+    id: 'session-9',
+    name: 'Upper body',
+    workout_date: '2026-10-10',
+    movements: [
+      {
+        id: 'movement',
+        exercise: pec,
+        notes: null,
+        sets: [{ id: 'set', weight_kg: 69, reps: 8, rpe: 8, completed: true }],
+      },
+    ],
+  } as TrackedWorkout;
+  vi.spyOn(api, 'getWorkout').mockResolvedValue(workout);
+  await render();
+  await click(host.querySelector('[data-exercise-id="pec"]')!);
+  expect(host.querySelectorAll('.progress-sessions li')).toHaveLength(5);
+  await click(host.querySelector('.show-more-button')!);
+  expect(host.querySelectorAll('.progress-sessions li')).toHaveLength(10);
+  await click(host.querySelector('.progress-sessions li button')!);
+  expect(document.querySelector('dialog')?.textContent).toContain('69 kg');
+  expect(onOpenWorkout).not.toHaveBeenCalled();
+  await click(document.querySelector('dialog .primary')!);
+  expect(onOpenWorkout).toHaveBeenCalledWith('session-9', 'pec');
+  expect(document.querySelector('dialog')).toBeNull();
+});
+it('retries summary and detail failures and keeps the list usable for untrained exercises', async () => {
+  vi.mocked(api.exerciseLibrary).mockRejectedValueOnce(new Error('Offline'));
+  await render();
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    'Could not load exercise trends',
+  );
+  await click(named('Retry'));
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  vi.mocked(api.exerciseProgress).mockRejectedValueOnce(new Error('Offline'));
+  await click(host.querySelector('[data-exercise-id="pec"]')!);
   expect(host.querySelector('[role="alert"]')?.textContent).toContain(
     'Could not load exercise progress',
   );
-  await click('.exercise-progress-error button');
-  expect(host.querySelector('[role="alert"]')).toBeNull();
-  expect(host.querySelector('.progress-hero-value')?.textContent).toContain('100');
+  await click(named('Retry'));
+  expect(host.querySelector('.progress-hero-value')?.textContent).toContain('99');
+  await click(host.querySelector('.training-back')!);
+  vi.mocked(api.exerciseProgress).mockResolvedValue({ ...progress(empty), points: [] });
+  await click(host.querySelector('[data-exercise-id="empty"]')!);
+  expect(host.querySelector('[aria-label="Full exercise progress"]')?.textContent).toContain(
+    'No data yet',
+  );
 });
-
-it('refreshes the selected exercise after remote training changes without losing the search', async () => {
+it('refreshes list trends and open details after remote changes without losing the filter', async () => {
   await render();
   await search('Pec');
+  await click(host.querySelector('[data-exercise-id="pec"]')!);
   vi.mocked(api.exerciseProgress).mockResolvedValue(progress(pec, 130));
-  await act(async () =>
-    root.render(
-      <ProgressScreen
-        exercises={catalogue}
-        measurements={[]}
-        personalRecords={[]}
-        onOpenWorkout={vi.fn()}
-        embedded
-        browseFirst
-        defaultExerciseId="pec"
-        dataRevision="remote-change"
-      />,
-    ),
+  await render('changed');
+  expect(host.querySelector('.progress-hero-value')?.textContent).toContain('129');
+  await click(host.querySelector('.training-back')!);
+  expect(host.querySelector<HTMLInputElement>('[aria-label="Search exercises"]')?.value).toBe(
+    'Pec',
   );
-  expect(host.querySelector<HTMLInputElement>('.is-browsing input')?.value).toBe('Pec');
-  expect(host.querySelector('.progress-hero-value')?.textContent).toContain('130');
+  expect(api.exerciseLibrary).toHaveBeenCalledTimes(2);
+});
+
+it('ignores stale detail responses after returning to the list and choosing another lift', async () => {
+  let finishPec!: (value: ExerciseProgress) => void;
+  let finishRow!: (value: ExerciseProgress) => void;
+  vi.mocked(api.exerciseProgress).mockImplementation(
+    (id) =>
+      new Promise((resolve) => {
+        if (id === 'pec') finishPec = resolve;
+        else finishRow = resolve;
+      }),
+  );
+  await render();
+  await click(host.querySelector('[data-exercise-id="pec"]')!);
+  await click(host.querySelector('.training-back')!);
+  await click(host.querySelector('[data-exercise-id="row"]')!);
+  await act(async () => finishPec(progress(pec, 200)));
+  expect(host.querySelector('.progress-hero-value')).toBeNull();
+  await act(async () => finishRow(progress(row, 90)));
+  expect(host.querySelector('.progress-hero-value')?.textContent).toContain('89');
+});
+
+it('retries a failed session read and keeps the workout action unavailable until it loads', async () => {
+  const workout: TrackedWorkout = {
+    id: 'session-9',
+    name: 'Upper body',
+    workout_date: '2026-10-10',
+    category: 'upper',
+    notes: null,
+    duration_minutes: 60,
+    start_time: null,
+    end_time: null,
+    is_sample: false,
+    created_at: '',
+    updated_at: '',
+    movements: [
+      {
+        id: 'movement',
+        order_index: 0,
+        exercise: pec,
+        notes: null,
+        sets: [],
+        machine_photos: [],
+        superset_group_id: null,
+        superset_name: null,
+      },
+    ],
+  };
+  vi.spyOn(api, 'getWorkout')
+    .mockRejectedValueOnce(new Error('Offline'))
+    .mockResolvedValue(workout);
+  await render();
+  await click(host.querySelector('[data-exercise-id="pec"]')!);
+  await click(host.querySelector('.progress-sessions li button')!);
+  expect(document.querySelector('dialog [role="alert"]')?.textContent).toContain(
+    'Could not load this session',
+  );
+  expect(document.querySelector('dialog .primary')).toBeNull();
+  await click(document.querySelector('dialog .text-link')!);
+  expect(document.querySelector('dialog .primary')).not.toBeNull();
+  vi.mocked(api.getWorkout).mockResolvedValue({ ...workout, name: 'Updated upper body' });
+  await render('remote-sheet-change');
+  expect(document.querySelector('dialog')?.textContent).toContain('Updated upper body');
+  await click(document.querySelector('dialog .popup-dialog-close')!);
+  expect(document.querySelector('dialog')).toBeNull();
 });

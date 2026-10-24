@@ -24,6 +24,7 @@ import type {
   ExerciseCreateInput,
   ExerciseHistoryBaseline,
   ExerciseProgress,
+  ExerciseLibrarySummary,
   HeatmapDay,
   Health,
   AuthConfig,
@@ -602,6 +603,8 @@ export const api = {
   deleteWorkout: (id: string) => request<void>(`/api/workouts/${id}`, { method: 'DELETE' }),
   deleteSampleData: () => request<void>('/api/sample-data', { method: 'DELETE' }),
   exerciseProgress: (id: string) => request<ExerciseProgress>(`/api/progress/${id}`),
+  exerciseLibrary: () => request<ExerciseLibrarySummary[]>('/api/progress'),
+  getWorkout: (id: string) => request<TrackedWorkout>(`/api/workouts/${id}`),
   getSession: (id: string) => request<WorkoutSession>(`/api/sessions/${id}`),
   deleteSession: (id: string) =>
     request<void>(`/api/sessions/${id}`, {

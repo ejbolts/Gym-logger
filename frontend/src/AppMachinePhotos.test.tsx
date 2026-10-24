@@ -334,7 +334,7 @@ describe('filtering History by machine', () => {
     await click(container.querySelector<HTMLButtonElement>('.history-card-summary')!);
     expect(container.querySelector('.history-card.open')).not.toBeNull();
     await click(button('Exercises'));
-    expect(container.querySelector('.training-exercise-browser')).not.toBeNull();
+    expect(container.querySelector('.exercise-list-library')).not.toBeNull();
     await click(button('Sessions'));
     expect(container.querySelector('.history-card.open')).not.toBeNull();
     await click(button('Social'));

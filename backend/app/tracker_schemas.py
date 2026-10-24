@@ -659,6 +659,21 @@ class ExerciseProgressRead(BaseModel):
     personal_best_estimated_1rm: float
 
 
+class ExerciseTrendPointRead(BaseModel):
+    date: date
+    estimated_1rm: float
+
+
+class ExerciseLibrarySummaryRead(BaseModel):
+    exercise_id: str
+    session_count: int
+    last_date: date
+    latest_estimated_1rm: float | None
+    change_kg: float | None
+    change_percent: float | None
+    trend: list[ExerciseTrendPointRead]
+
+
 class CsvImportRead(BaseModel):
     workouts_created: int
     workouts_skipped: int
