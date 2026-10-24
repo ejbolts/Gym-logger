@@ -106,6 +106,31 @@ describe('release announcements', () => {
       expect(parseRelease({ ...metadata, highlights })).toBeNull();
   });
 
+  it('accepts a trailer bundled with the app and rejects external, unsafe or incomplete videos', () => {
+    const video = {
+      url: '/releases/sample-trailer.mp4',
+      poster: '/releases/sample-trailer.jpg',
+      alt: 'Sample release trailer',
+    };
+    expect(parseRelease({ ...metadata, video })).toEqual({ ...metadata, video });
+    expect(parseRelease({ ...metadata, video: undefined })).not.toBeNull();
+    for (const invalid of [
+      null,
+      {},
+      { ...video, alt: ' ' },
+      { ...video, poster: undefined },
+      { ...video, url: 'https://raw.githubusercontent.com/owner/repo/sha/trailer.mp4' },
+      { ...video, url: '//example.com/releases/trailer.mp4' },
+      { ...video, url: '/releases/../index.html' },
+      { ...video, url: '/releases/trailer.webm' },
+      { ...video, url: '/assets/trailer.mp4' },
+      { ...video, url: 'javascript:alert(1)//.mp4' },
+      { ...video, poster: '/releases/poster.svg' },
+      { ...video, poster: 'https://example.com/releases/poster.jpg' },
+    ])
+      expect(parseRelease({ ...metadata, video: invalid })).toBeNull();
+  });
+
   it('ships earlier releases newest first, all older than the current version', () => {
     expect(parseReleaseHistory(history, metadata.version)).toEqual(history);
     expect(history.map((release) => release.version)).not.toContain(metadata.version);

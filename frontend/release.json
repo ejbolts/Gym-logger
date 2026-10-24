@@ -27,6 +27,11 @@
     "Past-workout exercise cards have more space between them in the view-only workout browser."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#0100",
+  "video": {
+    "url": "/releases/0.10.0-trailer.mp4",
+    "poster": "/releases/0.10.0-trailer-poster.jpg",
+    "alt": "A 28-second 0.10 trailer: Training and Social tabs, friends, workout conversations, background saves, cross-device sync and refined settings, using synthetic sample accounts."
+  },
   "image": {
     "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4406fb7c8c7bf4bfa381a529abd2b31b68ece211/docs/screenshots/releases/0.10.0-navigation-before-after.png",
     "alt": "Before in 0.9.0: separate History and Progress bottom tabs. Now in 0.10.0: Training contains Sessions, Exercises and Cardio, and Social has its own bottom tab. Actual sample-data screenshots show the header and bottom navigation."

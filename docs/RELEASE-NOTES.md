@@ -6,6 +6,10 @@
 
 ### Your training together. More ways to connect.
 
+![A 28-second 0.10 trailer showing the Training and Social tabs, friends, workout conversations, background saves, cross-device sync and refined settings](screenshots/releases/0.10.0-trailer.gif)
+
+*The 0.10 trailer. In the app, What's new plays a vertical version above the summary. Every scene uses isolated synthetic accounts and training data.*
+
 ![Before and after navigation: History and Progress in 0.9.0 become Training and Social in 0.10.0](screenshots/releases/0.10.0-navigation-before-after.png)
 
 *History and Progress now live in Training, with Sessions, Exercises and Cardio together. Social gets its own bottom tab for Friends and Find. These are navigation crops from actual isolated sample-data screens in tagged 0.9.0 and pending 0.10.0.*
