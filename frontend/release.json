@@ -30,7 +30,7 @@
   "video": {
     "url": "/releases/0.10.0-trailer.mp4",
     "poster": "/releases/0.10.0-trailer-poster.jpg",
-    "alt": "A one-minute 0.10 trailer with before-and-after comparisons and close-ups: Training, Exercises, Cardio, friends, workout conversations, background saves, a weigh-in syncing from phone to desktop, Settings and profiles, using synthetic sample accounts."
+    "alt": "A narrated one-minute 0.10 trailer with before-and-after comparisons and close-ups: Training, Exercises, Cardio, friends, workout conversations, background saves, a weigh-in syncing from phone to desktop, Settings and profiles, using synthetic sample accounts."
   },
   "image": {
     "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4406fb7c8c7bf4bfa381a529abd2b31b68ece211/docs/screenshots/releases/0.10.0-navigation-before-after.png",
