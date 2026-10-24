@@ -47,6 +47,13 @@ const profile: SharedProfile = {
     cardio_count: 3,
     total_minutes: 273,
   },
+  training_time_past_year: {
+    workout_minutes: 90,
+    workout_count: 2,
+    cardio_minutes: 20,
+    cardio_count: 1,
+    total_minutes: 100,
+  },
 };
 const workout: TrackedWorkout = {
   id: 'first',
@@ -326,6 +333,40 @@ it('keeps the counting explanation in a help popup next to Time trained', async 
   );
   expect(document.querySelector('dialog[open]')).toBeNull();
   expect(document.activeElement).toBe(help);
+  expect(card.textContent).toContain('4h 33min');
+});
+
+it('switches Time trained between all time, selected by default, and the past year', async () => {
+  const card = container.querySelector('.profile-training-time')!;
+  const range = (label: string) =>
+    [...card.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(
+      (item) => item.textContent === label,
+    )!;
+  expect(card.querySelector('[role="radiogroup"]')?.getAttribute('aria-label')).toBe(
+    'Time trained range',
+  );
+  expect(range('All time').getAttribute('aria-checked')).toBe('true');
+  expect(card.textContent).toContain('4h 33min');
+  await act(async () => range('Past year').click());
+  expect(range('Past year').getAttribute('aria-checked')).toBe('true');
+  expect(card.textContent).toContain('1h 30min');
+  expect(card.textContent).toContain('1h 40min');
+  expect(card.textContent).toContain('1 session');
+  expect(card.textContent).not.toContain('4h 33min');
+  await act(async () => range('All time').click());
+  expect(card.textContent).toContain('4h 33min');
+});
+
+it('hides the Time trained range when the server sends only lifetime totals', async () => {
+  vi.mocked(api.sharing.profile).mockResolvedValue({
+    ...profile,
+    training_time_past_year: undefined,
+  });
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  await renderProfile();
+  const card = container.querySelector('.profile-training-time')!;
+  expect(card.querySelector('[role="radiogroup"]')).toBeNull();
   expect(card.textContent).toContain('4h 33min');
 });
 

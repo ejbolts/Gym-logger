@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { TrainingTime } from './types';
 import { formatMinutesDuration } from './utils';
 import { HelpPopup } from './HelpPopup';
@@ -13,7 +14,7 @@ export function TrainingTimeHelp() {
   );
 }
 
-/** The same lifetime totals on your own and shared profiles. */
+/** The same totals on your own and shared profiles. */
 export function TrainingTimeStats({ time }: { time: TrainingTime | null }) {
   const stats = [
     {
@@ -44,5 +45,61 @@ export function TrainingTimeStats({ time }: { time: TrainingTime | null }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+const TRAINING_TIME_RANGES = [
+  { value: 'all', label: 'All time' },
+  { value: 'year', label: 'Past year' },
+] as const;
+
+type TrainingTimeRange = (typeof TRAINING_TIME_RANGES)[number]['value'];
+
+/** Time trained, all time by default, with a past-year view when the server provides it. */
+export function TrainingTimeCard({
+  allTime,
+  pastYear,
+}: {
+  allTime: TrainingTime;
+  pastYear?: TrainingTime | null;
+}) {
+  const [range, setRange] = useState<TrainingTimeRange>('all');
+  const time = range === 'year' && pastYear ? pastYear : allTime;
+  return (
+    <section
+      className="settings-panel panel profile-training-time"
+      aria-labelledby="shared-training-time-title"
+    >
+      <header>
+        <div>
+          <p className="section-kicker">ACTIVITY</p>
+          <div className="profile-help-row">
+            <h2 id="shared-training-time-title">Time trained</h2>
+            <TrainingTimeHelp />
+          </div>
+        </div>
+        {pastYear && (
+          <div
+            className="segmented-control compact training-time-range"
+            role="radiogroup"
+            aria-label="Time trained range"
+          >
+            {TRAINING_TIME_RANGES.map((option) => (
+              <button
+                type="button"
+                role="radio"
+                key={option.value}
+                aria-checked={range === option.value}
+                className={range === option.value ? 'active' : ''}
+                onClick={() => setRange(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </header>
+      <TrainingTimeStats time={time} />
+    </section>
   );
 }

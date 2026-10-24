@@ -46,6 +46,10 @@
 
 *Tap the question mark beside Time trained to read how the totals avoid counting cardio twice.*
 
+![Time trained switched to Past year, showing workout, cardio and combined totals since the same day last year](screenshots/releases/0.10.0-time-trained-range.png)
+
+*Time trained opens on All time; choose Past year for totals since this day last year.*
+
 ![Profile sharing help popup explaining who can see shared training](screenshots/releases/0.10.0-sharing-help.png)
 
 *Sharing guidance opens from its own question mark without folding the section. The collapsed What you share arrow points down independently of the parent section.*
@@ -81,6 +85,7 @@
 - **Social:** a dedicated bottom tab with **Friends** and **Find**. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members, with a badge for waiting requests. Profiles offer **Add friend**, **Accept** or **Decline**, and a menu to cancel a request, remove a friend or block. Home keeps its compact friends card.
 - **Your profile:** tapping your avatar opens the same calendar, training totals and workout layout used for other members, with the existing name, username and photo editor. Sharing, account UUID, password, sign-out, account deletion and administrator feedback controls move to **Settings**. Search opens their new locations; choosing sharing from Social goes directly to its settings section. Private accounts can view their own profile while remaining hidden from other members.
 - **Help when you need it:** tap **?** beside **Time trained** or **Profile sharing** for their explanations. The descriptions no longer take space in the cards. Collapsed **What you share** shows a downward arrow, even when its parent is expanded.
+- **Time trained ranges:** switch between **All time** (the default) and **Past year** on your own and shared profiles. Past year counts workouts and cardio dated from the same day last year onwards.
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume.
 - **Sessions:** initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. **Show more** reveals older sessions; calendar and exercise links can still open older workouts directly.
 - Enlarged the Cardio, Up next and Empty circles from 44 px to 52 px and their icons from 20 px to 24 px.
