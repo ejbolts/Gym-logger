@@ -8,6 +8,7 @@ import {
   SettingsNavigationContext,
   useSettingsPageJump,
   type SettingsJump,
+  type SettingsGroupId,
 } from './settingsNavigation';
 
 let root: Root;
@@ -41,12 +42,12 @@ function Page({
   account: boolean;
 }) {
   useSettingsPageJump('settings', active);
+  const [selected, setSelected] = useState<SettingsGroupId | null>(null);
   const groups: SettingsGroup[] = [
     {
       id: 'training',
       icon: 'timer',
       description: 'Training defaults',
-      summary: 'Rest timer on',
       content: (
         <button aria-label="Rest timer" onClick={changed}>
           On
@@ -57,7 +58,6 @@ function Page({
       id: 'appearance',
       icon: 'sun',
       description: 'Theme and motion',
-      summary: 'On this device',
       content: <h2 id="colour-theme-title">App theme</h2>,
     },
     ...(account
@@ -66,7 +66,6 @@ function Page({
             id: 'account' as const,
             icon: 'user' as const,
             description: 'Your account',
-            summary: 'Sample account',
             content: (
               <CollapsibleSection title="Change password" className="account-password">
                 <input autoComplete="current-password" />
@@ -79,14 +78,12 @@ function Page({
       id: 'data',
       icon: 'link',
       description: 'Import and export',
-      summary: 'Your data',
       content: <h2 id="workout-data-title">Import & export</h2>,
     },
     {
       id: 'help',
       icon: 'heart',
       description: 'Guides',
-      summary: 'Version 0.10.0',
       content: (
         <h2 id="home-screen-settings-title" data-guide-target="installation">
           Add to Home Screen
@@ -96,8 +93,13 @@ function Page({
   ];
   return (
     <section data-settings-page="settings">
+      <button className="settings-header-back" onClick={() => setSelected(null)}>
+        {selected ? 'All settings' : 'Settings'}
+      </button>
       <SettingsHub
         active={active}
+        selected={selected}
+        onSelect={setSelected}
         groups={groups}
         includeAccount={account}
         accountName="Sam Sample"
@@ -145,6 +147,8 @@ async function search(query: string) {
 it('opens focused sections, returns focus to the overview and retains unfinished forms', async () => {
   await act(async () => root.render(<Harness />));
   expect(container.querySelector('.settings-overview')?.hasAttribute('hidden')).toBe(false);
+  expect(container.querySelector('.settings-category-copy small')).toBeNull();
+  expect(container.querySelector('.settings-overview-hint')).toBeNull();
   expect(container.querySelector('[data-settings-group="account"]')?.hasAttribute('hidden')).toBe(
     true,
   );
@@ -155,7 +159,7 @@ it('opens focused sections, returns focus to the overview and retains unfinished
     'input[autocomplete="current-password"]',
   )!;
   password.value = 'unfinished sample value';
-  await click('.settings-all-button');
+  await click('.settings-header-back');
   expect(document.activeElement).toBe(
     container.querySelector('.settings-category-card:nth-child(3)'),
   );

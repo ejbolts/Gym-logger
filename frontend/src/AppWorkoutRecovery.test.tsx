@@ -338,6 +338,28 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+it('uses the top header to return from settings sections before leaving settings', async () => {
+  window.history.replaceState(null, '', '#settings');
+  HTMLElement.prototype.scrollIntoView = vi.fn();
+  await mount();
+  const headerBack = () => container.querySelector<HTMLButtonElement>('.overlay-header-back')!;
+  expect(headerBack().getAttribute('aria-label')).toBe('Go back');
+  const cards = [...container.querySelectorAll<HTMLButtonElement>('.settings-category-card')];
+  expect(cards.length).toBeGreaterThan(0);
+  for (const card of cards) {
+    await act(async () => card.click());
+    expect(headerBack().getAttribute('aria-label')).toBe('All settings');
+    expect(container.querySelector('.overlay-header-copy')?.textContent).toBe('All settings');
+    expect(container.querySelector('.settings-all-button')).toBeNull();
+    await act(async () => headerBack().click());
+    expect(window.location.hash).toBe('#settings');
+    expect(container.querySelector('.settings-overview')?.hasAttribute('hidden')).toBe(false);
+    expect(headerBack().getAttribute('aria-label')).toBe('Go back');
+  }
+  await act(async () => headerBack().click());
+  expect(window.location.hash).toBe('#dashboard');
+});
+
 describe('rest time controls', () => {
   function restControl() {
     return (
