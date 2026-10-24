@@ -97,54 +97,6 @@
       }
     },
     {
-      "title": "Your training stays in sync",
-      "description": "Saved training changes from your other devices appear automatically. The visible app checks every five seconds and when you return or reconnect, while keeping your active workout and unsaved entries.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/be78314388da9595c5cbdd18b51dba0d24afac5b/docs/screenshots/releases/0.10.0-cross-device-refresh.gif",
-        "alt": "A workout saved in a separate signed-in sample session appears on the desktop without reloading the page."
-      }
-    },
-    {
-      "title": "Settings, with a place for everything",
-      "description": "Browse six focused sections with streamlined cards and an All settings return button at the top. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/50ad2676a256068f6aa12eb22409b88dd7781647/docs/screenshots/releases/0.10.0-settings-overview-clean.png",
-        "alt": "The streamlined Settings overview with six focused categories and search, using a synthetic sample account."
-      }
-    },
-    {
-      "title": "Your profile, focused on training",
-      "description": "View your calendar, training totals and workouts in the same layout as your friends. Edit your name and photo here; manage privacy, your account and security in Settings. Your own page stays available when your profile is private.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/d372de5b332eee1c27b1211dcc63462efb1f931a/docs/screenshots/releases/0.10.0-own-profile.png",
-        "alt": "An isolated sample member's own profile with name and photo editing, workout totals and the consistency calendar, while their profile remains private."
-      }
-    },
-    {
-      "title": "Your time trained, over time",
-      "description": "Switch between All time and Past year on your own and shared profiles. Past year counts training dated from the same day last year.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/bf26d740503a1a371e5adac4fb76d97bbe3fbe48/docs/screenshots/releases/0.10.0-time-trained-range.png",
-        "alt": "Past year selected on a synthetic training profile, showing workout, cardio and combined time totals."
-      }
-    },
-    {
-      "title": "Your check-ins, arranged your way",
-      "description": "Body weight, Body fat and Combined check-ins are separate Home sections. Use Edit Home layout to add, hide, resize and arrange each one. Body-fat entries still require today’s weight.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b35b1166ff52e8f07e7f13adb7e347eddf3eb711/docs/screenshots/releases/0.10.0-home-checkin-sections.png",
-        "alt": "Home with separate Combined, Body weight and Body fat check-in sections and synthetic saved measurements."
-      }
-    },
-    {
-      "title": "More recent activity, right on Home",
-      "description": "Recent Friends Activity adds three friends when you tap +N more. A spinner shows loading, and refreshes keep the expanded list. The remaining count includes only friends with sessions.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/03bdf550b8cdaef85422851aca699a555b58cb5e/docs/screenshots/releases/0.10.0-friends-load-three.gif",
-        "alt": "Recent Friends Activity shows a loading spinner, expands from five to eight synthetic friends and updates the remaining count."
-      }
-    },
-    {
       "title": "Remove a rest, keep the set",
       "description": "Choose 0:00 (no rest) or swipe left on a rest row. Undo restores it. Removed rests stay removed when editing, saving or reopening; edit the set to add one back. Show rest times in Settings hides rows independently of the countdown.",
       "image": {
@@ -153,27 +105,11 @@
       }
     },
     {
-      "title": "Your account, on every tab",
-      "description": "Open Notifications or Profile beside Settings on Home, Training, Social and Body. Matching buttons keep the same order and wrap neatly on smaller screens.",
+      "title": "Settings, with a place for everything",
+      "description": "Browse six focused sections with streamlined cards and an All settings return button at the top. Search opens the right panel and control; unfinished edits stay with you as you move between sections. Training defaults, appearance, alerts, account privacy and data tools each have a clear home.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-header-controls.png",
-        "alt": "Body with matching Notifications, Profile and Settings buttons at the top right and no duplicate header plus, using synthetic account data."
-      }
-    },
-    {
-      "title": "Larger quick-start circles",
-      "description": "The bottom quick-start menu has slightly larger circles and icons for Cardio, Up next and Empty.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/0e754082c31546e44a878066a2365fb66cff3872/docs/screenshots/releases/0.9.1-quick-start-circles.png",
-        "alt": "Quick-start menu with larger Cardio, Up next and Empty circles."
-      }
-    },
-    {
-      "title": "Pull down to close muscle details",
-      "description": "The sheet follows your finger. Short pulls return to place, and a deliberate downward swipe closes it. Exercise details sit directly below the goal.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/40685e5417b9ec73ff55b104b34a9ef10e611bf2/docs/screenshots/releases/0.9.1-muscle-sheet-swipe.gif",
-        "alt": "A short downward pull returns muscle details to place; a longer pull dismisses the sheet, with exercises listed without a redundant heading."
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/50ad2676a256068f6aa12eb22409b88dd7781647/docs/screenshots/releases/0.10.0-settings-overview-clean.png",
+        "alt": "The streamlined Settings overview with six focused categories and search, using a synthetic sample account."
       }
     }
   ]

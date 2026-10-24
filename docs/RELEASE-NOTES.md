@@ -46,9 +46,9 @@
 
 *Saving and updating stay in the background. Routine notices and completion PRs no longer lock navigation, scrolling or focus. The recording uses isolated sample training.*
 
-![A workout saved in a separate signed-in session appears on the desktop without a reload](screenshots/releases/0.10.0-cross-device-refresh.gif)
+![Remove an individual rest using zero time, restore it with Undo, then swipe its row left to remove it again](screenshots/releases/0.10.0-rest-removal.gif)
 
-*Your visible app checks for saved training changes every five seconds and when you return or reconnect. A separate sample session creates the workout while this page stays open.*
+*Choose 0:00 (no rest) or swipe left to remove just the rest. Undo restores it, and both sets stay in the workout. This recording uses isolated sample data.*
 
 ![The Settings overview with six focused categories](screenshots/releases/0.10.0-settings-overview-clean.png)
 
@@ -58,37 +58,13 @@
 
 *All settings stays in the top header inside every section. Return to the overview without losing unfinished edits. The previews use an isolated sample account.*
 
-![Your own training profile with name and photo editing, workout totals and the consistency calendar](screenshots/releases/0.10.0-own-profile.png)
-
-*Your profile uses the same training layout as other members. Edit your name and photo above the calendar, training totals and workouts. A private account can preview its own profile without enabling sharing; the header omits the private-profile reminder.*
-
-![Time trained switched to Past year, showing workout, cardio and combined totals since the same day last year](screenshots/releases/0.10.0-time-trained-range.png)
-
-*Time trained opens on All time; choose Past year for totals since this day last year.*
-
-![Time trained help popup explaining workout and cardio duration totals](screenshots/releases/0.10.0-training-time-help.png)
-
-*Tap the question mark beside Time trained to read how the totals avoid counting cardio twice.*
-
 ![Profile sharing help popup explaining who can see shared training](screenshots/releases/0.10.0-sharing-help.png)
 
 *Sharing guidance opens from its own question mark without folding the section. The collapsed What you share arrow points down independently of the parent section.*
 
-![Home with separate Combined, Body weight and Body fat check-in sections](screenshots/releases/0.10.0-home-checkin-sections.png)
-
-*Add, hide, resize and arrange each check-in independently through Edit Home layout. The existing card becomes Combined in its saved position. Weight needs no body-fat value; logging body fat still requires today’s weight.*
-
 ![Past-workout browser with space between exercise cards](screenshots/releases/0.10.0-workout-exercise-spacing.png)
 
 *Past workouts keep a clear gap between each exercise card. These previews use isolated synthetic measurements and workouts.*
-
-![Recent Friends Activity loads three additional friends inline with a loading spinner](screenshots/releases/0.10.0-friends-load-three.gif)
-
-*Tap +N more to add three friends without leaving Home. The spinner runs while loading, the remaining count excludes friends without sessions, and refreshes preserve the expanded list. All media uses isolated synthetic accounts.*
-
-![Remove an individual rest using zero time, restore it with Undo, then swipe its row left to remove it again](screenshots/releases/0.10.0-rest-removal.gif)
-
-*Choose 0:00 (no rest) or swipe left to remove just the rest. Undo restores it, and both sets stay in the workout. This recording uses isolated sample data.*
 
 ![Notifications showing 15 friend requests on the first page with previous, page-picker and next controls and Page 1 of 2](screenshots/releases/0.10.0-notifications-pagination.png)
 
@@ -97,18 +73,6 @@
 ![A friend's shared profile with the Social tab highlighted in the bottom bar](screenshots/releases/0.10.0-shared-profile-social-tab.png)
 
 *Social stays highlighted while you view another member's profile.*
-
-![Body with matching Notifications, Profile and Settings buttons and no duplicate header plus](screenshots/releases/0.9.1-header-controls.png)
-
-*Notifications and Profile stay beside Settings in the same order on Home, Training, Social and Body. The existing inbox, account photo or initial and profile controls are reused. Body uses Log weigh-in for new entries, without a duplicate header plus button.*
-
-![Quick-start menu with larger Cardio, Up next and Empty circles](screenshots/releases/0.9.1-quick-start-circles.png)
-
-*The three quick-start circles are now 52 px across, with larger icons and the full-screen background blur.*
-
-![A short pull returns muscle details to place; a longer swipe dismisses the sheet](screenshots/releases/0.9.1-muscle-sheet-swipe.gif)
-
-*Muscle details follow your finger and close with a downward swipe. The exercise list no longer repeats a heading.*
 
 *Previews use isolated synthetic accounts and training data. Each feature uses one media format.*
 
