@@ -80,8 +80,10 @@ from .tracker_schemas import (
     ExerciseFavoriteUpdate,
     ExerciseHistoryBaselineRead,
     ExerciseLatestSessionRead,
+    ExerciseLibrarySummaryRead,
     ExerciseProgressRead,
     ExerciseRead,
+    ExerciseTrendPointRead,
     HeatmapDay,
     MachinePhotoCaptionUpdate,
     MachinePhotoRead,
@@ -2351,6 +2353,71 @@ def dashboard(
         recent_workouts=workouts[:5],
         history=workout_history_summary(db, user.id),
     )
+
+
+@router.get("/progress", response_model=list[ExerciseLibrarySummaryRead])
+def exercise_library_progress(db: DbSession, user: CurrentUser) -> list[ExerciseLibrarySummaryRead]:
+    """Account-owned strength summaries, with a bounded eight-week sparkline payload."""
+    today = date.today()
+    rows = db.execute(
+        select(
+            WorkoutSet,
+            WorkoutMovement.exercise_id,
+            TrainingWorkout.workout_date,
+            TrainingWorkout.id,
+        )
+        .join(WorkoutMovement, WorkoutSet.movement_id == WorkoutMovement.id)
+        .join(TrainingWorkout, WorkoutMovement.workout_id == TrainingWorkout.id)
+        .join(Exercise, WorkoutMovement.exercise_id == Exercise.id)
+        .where(
+            Exercise.user_id == user.id,
+            TrainingWorkout.user_id == user.id,
+            Exercise.kind == ExerciseKind.STRENGTH,
+            TrainingWorkout.workout_date <= today,
+        )
+    )
+    sessions: dict[str, dict[tuple[date, str], float]] = defaultdict(dict)
+    for item, exercise_id, workout_date, workout_id in rows:
+        if not is_working_set(item):
+            continue
+        key = (workout_date, workout_id)
+        estimate = (
+            estimated_one_rep_max(item.weight_kg or 0, item.reps or 0)
+            if is_pr_eligible(item)
+            else 0.0
+        )
+        sessions[exercise_id][key] = max(sessions[exercise_id].get(key, 0), estimate)
+    summaries = []
+    for exercise_id, values in sessions.items():
+        points = sorted(values.items())
+        last_date, _ = points[-1][0]
+        latest = round(points[-1][1], 1) or None
+        # Best per calendar day keeps repeated sessions from crowding the sparkline.
+        daily: dict[date, float] = {}
+        for (workout_date, _), value in points:
+            if workout_date >= today - timedelta(days=56) and value > 0:
+                daily[workout_date] = max(daily.get(workout_date, 0), round(value, 1))
+        trend = [
+            ExerciseTrendPointRead(date=day, estimated_1rm=value)
+            for day, value in sorted(daily.items())
+        ]
+        change = (
+            round(trend[-1].estimated_1rm - trend[0].estimated_1rm, 1) if len(trend) > 1 else None
+        )
+        summaries.append(
+            ExerciseLibrarySummaryRead(
+                exercise_id=exercise_id,
+                session_count=len(points),
+                last_date=last_date,
+                latest_estimated_1rm=latest,
+                change_kg=change,
+                change_percent=round(change / trend[0].estimated_1rm * 100, 1)
+                if change is not None
+                else None,
+                trend=trend,
+            )
+        )
+    return summaries
 
 
 @router.get("/progress/{exercise_id}", response_model=ExerciseProgressRead)

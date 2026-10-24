@@ -1,15 +1,17 @@
+import json
+
 from app.database import SessionLocal
-from app.home_layout import SECTION_IDS
+from app.home_layout import OPTIONAL_CHECK_INS, SECTION_IDS
 from app.training_metrics import set_setting
 
 
 def test_layout_defaults_and_round_trip_are_account_scoped(client, other_client):
-    default = {"order": SECTION_IDS, "hidden": [], "widths": {}}
+    default = {"order": SECTION_IDS, "hidden": OPTIONAL_CHECK_INS, "widths": {}}
     assert client.get("/api/home-layout").json() == default
     layout = {
         "order": list(reversed(SECTION_IDS)),
         "hidden": ["consistency", "workouts"],
-        "widths": {"daily-check-in": "compact", "workouts": "full", "friends": "third"},
+        "widths": {"combined-check-in": "compact", "workouts": "full", "friends": "third"},
     }
     response = client.put("/api/home-layout", json=layout)
     assert response.status_code == 200
@@ -61,7 +63,7 @@ def test_older_layout_appends_new_sections_without_unhiding_old_sections(client)
     assert result["order"][0] == "profile"
     assert result["order"][1:3] == old["order"]
     assert set(result["order"]) == set(SECTION_IDS)
-    assert result["hidden"] == old["hidden"]
+    assert result["hidden"] == old["hidden"] + OPTIONAL_CHECK_INS
     assert result["widths"] == {}
 
 
@@ -71,6 +73,51 @@ def test_corrupt_saved_layout_recovers_to_default(client):
         db.commit()
     assert client.get("/api/home-layout").json() == {
         "order": SECTION_IDS,
-        "hidden": [],
+        "hidden": OPTIONAL_CHECK_INS,
         "widths": {},
     }
+
+
+def test_legacy_check_in_retains_position_width_and_hidden_state(client):
+    for hidden in ([], ["daily-check-in"]):
+        old = {
+            "order": ["records", "daily-check-in", "consistency"],
+            "hidden": hidden,
+            "widths": {"daily-check-in": "compact", "records": "full"},
+        }
+        with SessionLocal() as db:
+            set_setting(db, client.user["id"], "home_layout", json.dumps(old))
+            db.commit()
+        result = client.get("/api/home-layout").json()
+        assert result["order"][1:4] == ["records", "combined-check-in", "consistency"]
+        assert ("combined-check-in" in result["hidden"]) == bool(hidden)
+        assert all(section in result["hidden"] for section in OPTIONAL_CHECK_INS)
+        assert result["widths"] == {"combined-check-in": "compact", "records": "full"}
+        assert "daily-check-in" not in result["order"]
+        assert client.put("/api/home-layout", json=result).json() == result
+
+
+def test_three_check_ins_can_be_added_hidden_and_resized_independently(client):
+    layout = client.get("/api/home-layout").json()
+    layout["hidden"] = ["combined-check-in"]
+    layout["widths"] = {
+        "bodyweight-check-in": "compact",
+        "body-fat-check-in": "compact",
+        "combined-check-in": "full",
+    }
+    assert client.put("/api/home-layout", json=layout).json() == layout
+    assert client.get("/api/home-layout").json() == layout
+
+
+def test_older_client_can_save_the_legacy_check_in_identifier(client):
+    old = {
+        "order": ["daily-check-in", "records"],
+        "hidden": [],
+        "widths": {"daily-check-in": "third"},
+    }
+    response = client.put("/api/home-layout", json=old)
+    assert response.status_code == 200
+    layout = response.json()
+    assert layout["order"][:3] == ["profile", "combined-check-in", "records"]
+    assert layout["widths"] == {"combined-check-in": "third"}
+    assert layout["hidden"] == OPTIONAL_CHECK_INS

@@ -96,8 +96,8 @@ describe('Home layout edits', () => {
   it('restores hidden sections at their saved position', () => {
     const saved = defaultHomeLayout();
     const hidden = toggleHomeSection(saved, 'workouts');
-    expect(hidden.hidden).toEqual(['workouts']);
-    expect(saved.hidden).toEqual([]);
+    expect(hidden.hidden).toEqual([...saved.hidden, 'workouts']);
+    expect(saved.hidden).toEqual(defaultHomeLayout().hidden);
     expect(toggleHomeSection(hidden, 'workouts')).toEqual(saved);
   });
 
@@ -108,25 +108,27 @@ describe('Home layout edits', () => {
       }),
     ).toEqual([6, 3, 3]);
     expect(
-      homeSectionSpans(['daily-check-in', 'records'], {
-        'daily-check-in': 'compact',
+      homeSectionSpans(['combined-check-in', 'records'], {
+        'combined-check-in': 'compact',
         records: 'compact',
       }),
     ).toEqual([3, 3]);
-    expect(homeSectionSpans(['daily-check-in'], { 'daily-check-in': 'compact' })).toEqual([3]);
+    expect(homeSectionSpans(['combined-check-in'], { 'combined-check-in': 'compact' })).toEqual([
+      3,
+    ]);
     expect(homeSectionSpans(['workouts'], { workouts: 'compact' })).toEqual([2]);
   });
 
   it('resizes without mutating saved widths, order or visibility and resets overrides', () => {
     const saved = { ...defaultHomeLayout(), widths: { records: 'compact' as const } };
-    const compact = toggleHomeSectionWidth(saved, 'daily-check-in', 6);
-    expect(compact.widths).toEqual({ records: 'compact', 'daily-check-in': 'compact' });
+    const compact = toggleHomeSectionWidth(saved, 'combined-check-in', 6);
+    expect(compact.widths).toEqual({ records: 'compact', 'combined-check-in': 'compact' });
     expect(compact.order).toEqual(saved.order);
     expect(compact.hidden).toEqual(saved.hidden);
     expect(saved.widths).toEqual({ records: 'compact' });
-    expect(toggleHomeSectionWidth(compact, 'daily-check-in', 3).widths).toEqual({
+    expect(toggleHomeSectionWidth(compact, 'combined-check-in', 3).widths).toEqual({
       records: 'compact',
-      'daily-check-in': 'full',
+      'combined-check-in': 'full',
     });
     expect(moveHomeSection(compact, 'records', 'workouts').widths).toEqual(compact.widths);
     expect(toggleHomeSection(compact, 'records').widths).toEqual(compact.widths);
