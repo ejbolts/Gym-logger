@@ -18,6 +18,14 @@
 
 *Tap a lift to replace the Training header and tabs with its name and a back arrow above per-session charts, personal bests and session history. Session rows open completed sets before Open workout. Return to Exercises with the list's search, filters, sort and scroll position intact. These previews use isolated synthetic workouts.*
 
+![Cardio weekly trend with metric tabs, week bars, grouped history and labeled logging and screenshot-import actions](screenshots/releases/0.10.0-cardio-weekly-trend-spacing.png)
+
+*Choose time, distance, MET-minutes or calories, then tap a week for its totals and duration-weighted averages. Log session and Import screenshot sit just below the Training tabs with compact spacing; history is grouped by your week-start preference.*
+
+![Expanded Cardio All stats with compact date-range controls, MET-minutes and the matching metric grid](screenshots/releases/0.10.0-cardio-all-stats.png)
+
+*All stats keeps longer date ranges and prior-period comparisons in the same card. Unlogged metrics stay empty, session counts use the correct plural, and the question mark explains METs and the calorie-based fat energy equivalent.*
+
 ![Social Friends tab listing each friend once with a seven-day activity strip, latest session and reaction button](screenshots/releases/0.10.0-social-friends.png)
 
 *Friends lists each friend once, most recently active first, with their week at a glance, latest session and a reaction button.*
@@ -108,6 +116,8 @@
 
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab. Sessions initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. Show more reveals older sessions; calendar and exercise links can still open older workouts directly. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
 - **Exercises:** option A replaces the library/preview split with a full exercise list and a focused detail view. Search by exercise or equipment, filter by muscle group, and cycle Recent first, A-Z and Most improved sorting. Rows show recent estimated 1RM, an eight-week trend and change; untrained lifts remain available. Tap a lift for per-session charts, personal bests and session history. Session rows open a set sheet with weight, reps, RPE and an Open workout action. Back to Exercises retains the query, filter, sort, scroll, metric and range. The list loads its account-owned trends in one request, excluding future sessions, warmups and unfinished sets.
+
+- **Cardio weekly trends:** one card replaces the separate cardio-time, METs and previous-weeks cards. Switch between time, distance, MET-minutes and calories; tap any of the last eight weeks for its totals, previous-week comparison and duration-weighted averages. **All stats** opens the familiar metrics and longer date ranges in a compact grid. The displayed week uses the full calendar range while totals exclude future sessions. History groups expandable session rows by your preferred week start, retaining filters, pagination, source-workout links and editing actions. **Log session** and **Import screenshot** are available above the chart; screenshot OCR still fills the form for review before saving.
 
 ### Friends and workout conversations
 

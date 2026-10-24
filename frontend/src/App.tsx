@@ -129,7 +129,8 @@ import { plural } from './sharedProfileDisplay';
 import { CONTRIBUTING_URL, PROJECT_URL } from './appGuideSteps';
 import { CreateExerciseDialog } from './CreateExerciseDialog';
 import { BackgroundActivityBar } from './BackgroundActivityBar';
-import { CardioEnergyCard } from './CardioEnergyCard';
+import { CardioTrendCard } from './CardioTrendCard';
+import { groupCardioHistory } from './cardioTrend';
 import { CardioMetricsEditor } from './CardioMetricsEditor';
 import { fatEnergyEquivalent } from './cardioEnergy';
 import { cardioSetUpdateFromScan } from './cardioScreenshot';
@@ -8199,7 +8200,7 @@ function BodyTrendChart({
   );
 }
 
-function CardioScreen({
+export function CardioScreen({
   dataRevision,
   exercises,
   onDataChange,
@@ -8372,30 +8373,11 @@ function CardioScreen({
   if (!overview) return <LoadingState />;
   const week = overview.current_week;
   const today = localDate();
-  const currentWeekSessions = overview.sessions.filter(
-    (session) =>
-      week.week_start <= session.session_date &&
-      session.session_date <= week.week_end &&
-      session.session_date <= today,
-  );
-  const currentWeekMinutes = currentWeekSessions.reduce(
-    (total, session) => total + session.duration_minutes,
-    0,
-  );
-  const previousWeekTotals = overview.previous_weeks.map((item) => ({
-    ...item,
-    completed_minutes: overview.sessions.reduce(
-      (total, session) =>
-        item.week_start <= session.session_date && session.session_date <= item.week_end
-          ? total + session.duration_minutes
-          : total,
-      0,
-    ),
-  }));
+  const historyGroups = groupCardioHistory(pagedSessions, weekStartDayFrom(week.week_start));
+  const allHistoryGroups = groupCardioHistory(filteredSessions, weekStartDayFrom(week.week_start));
   return (
     <div className="cardio-screen">
       {error && <p className="inline-error">{error}</p>}
-      <CardioEnergyCard summaries={overview.energy_periods} />
       {metricSession && (
         <CardioMetricsEditor
           key={metricSession.id}
@@ -8408,33 +8390,37 @@ function CardioScreen({
           }}
         />
       )}
-      <section className="panel total-cardio-card">
-        <div className="panel-heading">
-          <div>
-            <h2>Total cardio time</h2>
-            <small>
-              {prettyDate(week.week_start)} – {prettyDate(week.week_end)}
-            </small>
-          </div>
-          <strong>{currentWeekMinutes} min</strong>
-        </div>
-        <p>
-          {currentWeekSessions.length} {currentWeekSessions.length === 1 ? 'session' : 'sessions'}{' '}
-          logged.
-        </p>
-      </section>
       {!formOpen && !editingId ? (
-        <button
-          type="button"
-          className="pulse-button primary cardio-log-button"
-          onClick={() => {
-            setError(null);
-            setFormOpen(true);
-          }}
-        >
-          <Icon name="plus" />
-          Log cardio session
-        </button>
+        <div className="cardio-page-actions">
+          <button
+            type="button"
+            className="pulse-button primary"
+            onClick={() => {
+              setError(null);
+              setFormOpen(true);
+            }}
+          >
+            <Icon name="plus" />
+            Log session
+          </button>
+          <button
+            type="button"
+            className="pulse-button secondary"
+            aria-label="Import screenshot"
+            onClick={() => {
+              setError(null);
+              setFormOpen(true);
+              requestAnimationFrame(() =>
+                cardioFormRef.current
+                  ?.querySelector<HTMLInputElement>('input[type="file"]')
+                  ?.click(),
+              );
+            }}
+          >
+            <Icon name="camera" />
+            Import screenshot
+          </button>
+        </div>
       ) : (
         <section className="panel cardio-form" ref={cardioFormRef}>
           <h2>{editingId ? 'Edit cardio session' : 'Log cardio session'}</h2>
@@ -8665,10 +8651,15 @@ function CardioScreen({
           </button>
         </section>
       )}
-      <section className="panel cardio-history">
+      <CardioTrendCard overview={overview} today={today} />
+      <section className="pulse-card cardio-history">
         <div className="cardio-history-header">
-          <h2>Cardio history</h2>
-          <div className="cardio-history-filters" role="group" aria-label="Filter cardio history">
+          <h2>History</h2>
+          <div
+            className="segmented-control cardio-history-filters"
+            role="group"
+            aria-label="Filter cardio history"
+          >
             {[
               ['all', 'All'],
               ['pure_cardio', 'Cardio only'],
@@ -8691,126 +8682,154 @@ function CardioScreen({
         {filteredSessions.length === 0 && (
           <p className="cardio-history-empty">No cardio sessions match this filter.</p>
         )}
-        {pagedSessions.map((session) => {
-          const workoutContext =
-            session.workout_context === 'workout_plus_cardio'
-              ? 'workout_plus_cardio'
-              : 'pure_cardio';
-          const workoutName = session.source_workout_name?.replace(/\s+workout$/i, '');
-          return (
-            <article key={session.id}>
-              <div>
-                <div className="cardio-session-title-row">
-                  {workoutContext === 'workout_plus_cardio' && (
-                    <span className="cardio-context-badge workout-plus-cardio">After workout</span>
-                  )}
-                  {session.source_workout_id ? (
+        {historyGroups.map((group) => (
+          <section className="cardio-history-week" key={group.start}>
+            <h3>
+              Week of {prettyDate(group.start)}
+              <span>
+                {allHistoryGroups
+                  .find((item) => item.start === group.start)!
+                  .sessions.reduce((total, item) => total + item.duration_minutes, 0)}{' '}
+                min
+              </span>
+            </h3>
+            {group.sessions.map((session) => {
+              const workoutContext =
+                session.workout_context === 'workout_plus_cardio'
+                  ? 'workout_plus_cardio'
+                  : 'pure_cardio';
+              const workoutName = session.source_workout_name?.replace(/\s+workout$/i, '');
+              return (
+                <details className="cardio-history-row" key={session.id}>
+                  <summary>
+                    <span className="cardio-activity-icon">
+                      <Icon name="pulse" />
+                    </span>
+                    <span className="cardio-history-row-title">
+                      <strong>{session.activity_type}</strong>
+                      <small>
+                        {prettyDate(session.session_date)} ·{' '}
+                        {workoutContext === 'workout_plus_cardio'
+                          ? 'After workout'
+                          : (session.zone ?? 'Cardio only')}
+                      </small>
+                    </span>
+                    <span className="cardio-history-row-minutes">
+                      {session.duration_minutes} min
+                    </span>
+                    <Icon name="chevron-down" />
+                  </summary>
+                  <div className="cardio-history-row-content">
+                    <div className="cardio-session-title-row">
+                      {workoutContext === 'workout_plus_cardio' && (
+                        <span className="cardio-context-badge workout-plus-cardio">
+                          After workout
+                        </span>
+                      )}
+                      {session.source_workout_id ? (
+                        <button
+                          type="button"
+                          className="cardio-history-workout-link"
+                          onClick={() => onOpenWorkout(session.source_workout_id!)}
+                        >
+                          <strong>{session.activity_type}</strong>
+                        </button>
+                      ) : (
+                        <strong>{session.activity_type}</strong>
+                      )}
+                    </div>
+                    <small className="cardio-session-date">
+                      {prettyDate(session.session_date)}
+                    </small>
+                    <small className="cardio-session-summary">
+                      {session.duration_minutes} min ·{' '}
+                      {session.zone ?? session.intensity ?? 'Unspecified'}
+                      {workoutName ? ` · ${workoutName}` : ''}
+                    </small>
+                    <small className="cardio-session-energy">
+                      {session.calories_kcal == null
+                        ? 'Calories not logged'
+                        : `${session.calories_kcal.toLocaleString()} kcal · ≈ ${fatEnergyEquivalent(session.calories_kcal, weightUnit)} fat burnt`}
+                    </small>
+                    <small className="cardio-session-performance">
+                      {[
+                        session.average_heart_rate_bpm == null
+                          ? null
+                          : `${session.average_heart_rate_bpm} bpm avg`,
+                        session.distance_km == null ? null : `${session.distance_km} km`,
+                        session.average_speed_kph == null
+                          ? null
+                          : `${session.average_speed_kph} km/h avg`,
+                        session.incline_percent == null
+                          ? null
+                          : `${session.incline_percent}% incline`,
+                        session.average_power_watts == null
+                          ? null
+                          : `${session.average_power_watts} W avg`,
+                        session.average_mets == null ? null : `${session.average_mets} METs avg`,
+                        session.average_mets == null
+                          ? null
+                          : `${(session.average_mets * session.duration_minutes).toLocaleString(
+                              undefined,
+                              { maximumFractionDigits: 1 },
+                            )} MET-min`,
+                      ]
+                        .filter((value): value is string => value !== null)
+                        .join(' · ') || 'Performance metrics not logged'}
+                    </small>
+                  </div>
+                  <div className="cardio-session-actions">
                     <button
                       type="button"
-                      className="cardio-history-workout-link"
-                      onClick={() => onOpenWorkout(session.source_workout_id!)}
+                      onClick={() => setMetricSession(session)}
+                      aria-label={`Edit performance metrics for ${session.activity_type} on ${session.session_date}`}
                     >
-                      <strong>{session.activity_type}</strong>
+                      {[
+                        session.calories_kcal,
+                        session.average_heart_rate_bpm,
+                        session.distance_km,
+                        session.average_speed_kph,
+                        session.incline_percent,
+                        session.average_power_watts,
+                        session.average_mets,
+                      ].some((value) => value != null)
+                        ? 'Edit metrics'
+                        : 'Log metrics'}
                     </button>
-                  ) : (
-                    <strong>{session.activity_type}</strong>
-                  )}
-                </div>
-                <small className="cardio-session-date">{prettyDate(session.session_date)}</small>
-                <small className="cardio-session-summary">
-                  {session.duration_minutes} min ·{' '}
-                  {session.zone ?? session.intensity ?? 'Unspecified'}
-                  {workoutName ? ` · ${workoutName}` : ''}
-                </small>
-                <small className="cardio-session-energy">
-                  {session.calories_kcal == null
-                    ? 'Calories not logged'
-                    : `${session.calories_kcal.toLocaleString()} kcal · ≈ ${fatEnergyEquivalent(session.calories_kcal, weightUnit)} fat burnt`}
-                </small>
-                <small className="cardio-session-performance">
-                  {[
-                    session.average_heart_rate_bpm == null
-                      ? null
-                      : `${session.average_heart_rate_bpm} bpm avg`,
-                    session.distance_km == null ? null : `${session.distance_km} km`,
-                    session.average_speed_kph == null
-                      ? null
-                      : `${session.average_speed_kph} km/h avg`,
-                    session.incline_percent == null ? null : `${session.incline_percent}% incline`,
-                    session.average_power_watts == null
-                      ? null
-                      : `${session.average_power_watts} W avg`,
-                    session.average_mets == null ? null : `${session.average_mets} METs avg`,
-                    session.average_mets == null
-                      ? null
-                      : `${(session.average_mets * session.duration_minutes).toLocaleString(
-                          undefined,
-                          { maximumFractionDigits: 1 },
-                        )} MET-min`,
-                  ]
-                    .filter((value): value is string => value !== null)
-                    .join(' · ') || 'Performance metrics not logged'}
-                </small>
-              </div>
-              <div className="cardio-session-actions">
-                <button
-                  type="button"
-                  onClick={() => setMetricSession(session)}
-                  aria-label={`Edit performance metrics for ${session.activity_type} on ${session.session_date}`}
-                >
-                  {[
-                    session.calories_kcal,
-                    session.average_heart_rate_bpm,
-                    session.distance_km,
-                    session.average_speed_kph,
-                    session.incline_percent,
-                    session.average_power_watts,
-                    session.average_mets,
-                  ].some((value) => value != null)
-                    ? 'Edit metrics'
-                    : 'Log metrics'}
-                </button>
-                {!session.source_workout_id && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setEditingId(session.id);
-                        setDraft({
-                          ...session,
-                          exercise_id:
-                            cardioExercises.find((item) => item.name === session.activity_type)
-                              ?.id ?? null,
-                        });
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <InlineConfirmButton
-                      label="Delete"
-                      confirmLabel="Delete session"
-                      onConfirm={() => remove(session.id)}
-                    />
-                  </>
-                )}
-              </div>
-            </article>
-          );
-        })}
+                    {!session.source_workout_id && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setEditingId(session.id);
+                            setDraft({
+                              ...session,
+                              exercise_id:
+                                cardioExercises.find((item) => item.name === session.activity_type)
+                                  ?.id ?? null,
+                            });
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <InlineConfirmButton
+                          label="Delete"
+                          confirmLabel="Delete session"
+                          onConfirm={() => remove(session.id)}
+                        />
+                      </>
+                    )}
+                  </div>
+                </details>
+              );
+            })}
+          </section>
+        ))}
         <PaginationControls
           currentPage={currentHistoryPage}
           totalPages={historyPageCount}
           onPageChange={setHistoryPage}
           label="cardio history"
         />
-      </section>
-      <section className="panel previous-zone2">
-        <h2>Previous weeks</h2>
-        {previousWeekTotals.map((item) => (
-          <div key={item.week_start}>
-            <span>{prettyDate(item.week_start)}</span>
-            <strong>{item.completed_minutes} min</strong>
-          </div>
-        ))}
       </section>
     </div>
   );

@@ -20,6 +20,7 @@ import './appGuide.css';
 import './feedback.css';
 import './sharing.css';
 import './WorkoutBrowser.css';
+import './cardioPage.css';
 import './exerciseList.css';
 
 registerAppUpdates();

@@ -2,10 +2,11 @@
   "version": "0.10.0",
   "date": "2026-10-24",
   "title": "Your training together. More ways to connect.",
-  "summary": "Find sessions, exercises and cardio together in Training. Connect through mutual friendships and workout conversations, keep moving while saves finish, and see saved training changes across devices. Settings, profiles and daily check-ins are easier to use.",
+  "summary": "Find sessions, exercises and cardio together in Training. Connect through mutual friendships and workout conversations, keep moving while saves finish, and see saved training changes across devices. Settings, profiles and daily check-ins are easier to use. Cardio brings weekly trends and detailed metrics together.",
   "changes": [
     "Training combines Sessions, Exercises and Cardio. Sessions keeps the existing calendar, day details, machine filters and workout cards, with the latest three weeks shown first and Show more for older workouts. The initial three-week window respects your week-start preference, and links can still open older sessions directly.",
     "Exercises opens on a searchable list with muscle-group filters, Recent first, A-Z and Most improved sorting, and eight-week estimated 1RM trends. Tap a lift for its focused chart, personal bests and sessions, with an exercise header and back arrow replacing the Training header and tabs. Session rows open the completed sets before Open workout, and returning to Exercises keeps your search, filter, sort, scroll, metric and range.",
+    "Cardio has one weekly trend card for time, distance, MET-minutes and calories. Tap a week to see its stats, expand All stats for longer date ranges, and browse history grouped by week. Log session and Import screenshot are available directly above the chart.",
     "Follows are now friendships. Send a friend request, and once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles. Existing follows in either direction became friendships, and waiting follow requests became friend requests.",
     "Social has its own bottom tab. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members. Remove or block a friend from their profile, and Social stays highlighted while you view it. Home keeps its compact friends card.",
     "Open the combined reactions and comments button on a shared workout to read its inline thread. Add an optional workout reaction with a comment, reply with a tappable @name, and react to comments. Comments and replies allow up to 280 characters. Reply and comment-reaction notices appear in the notification bell. Authors can edit or delete their comments; workout owners can moderate them. Existing sharing, friendship and block rules still apply. Removed the redundant Find friends header link from Social; use the Find tab.",
@@ -53,6 +54,22 @@
       "image": {
         "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b35b1166ff52e8f07e7f13adb7e347eddf3eb711/docs/screenshots/releases/0.10.0-exercise-header.png",
         "alt": "Barbell Bench Press with its own top header and back arrow above progress charts and personal bests, using synthetic workouts."
+      }
+    },
+    {
+      "title": "Cardio, week by week",
+      "description": "Choose time, distance, MET-minutes or calories and tap a week for its totals and averages. History stays grouped by week. Log session and Import screenshot sit just below the Training tabs and open the existing logging and scan-review flows.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/270ddcbf5bbc8537ce2b599a5ed5ebbc7e9c717f/docs/screenshots/releases/0.10.0-cardio-weekly-trend-spacing.png",
+        "alt": "Cardio weekly trend with metric tabs, selectable week bars, grouped history and labeled Log session and Import screenshot actions using synthetic sessions."
+      }
+    },
+    {
+      "title": "Cardio stats that fit",
+      "description": "Open All stats for compact date ranges and the matching metric grid. The question mark explains METs, metric coverage and the calorie-based fat energy equivalent.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fe12adc7dcbc4dbaa8dd2cee2bc31d0e17bf239f/docs/screenshots/releases/0.10.0-cardio-all-stats.png",
+        "alt": "Expanded Cardio All stats with Week, Month, 3M, 6M, Year and All controls, MET-minutes and prior-period comparisons."
       }
     },
     {

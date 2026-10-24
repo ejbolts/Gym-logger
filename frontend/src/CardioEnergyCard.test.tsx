@@ -33,14 +33,39 @@ const week: CardioEnergyPeriod = {
 };
 
 describe('cardio energy card', () => {
-  it('starts with the comparison details minimized', () => {
-    const markup = renderToStaticMarkup(<CardioEnergyCard summaries={[week]} />);
-    expect(markup).toContain('aria-expanded="false"');
-    expect(markup).toContain('Show details +');
+  it('shows the complete stat grid with compact period controls', () => {
+    const markup = renderToStaticMarkup(
+      <CardioEnergyCard summaries={[week]} weekEnd="2026-09-06" />,
+    );
     expect(markup).toContain('864');
-    expect(markup).toContain('MET-min');
-    expect(markup).toContain('7.2 average METs');
-    expect(markup).not.toContain('1,540 kcal');
+    expect(markup).toContain('1,540');
+    expect(markup).toContain('cardio-stat-unit');
+    expect(markup).toContain('Average METs');
+    expect(markup).toContain('Fat energy equivalent');
+    expect(markup).toContain('About cardio progress');
+    expect(markup).toContain('Cardio progress period');
+    expect(markup).not.toContain('Show details');
+  });
+  it('uses singular session labels and keeps unlogged metrics empty', () => {
+    const markup = renderToStaticMarkup(
+      <CardioEnergyCard
+        summaries={[
+          {
+            ...week,
+            total_sessions: 1,
+            logged_sessions: 1,
+            mets_sessions: 1,
+            heart_rate_sessions: 1,
+            distance_sessions: 0,
+            speed_sessions: 0,
+            incline_sessions: 0,
+          },
+        ]}
+      />,
+    );
+    expect(markup).toContain('1 session logged');
+    expect(markup).not.toContain('1 sessions');
+    expect(markup).toContain('No distance logged');
   });
   it('tolerates a cached dashboard from before calorie tracking', () => {
     expect(renderToStaticMarkup(<CardioEnergyCard summaries={undefined} />)).toBe('');
