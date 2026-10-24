@@ -44,6 +44,7 @@ describe('app navigation history', () => {
     expect(mainTabFor('history')).toBe('training');
     expect(mainTabFor('progress')).toBe('training');
     expect(mainTabFor('social')).toBe('social');
+    expect(mainTabFor('shared-profile')).toBe('social');
     expect(mainTabFor('body')).toBe('body');
     expect(mainTabFor('settings')).toBeNull();
     expect(mainTabFor('log')).toBeNull();
