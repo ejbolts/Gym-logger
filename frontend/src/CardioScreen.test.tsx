@@ -129,17 +129,40 @@ afterEach(async () => {
 });
 
 describe('cardio weekly trend screen', () => {
-  it('switches metrics and selected weeks together, with the current week as the default', async () => {
-    const hero = () => container.querySelector('.cardio-week-value')!.textContent;
-    expect(hero()).toContain('50 min');
-    await click(named('MET-min'));
-    expect(hero()).toContain('300 MET-min');
-    await click(container.querySelector('[aria-label="Week of 12 Oct: 240 MET-min"]')!);
-    expect(hero()).toContain('240 MET-min');
-    expect(container.querySelector('.cardio-week-comparison')!.textContent).toContain('1 session');
-    await click(named('Calories'));
-    expect(hero()).toContain('300 kcal');
-  });
+  it.each(['en-AU', 'en-US'])(
+    'switches metrics and selected weeks together, with the current week as the default (%s)',
+    async (locale) => {
+      const toLocaleDateString = Date.prototype.toLocaleDateString;
+      vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function (
+        this: Date,
+        locales,
+        options,
+      ) {
+        return toLocaleDateString.call(this, locales ?? locale, options);
+      });
+      const hero = () => container.querySelector('.cardio-week-value')!.textContent;
+      expect(hero()).toContain('50 min');
+      await click(named('MET-min'));
+      expect(hero()).toContain('300 MET-min');
+      const previousWeekDate = new Date('2026-10-12T12:00:00').toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'short',
+      });
+      const previousWeek = container.querySelector(
+        `[aria-label="Week of ${previousWeekDate}: 240 MET-min"]`,
+      );
+      expect(previousWeek).not.toBeNull();
+      expect(previousWeek!.getAttribute('aria-pressed')).toBe('false');
+      await click(previousWeek!);
+      expect(previousWeek!.getAttribute('aria-pressed')).toBe('true');
+      expect(hero()).toContain('240 MET-min');
+      expect(container.querySelector('.cardio-week-comparison')!.textContent).toContain(
+        '1 session',
+      );
+      await click(named('Calories'));
+      expect(hero()).toContain('300 kcal');
+    },
+  );
 
   it('opens all stats, switches periods and explains METs in a dismissible popup', async () => {
     await click(container.querySelector('.cardio-all-stats > summary')!);
