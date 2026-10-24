@@ -6,25 +6,9 @@
 
 ### Your training together. More ways to connect.
 
-![Training Sessions keeps the existing calendar above the latest three weeks of workouts](screenshots/releases/0.9.1-training-sessions.png)
+![Before and after navigation: History and Progress in 0.9.0 become Training and Social in 0.10.0](screenshots/releases/0.10.0-navigation-before-after.png)
 
-*The calendar, date details, machine filter and session cards stay together in Sessions. Show more reveals older workouts.*
-
-![Exercises list with search, muscle filters, sorting, and eight-week estimated 1RM trends](screenshots/releases/0.10.0-exercise-list.png)
-
-*Search or filter the full exercise list, then sort by recent use, name or percentage improvement. Each trained lift shows its latest estimated 1RM and eight-week trend; untrained exercises remain available.*
-
-![Exercise detail with a back-arrow header, metric controls, chart and personal bests](screenshots/releases/0.10.0-exercise-header.png)
-
-*Tap a lift to replace the Training header and tabs with its name and a back arrow above per-session charts, personal bests and session history. Session rows open completed sets before Open workout. Return to Exercises with the list's search, filters, sort and scroll position intact. These previews use isolated synthetic workouts.*
-
-![Cardio weekly trend with metric tabs, week bars, grouped history and labeled logging and screenshot-import actions](screenshots/releases/0.10.0-cardio-weekly-trend-spacing.png)
-
-*Choose time, distance, MET-minutes or calories, then tap a week for its totals and duration-weighted averages. Log session and Import screenshot sit just below the Training tabs with compact spacing; history is grouped by your week-start preference.*
-
-![Expanded Cardio All stats with compact date-range controls, MET-minutes and the matching metric grid](screenshots/releases/0.10.0-cardio-all-stats.png)
-
-*All stats keeps longer date ranges and prior-period comparisons in the same card. Unlogged metrics stay empty, session counts use the correct plural, and the question mark explains METs and the calorie-based fat energy equivalent.*
+*History and Progress now live in Training, with Sessions, Exercises and Cardio together. Social gets its own bottom tab for Friends and Find. These are navigation crops from actual isolated sample-data screens in tagged 0.9.0 and pending 0.10.0.*
 
 ![Social Friends tab listing each friend once with a seven-day activity strip, latest session and reaction button](screenshots/releases/0.10.0-social-friends.png)
 

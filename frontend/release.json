@@ -28,48 +28,16 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#0100",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
-    "alt": "Training Sessions retains the calendar above the latest three weeks of workouts."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4406fb7c8c7bf4bfa381a529abd2b31b68ece211/docs/screenshots/releases/0.10.0-navigation-before-after.png",
+    "alt": "Before in 0.9.0: separate History and Progress bottom tabs. Now in 0.10.0: Training contains Sessions, Exercises and Cardio, and Social has its own bottom tab. Actual sample-data screenshots show the header and bottom navigation."
   },
   "highlights": [
     {
       "title": "Your training, together",
-      "description": "Sessions keeps the calendar and saved workouts. Exercises opens familiar progress tools, and Cardio stays within reach. Switch tabs and return to the view you were using.",
+      "description": "History and Progress now live in Training. Switch between Sessions, Exercises and Cardio in one place. Social has its own bottom tab for Friends and Find.",
       "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
-        "alt": "Training Sessions retains the calendar above the latest three weeks of workouts."
-      }
-    },
-    {
-      "title": "Your lifts, a clearer view",
-      "description": "Search or filter the exercise list and compare eight-week trends. Open a lift for charts, personal bests and a session set sheet, then return with your list position and choices intact.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/93af8b532ce152e077afaf40ac5e27fe11886e59/docs/screenshots/releases/0.10.0-exercise-list.png",
-        "alt": "Exercises opens on a full searchable list with muscle filters, recent or improvement sorting, eight-week trend lines and synthetic training data."
-      }
-    },
-    {
-      "title": "Focus on one lift",
-      "description": "Open a lift with its name and back arrow in the top header. Switch chart metrics and date ranges, inspect personal bests, and view completed session sets. Back returns to the exercise list without losing your place.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/b35b1166ff52e8f07e7f13adb7e347eddf3eb711/docs/screenshots/releases/0.10.0-exercise-header.png",
-        "alt": "Barbell Bench Press with its own top header and back arrow above progress charts and personal bests, using synthetic workouts."
-      }
-    },
-    {
-      "title": "Cardio, week by week",
-      "description": "Choose time, distance, MET-minutes or calories and tap a week for its totals and averages. History stays grouped by week. Log session and Import screenshot sit just below the Training tabs and open the existing logging and scan-review flows.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/270ddcbf5bbc8537ce2b599a5ed5ebbc7e9c717f/docs/screenshots/releases/0.10.0-cardio-weekly-trend-spacing.png",
-        "alt": "Cardio weekly trend with metric tabs, selectable week bars, grouped history and labeled Log session and Import screenshot actions using synthetic sessions."
-      }
-    },
-    {
-      "title": "Cardio stats that fit",
-      "description": "Open All stats for compact date ranges and the matching metric grid. The question mark explains METs, metric coverage and the calorie-based fat energy equivalent.",
-      "image": {
-        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fe12adc7dcbc4dbaa8dd2cee2bc31d0e17bf239f/docs/screenshots/releases/0.10.0-cardio-all-stats.png",
-        "alt": "Expanded Cardio All stats with Week, Month, 3M, 6M, Year and All controls, MET-minutes and prior-period comparisons."
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/4406fb7c8c7bf4bfa381a529abd2b31b68ece211/docs/screenshots/releases/0.10.0-navigation-before-after.png",
+        "alt": "Before in 0.9.0: separate History and Progress bottom tabs. Now in 0.10.0: Training contains Sessions, Exercises and Cardio, and Social has its own bottom tab. Actual sample-data screenshots show the header and bottom navigation."
       }
     },
     {
