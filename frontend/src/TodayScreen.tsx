@@ -35,6 +35,7 @@ import type {
 import { localDate } from './utils';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
+import { useUserSession } from './userContext';
 import { ProfileButton } from './AccountHeaderActions';
 import { useUpNextSession } from './upNext';
 import {
@@ -661,6 +662,17 @@ export function DashboardQuickBodyweight({
 }) {
   const weightUnit = useWeightUnit();
   const initialWeight = todayBodyweight ?? latestBodyweight;
+  const { user } = useUserSession();
+  const modeKey = `gym.daily-check-in.${user?.id ?? 'guest'}`;
+  const [mode, setMode] = useState('combined');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(modeKey);
+      setMode(saved === 'weight' || saved === 'fat' ? saved : 'combined');
+    } catch {
+      setMode('combined');
+    }
+  }, [modeKey]);
   const [weight, setWeight] = useState<number | null>(initialWeight);
   const [bodyFat, setBodyFat] = useState<string>(() => String(todayBodyFat ?? latestBodyFat ?? ''));
   const [saving, setSaving] = useState(false);
@@ -776,64 +788,95 @@ export function DashboardQuickBodyweight({
       <header className="pulse-card-header">
         <h2 id="daily-bodyweight-title">Daily check-in</h2>
       </header>
-      <section className="quick-check-in-row" aria-label="Body weight check-in">
-        <header className="quick-check-in-heading">
-          <h3>Body weight</h3>
-          <span className={todayBodyweight === null ? '' : 'logged'} role="status">
-            {todayBodyweight === null
-              ? 'Not logged today'
-              : `Saved today · ${weightFromKg(todayBodyweight, weightUnit).toFixed(1)} ${weightUnit}`}
-          </span>
-        </header>
-        <form
-          className="quick-bodyweight-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void save();
-          }}
-        >
-          <button
-            type="button"
-            className="stepper"
-            onClick={() => nudge(-0.1)}
-            aria-label={`Decrease by 0.1 ${weightUnit}`}
-            disabled={saving}
-          >
-            −
-          </button>
-          <label>
-            <span className="sr-only">Bodyweight in {weightUnitName(weightUnit)}</span>
-            <WeightInput
-              weightKg={weight}
-              disabled={saving}
-              aria-label={`Bodyweight in ${weightUnitName(weightUnit)}`}
-              style={
-                {
-                  '--bw-chars': `${Math.max(weightInputValue(weight, weightUnit).length, 1)}ch`,
-                } as CSSProperties
-              }
-              onWeightChange={(kg) => {
-                setWeight(kg);
-                setError(null);
-              }}
-            />
-            <b aria-hidden="true">{weightUnit}</b>
-          </label>
-          <button
-            type="button"
-            className="stepper"
-            onClick={() => nudge(0.1)}
-            aria-label={`Increase by 0.1 ${weightUnit}`}
-            disabled={saving}
-          >
-            +
-          </button>
-          <button className="pulse-button primary" type="submit" disabled={saving}>
-            {saving ? 'Saving…' : todayBodyweight === null ? 'Log' : 'Update'}
-          </button>
-        </form>
-      </section>
       {onSaveBodyFat && (
+        <div className="quick-check-in-modes" role="group" aria-label="Check-in display">
+          {(
+            [
+              ['weight', 'Body weight'],
+              ['fat', 'Body fat'],
+              ['combined', 'Combined'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              type="button"
+              key={value}
+              aria-pressed={mode === value}
+              disabled={saving}
+              onClick={() => {
+                setMode(value);
+                setError(null);
+                try {
+                  localStorage.setItem(modeKey, value);
+                } catch {
+                  /* Keep the choice for this visit. */
+                }
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {(mode !== 'fat' || !onSaveBodyFat) && (
+        <section className="quick-check-in-row" aria-label="Body weight check-in">
+          <header className="quick-check-in-heading">
+            <h3>Body weight</h3>
+            <span className={todayBodyweight === null ? '' : 'logged'} role="status">
+              {todayBodyweight === null
+                ? 'Not logged today'
+                : `Saved today · ${weightFromKg(todayBodyweight, weightUnit).toFixed(1)} ${weightUnit}`}
+            </span>
+          </header>
+          <form
+            className="quick-bodyweight-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save();
+            }}
+          >
+            <button
+              type="button"
+              className="stepper"
+              onClick={() => nudge(-0.1)}
+              aria-label={`Decrease by 0.1 ${weightUnit}`}
+              disabled={saving}
+            >
+              −
+            </button>
+            <label>
+              <span className="sr-only">Bodyweight in {weightUnitName(weightUnit)}</span>
+              <WeightInput
+                weightKg={weight}
+                disabled={saving}
+                aria-label={`Bodyweight in ${weightUnitName(weightUnit)}`}
+                style={
+                  {
+                    '--bw-chars': `${Math.max(weightInputValue(weight, weightUnit).length, 1)}ch`,
+                  } as CSSProperties
+                }
+                onWeightChange={(kg) => {
+                  setWeight(kg);
+                  setError(null);
+                }}
+              />
+              <b aria-hidden="true">{weightUnit}</b>
+            </label>
+            <button
+              type="button"
+              className="stepper"
+              onClick={() => nudge(0.1)}
+              aria-label={`Increase by 0.1 ${weightUnit}`}
+              disabled={saving}
+            >
+              +
+            </button>
+            <button className="pulse-button primary" type="submit" disabled={saving}>
+              {saving ? 'Saving…' : todayBodyweight === null ? 'Log' : 'Update'}
+            </button>
+          </form>
+        </section>
+      )}
+      {onSaveBodyFat && mode !== 'weight' && (
         <section className="quick-check-in-row body-fat-check-in" aria-label="Body fat check-in">
           <header className="quick-check-in-heading">
             <h3>Body fat</h3>

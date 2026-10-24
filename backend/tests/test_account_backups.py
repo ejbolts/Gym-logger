@@ -11,6 +11,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from conftest import TEST_PASSWORD
 from sqlalchemy import create_engine, inspect, select, text
+from test_sharing import befriend, share
 from test_tracker import workout_payload
 
 from app import manage
@@ -282,3 +283,28 @@ def test_deleting_an_account_deletes_its_backups_and_nobody_elses(client, other_
     with SessionLocal() as db:
         assert db.get(AccountBackup, other_backup.id) is None
         assert db.get(AccountBackup, owner_backup.id) is not None
+
+
+def test_snapshots_deliberately_exclude_cross_account_discussions(client, other_client):
+    share(client)
+    share(other_client)
+    befriend(client, other_client)
+    workout_id = add_workout(client)
+    url = f"/api/sharing/workouts/{workout_id}/comments"
+    comment = other_client.post(url, json={"body": "Great session"})
+    assert comment.status_code == 201, comment.text
+    reply = client.post(url, json={"body": "Thanks!", "reply_to_id": comment.json()["id"]})
+    assert reply.status_code == 201, reply.text
+    reacted = other_client.put(
+        f"/api/sharing/comments/{reply.json()['id']}/reaction", json={"reaction": "love"}
+    )
+    assert reacted.status_code == 200, reacted.text
+    tables = ("workout_comments", "comment_reactions", "comment_notifications")
+    for table in tables:
+        assert rows(get_settings().database_path, f"SELECT COUNT(*) FROM {table}")[0][0] > 0
+    for account in (client, other_client):
+        backup = snapshot(account.user["username"])
+        database = backup_folder(get_settings(), account.user["id"], backup.id) / BACKUP_DATABASE
+        for table in tables:
+            assert rows(database, f"SELECT COUNT(*) FROM {table}") == [(0,)]
+        assert rows(database, "SELECT id FROM users") == [(account.user["id"],)]

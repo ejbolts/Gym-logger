@@ -13,7 +13,7 @@ import { SharedWorkoutFilters } from './SharedWorkoutFilters';
 import { ConsistencyCard } from './ConsistencyCard';
 import { WorkoutCalendar, WorkoutCalendarLegend } from './WorkoutCalendar';
 import { builtinTypeColors, calendarLegendTypes } from './workoutTypes';
-import { TrainingTimeStats, TrainingTimeHelp } from './TrainingTimeStats';
+import { TrainingTimeCard } from './TrainingTimeStats';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { PopupDialog } from './PopupDialog';
 import { formatMemberSince } from './profileDisplay';
@@ -1285,21 +1285,10 @@ export function SharedProfileScreen({
             />
           )}
           {profile.training_time && (
-            <section
-              className="settings-panel panel profile-training-time"
-              aria-labelledby="shared-training-time-title"
-            >
-              <header>
-                <div>
-                  <p className="section-kicker">ACTIVITY</p>
-                  <div className="profile-help-row">
-                    <h2 id="shared-training-time-title">Time trained</h2>
-                    <TrainingTimeHelp />
-                  </div>
-                </div>
-              </header>
-              <TrainingTimeStats time={profile.training_time} />
-            </section>
+            <TrainingTimeCard
+              allTime={profile.training_time}
+              pastYear={profile.training_time_past_year}
+            />
           )}
           {profile.body_weight && (
             <BodyWeightCard measurements={profile.body_weight} goals={profile.goals} />

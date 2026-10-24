@@ -42,13 +42,18 @@ def test_block_hides_every_shared_route_search_feed_and_notifications(
             assert viewer.get(f"/api/sharing/profiles/{target}{suffix}").status_code == 404
         assert viewer.post(f"/api/sharing/friends/{target}").status_code == 404
         assert viewer.post(f"/api/sharing/friends/{target}/accept").status_code == 404
-        assert viewer.get("/api/sharing/feed").json() == {"items": [], "friends": 0}
+        assert viewer.get("/api/sharing/feed").json() == {
+            "items": [],
+            "friends": 0,
+            "with_sessions": 0,
+        }
         connections = viewer.get("/api/sharing/friends").json()
         assert connections["friends"] == connections["requests"] == connections["sent"] == []
         assert viewer.get("/api/sharing/notifications").json() == {
             "requests": [],
             "accepted": [],
             "reactions": [],
+            "comments": [],
         }
     assert other_client.get(profile["profile_photo_url"]).status_code == 404
     photo = f"/api/sharing/profiles/{owner}/machine-photos/{history['photo']['id']}"
@@ -151,5 +156,5 @@ def test_reacting_to_an_old_workout_never_pins_the_friend_above_newer_workouts(
     newer = log_workout(other_client, "New session", 0)
     feed = client.get("/api/sharing/feed").json()["items"]
     assert [item["workout"]["id"] for item in feed] == [newer["id"], newest_third["id"]]
-    assert feed[0]["reactions"] == {"counts": [], "yours": None}
+    assert feed[0]["reactions"] == {"counts": [], "yours": None, "comment_count": 0}
     third.close()

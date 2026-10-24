@@ -48,17 +48,15 @@ export function AccountHeaderActions({
   profile,
   openFeedback = 0,
   onOpenProfile,
-  onOpenFriends,
 }: {
   active: boolean;
   profile?: Pick<User, 'display_name' | 'profile_photo_url'>;
   openFeedback?: number;
   onOpenProfile?: () => void;
-  onOpenFriends: () => void;
 }) {
   return (
     <div className="account-header-actions">
-      <FollowNotifications active={active} onOpenFriends={onOpenFriends} />
+      <FollowNotifications active={active} />
       {onOpenProfile && (
         <ProfileButton
           onClick={onOpenProfile}

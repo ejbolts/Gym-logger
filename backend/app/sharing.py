@@ -66,7 +66,7 @@ from .tracker_schemas import (
     Zone2WeekRead,
 )
 from .training_metrics import start_of_week
-from .training_time import training_time_totals
+from .training_time import past_year_start, training_time_totals
 from .workout_types import workout_type_catalog
 
 Db = Annotated[Session, Depends(get_db)]
@@ -188,6 +188,7 @@ class SharedProfileRead(SharedProfileSummary):
     goals: SharedGoals | None = None
     cardio_sessions: list[SharedCardioSession] | None = None
     training_time: TrainingTimeRead | None = None
+    training_time_past_year: TrainingTimeRead | None = None
     consistency: SharedConsistencyRead | None = None
 
 
@@ -255,6 +256,7 @@ class FriendFeedRead(BaseModel):
 
     items: list[FriendFeedItem]
     friends: int
+    with_sessions: int
 
 
 class FriendLatest(BaseModel):
@@ -764,6 +766,9 @@ def get_shared_profile(user_id: str, user: CurrentUser, db: Db) -> SharedProfile
         # Cardio is shared with workouts; its notes still follow the notes choice.
         cardio_sessions=shared_cardio(db, member.id, sharing),
         training_time=training_time_totals(db, member.id),
+        training_time_past_year=training_time_totals(
+            db, member.id, since=past_year_start(date.today())
+        ),
         consistency=shared_consistency(db, member.id),
     )
 
@@ -1091,15 +1096,19 @@ def latest_workouts(db: Session, user_ids) -> list[tuple[TrainingWorkout, User, 
 
 
 @sharing_router.get("/feed", response_model=FriendFeedRead)
-def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
+def friend_feed(
+    user: CurrentUser, db: Db, limit: int = Query(default=FEED_SIZE, ge=1)
+) -> FriendFeedRead:
     """Home's Friends card: each friend's latest session, most recent first."""
     require_sharing(db, user)
     friend_ids = shared_friend_ids(db, user.id)
     friends = db.scalar(select(func.count()).select_from(friend_ids.subquery())) or 0
-    rows = latest_workouts(db, friend_ids)[:FEED_SIZE]
+    sessions = latest_workouts(db, friend_ids)
+    rows = sessions[:limit]
     reactions = reaction_summaries(db, user.id, [workout.id for workout, _, _ in rows])
     return FriendFeedRead(
         friends=friends,
+        with_sessions=len(sessions),
         items=[
             FriendFeedItem(
                 friend=FeedFriend(

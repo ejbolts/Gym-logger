@@ -10,6 +10,7 @@ const undo = vi.fn<() => Promise<void>>();
 const save = vi.fn<(weight: number) => Promise<() => Promise<void>>>();
 
 beforeEach(() => {
+  localStorage.clear();
   vi.useFakeTimers();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   undo.mockReset().mockResolvedValue(undefined);
@@ -53,6 +54,41 @@ async function clickUndo() {
 }
 
 describe('daily bodyweight check-in', () => {
+  it('switches between weight, fat and combined, remembers the choice, and saves weight without fat', async () => {
+    const saveFat = vi.fn().mockResolvedValue(undo);
+    const view = (
+      <DashboardQuickBodyweight
+        latestBodyweight={84.2}
+        todayBodyweight={84.2}
+        latestBodyFat={18}
+        onSave={save}
+        onSaveBodyFat={saveFat}
+      />
+    );
+    await act(async () => root.render(view));
+    const choose = async (label: string) =>
+      act(async () => {
+        [...container.querySelectorAll<HTMLButtonElement>('.quick-check-in-modes button')]
+          .find((button) => button.textContent === label)!
+          .click();
+      });
+    await choose('Body weight');
+    expect(container.querySelector('.body-fat-check-in')).toBeNull();
+    await submit();
+    expect(save).toHaveBeenCalledExactlyOnceWith(84.2);
+    expect(saveFat).not.toHaveBeenCalled();
+    await choose('Body fat');
+    expect(container.querySelector('[aria-label="Body weight check-in"]')).toBeNull();
+    await submit();
+    expect(saveFat).toHaveBeenCalledExactlyOnceWith(18);
+    await act(async () => root.render(null));
+    await act(async () => root.render(view));
+    expect(container.querySelector('[aria-label="Body weight check-in"]')).toBeNull();
+    expect(container.querySelector('.body-fat-check-in')).not.toBeNull();
+    await choose('Combined');
+    expect(container.querySelectorAll('form')).toHaveLength(2);
+  });
+
   it('logs and undoes fat independently with both rows blocked while saving', async () => {
     let finish!: (value: () => Promise<void>) => void;
     const fatUndo = vi.fn().mockResolvedValue(undefined);

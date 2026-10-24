@@ -10,7 +10,7 @@ type ActivityState =
   | { kind: 'loading' }
   | { kind: 'locked' }
   | { kind: 'error' }
-  | { kind: 'ready'; items: FriendFeedItem[]; friends: number };
+  | { kind: 'ready'; items: FriendFeedItem[]; friends: number; with_sessions: number };
 
 /** Home's Friends card: each friend's latest session, with one button to react to it. */
 export function FriendsActivityCard({
@@ -18,7 +18,7 @@ export function FriendsActivityCard({
   onOpenFriend,
   onOpenFriends,
   onChooseSharing,
-  title = 'Friends',
+  title = 'Recent Friends Activity',
   friendsLabel = 'See all',
   today = localDate(),
 }: {
@@ -33,44 +33,53 @@ export function FriendsActivityCard({
   const titleId = useId();
   const [state, setState] = useState<ActivityState>({ kind: 'loading' });
   const [picking, setPicking] = useState<string | null>(null);
-  const refresh = useRef<() => void>(() => undefined);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
+  const shown = useRef(5);
+  const inFlightMore = useRef(false);
+  const refresh = useRef<(limit?: number, more?: boolean) => Promise<void>>(async () => undefined);
 
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
     let request = 0;
-    function load() {
-      if (document.visibilityState === 'hidden') return;
+    async function load(limit = shown.current, more = false) {
+      if (document.visibilityState === 'hidden' || (inFlightMore.current && !more)) return;
       const current = ++request;
-      api.sharing
-        .feed()
-        .then((feed) => {
-          if (cancelled || current !== request) return;
-          setState({ kind: 'ready', ...feed });
-          setPicking((id) => (feed.items.some((item) => item.workout.id === id) ? id : null));
-        })
-        .catch((reason: unknown) => {
-          if (cancelled || current !== request) return;
+      try {
+        const feed = await api.sharing.feed(limit);
+        if (cancelled || current !== request) return;
+        shown.current = limit;
+        setState({ kind: 'ready', ...feed });
+        setPicking((id) => (feed.items.some((item) => item.workout.id === id) ? id : null));
+        setMoreError(false);
+      } catch (reason) {
+        if (cancelled || current !== request) return;
+        if (more && !(reason instanceof ApiError && reason.code === 'sharing_required')) {
+          setMoreError(true);
+        } else {
           setState(
             reason instanceof ApiError && reason.code === 'sharing_required'
               ? { kind: 'locked' }
               : { kind: 'error' },
           );
-        });
+        }
+      }
     }
     refresh.current = load;
-    load();
-    const timer = window.setInterval(load, 30_000);
-    window.addEventListener('focus', load);
-    window.addEventListener('online', load);
-    document.addEventListener('visibilitychange', load);
+    const reload = () => void load();
+    reload();
+    const timer = window.setInterval(reload, 30_000);
+    window.addEventListener('focus', reload);
+    window.addEventListener('online', reload);
+    document.addEventListener('visibilitychange', reload);
     return () => {
       cancelled = true;
-      refresh.current = () => undefined;
+      refresh.current = async () => undefined;
       window.clearInterval(timer);
-      window.removeEventListener('focus', load);
-      window.removeEventListener('online', load);
-      document.removeEventListener('visibilitychange', load);
+      window.removeEventListener('focus', reload);
+      window.removeEventListener('online', reload);
+      document.removeEventListener('visibilitychange', reload);
     };
   }, [active]);
 
@@ -85,7 +94,20 @@ export function FriendsActivityCard({
           }
         : current,
     );
-    refresh.current();
+    void refresh.current();
+  }
+
+  async function loadMore() {
+    if (inFlightMore.current || state.kind !== 'ready') return;
+    inFlightMore.current = true;
+    setLoadingMore(true);
+    setMoreError(false);
+    try {
+      await refresh.current(state.items.length + 3, true);
+    } finally {
+      inFlightMore.current = false;
+      setLoadingMore(false);
+    }
   }
 
   return (
@@ -166,10 +188,24 @@ export function FriendsActivityCard({
           })}
         </ul>
       )}
-      {state.kind === 'ready' && state.items.length > 0 && state.friends > state.items.length && (
-        <button type="button" className="friends-activity-more" onClick={onOpenFriends}>
-          +{state.friends - state.items.length} more
-        </button>
+      {state.kind === 'ready' &&
+        state.items.length > 0 &&
+        state.with_sessions > state.items.length && (
+          <button
+            type="button"
+            className="friends-activity-more"
+            onClick={() => void loadMore()}
+            disabled={loadingMore}
+            aria-busy={loadingMore}
+          >
+            {loadingMore && <span className="calendar-older-spinner" aria-hidden="true" />}
+            {loadingMore ? 'Loading…' : `+${state.with_sessions - state.items.length} more`}
+          </button>
+        )}
+      {moreError && (
+        <p className="pulse-empty-line" role="alert">
+          Could not load more activity. Try again.
+        </p>
       )}
     </section>
   );

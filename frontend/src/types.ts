@@ -807,6 +807,8 @@ export interface FriendFeed {
   items: FriendFeedItem[];
   /** Friends who share, including those without a session yet. */
   friends: number;
+  /** Friends with a session available in the feed. */
+  with_sessions: number;
 }
 
 /** A reaction to one of your workouts; `since` is when it was given. */
@@ -875,6 +877,8 @@ export interface SharedProfile extends SharedProfileSummary {
   goals: SharedGoals | null;
   cardio_sessions: SharedCardioSession[] | null;
   training_time?: TrainingTime | null;
+  /** The same totals from this day last year onwards. */
+  training_time_past_year?: TrainingTime | null;
 }
 
 export interface SharedWorkoutPage {

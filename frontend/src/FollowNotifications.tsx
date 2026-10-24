@@ -1,7 +1,8 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { authErrorMessage } from './authForm';
 import { Icon } from './Icon';
+import { PaginationControls } from './PaginationControls';
 import { PopupDialog } from './PopupDialog';
 import { reactionEmoji } from './friendFeedData';
 import {
@@ -9,8 +10,50 @@ import {
   unreadNotificationReferences,
 } from './notificationReadState';
 import { ProfileAvatar } from './ProfileAvatar';
-import type { SharingConnection, SharingNotifications } from './types';
+import type {
+  SharingConnection,
+  SharingNotifications,
+  ReactionNotice,
+  CommentNotice,
+} from './types';
 import './FollowNotifications.css';
+
+export const NOTIFICATIONS_PER_PAGE = 15;
+
+type NotificationRow =
+  | { kind: 'comment'; item: CommentNotice }
+  | { kind: 'request'; item: SharingConnection }
+  | { kind: 'reaction'; item: ReactionNotice }
+  | { kind: 'accepted'; item: SharingConnection };
+
+function notificationRows(items: SharingNotifications): NotificationRow[] {
+  return [
+    ...(items.comments ?? []).map((item) => ({ kind: 'comment' as const, item })),
+    ...items.requests.map((item) => ({ kind: 'request' as const, item })),
+    ...(items.reactions ?? []).map((item) => ({ kind: 'reaction' as const, item })),
+    ...items.accepted.map((item) => ({ kind: 'accepted' as const, item })),
+  ];
+}
+
+function notificationPage(items: SharingNotifications, page: number): NotificationRow[] {
+  const rows = notificationRows(items);
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(rows.length / NOTIFICATIONS_PER_PAGE)));
+  return rows.slice(
+    (currentPage - 1) * NOTIFICATIONS_PER_PAGE,
+    currentPage * NOTIFICATIONS_PER_PAGE,
+  );
+}
+
+function displayedNotifications(items: SharingNotifications, page: number): SharingNotifications {
+  const visible: SharingNotifications = { requests: [], accepted: [], reactions: [], comments: [] };
+  for (const row of notificationPage(items, page)) {
+    if (row.kind === 'request') visible.requests.push(row.item);
+    else if (row.kind === 'accepted') visible.accepted.push(row.item);
+    else if (row.kind === 'reaction') visible.reactions!.push(row.item);
+    else visible.comments!.push(row.item);
+  }
+  return visible;
+}
 
 function NotificationDate({ since }: { since: string }) {
   return (
@@ -28,18 +71,14 @@ function NotificationDate({ since }: { since: string }) {
 }
 
 /** Opening the compact inbox reads displayed notices; requests remain actionable. */
-export function FollowNotifications({
-  active,
-  onOpenFriends,
-}: {
-  active: boolean;
-  onOpenFriends: () => void;
-}) {
+export function FollowNotifications({ active }: { active: boolean }) {
   const [items, setItems] = useState<SharingNotifications | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [page, setPage] = useState(1);
+  const list = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     if (!active) return;
@@ -53,7 +92,7 @@ export function FollowNotifications({
         if (cancelled) return;
         setItems(next);
         setError(null);
-        const unread = unreadNotificationReferences(next);
+        const unread = unreadNotificationReferences(displayedNotifications(next, page));
         if (open && unread.length) {
           await api.sharing.markNotificationsRead(unread);
           if (!cancelled)
@@ -76,7 +115,7 @@ export function FollowNotifications({
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
     };
-  }, [active, open, attempt]);
+  }, [active, open, attempt, page]);
 
   async function respond(person: SharingConnection, action: 'accept' | 'decline') {
     if (busy) return;
@@ -101,11 +140,11 @@ export function FollowNotifications({
   }
 
   const count = items ? unreadNotificationReferences(items).length : 0;
-  const total =
-    (items?.comments?.length ?? 0) +
-    (items?.requests.length ?? 0) +
-    (items?.accepted.length ?? 0) +
-    (items?.reactions?.length ?? 0);
+  const rows = items ? notificationRows(items) : [];
+  const total = rows.length;
+  const pageCount = Math.max(1, Math.ceil(total / NOTIFICATIONS_PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+  const pageRows = items ? notificationPage(items, page) : [];
   return (
     <>
       <button
@@ -113,7 +152,10 @@ export function FollowNotifications({
         className="icon-button-pulse follow-notification-button"
         aria-label={`Notifications${count ? `, ${count} unread` : ''}`}
         aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setPage(1);
+          setOpen(true);
+        }}
       >
         <Icon name="bell" />
         {count > 0 && (
@@ -147,105 +189,105 @@ export function FollowNotifications({
           )}
           {items && total === 0 && (
             <p className="shared-card-empty">
-              You're all caught up. Friend requests, accepted requests and workout reactions appear
+              You're all caught up. Friend requests, workout reactions, comments and replies appear
               here.
             </p>
           )}
-          <ul className="follow-notification-list">
-            {items?.comments?.map((notice) => (
-              <li key={notice.notice_id}>
-                <ProfileAvatar className="profile-avatar" user={{ ...notice, username: '' }} />
-                <div className="follow-notification-copy">
-                  <p>
-                    <strong>{notice.display_name}</strong>
-                    {notice.kind === 'comment_reaction'
-                      ? ' reacted to your comment on '
-                      : notice.kind === 'reply'
-                        ? ' replied on '
-                        : ' commented on '}
-                    <b>{notice.workout_name}</b>
-                    <NotificationDate since={notice.since} />
-                  </p>
-                  <p>{notice.body}</p>
-                </div>
-                {notice.reaction && (
-                  <span className="follow-notification-emoji">
-                    {reactionEmoji(notice.reaction)}
-                  </span>
-                )}
-              </li>
-            ))}
-            {items?.requests.map((person) => (
-              <li key={`request-${person.id}`}>
-                <ProfileAvatar className="profile-avatar" user={{ ...person, username: '' }} />
-                <div className="follow-notification-copy">
-                  <p>
-                    <strong>{person.display_name}</strong> sent you a friend request
-                    <NotificationDate since={person.since} />
-                  </p>
-                  <div className="follow-notification-actions">
-                    <button
-                      type="button"
-                      className="profile-primary"
-                      disabled={busy}
-                      aria-label={`Accept ${person.display_name}`}
-                      onClick={() => void respond(person, 'accept')}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      type="button"
-                      className="profile-secondary"
-                      disabled={busy}
-                      aria-label={`Decline ${person.display_name}`}
-                      onClick={() => void respond(person, 'decline')}
-                    >
-                      Decline
-                    </button>
+          <ul className="follow-notification-list" ref={list}>
+            {pageRows.map((row) =>
+              row.kind === 'comment' ? (
+                <li key={`comment-${row.item.notice_id}`}>
+                  <ProfileAvatar className="profile-avatar" user={{ ...row.item, username: '' }} />
+                  <div className="follow-notification-copy">
+                    <p>
+                      <strong>{row.item.display_name}</strong>
+                      {row.item.kind === 'comment_reaction'
+                        ? ' reacted to your comment on '
+                        : row.item.kind === 'reply'
+                          ? ' replied on '
+                          : ' commented on '}
+                      <b>{row.item.workout_name}</b>
+                      <NotificationDate since={row.item.since} />
+                    </p>
+                    <p>{row.item.body}</p>
                   </div>
-                </div>
-              </li>
-            ))}
-            {items?.reactions?.map((notice) => (
-              <li key={`reaction-${notice.workout_id}-${notice.id}`}>
-                <ProfileAvatar className="profile-avatar" user={{ ...notice, username: '' }} />
-                <div className="follow-notification-copy">
-                  <p>
-                    <strong>{notice.display_name}</strong> reacted to <b>{notice.workout_name}</b>
-                    <NotificationDate since={notice.since} />
-                  </p>
-                </div>
-                <span
-                  className="follow-notification-emoji"
-                  aria-label={`Reacted ${reactionEmoji(notice.reaction)}`}
-                >
-                  {reactionEmoji(notice.reaction)}
-                </span>
-              </li>
-            ))}
-            {items?.accepted.map((person) => (
-              <li key={`accepted-${person.id}`}>
-                <ProfileAvatar className="profile-avatar" user={{ ...person, username: '' }} />
-                <div className="follow-notification-copy">
-                  <p>
-                    <strong>{person.display_name}</strong> accepted your friend request
-                    <NotificationDate since={person.since} />
-                  </p>
-                </div>
-                <Icon name="user" />
-              </li>
-            ))}
+                  {row.item.reaction && (
+                    <span className="follow-notification-emoji">
+                      {reactionEmoji(row.item.reaction)}
+                    </span>
+                  )}
+                </li>
+              ) : row.kind === 'request' ? (
+                <li key={`request-${row.item.id}`}>
+                  <ProfileAvatar className="profile-avatar" user={{ ...row.item, username: '' }} />
+                  <div className="follow-notification-copy">
+                    <p>
+                      <strong>{row.item.display_name}</strong> sent you a friend request
+                      <NotificationDate since={row.item.since} />
+                    </p>
+                    <div className="follow-notification-actions">
+                      <button
+                        type="button"
+                        className="profile-primary"
+                        disabled={busy}
+                        aria-label={`Accept ${row.item.display_name}`}
+                        onClick={() => void respond(row.item, 'accept')}
+                      >
+                        Accept
+                      </button>
+                      <button
+                        type="button"
+                        className="profile-secondary"
+                        disabled={busy}
+                        aria-label={`Decline ${row.item.display_name}`}
+                        onClick={() => void respond(row.item, 'decline')}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ) : row.kind === 'reaction' ? (
+                <li key={`reaction-${row.item.workout_id}-${row.item.id}`}>
+                  <ProfileAvatar className="profile-avatar" user={{ ...row.item, username: '' }} />
+                  <div className="follow-notification-copy">
+                    <p>
+                      <strong>{row.item.display_name}</strong> reacted to{' '}
+                      <b>{row.item.workout_name}</b>
+                      <NotificationDate since={row.item.since} />
+                    </p>
+                  </div>
+                  <span
+                    className="follow-notification-emoji"
+                    aria-label={`Reacted ${reactionEmoji(row.item.reaction)}`}
+                  >
+                    {reactionEmoji(row.item.reaction)}
+                  </span>
+                </li>
+              ) : (
+                <li key={`accepted-${row.item.id}`}>
+                  <ProfileAvatar className="profile-avatar" user={{ ...row.item, username: '' }} />
+                  <div className="follow-notification-copy">
+                    <p>
+                      <strong>{row.item.display_name}</strong> accepted your friend request
+                      <NotificationDate since={row.item.since} />
+                    </p>
+                  </div>
+                  <Icon name="user" />
+                </li>
+              ),
+            )}
           </ul>
-          <button
-            type="button"
-            className="text-link follow-notification-manage"
-            onClick={() => {
-              setOpen(false);
-              onOpenFriends();
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={pageCount}
+            onPageChange={(next) => {
+              setPage(next);
+              const dialog = list.current?.closest('dialog');
+              if (dialog) dialog.scrollTop = 0;
             }}
-          >
-            Manage friends <Icon name="chevron-right" />
-          </button>
+            label="notifications"
+          />
         </PopupDialog>
       )}
     </>

@@ -117,18 +117,74 @@ it('summarises strength and cardio sessions, dates and reactions', () => {
   expect(nextReaction(null, 'love')).toBe('love');
 });
 
-it('counts friends beyond the card and opens Friends from the count', async () => {
-  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], friends: 5 });
+it('loads three more inline, blocks duplicates, and retains expansion on refresh', async () => {
+  const entries = Array.from({ length: 9 }, (_, i) => ({
+    ...jordan,
+    friend: { ...jordan.friend, id: `friend-${i}`, display_name: `Friend ${i}` },
+    workout: { ...strength, id: `workout-${i}` },
+  }));
+  const feed = vi
+    .spyOn(api.sharing, 'feed')
+    .mockResolvedValue({ items: entries.slice(0, 5), friends: 10, with_sessions: 9 });
   const openFriends = vi.fn();
   await render(vi.fn(), openFriends);
+  expect(host.querySelector('h2')?.textContent).toBe('Recent Friends Activity');
+  expect(feed).toHaveBeenLastCalledWith(5);
   const more = host.querySelector<HTMLButtonElement>('.friends-activity-more')!;
-  expect(more.textContent).toBe('+3 more');
+  expect(more.textContent).toBe('+4 more');
+  let finish!: (value: { items: FriendFeedItem[]; friends: number; with_sessions: number }) => void;
+  feed.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await act(async () => {
+    more.click();
+    more.click();
+  });
+  expect(feed).toHaveBeenCalledTimes(2);
+  expect(feed).toHaveBeenLastCalledWith(8);
+  expect(more.disabled).toBe(true);
+  expect(more.getAttribute('aria-busy')).toBe('true');
+  expect(more.querySelector('.calendar-older-spinner')).not.toBeNull();
+  await act(async () => window.dispatchEvent(new Event('focus')));
+  expect(feed).toHaveBeenCalledTimes(2);
+  await act(async () => finish({ items: entries.slice(0, 8), friends: 10, with_sessions: 9 }));
+  expect(host.querySelectorAll('.friend-activity-list li')).toHaveLength(8);
+  expect(more.textContent).toBe('+1 more');
+  feed.mockResolvedValue({ items: entries.slice(0, 8), friends: 10, with_sessions: 9 });
+  await act(async () => window.dispatchEvent(new Event('focus')));
+  expect(feed).toHaveBeenLastCalledWith(8);
+  feed.mockResolvedValue({ items: entries, friends: 10, with_sessions: 9 });
   await act(async () => more.click());
-  expect(openFriends).toHaveBeenCalled();
+  expect(feed).toHaveBeenLastCalledWith(11);
+  expect(host.querySelectorAll('.friend-activity-list li')).toHaveLength(9);
+  expect(host.querySelector('.friends-activity-more')).toBeNull();
+  expect(openFriends).not.toHaveBeenCalled();
+});
+
+it('keeps existing rows after a failed expansion and allows retry', async () => {
+  const feed = vi
+    .spyOn(api.sharing, 'feed')
+    .mockResolvedValue({ items: [jordan, alex], friends: 8, with_sessions: 6 });
+  await render();
+  feed.mockRejectedValueOnce(new Error('offline'));
+  await act(async () => host.querySelector<HTMLButtonElement>('.friends-activity-more')!.click());
+  expect(host.querySelectorAll('.friend-activity-list li')).toHaveLength(2);
+  expect(host.querySelector('[role=alert]')?.textContent).toContain('Try again');
+  const more = host.querySelector<HTMLButtonElement>('.friends-activity-more')!;
+  expect(more.disabled).toBe(false);
+  await act(async () => more.click());
+  expect(host.querySelector('[role=alert]')).toBeNull();
 });
 
 it("shows each friend's latest session with one reaction button and opens their profile", async () => {
-  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], friends: 2 });
+  vi.spyOn(api.sharing, 'feed').mockResolvedValue({
+    items: [jordan, alex],
+    friends: 2,
+    with_sessions: 2,
+  });
   const openFriend = vi.fn();
   await render(openFriend);
 
@@ -146,7 +202,9 @@ it("shows each friend's latest session with one reaction button and opens their 
 });
 
 it('reacts from the picker, shows your reaction, and removes it when chosen again', async () => {
-  const feed = vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [alex], friends: 1 });
+  const feed = vi
+    .spyOn(api.sharing, 'feed')
+    .mockResolvedValue({ items: [alex], friends: 1, with_sessions: 1 });
   const react = vi
     .spyOn(api.sharing, 'react')
     .mockResolvedValue({ counts: [{ reaction: 'love', count: 1 }], yours: 'love' });
@@ -164,6 +222,7 @@ it('reacts from the picker, shows your reaction, and removes it when chosen agai
   feed.mockResolvedValue({
     items: [{ ...alex, reactions: { counts: [{ reaction: 'love', count: 1 }], yours: 'love' } }],
     friends: 1,
+    with_sessions: 1,
   });
   await act(async () => button('Love').click());
   expect(react).toHaveBeenCalledWith('w2', 'love');
@@ -173,7 +232,7 @@ it('reacts from the picker, shows your reaction, and removes it when chosen agai
   expect(document.activeElement).toBe(mine);
 
   expect(button('Love').getAttribute('aria-pressed')).toBe('true');
-  feed.mockResolvedValue({ items: [alex], friends: 1 });
+  feed.mockResolvedValue({ items: [alex], friends: 1, with_sessions: 1 });
   await act(async () => button('Love').click());
   expect(remove).toHaveBeenCalledWith('w2');
   expect(button('React to Alex Preview’s Incline walk').textContent).not.toContain('❤️');
@@ -187,14 +246,14 @@ it('refreshes an already reacted session to the newest workout and keeps the ser
   };
   const feed = vi
     .spyOn(api.sharing, 'feed')
-    .mockResolvedValue({ items: [jordan, reacted], friends: 2 });
+    .mockResolvedValue({ items: [jordan, reacted], friends: 2, with_sessions: 2 });
   await render();
   const newest = {
     ...alex,
     workout: { ...strength, id: 'w3', name: 'New upper day' },
     reactions: { counts: [], yours: null },
   };
-  feed.mockResolvedValue({ items: [newest, jordan], friends: 2 });
+  feed.mockResolvedValue({ items: [newest, jordan], friends: 2, with_sessions: 2 });
   await act(async () => {
     await vi.advanceTimersByTimeAsync(30_000);
   });
@@ -208,27 +267,33 @@ it('refreshes an already reacted session to the newest workout and keeps the ser
 });
 
 it('refreshes on return to the page and ignores stale in-flight feed responses', async () => {
-  let oldResponse!: (feed: { items: FriendFeedItem[]; friends: number }) => void;
+  let oldResponse!: (feed: {
+    items: FriendFeedItem[];
+    friends: number;
+    with_sessions: number;
+  }) => void;
   vi.spyOn(api.sharing, 'feed')
     .mockReturnValueOnce(
       new Promise((resolve) => {
         oldResponse = resolve;
       }),
     )
-    .mockResolvedValue({ items: [alex, jordan], friends: 2 });
+    .mockResolvedValue({ items: [alex, jordan], friends: 2, with_sessions: 2 });
   await render();
   await act(async () => {
     window.dispatchEvent(new Event('focus'));
   });
   expect(host.querySelector('.friend-activity-list li')?.textContent).toContain('Alex Preview');
-  await act(async () => oldResponse({ items: [jordan], friends: 1 }));
+  await act(async () => oldResponse({ items: [jordan], friends: 1, with_sessions: 1 }));
   expect(host.querySelectorAll('.friend-activity-list li')).toHaveLength(2);
   expect(host.querySelector('.friend-activity-list li')?.textContent).toContain('Alex Preview');
 });
 
 it('pauses background refresh while hidden or away from Home', async () => {
   vi.useFakeTimers();
-  const feed = vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [alex], friends: 1 });
+  const feed = vi
+    .spyOn(api.sharing, 'feed')
+    .mockResolvedValue({ items: [alex], friends: 1, with_sessions: 1 });
   await render();
   let visibility: DocumentVisibilityState = 'hidden';
   vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
@@ -252,7 +317,11 @@ it('pauses background refresh while hidden or away from Home', async () => {
 });
 
 it('closes the picker with Escape or a tap elsewhere without reacting', async () => {
-  vi.spyOn(api.sharing, 'feed').mockResolvedValue({ items: [jordan, alex], friends: 2 });
+  vi.spyOn(api.sharing, 'feed').mockResolvedValue({
+    items: [jordan, alex],
+    friends: 2,
+    with_sessions: 2,
+  });
   const react = vi.spyOn(api.sharing, 'react');
   await render();
 
@@ -282,7 +351,7 @@ it('explains the card when your profile is private, you have no friends yet or f
     [0, 'Add friends to see'],
     [2, 'Your friends have not logged a workout yet.'],
   ] as const) {
-    feed.mockResolvedValueOnce({ items: [], friends });
+    feed.mockResolvedValueOnce({ items: [], friends, with_sessions: 0 });
     await act(async () => root.unmount());
     root = createRoot(host);
     await render();

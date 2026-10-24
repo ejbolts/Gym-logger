@@ -62,6 +62,7 @@ export function historySectionForTab(tab: AppTab): HistorySection | null {
 /** The tab-bar item that should appear selected for a screen, if any. */
 export function mainTabFor(tab: AppTab): MainTab | null {
   if (tab === 'dashboard' || tab === 'social' || tab === 'body') return tab;
+  if (tab === 'shared-profile') return 'social';
   if (historySectionForTab(tab) !== null) return 'training';
   return null;
 }
