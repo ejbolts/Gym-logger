@@ -8,7 +8,7 @@
 
 ![The one-minute 0.10 trailer: before-and-after wipes and close-ups of Training, Exercises, Cardio, friends, workout conversations, background saves, a weigh-in syncing from phone to desktop, Settings and profiles](screenshots/releases/0.10.0-trailer.gif)
 
-_The narrated 0.10 trailer plays at the top of What's new; this GIF is its silent preview. Before views come from tagged 0.9.0; every scene uses isolated synthetic accounts and training data, and the desktop updates from the phone's saved weigh-in without a reload._
+_The narrated 0.10 trailer sits at the top of What's new; press Play to start with sound at 50% volume where supported. Device volume still applies. This GIF is its silent preview. Before views come from tagged 0.9.0; every scene uses isolated synthetic accounts and training data, and the desktop updates from the phone's saved weigh-in without a reload._
 
 [Download the narrated trailer](https://raw.githubusercontent.com/ejbolts/Gym-logger/40f9dcea81c0c1e40eddf242d7c087f8fd31015f/frontend/public/releases/0.10.0-trailer.mp4)
 

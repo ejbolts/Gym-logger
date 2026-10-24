@@ -24,7 +24,8 @@
     "Quick-start circles are now 52 px across, up from 44 px, with larger icons to make each option easier to see and tap.",
     "Swipe down from the muscle details handle or header to close the sheet. You can also pull down on its content when the list is at the top; short pulls return to place and scrolling still works.",
     "Removed the redundant Contributing exercises heading and count from muscle details. Done, Escape and tapping outside still close the sheet.",
-    "Past-workout exercise cards have more space between them in the view-only workout browser."
+    "Past-workout exercise cards have more space between them in the view-only workout browser.",
+    "The What's new trailer waits for Play and starts with sound at 50% volume where supported. Your device volume still applies."
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#0100",
   "video": {

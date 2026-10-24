@@ -18,26 +18,16 @@ function ReleaseDate({ release }: { release: Release }) {
   );
 }
 
-function prefersReducedMotion() {
-  return (
-    typeof window !== 'undefined' &&
-    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
 function ReleaseTrailer({ video }: { video: ReleaseVideo }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
-  const [autoPlay] = useState(() => !prefersReducedMotion());
 
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    // React does not render the muted attribute, which mobile browsers need for autoplay.
-    element.muted = true;
-    element.setAttribute('muted', '');
-    if (autoPlay) element.play()?.catch(() => undefined);
-  }, [autoPlay]);
+    element.volume = 0.5;
+    element.muted = false;
+  }, []);
 
   return (
     <figure className="release-trailer">
@@ -49,14 +39,12 @@ function ReleaseTrailer({ video }: { video: ReleaseVideo }) {
           src={video.url}
           poster={video.poster}
           aria-label={video.alt}
-          autoPlay={autoPlay}
-          muted
           loop
           playsInline
           controls
           controlsList="nodownload noplaybackrate noremoteplayback"
           disablePictureInPicture
-          preload={autoPlay ? 'auto' : 'metadata'}
+          preload="metadata"
           onError={() => setFailed(true)}
         />
       )}

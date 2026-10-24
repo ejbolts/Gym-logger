@@ -41,20 +41,22 @@ async function open() {
   return document.querySelector<HTMLVideoElement>('.release-trailer video');
 }
 
-it('plays the muted trailer inline, looping with controls, between the date and summary', async () => {
-  reducedMotion(false);
+it.each([false, true])('waits for Play at half volume with reduced motion %s', async (reduce) => {
+  reducedMotion(reduce);
   const element = await open();
   expect(element).not.toBeNull();
   expect(element!.getAttribute('src')).toBe(video.url);
   expect(element!.getAttribute('poster')).toBe(video.poster);
   expect(element!.getAttribute('aria-label')).toBe(video.alt);
-  expect(element!.muted).toBe(true);
-  expect(element!.hasAttribute('muted')).toBe(true);
+  expect(element!.muted).toBe(false);
+  expect(element!.hasAttribute('muted')).toBe(false);
+  expect(element!.volume).toBe(0.5);
   expect(element!.hasAttribute('playsinline')).toBe(true);
   expect(element!.loop).toBe(true);
   expect(element!.controls).toBe(true);
-  expect(element!.autoplay).toBe(true);
-  expect(play).toHaveBeenCalledOnce();
+  expect(element!.autoplay).toBe(false);
+  expect(element!.getAttribute('preload')).toBe('metadata');
+  expect(play).not.toHaveBeenCalled();
 
   const body = document.querySelector('.release-announcement-body')!;
   const order = [...body.children].map((child) => child.className || child.tagName);
@@ -62,12 +64,13 @@ it('plays the muted trailer inline, looping with controls, between the date and 
   expect(body.querySelector('.release-trailer + p')?.textContent).toBe(metadata.summary);
 });
 
-it('waits for the user to press play when reduced motion is preferred', async () => {
-  reducedMotion(true);
+it('preserves the viewer volume and mute choices when the announcement rerenders', async () => {
   const element = await open();
-  expect(element!.autoplay).toBe(false);
-  expect(element!.getAttribute('preload')).toBe('metadata');
-  expect(element!.controls).toBe(true);
+  element!.volume = 0.2;
+  element!.muted = true;
+  expect(await open()).toBe(element);
+  expect(element!.volume).toBe(0.2);
+  expect(element!.muted).toBe(true);
   expect(play).not.toHaveBeenCalled();
 });
 
