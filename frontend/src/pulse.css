@@ -995,6 +995,33 @@ button.pulse-card:hover {
   margin-bottom: 0.75rem;
 }
 
+.quick-check-in-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.quick-check-in-modes button {
+  flex: 1;
+  min-height: 36px;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
+  padding: 0.4rem 0.65rem;
+  background: transparent;
+  color: var(--p-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.quick-check-in-modes button[aria-pressed='true'] {
+  border-color: var(--p-accent);
+  color: var(--p-accent-text);
+  background: var(--p-accent-soft);
+}
+
 .quick-check-in-heading h3 {
   margin: 0;
   color: var(--p-ink);

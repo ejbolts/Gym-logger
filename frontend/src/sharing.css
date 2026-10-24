@@ -942,7 +942,9 @@
 }
 
 .friends-activity-more {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0.35rem auto 0;
   border: 0;
   padding: 0.35rem 0.75rem;

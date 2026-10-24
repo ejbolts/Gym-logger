@@ -80,7 +80,7 @@ export const HOME_SECTIONS = [
   },
   {
     id: 'friends',
-    title: 'Friends',
+    title: 'Recent Friends Activity',
     description: 'Latest sessions from friends, with reactions',
     icon: 'user',
     size: 'full',

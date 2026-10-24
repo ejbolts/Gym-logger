@@ -255,6 +255,7 @@ class FriendFeedRead(BaseModel):
 
     items: list[FriendFeedItem]
     friends: int
+    with_sessions: int
 
 
 class FriendLatest(BaseModel):
@@ -1088,15 +1089,19 @@ def latest_workouts(db: Session, user_ids) -> list[tuple[TrainingWorkout, User, 
 
 
 @sharing_router.get("/feed", response_model=FriendFeedRead)
-def friend_feed(user: CurrentUser, db: Db) -> FriendFeedRead:
+def friend_feed(
+    user: CurrentUser, db: Db, limit: int = Query(default=FEED_SIZE, ge=1)
+) -> FriendFeedRead:
     """Home's Friends card: each friend's latest session, most recent first."""
     require_sharing(db, user)
     friend_ids = shared_friend_ids(db, user.id)
     friends = db.scalar(select(func.count()).select_from(friend_ids.subquery())) or 0
-    rows = latest_workouts(db, friend_ids)[:FEED_SIZE]
+    sessions = latest_workouts(db, friend_ids)
+    rows = sessions[:limit]
     reactions = reaction_summaries(db, user.id, [workout.id for workout, _, _ in rows])
     return FriendFeedRead(
         friends=friends,
+        with_sessions=len(sessions),
         items=[
             FriendFeedItem(
                 friend=FeedFriend(

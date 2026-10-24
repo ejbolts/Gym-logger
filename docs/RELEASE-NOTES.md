@@ -6,6 +6,14 @@
 
 ### Training, friends and settings that make sense
 
+![Daily check-in with Body weight, Body fat and Combined display options](screenshots/releases/0.10.0-daily-check-in.png)
+
+*Choose weight, body fat or both on the existing Home card. The account’s choice stays on this device. Weight can be saved without a body-fat value; logging body fat still requires today’s weight.*
+
+![Recent Friends Activity loads three additional friends inline with a loading spinner](screenshots/releases/0.10.0-friends-load-three.gif)
+
+*Tap +N more to add three friends without leaving Home. The spinner runs while loading, the remaining count excludes friends without sessions, and refreshes preserve the expanded list. All media uses isolated synthetic accounts.*
+
 ![Body with matching Notifications, Profile and Settings buttons and no duplicate header plus](screenshots/releases/0.9.1-header-controls.png)
 
 *Notifications and Profile stay beside Settings in the same order on Home, Training, Social and Body. The existing inbox, account photo or initial and profile controls are reused. Body uses Log weigh-in for new entries, without a duplicate header plus button.*
@@ -82,6 +90,8 @@
 
 *Your visible app checks for saved training changes every five seconds and when you return or reconnect. A separate sample session creates the workout while this page stays open.*
 
+- **Daily check-in choices:** select **Body weight**, **Body fat** or **Combined** on the existing Home card. The choice is remembered for your account on this device. Weight entry needs no body-fat value; body-fat entry still requires today’s weight.
+- **Recent Friends Activity:** the renamed Home card loads three additional friends inline when you tap **+N more**, with a spinner and duplicate-click protection while loading. Refreshes preserve the expanded list, a failed expansion keeps existing activity and allows retry, and the remaining count excludes friends without sessions.
 - **Rest times:** choose **0:00 (no rest)** or swipe left on a rest row to remove it without deleting its set. **Undo** restores the previous duration. Removed rests stay removed through set edits, workout saves and reopening. Edit the set and save **Rest after set** to add one back. Choices include **0:30**; **Settings > Training > Rest timers > Show rest times** hides the rows independently of the automatic countdown.
 - **Settings, reorganized:** six focused sections replace the long stack of controls, with category labels in search results and a persistent section menu on wider screens. Training brings units, weekly muscle-set goals, automatic rest timers, workout types and bodyweight chart defaults together. Appearance combines theme and reduced motion; Notifications holds phone alerts and installation help; Account & privacy keeps sharing, password, sign-out and deletion together. Import/export and YouTube live in Data & connections; guides, updates and feedback live in Help & about. Search reveals hidden panels and folded editors without activating their controls. All settings replaces the top back button inside a section and returns to the overview before leaving Settings. Browse cards omit the blue preference summaries, and the extra search hint is removed. Unfinished forms survive section changes, and Export stays available for every import source. The app tour and import onboarding open their matching panels.
 - **Keep moving while saving:** finishing a workout returns to Home immediately; saving an old session returns to Sessions while the save continues. Completion PRs and routine notices are dismissible, non-blocking messages. A completed or failed save respects a screen you have moved to, and failed saves retain your entries for retry.
