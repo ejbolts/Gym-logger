@@ -18,9 +18,9 @@
 
 *Wider screens keep the searchable library beside the chart. Returning from full progress preserves your search, list position, selected exercise, metric and date range. Previews use synthetic training data.*
 
-![Cardio weekly trend with metric tabs, week bars, grouped history and labeled logging and screenshot-import actions](screenshots/releases/0.10.0-cardio-weekly-trend.png)
+![Cardio weekly trend with metric tabs, week bars, grouped history and labeled logging and screenshot-import actions](screenshots/releases/0.10.0-cardio-weekly-trend-spacing.png)
 
-*Choose time, distance, MET-minutes or calories, then tap a week for its totals and duration-weighted averages. Log session and Import screenshot sit above the chart; history is grouped by your week-start preference.*
+*Choose time, distance, MET-minutes or calories, then tap a week for its totals and duration-weighted averages. Log session and Import screenshot sit just below the Training tabs with compact spacing; history is grouped by your week-start preference.*
 
 ![Expanded Cardio All stats with compact date-range controls, MET-minutes and the matching metric grid](screenshots/releases/0.10.0-cardio-all-stats.png)
 

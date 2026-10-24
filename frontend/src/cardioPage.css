@@ -231,11 +231,12 @@
 .cardio-page-actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 0;
 }
 .cardio-page-actions .pulse-button {
   flex: 1;
   min-width: 0;
+  margin: 0;
   padding: 0 0.5rem;
   font-size: 0.8125rem;
 }
