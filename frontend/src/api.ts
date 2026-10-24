@@ -211,6 +211,41 @@ export const api = {
       body: JSON.stringify({ message, submission_id: submissionId }),
     }),
   sharing: {
+    comments: (workoutId: string, offset = 0) =>
+      request<import('./types').CommentPage>(
+        `/api/sharing/workouts/${encodeURIComponent(workoutId)}/comments?offset=${offset}`,
+      ),
+    addComment: (
+      workoutId: string,
+      body: string,
+      reply_to_id: string | null,
+      reaction: WorkoutReactionKind | null,
+    ) =>
+      request<import('./types').WorkoutComment>(
+        `/api/sharing/workouts/${encodeURIComponent(workoutId)}/comments`,
+        {
+          method: 'POST',
+          headers: jsonHeaders,
+          body: JSON.stringify({ body, reply_to_id, reaction }),
+        },
+      ),
+    editComment: (id: string, body: string) =>
+      request<import('./types').WorkoutComment>(`/api/sharing/comments/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: jsonHeaders,
+        body: JSON.stringify({ body }),
+      }),
+    deleteComment: (id: string) =>
+      request<void>(`/api/sharing/comments/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    reactToComment: (id: string, reaction: WorkoutReactionKind | null) =>
+      request<import('./types').WorkoutComment>(
+        `/api/sharing/comments/${encodeURIComponent(id)}/reaction`,
+        {
+          method: reaction ? 'PUT' : 'DELETE',
+          headers: jsonHeaders,
+          ...(reaction ? { body: JSON.stringify({ reaction }) } : {}),
+        },
+      ),
     choices: () => request<SharingSettings>('/api/sharing'),
     updateChoices: (choices: SharingChoices) =>
       request<SharingSettings>('/api/sharing', {

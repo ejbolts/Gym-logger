@@ -24,6 +24,7 @@ function FriendCard({
   picking,
   onPickingChange,
   onOpen,
+  onOpenMember,
   onReactionsChange,
 }: {
   friend: FriendActivity;
@@ -31,6 +32,7 @@ function FriendCard({
   picking: boolean;
   onPickingChange: (open: boolean) => void;
   onOpen: () => void;
+  onOpenMember: (person: { id: string; display_name: string }) => void;
   onReactionsChange: (workoutId: string, reactions: WorkoutReactions) => void;
 }) {
   const latest = friend.latest;
@@ -83,18 +85,10 @@ function FriendCard({
               {[relativeDay(latest.workout.workout_date, today), session.detail]
                 .filter(Boolean)
                 .join(' · ')}
-              {summary.total > 0 && (
-                <span
-                  className="friend-activity-reactions"
-                  aria-label={`${summary.total} ${summary.total === 1 ? 'reaction' : 'reactions'}`}
-                >
-                  <span aria-hidden="true">{summary.emojis.join('')}</span>
-                  <span aria-hidden="true">{summary.total}</span>
-                </span>
-              )}
             </span>
           </span>
           <WorkoutReactionControl
+            onOpenMember={onOpenMember}
             workoutId={latest.workout.id}
             subject={`${friend.display_name}’s ${latest.workout.name}`}
             reactions={latest.reactions}
@@ -152,9 +146,6 @@ export function FriendsList({
         <h2 id={titleId}>
           Friends <span className="friends-list-count">{friends.length}</span>
         </h2>
-        <button type="button" className="text-link" onClick={onOpenFind}>
-          Find friends
-        </button>
       </header>
       {friends.length === 0 ? (
         <div className="friends-list-empty">
@@ -178,6 +169,7 @@ export function FriendsList({
                     open ? workoutId : current === workoutId ? null : current,
                   )
                 }
+                onOpenMember={onOpenFriend}
                 onOpen={() => onOpenFriend(friend)}
                 onReactionsChange={onReactionsChange}
               />

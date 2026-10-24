@@ -1,4 +1,4 @@
-﻿// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -99,7 +99,11 @@ it('shows 15 notifications per page with pagination instead of a Manage friends 
   expect(dialog()).toContain('Sam Preview');
   expect(dialog()).toContain('Page 1 of 2');
   expect(dialog()).not.toContain('Manage friends');
+  expect(unreadNotificationReferences(snapshot)).toHaveLength(5);
+  expect(vi.mocked(api.sharing.markNotificationsRead).mock.calls[0][0]).toHaveLength(15);
   await click('Next notifications page');
+  expect(unreadNotificationReferences(snapshot)).toHaveLength(0);
+  expect(vi.mocked(api.sharing.markNotificationsRead).mock.calls[1][0]).toHaveLength(5);
   expect(rows()).toHaveLength(5);
   expect(dialog()).toContain('Friend 19');
   expect(dialog()).not.toContain('Sam Preview');
@@ -164,4 +168,53 @@ it('sends the bulk read snapshot as JSON to the server', async () => {
   expect(url).toBe('/api/sharing/notifications/read');
   expect(new Headers(options.headers).get('Content-Type')).toBe('application/json');
   expect(JSON.parse(options.body)).toEqual({ items: refs });
+});
+
+it('paginates mixed comment notices and reads only displayed events, retrying a failed page', async () => {
+  snapshot = {
+    requests: [person],
+    accepted: [{ ...person, id: 'accepted' }],
+    reactions: Array.from({ length: 9 }, (_, i) => ({ ...reaction, id: `reaction-${i}` })),
+    comments: Array.from({ length: 6 }, (_, i) => ({
+      ...person,
+      notice_id: `notice-${i}`,
+      comment_id: `comment-${i}`,
+      workout_id: 'w1',
+      workout_name: 'Bench day',
+      kind: i === 0 ? ('comment_reaction' as const) : ('reply' as const),
+      body: `Reply ${i + 1}`,
+      reaction: i === 0 ? ('love' as const) : null,
+    })),
+  };
+  await render();
+  await click('Notifications, 17 unread');
+  expect(document.querySelectorAll('.follow-notification-list li')).toHaveLength(15);
+  expect(document.querySelector('dialog')?.textContent).toContain('Reply 6');
+  expect(unreadNotificationReferences(snapshot)).toHaveLength(2);
+  const first = vi.mocked(api.sharing.markNotificationsRead).mock.calls[0][0];
+  expect(first).toHaveLength(15);
+  expect(first.filter((ref) => ref.kind === 'comment')).toEqual(
+    Array.from({ length: 6 }, (_, i) => ({
+      kind: 'comment',
+      id: `notice-${i}`,
+      since: person.since,
+    })),
+  );
+  vi.mocked(api.sharing.markNotificationsRead).mockRejectedValueOnce(new Error('Offline'));
+  await click('Next notifications page');
+  expect(document.querySelectorAll('.follow-notification-list li')).toHaveLength(2);
+  expect(document.querySelector('dialog')?.textContent).toContain('Page 2 of 2');
+  expect(document.querySelector('[role="alert"]')).toBeTruthy();
+  expect(unreadNotificationReferences(snapshot)).toHaveLength(2);
+  await click('Try again');
+  expect(document.querySelector('[role="alert"]')).toBeNull();
+  expect(unreadNotificationReferences(snapshot)).toHaveLength(0);
+  const last = vi.mocked(api.sharing.markNotificationsRead).mock.lastCall![0];
+  expect(last).toEqual([
+    { kind: 'accepted', id: 'accepted', since: person.since },
+    { kind: 'reaction', id: 'reaction-8', since: person.since, workout_id: 'w1' },
+  ]);
+  const calls = vi.mocked(api.sharing.markNotificationsRead).mock.calls.length;
+  await click('Previous notifications page');
+  expect(api.sharing.markNotificationsRead).toHaveBeenCalledTimes(calls);
 });

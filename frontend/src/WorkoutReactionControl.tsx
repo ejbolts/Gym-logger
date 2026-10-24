@@ -3,7 +3,8 @@ import { api } from './api';
 import { authErrorMessage } from './authForm';
 import { nextReaction, reactionEmoji, reactionSummary, REACTIONS } from './friendFeedData';
 import { Icon } from './Icon';
-import type { WorkoutReactions } from './types';
+import type { WorkoutReactions, WorkoutComment } from './types';
+import { WorkoutComments } from './WorkoutComments';
 
 /** One reaction button and the same six-choice picker on Home and shared workouts. */
 export function WorkoutReactionControl({
@@ -13,7 +14,8 @@ export function WorkoutReactionControl({
   open,
   onOpenChange,
   onChange,
-  showSummary = false,
+  onOpenMember,
+  ownWorkout = false,
 }: {
   workoutId: string;
   subject: string;
@@ -22,10 +24,14 @@ export function WorkoutReactionControl({
   onOpenChange: (open: boolean) => void;
   onChange: (value: WorkoutReactions) => void;
   showSummary?: boolean;
+  ownWorkout?: boolean;
+  onOpenMember?: (person: WorkoutComment['author']) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [visited, setVisited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const picker = useRef<HTMLDivElement>(null);
+  const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const openRef = useRef(open);
   const closeRef = useRef(onOpenChange);
@@ -42,7 +48,7 @@ export function WorkoutReactionControl({
     (selectedButton ?? picker.current?.querySelector<HTMLButtonElement>('button'))?.focus();
     function outside(event: PointerEvent) {
       const target = event.target as Node;
-      if (!picker.current?.contains(target) && !trigger.current?.contains(target))
+      if (!container.current?.contains(target) && !trigger.current?.contains(target))
         closeRef.current(false);
     }
     function escape(event: KeyboardEvent) {
@@ -70,7 +76,6 @@ export function WorkoutReactionControl({
           : await api.sharing.removeReaction(workoutId),
       );
       if (openRef.current) {
-        onOpenChange(false);
         trigger.current?.focus();
       }
     } catch (reason) {
@@ -81,40 +86,41 @@ export function WorkoutReactionControl({
   }
 
   return (
-    <>
-      {showSummary && (
-        <span
-          className="shared-workout-reaction-summary"
-          aria-label={`${summary.total} ${summary.total === 1 ? 'reaction' : 'reactions'}`}
-        >
-          {summary.total > 0 ? (
-            <>
-              <span aria-hidden="true">{summary.emojis.join('')}</span> {summary.total}
-            </>
-          ) : (
-            'Be the first to react'
-          )}
-        </span>
-      )}
+    <div ref={container} className="workout-discussion">
       <button
         ref={trigger}
         type="button"
-        className={`friend-react-button${yours ? ' is-yours' : ''}`}
+        className={`friend-react-button combined-discussion-button${yours ? ' is-yours' : ''}`}
         aria-label={
-          yours
-            ? `Your reaction to ${subject}: ${selected?.label}. Change reaction`
-            : `React to ${subject}`
+          ownWorkout
+            ? `Reactions and comments on ${subject}`
+            : yours
+              ? `Your reaction to ${subject}: ${selected?.label}. Change reaction`
+              : `React to ${subject}`
         }
         aria-expanded={open}
-        aria-haspopup="dialog"
+        aria-description={`${summary.total} reactions and ${reactions.comment_count ?? 0} comments. Opens the inline discussion.`}
+        aria-controls={`discussion-${workoutId}`}
         onClick={() => {
           setError(null);
+          setVisited(true);
           onOpenChange(!open);
         }}
       >
-        {yours ? <span aria-hidden="true">{reactionEmoji(yours)}</span> : <Icon name="react" />}
+        {summary.total > 0 ? (
+          <>
+            <span aria-hidden="true">{summary.emojis.join('')}</span> {summary.total}
+          </>
+        ) : yours ? (
+          <span aria-hidden="true">{reactionEmoji(yours)}</span>
+        ) : (
+          <Icon name="react" />
+        )}
+        <span aria-hidden="true"> · </span>
+        {reactions.comment_count ?? 0}{' '}
+        {(reactions.comment_count ?? 0) === 1 ? 'comment' : 'comments'}
       </button>
-      {open && (
+      {open && !ownWorkout && (
         <div
           ref={picker}
           className="friend-react-picker"
@@ -142,6 +148,18 @@ export function WorkoutReactionControl({
           )}
         </div>
       )}
-    </>
+      {(open || visited) && (
+        <div hidden={!open} id={`discussion-${workoutId}`} className="workout-discussion-thread">
+          <WorkoutComments
+            active={open}
+            workoutId={workoutId}
+            onOpenMember={onOpenMember}
+            onCountChange={(count, summary) =>
+              onChange(summary ?? { ...reactions, comment_count: count })
+            }
+          />
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { api, ApiError } from './api';
-import { friendSession, reactionSummary, relativeDay } from './friendFeedData';
+import { friendSession, relativeDay } from './friendFeedData';
 import { WorkoutReactionControl } from './WorkoutReactionControl';
 import { ProfileAvatar } from './ProfileAvatar';
 import type { FriendFeedItem, WorkoutReactions } from './types';
@@ -140,7 +140,6 @@ export function FriendsActivityCard({
         <ul className={`friend-activity-list${picking ? ' is-picking' : ''}`}>
           {state.items.map((item) => {
             const session = friendSession(item.workout);
-            const summary = reactionSummary(item.reactions.counts);
             const open = picking === item.workout.id;
             const subject = `${item.friend.display_name}’s ${item.workout.name}`;
             return (
@@ -168,19 +167,11 @@ export function FriendsActivityCard({
                       {[relativeDay(item.workout.workout_date, today), session.detail]
                         .filter(Boolean)
                         .join(' · ')}
-                      {summary.total > 0 && (
-                        <span
-                          className="friend-activity-reactions"
-                          aria-label={`${summary.total} ${summary.total === 1 ? 'reaction' : 'reactions'}`}
-                        >
-                          <span aria-hidden="true">{summary.emojis.join('')}</span>
-                          <span aria-hidden="true">{summary.total}</span>
-                        </span>
-                      )}
                     </span>
                   </span>
                 </button>
                 <WorkoutReactionControl
+                  onOpenMember={onOpenFriend}
                   workoutId={item.workout.id}
                   subject={subject}
                   reactions={item.reactions}

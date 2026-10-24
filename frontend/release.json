@@ -2,8 +2,9 @@
   "version": "0.10.0",
   "date": "2026-10-23",
   "title": "Training, friends and settings that make sense",
-  "summary": "Keep training together, catch up with friends in Social, and find your preferences in a reorganized Settings hub with focused sections. Keep navigating while workouts save, and see saved training changes from your other devices automatically.",
+  "summary": "Keep training together, catch up with friends and talk beside shared workouts with short comments, replies and reactions. Find your preferences in focused Settings sections, keep navigating while workouts save, and see saved training changes from your other devices automatically.",
   "changes": [
+    "Open the combined reactions and comments button on a shared workout to read its inline thread. Add an optional workout reaction with a comment, reply with a tappable @name, and react to comments. Comments and replies allow up to 280 characters. Reply and comment-reaction notices appear in the notification bell. Authors can edit or delete their comments; workout owners can moderate them. Existing sharing, friendship and block rules still apply. Removed the redundant Find friends header link from Social; use the Find tab.",
     "Home’s Daily check-in offers Body weight, Body fat or Combined, remembering the display choice for your account on this device. Log weight without knowing body-fat percentage; body-fat entries still require today’s weight.",
     "Home’s Friends card is now Recent Friends Activity. Tap +N more to show a loading spinner and add three friends inline. Expanded activity stays visible during refreshes, and the count includes only friends with sessions available.",
     "Settings now opens with six clear sections: Training, Appearance, Notifications, Account & privacy, Data & connections, and Help & about. Search opens the matching section and control, including profile editing. All settings stays at the top of each section and returns to the overview. Browse cards omit preference summaries and the extra search hint. Switching sections keeps unfinished forms intact. Training groups units, goals, rest timers, workout types and bodyweight chart defaults; longer editors stay folded until needed. Export remains available for every import format.",
@@ -14,7 +15,7 @@
     "Exercises has a bounded, searchable library with a live progress preview below on phones and beside it on wider screens. Date-range buttons sit beside the preview value. Open full progress for records and session history, then return with your search, list position and range intact. Older History, Progress and Cardio links still work.",
     "Follows are now friendships. Send a friend request, and once it is accepted you both see each other’s shared training. Requests always need accepting, even for public profiles. Existing follows in either direction became friendships, and waiting follow requests became friend requests.",
     "Social has its own bottom tab. Friends shows each friend once with their latest session, a seven-day activity strip and a reaction button. Find holds friend requests, people search, requests you sent and blocked members. Remove or block a friend from their profile, and Social stays highlighted while you view it. Home keeps its compact friends card.",
-    "Notifications show 15 at a time, with page controls when there are more. The Manage friends link is gone; manage friends from Social.",
+    "Notifications show 15 at a time, with page controls when there are more. Only notices on the displayed page are marked read, including comments and replies. The Manage friends link is gone; manage friends from Social.",
     "Your profile now uses the same training layout as other members, with your calendar, training totals and workouts. Edit your name and photo here. Sharing, account ID, password, sign-out and account deletion are now in Settings. Private profiles can preview their own page without enabling sharing, without a private-profile reminder in the header.",
     "Time trained switches between All time and Past year. Time trained and Profile sharing keep their explanations behind question-mark help buttons. The collapsed What you share arrow points down, independently of its parent section.",
     "Progress changes are green for increases, red for decreases, and neutral when unchanged across estimated 1RM, top set and volume.",
@@ -26,10 +27,18 @@
   ],
   "url": "https://github.com/ejbolts/Gym-logger/blob/main/docs/RELEASE-NOTES.md#0100",
   "image": {
-    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/fd0681be335120efa75e700e17d6c2e82e8e6ea7/docs/screenshots/releases/0.9.1-training-sessions.png",
-    "alt": "Training Sessions retains the calendar above the latest three weeks of synthetic workouts."
+    "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/72ae786b6422a3d46c7bef2fa063b2b46b7ef490/docs/screenshots/releases/0.10.0-inline-comments.png",
+    "alt": "An inline workout conversation with nested replies, tappable mentions, comment reactions and the combined activity button, using synthetic accounts."
   },
   "highlights": [
+    {
+      "title": "Talk beside the workout",
+      "description": "Open the combined reactions and comments button for an inline conversation. Add up to 280 characters, reply with tappable @names, and react to comments. Replies and reactions appear in Notifications; existing sharing and block rules still apply.",
+      "image": {
+        "url": "https://raw.githubusercontent.com/ejbolts/Gym-logger/72ae786b6422a3d46c7bef2fa063b2b46b7ef490/docs/screenshots/releases/0.10.0-inline-comments.png",
+        "alt": "An inline workout conversation with nested replies, tappable mentions, comment reactions and the combined activity button, using synthetic accounts."
+      }
+    },
     {
       "title": "Your daily check-in, your choice",
       "description": "Choose Body weight, Body fat or Combined on Home. Your choice stays on this device for your account. Weight needs no body-fat value; body-fat entries still require today’s weight.",

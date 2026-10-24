@@ -823,6 +823,8 @@ ACCOUNT_TABLES = {
     # Created only by signed-in accounts (user_id is required), so never legacy data.
     "workout_types",
     "workout_reactions",
+    "workout_comments",
+    "comment_reactions",
 }
 
 

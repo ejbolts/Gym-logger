@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { authErrorMessage } from './authForm';
 import { Icon } from './Icon';
@@ -10,22 +10,49 @@ import {
   unreadNotificationReferences,
 } from './notificationReadState';
 import { ProfileAvatar } from './ProfileAvatar';
-import type { SharingConnection, SharingNotifications, ReactionNotice } from './types';
+import type {
+  SharingConnection,
+  SharingNotifications,
+  ReactionNotice,
+  CommentNotice,
+} from './types';
 import './FollowNotifications.css';
 
 export const NOTIFICATIONS_PER_PAGE = 15;
 
 type NotificationRow =
+  | { kind: 'comment'; item: CommentNotice }
   | { kind: 'request'; item: SharingConnection }
   | { kind: 'reaction'; item: ReactionNotice }
   | { kind: 'accepted'; item: SharingConnection };
 
 function notificationRows(items: SharingNotifications): NotificationRow[] {
   return [
+    ...(items.comments ?? []).map((item) => ({ kind: 'comment' as const, item })),
     ...items.requests.map((item) => ({ kind: 'request' as const, item })),
     ...(items.reactions ?? []).map((item) => ({ kind: 'reaction' as const, item })),
     ...items.accepted.map((item) => ({ kind: 'accepted' as const, item })),
   ];
+}
+
+function notificationPage(items: SharingNotifications, page: number): NotificationRow[] {
+  const rows = notificationRows(items);
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(rows.length / NOTIFICATIONS_PER_PAGE)));
+  return rows.slice(
+    (currentPage - 1) * NOTIFICATIONS_PER_PAGE,
+    currentPage * NOTIFICATIONS_PER_PAGE,
+  );
+}
+
+function displayedNotifications(items: SharingNotifications, page: number): SharingNotifications {
+  const visible: SharingNotifications = { requests: [], accepted: [], reactions: [], comments: [] };
+  for (const row of notificationPage(items, page)) {
+    if (row.kind === 'request') visible.requests.push(row.item);
+    else if (row.kind === 'accepted') visible.accepted.push(row.item);
+    else if (row.kind === 'reaction') visible.reactions!.push(row.item);
+    else visible.comments!.push(row.item);
+  }
+  return visible;
 }
 
 function NotificationDate({ since }: { since: string }) {
@@ -65,7 +92,7 @@ export function FollowNotifications({ active }: { active: boolean }) {
         if (cancelled) return;
         setItems(next);
         setError(null);
-        const unread = unreadNotificationReferences(next);
+        const unread = unreadNotificationReferences(displayedNotifications(next, page));
         if (open && unread.length) {
           await api.sharing.markNotificationsRead(unread);
           if (!cancelled)
@@ -88,7 +115,7 @@ export function FollowNotifications({ active }: { active: boolean }) {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
     };
-  }, [active, open, attempt]);
+  }, [active, open, attempt, page]);
 
   async function respond(person: SharingConnection, action: 'accept' | 'decline') {
     if (busy) return;
@@ -117,10 +144,7 @@ export function FollowNotifications({ active }: { active: boolean }) {
   const total = rows.length;
   const pageCount = Math.max(1, Math.ceil(total / NOTIFICATIONS_PER_PAGE));
   const currentPage = Math.min(page, pageCount);
-  const pageRows = rows.slice(
-    (currentPage - 1) * NOTIFICATIONS_PER_PAGE,
-    currentPage * NOTIFICATIONS_PER_PAGE,
-  );
+  const pageRows = items ? notificationPage(items, page) : [];
   return (
     <>
       <button
@@ -165,13 +189,35 @@ export function FollowNotifications({ active }: { active: boolean }) {
           )}
           {items && total === 0 && (
             <p className="shared-card-empty">
-              You're all caught up. Friend requests, accepted requests and workout reactions appear
+              You're all caught up. Friend requests, workout reactions, comments and replies appear
               here.
             </p>
           )}
           <ul className="follow-notification-list" ref={list}>
             {pageRows.map((row) =>
-              row.kind === 'request' ? (
+              row.kind === 'comment' ? (
+                <li key={`comment-${row.item.notice_id}`}>
+                  <ProfileAvatar className="profile-avatar" user={{ ...row.item, username: '' }} />
+                  <div className="follow-notification-copy">
+                    <p>
+                      <strong>{row.item.display_name}</strong>
+                      {row.item.kind === 'comment_reaction'
+                        ? ' reacted to your comment on '
+                        : row.item.kind === 'reply'
+                          ? ' replied on '
+                          : ' commented on '}
+                      <b>{row.item.workout_name}</b>
+                      <NotificationDate since={row.item.since} />
+                    </p>
+                    <p>{row.item.body}</p>
+                  </div>
+                  {row.item.reaction && (
+                    <span className="follow-notification-emoji">
+                      {reactionEmoji(row.item.reaction)}
+                    </span>
+                  )}
+                </li>
+              ) : row.kind === 'request' ? (
                 <li key={`request-${row.item.id}`}>
                   <ProfileAvatar className="profile-avatar" user={{ ...row.item, username: '' }} />
                   <div className="follow-notification-copy">

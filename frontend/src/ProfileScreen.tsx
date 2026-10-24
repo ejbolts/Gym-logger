@@ -4,11 +4,13 @@ import { useSettingsPageJump } from './settingsNavigation';
 import { useUserSession } from './userContext';
 
 export function ProfileScreen({
+  onOpenMember,
   dataRevision = null,
   active,
   renderWorkouts,
   onChooseSharing,
 }: {
+  onOpenMember?: (person: { id: string; display_name: string }) => void;
   dataRevision?: string | null;
   active: boolean;
   renderWorkouts: (props: SharedWorkoutListProps) => ReactNode;
@@ -21,6 +23,7 @@ export function ProfileScreen({
   return (
     <div className="profile-screen" data-settings-page="profile">
       <SharedProfileScreen
+        onOpenMember={onOpenMember}
         dataRevision={dataRevision}
         active={active}
         profileId={user.id}

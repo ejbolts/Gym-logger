@@ -1006,6 +1006,7 @@ function ProfileStats({ profile }: { profile: SharedProfile }) {
 }
 
 export function SharedProfileScreen({
+  onOpenMember,
   dataRevision = null,
   profileId,
   renderWorkouts,
@@ -1013,6 +1014,7 @@ export function SharedProfileScreen({
   active = true,
   ownProfile,
 }: {
+  onOpenMember?: (person: { id: string; display_name: string }) => void;
   dataRevision?: string | null;
   profileId: string;
   active?: boolean;
@@ -1326,25 +1328,25 @@ export function SharedProfileScreen({
               renderWorkouts({
                 workouts,
                 personalRecords: records,
-                renderWorkoutAction: profile.is_you
-                  ? undefined
-                  : (workout) => (
-                      <WorkoutReactionControl
-                        workoutId={workout.id}
-                        subject={`${profile.display_name}’s ${workout.name}`}
-                        reactions={reactions[workout.id] ?? { counts: [], yours: null }}
-                        open={picking === workout.id}
-                        showSummary
-                        onOpenChange={(value) =>
-                          setPicking((current) =>
-                            value ? workout.id : current === workout.id ? null : current,
-                          )
-                        }
-                        onChange={(value) =>
-                          setReactions((current) => ({ ...current, [workout.id]: value }))
-                        }
-                      />
-                    ),
+                renderWorkoutAction: (workout) => (
+                  <WorkoutReactionControl
+                    ownWorkout={profile.is_you}
+                    onOpenMember={onOpenMember}
+                    workoutId={workout.id}
+                    subject={`${profile.display_name}’s ${workout.name}`}
+                    reactions={reactions[workout.id] ?? { counts: [], yours: null }}
+                    open={picking === workout.id}
+                    showSummary
+                    onOpenChange={(value) =>
+                      setPicking((current) =>
+                        value ? workout.id : current === workout.id ? null : current,
+                      )
+                    }
+                    onChange={(value) =>
+                      setReactions((current) => ({ ...current, [workout.id]: value }))
+                    }
+                  />
+                ),
                 onFilterMachine: (photo) => {
                   setFilters((current) => ({ ...current, machine_photo_id: photo.id }));
                   setFiltersOpen(true);

@@ -3,6 +3,9 @@ export function unreadNotificationReferences(
   items: SharingNotifications,
 ): NotificationReadReference[] {
   return [
+    ...(items.comments ?? [])
+      .filter((item) => !item.is_read)
+      .map((item) => ({ kind: 'comment' as const, id: item.notice_id, since: item.since })),
     ...items.requests
       .filter((item) => !item.is_read)
       .map((item) => ({ kind: 'request' as const, id: item.id, since: item.since })),
@@ -38,6 +41,9 @@ export function markNotificationSnapshotRead(
         item.workout_id === workoutId,
     );
   return {
+    comments: items.comments?.map((item) =>
+      matches('comment', item.notice_id, item.since) ? { ...item, is_read: true } : item,
+    ),
     requests: items.requests.map((item) =>
       matches('request', item.id, item.since) ? { ...item, is_read: true } : item,
     ),

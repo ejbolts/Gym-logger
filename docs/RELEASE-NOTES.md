@@ -6,6 +6,14 @@
 
 ### Training, friends and settings that make sense
 
+![Inline workout discussion with nested replies, tappable mentions and comment reactions using synthetic accounts](screenshots/releases/0.10.0-inline-comments.png)
+
+*The combined reactions and comments button opens an inline thread. Replies stay together, @names open profiles, and the composer allows 280 characters.*
+
+![Comment notifications on the second inbox page using synthetic accounts](screenshots/releases/0.10.0-comments-notifications-pagination.png)
+
+*Comments and replies share the 15-row inbox pagination. Notices stay unread until their page is displayed; this sample shows the final three notices on page two.*
+
 ![Daily check-in with Body weight, Body fat and Combined display options](screenshots/releases/0.10.0-daily-check-in.png)
 
 *Choose weight, body fat or both on the existing Home card. The account’s choice stays on this device. Weight can be saved without a body-fat value; logging body fat still requires today’s weight.*
@@ -90,6 +98,7 @@
 
 *Your visible app checks for saved training changes every five seconds and when you return or reconnect. A separate sample session creates the workout while this page stays open.*
 
+- **Workout conversations:** open the combined reactions and comments button on Home, Social or a shared workout. Add an optional workout reaction with a comment, reply inline with tappable @names, and react to comments. Comments and replies allow up to 280 characters. The notification bell includes replies and reactions to your comments. All notice types share the 15-row pagination; only the displayed page is marked read. Authors can edit or delete their comments, and workout owners can delete comments on their workouts; deleting a top-level comment also deletes its replies. Current profile sharing, friendship, disabled-account and block rules govern access, comment counts and notifications. Collapsing the thread keeps an unsent comment. Social no longer repeats the **Find friends** header link beside its dedicated **Find** tab.
 - **Daily check-in choices:** select **Body weight**, **Body fat** or **Combined** on the existing Home card. The choice is remembered for your account on this device. Weight entry needs no body-fat value; body-fat entry still requires today’s weight.
 - **Recent Friends Activity:** the renamed Home card loads three additional friends inline when you tap **+N more**, with a spinner and duplicate-click protection while loading. Refreshes preserve the expanded list, a failed expansion keeps existing activity and allows retry, and the remaining count excludes friends without sessions.
 - **Rest times:** choose **0:00 (no rest)** or swipe left on a rest row to remove it without deleting its set. **Undo** restores the previous duration. Removed rests stay removed through set edits, workout saves and reopening. Edit the set and save **Rest after set** to add one back. Choices include **0:30**; **Settings > Training > Rest timers > Show rest times** hides the rows independently of the automatic countdown.

@@ -77,6 +77,10 @@ ACCOUNT_ROWS: dict[str, str | None] = {
     "profile_blocks": None,
     # Reactions are exchanged with other accounts, like friendships.
     "workout_reactions": None,
+    # Discussions and their notices reference other accounts, like workout reactions.
+    "workout_comments": None,
+    "comment_reactions": None,
+    "comment_notifications": None,
     "youtube_connections": None,
     "youtube_oauth_states": None,
 }
