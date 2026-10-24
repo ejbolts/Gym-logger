@@ -14,7 +14,7 @@ function Harness({ enabled = true }: { enabled?: boolean }) {
   const [editing, setEditing] = useState(false);
   return (
     <HomeLayoutSections
-      layout={defaultHomeLayout()}
+      layout={{ ...defaultHomeLayout(), hidden: [] }}
       sections={
         Object.fromEntries(
           HOME_SECTIONS.map(({ id }) => [

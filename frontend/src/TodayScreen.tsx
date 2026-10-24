@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { UndoBodyweightCheckIn } from './bodyweightCheckIn';
@@ -35,7 +35,7 @@ import type {
 import { localDate } from './utils';
 import { useTrainingPreferences, useWeightUnit } from './trainingPreferencesContext';
 import { WeightInput } from './WeightInput';
-import { useUserSession } from './userContext';
+import { useDailyCheckIns } from './useDailyCheckIns';
 import { ProfileButton } from './AccountHeaderActions';
 import { useUpNextSession } from './upNext';
 import {
@@ -236,6 +236,7 @@ export function TodayScreen({
   );
   const memberSince = profile ? formatMemberSince(profile.created_at, 'short') : null;
 
+  const checkIns = useDailyCheckIns(onSaveBodyweight, onSaveBodyFat);
   const sections: Record<HomeSectionId, ReactNode> = {
     profile: profile ? (
       <section className="pulse-card today-profile" aria-labelledby="today-profile-title">
@@ -466,18 +467,28 @@ export function TodayScreen({
         </p>
       </button>
     ),
-    'daily-check-in': (
-      <DashboardQuickBodyweight
-        latestBodyweight={latest?.weight_kg ?? null}
-        todayBodyweight={todayBodyweight}
-        todayBodyFat={todayBodyFat}
-        latestBodyFat={
-          measurements.find((item) => item.body_fat_pct !== null)?.body_fat_pct ?? null
-        }
-        onSave={onSaveBodyweight}
-        onSaveBodyFat={onSaveBodyFat}
-      />
-    ),
+    ...(Object.fromEntries(
+      (
+        [
+          ['bodyweight-check-in', 'weight'],
+          ['body-fat-check-in', 'fat'],
+          ['combined-check-in', 'combined'],
+        ] as const
+      ).map(([id, mode]) => [
+        id,
+        <DashboardQuickBodyweight
+          key={id}
+          mode={mode}
+          latestBodyweight={latest?.weight_kg ?? null}
+          todayBodyweight={todayBodyweight}
+          todayBodyFat={todayBodyFat}
+          latestBodyFat={
+            measurements.find((item) => item.body_fat_pct !== null)?.body_fat_pct ?? null
+          }
+          {...checkIns}
+        />,
+      ]),
+    ) as Record<'bodyweight-check-in' | 'body-fat-check-in' | 'combined-check-in', ReactNode>),
     records: (
       <section className="pulse-card" aria-labelledby="records-title">
         <header className="pulse-card-header">
@@ -646,6 +657,10 @@ function LiveWorkoutCard({
 const BODYWEIGHT_UNDO_MS = 5000;
 
 export function DashboardQuickBodyweight({
+  mode = 'combined',
+  busy = false,
+  undoVersion = 0,
+  undoVersionRef,
   latestBodyweight,
   todayBodyweight,
   latestBodyFat = null,
@@ -653,6 +668,10 @@ export function DashboardQuickBodyweight({
   onSave,
   onSaveBodyFat,
 }: {
+  mode?: 'weight' | 'fat' | 'combined';
+  busy?: boolean;
+  undoVersion?: number;
+  undoVersionRef?: { current: number };
   latestBodyweight: number | null;
   todayBodyweight: number | null;
   latestBodyFat?: number | null;
@@ -662,17 +681,7 @@ export function DashboardQuickBodyweight({
 }) {
   const weightUnit = useWeightUnit();
   const initialWeight = todayBodyweight ?? latestBodyweight;
-  const { user } = useUserSession();
-  const modeKey = `gym.daily-check-in.${user?.id ?? 'guest'}`;
-  const [mode, setMode] = useState('combined');
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(modeKey);
-      setMode(saved === 'weight' || saved === 'fat' ? saved : 'combined');
-    } catch {
-      setMode('combined');
-    }
-  }, [modeKey]);
+  const titleId = useId();
   const [weight, setWeight] = useState<number | null>(initialWeight);
   const [bodyFat, setBodyFat] = useState<string>(() => String(todayBodyFat ?? latestBodyFat ?? ''));
   const [saving, setSaving] = useState(false);
@@ -680,6 +689,7 @@ export function DashboardQuickBodyweight({
     run: UndoBodyweightCheckIn;
     attempt: number;
     kind: 'weight' | 'fat';
+    version: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const selectedWeight = weight;
@@ -700,7 +710,7 @@ export function DashboardQuickBodyweight({
   }, [undo, saving]);
 
   async function save() {
-    if (saving) return;
+    if (saving || busy) return;
     if (
       selectedWeight === null ||
       !Number.isFinite(selectedWeight) ||
@@ -715,7 +725,7 @@ export function DashboardQuickBodyweight({
     setUndo(null);
     try {
       const run = await onSave(selectedWeight);
-      setUndo({ run, attempt: 0, kind: 'weight' });
+      setUndo({ run, attempt: 0, kind: 'weight', version: undoVersionRef?.current ?? 0 });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save today’s weight.');
     } finally {
@@ -724,7 +734,7 @@ export function DashboardQuickBodyweight({
   }
 
   async function saveFat() {
-    if (saving || !onSaveBodyFat) return;
+    if (saving || busy || !onSaveBodyFat) return;
     const value = bodyFat.trim() === '' ? NaN : Number(bodyFat);
     if (!Number.isFinite(value) || value < 1 || value > 70) {
       setError('Enter body fat from 1% to 70%.');
@@ -739,7 +749,7 @@ export function DashboardQuickBodyweight({
     setUndo(null);
     try {
       const run = await onSaveBodyFat(value);
-      setUndo({ run, attempt: 0, kind: 'fat' });
+      setUndo({ run, attempt: 0, kind: 'fat', version: undoVersionRef?.current ?? 0 });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not save today’s body fat.');
     } finally {
@@ -784,43 +794,20 @@ export function DashboardQuickBodyweight({
   }
 
   return (
-    <section className="pulse-card quick-bodyweight" aria-labelledby="daily-bodyweight-title">
+    <section className="pulse-card quick-bodyweight" aria-labelledby={titleId}>
       <header className="pulse-card-header">
-        <h2 id="daily-bodyweight-title">Daily check-in</h2>
+        <h2 id={titleId}>
+          {mode === 'weight'
+            ? 'Body weight check-in'
+            : mode === 'fat'
+              ? 'Body fat check-in'
+              : 'Combined check-in'}
+        </h2>
       </header>
-      {onSaveBodyFat && (
-        <div className="quick-check-in-modes" role="group" aria-label="Check-in display">
-          {(
-            [
-              ['weight', 'Body weight'],
-              ['fat', 'Body fat'],
-              ['combined', 'Combined'],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              type="button"
-              key={value}
-              aria-pressed={mode === value}
-              disabled={saving}
-              onClick={() => {
-                setMode(value);
-                setError(null);
-                try {
-                  localStorage.setItem(modeKey, value);
-                } catch {
-                  /* Keep the choice for this visit. */
-                }
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
       {(mode !== 'fat' || !onSaveBodyFat) && (
         <section className="quick-check-in-row" aria-label="Body weight check-in">
           <header className="quick-check-in-heading">
-            <h3>Body weight</h3>
+            {mode === 'combined' && <h3>Body weight</h3>}
             <span className={todayBodyweight === null ? '' : 'logged'} role="status">
               {todayBodyweight === null
                 ? 'Not logged today'
@@ -839,7 +826,7 @@ export function DashboardQuickBodyweight({
               className="stepper"
               onClick={() => nudge(-0.1)}
               aria-label={`Decrease by 0.1 ${weightUnit}`}
-              disabled={saving}
+              disabled={saving || busy}
             >
               −
             </button>
@@ -847,7 +834,7 @@ export function DashboardQuickBodyweight({
               <span className="sr-only">Bodyweight in {weightUnitName(weightUnit)}</span>
               <WeightInput
                 weightKg={weight}
-                disabled={saving}
+                disabled={saving || busy}
                 aria-label={`Bodyweight in ${weightUnitName(weightUnit)}`}
                 style={
                   {
@@ -866,11 +853,11 @@ export function DashboardQuickBodyweight({
               className="stepper"
               onClick={() => nudge(0.1)}
               aria-label={`Increase by 0.1 ${weightUnit}`}
-              disabled={saving}
+              disabled={saving || busy}
             >
               +
             </button>
-            <button className="pulse-button primary" type="submit" disabled={saving}>
+            <button className="pulse-button primary" type="submit" disabled={saving || busy}>
               {saving ? 'Saving…' : todayBodyweight === null ? 'Log' : 'Update'}
             </button>
           </form>
@@ -879,7 +866,7 @@ export function DashboardQuickBodyweight({
       {onSaveBodyFat && mode !== 'weight' && (
         <section className="quick-check-in-row body-fat-check-in" aria-label="Body fat check-in">
           <header className="quick-check-in-heading">
-            <h3>Body fat</h3>
+            {mode === 'combined' && <h3>Body fat</h3>}
             <span className={todayBodyFat === null ? '' : 'logged'} role="status">
               {todayBodyFat === null
                 ? 'Not logged today'
@@ -897,7 +884,7 @@ export function DashboardQuickBodyweight({
               className="stepper"
               type="button"
               aria-label="Decrease body fat by 0.1%"
-              disabled={saving}
+              disabled={saving || busy}
               onClick={() => nudgeFat(-0.1)}
             >
               −
@@ -912,7 +899,7 @@ export function DashboardQuickBodyweight({
                 step="0.1"
                 placeholder="—"
                 aria-label="Body fat percentage"
-                disabled={saving}
+                disabled={saving || busy}
                 value={bodyFat}
                 style={{ '--bw-chars': `${Math.max(bodyFat.length, 1)}ch` } as CSSProperties}
                 onChange={(event) => {
@@ -926,7 +913,7 @@ export function DashboardQuickBodyweight({
               className="stepper"
               type="button"
               aria-label="Increase body fat by 0.1%"
-              disabled={saving}
+              disabled={saving || busy}
               onClick={() => nudgeFat(0.1)}
             >
               +
@@ -934,7 +921,7 @@ export function DashboardQuickBodyweight({
             <button
               className="pulse-button primary"
               type="submit"
-              disabled={saving || todayBodyweight === null}
+              disabled={saving || busy || todayBodyweight === null}
             >
               {saving ? 'Saving…' : todayBodyFat === null ? 'Log' : 'Update'}
             </button>
@@ -945,6 +932,7 @@ export function DashboardQuickBodyweight({
         </section>
       )}
       {undo &&
+        undo.version === undoVersion &&
         createPortal(
           <div
             key={undo.attempt}
@@ -963,7 +951,7 @@ export function DashboardQuickBodyweight({
             <button
               className="undo-toast-action"
               type="button"
-              disabled={saving}
+              disabled={saving || busy}
               onClick={() => void undoSave()}
             >
               Undo
@@ -971,7 +959,7 @@ export function DashboardQuickBodyweight({
             <button
               className="undo-toast-close"
               type="button"
-              disabled={saving}
+              disabled={saving || busy}
               aria-label={
                 undo.kind === 'fat'
                   ? 'Dismiss body fat notification'

@@ -138,6 +138,8 @@ import { CachedTabPanel } from './CachedTabPanel';
 import { optimisePhoto } from './photoOptimise';
 import { ConfettiBurst } from './ConfettiBurst';
 import { EdgeSwipeBack } from './EdgeSwipeBack';
+import { ExerciseLibraryList } from './ExerciseLibraryList';
+import { ExerciseSessionSheet } from './ExerciseSessionSheet';
 import { ProgressExerciseSearch } from './ProgressExerciseSearch';
 import {
   personalBestProgressPoint,
@@ -6103,6 +6105,12 @@ const RANGE_LABELS: Record<BodyTrendRange, string> = {
   all: 'All',
 };
 
+interface ExerciseDetailHeader {
+  exercise: Exercise;
+  sessionCount: number | null;
+  onBack: () => void;
+}
+
 export function ProgressScreen({
   dataRevision = null,
   exercises,
@@ -6114,6 +6122,7 @@ export function ProgressScreen({
   defaultExerciseId = null,
   browseFirst = false,
   onOpenSettings,
+  onDetailChange,
 }: {
   dataRevision?: string | null;
   exercises: Exercise[];
@@ -6125,6 +6134,7 @@ export function ProgressScreen({
   defaultExerciseId?: string | null;
   browseFirst?: boolean;
   onOpenSettings?: () => void;
+  onDetailChange?: (header: ExerciseDetailHeader | null) => void;
 }) {
   const weightUnit = useWeightUnit();
   const strengthExercises = useMemo(
@@ -6146,16 +6156,50 @@ export function ProgressScreen({
   const [progressError, setProgressError] = useState<string | null>(null);
   const [progressAttempt, setProgressAttempt] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [visibleSessions, setVisibleSessions] = useState(HISTORY_PAGE_SIZE);
+  const [visibleSessions, setVisibleSessions] = useState(browseFirst ? 5 : HISTORY_PAGE_SIZE);
   const [pickerRequest, setPickerRequest] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const libraryRoot = useRef<HTMLDivElement>(null);
+  const libraryScroll = useRef(0);
   const metricIndicatorRef = useSlidingIndicator<HTMLDivElement>(metric);
   const rangeIndicatorRef = useSlidingIndicator<HTMLDivElement>(displayRange);
   const selectedExercise = strengthExercises.find((exercise) => exercise.id === exerciseId) ?? null;
 
+  const backToExercises = useCallback(() => {
+    setFullProgress(false);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: libraryScroll.current, behavior: 'instant' });
+      const button = [
+        ...(libraryRoot.current?.querySelectorAll<HTMLButtonElement>('[data-exercise-id]') ?? []),
+      ].find((item) => item.dataset.exerciseId === exerciseId);
+      button?.focus({ preventScroll: true });
+    });
+  }, [exerciseId]);
+  const progressSessionCount = progress?.points.length ?? null;
   useEffect(() => {
-    if (!exerciseId) return;
+    onDetailChange?.(
+      browseFirst && fullProgress && selectedExercise
+        ? {
+            exercise: selectedExercise,
+            sessionCount: progressSessionCount,
+            onBack: backToExercises,
+          }
+        : null,
+    );
+  }, [
+    onDetailChange,
+    browseFirst,
+    fullProgress,
+    selectedExercise,
+    progressSessionCount,
+    backToExercises,
+  ]);
+  useEffect(() => () => onDetailChange?.(null), [onDetailChange]);
+
+  useEffect(() => {
+    if (!exerciseId || libraryMode) return;
     let cancelled = false;
-    setVisibleSessions(HISTORY_PAGE_SIZE);
+    setVisibleSessions(browseFirst ? 5 : HISTORY_PAGE_SIZE);
     setLoading(true);
     setProgressError(null);
     void api
@@ -6175,11 +6219,11 @@ export function ProgressScreen({
     return () => {
       cancelled = true;
     };
-  }, [exerciseId, progressAttempt, dataRevision]);
+  }, [exerciseId, progressAttempt, dataRevision, libraryMode, browseFirst]);
 
   const metricInfo = PROGRESS_METRICS.find((item) => item.value === metric)!;
   const inRange = progress ? progressPointsForChart(progress.points, metric, displayRange) : [];
-  const weekly = metric !== 'volume_kg' && displayRange !== '1m';
+  const weekly = !browseFirst && metric !== 'volume_kg' && displayRange !== '1m';
   const charted = weekly ? weeklyBestPoints(inRange, (point) => point[metric]) : inRange;
   const latestPoint = inRange.at(-1) ?? null;
   const firstPoint = inRange[0] ?? null;
@@ -6250,51 +6294,49 @@ export function ProgressScreen({
 
   return (
     <section
-      className={`progress-screen ${embedded ? '' : 'content-page'}${libraryMode ? ' exercise-library-workspace' : ''}`}
+      className={`progress-screen ${embedded ? '' : 'content-page'}${browseFirst ? ' exercise-list-detail' : ''}`}
     >
-      {browseFirst && fullProgress && (
-        <button
-          type="button"
-          className="training-back text-link"
-          onClick={() => setFullProgress(false)}
-        >
-          <Icon name="chevron-left" /> Back to library
+      {browseFirst && fullProgress && !onDetailChange && (
+        <button type="button" className="training-back text-link" onClick={backToExercises}>
+          <Icon name="chevron-left" /> Exercises
         </button>
       )}
       {browseFirst && (
-        <section
-          className="training-exercise-browser exercise-library-panel"
-          hidden={!libraryMode}
-          aria-label="Exercise library browser"
-        >
-          <ProgressExerciseSearch
+        <div ref={libraryRoot} hidden={!libraryMode}>
+          <ExerciseLibraryList
             exercises={strengthExercises}
-            exerciseId={exerciseId}
-            browseOnly
-            onChange={setExerciseId}
+            dataRevision={dataRevision}
+            onOpen={(id) => {
+              libraryScroll.current = window.scrollY;
+              setExerciseId(id);
+              setFullProgress(true);
+              requestAnimationFrame(() => {
+                if (onDetailChange) window.scrollTo({ top: 0, behavior: 'instant' });
+                else libraryRoot.current?.parentElement?.scrollIntoView?.({ block: 'start' });
+              });
+            }}
           />
-        </section>
+        </div>
+      )}
+      {sessionId && selectedExercise && (
+        <ExerciseSessionSheet
+          key={sessionId}
+          workoutId={sessionId}
+          dataRevision={dataRevision}
+          exercise={selectedExercise}
+          onClose={() => setSessionId(null)}
+          onOpenWorkout={() => {
+            setSessionId(null);
+            onOpenWorkout(sessionId, selectedExercise.id);
+          }}
+        />
       )}
       <section
-        className={
-          libraryMode ? 'pulse-card exercise-progress-preview' : 'exercise-progress-detail'
-        }
-        aria-label={libraryMode ? 'Selected exercise preview' : 'Full exercise progress'}
+        className="exercise-progress-detail"
+        aria-label="Full exercise progress"
+        hidden={libraryMode}
       >
-        {libraryMode ? (
-          <header className="exercise-preview-header">
-            <div>
-              <p>Selected exercise</p>
-              <h2>{selectedExercise?.name ?? 'Exercise progress'}</h2>
-              <small>
-                {[selectedExercise?.muscle_group, selectedExercise?.equipment]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </small>
-            </div>
-            {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
-          </header>
-        ) : (
+        {!onDetailChange && (
           <PageHeader
             headingLevel={embedded ? 2 : 1}
             eyebrow={
@@ -6302,7 +6344,7 @@ export function ProgressScreen({
                 ? [
                     selectedExercise.muscle_group,
                     selectedExercise.equipment,
-                    progress?.exercise.id === selectedExercise.id
+                    progress
                       ? `${progress.points.length} ${progress.points.length === 1 ? 'session' : 'sessions'}`
                       : null,
                   ]
@@ -6315,19 +6357,21 @@ export function ProgressScreen({
             actions={
               <>
                 {selectedExercise && <ExerciseMuscleHelp exercise={selectedExercise} />}
-                <button
-                  className="icon-button-pulse"
-                  type="button"
-                  aria-label="Select exercise"
-                  onClick={() => setPickerRequest((request) => request + 1)}
-                >
-                  <Icon name="search" />
-                </button>
+                {!browseFirst && (
+                  <button
+                    className="icon-button-pulse"
+                    type="button"
+                    aria-label="Select exercise"
+                    onClick={() => setPickerRequest((request) => request + 1)}
+                  >
+                    <Icon name="search" />
+                  </button>
+                )}
               </>
             }
           />
         )}
-        {!libraryMode && (
+        {!browseFirst && (
           <section className="progress-controls">
             <ProgressExerciseSearch
               exercises={strengthExercises}
@@ -6379,71 +6423,68 @@ export function ProgressScreen({
             </div>
             {progress.points.length ? (
               <>
-                <div className="progress-hero">
-                  <div className="progress-hero-summary">
-                    <strong className="progress-hero-value">
-                      {latestPoint ? formatMetricKg(latestPoint[metric]) : '–'}
-                      <small>{weightUnit}</small>
-                    </strong>
-                    <p className="progress-hero-caption">
-                      {latestPoint
-                        ? `${metricInfo.series} · latest session ${shortDate(latestPoint.workout_date)}`
-                        : 'No sessions in this range'}
-                    </p>
-                    {change !== null && firstPoint && (
-                      <p
-                        className={`progress-delta ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`}
-                      >
-                        <Icon name={change >= 0 ? 'up' : 'down'} />
-                        {change >= 0 ? '+' : '−'}
-                        {formatMetricKg(Math.abs(change))} {weightUnit}
-                        {changePercent !== null &&
-                          ` (${change >= 0 ? '+' : '−'}${Math.abs(changePercent).toFixed(1)}%)`}{' '}
-                        since {dayMonth(firstPoint.workout_date)}
+                <section className={browseFirst ? 'pulse-card exercise-progress-chart' : undefined}>
+                  <div className="progress-hero">
+                    <div className="progress-hero-summary">
+                      <strong className="progress-hero-value">
+                        {latestPoint ? formatMetricKg(latestPoint[metric]) : '–'}
+                        <small>{weightUnit}</small>
+                      </strong>
+                      <p className="progress-hero-caption">
+                        {latestPoint
+                          ? `${metricInfo.series} · latest session ${shortDate(latestPoint.workout_date)}`
+                          : 'No sessions in this range'}
                       </p>
+                      {change !== null && firstPoint && (
+                        <p
+                          className={`progress-delta ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`}
+                        >
+                          <Icon name={change >= 0 ? 'up' : 'down'} />
+                          {change >= 0 ? '+' : '−'}
+                          {formatMetricKg(Math.abs(change))} {weightUnit}
+                          {changePercent !== null &&
+                            ` (${change >= 0 ? '+' : '−'}${Math.abs(changePercent).toFixed(1)}%)`}{' '}
+                          since {dayMonth(firstPoint.workout_date)}
+                        </p>
+                      )}
+                    </div>
+                    {!browseFirst && selectedExercise && (
+                      <ExerciseIcon exercise={selectedExercise} />
                     )}
                   </div>
-                  {libraryMode
-                    ? rangeControls
-                    : selectedExercise && <ExerciseIcon exercise={selectedExercise} />}
-                </div>
-                {!libraryMode && rangeControls}
-                <LandscapeChartFrame
-                  title={`${progress.exercise.name} · ${metricInfo.series}${weekly ? ' (best per week)' : ''}`}
-                  controls={null}
-                >
-                  {(expanded, close) => (
-                    <TrendChart
-                      points={chartPoints}
-                      label={`${progress.exercise.name} ${metricInfo.series}${weekly ? ', best per week' : ''}`}
-                      seriesLabel={
-                        weekly
-                          ? `Best ${metric === 'estimated_1rm' ? 'est. 1RM' : 'top weight'} that week`
-                          : metricInfo.series
-                      }
-                      unit={weightUnit}
-                      height={libraryMode ? 160 : 200}
-                      fillHeight={expanded}
-                      markRecords={metric !== 'volume_kg'}
-                      formatValue={formatMetric}
-                      onSelect={(point) => {
-                        if (!point.id) return;
-                        close();
-                        onOpenWorkout(point.id, progress.exercise.id);
-                      }}
-                    />
-                  )}
-                </LandscapeChartFrame>
-                {libraryMode && (
-                  <button
-                    type="button"
-                    className="exercise-open-progress"
-                    onClick={() => setFullProgress(true)}
+                  {rangeControls}
+                  <LandscapeChartFrame
+                    title={`${progress.exercise.name} · ${metricInfo.series}${weekly ? ' (best per week)' : ''}`}
+                    controls={null}
                   >
-                    Open full progress <Icon name="chevron-right" />
-                  </button>
-                )}
-                <div hidden={libraryMode}>
+                    {(expanded, close) => (
+                      <TrendChart
+                        points={chartPoints}
+                        label={`${progress.exercise.name} ${metricInfo.series}${weekly ? ', best per week' : ''}`}
+                        seriesLabel={
+                          weekly
+                            ? `Best ${metric === 'estimated_1rm' ? 'est. 1RM' : 'top weight'} that week`
+                            : metricInfo.series
+                        }
+                        unit={weightUnit}
+                        height={200}
+                        fillHeight={expanded}
+                        markRecords={metric !== 'volume_kg'}
+                        formatValue={formatMetric}
+                        onSelect={
+                          browseFirst
+                            ? undefined
+                            : (point) => {
+                                if (!point.id) return;
+                                close();
+                                onOpenWorkout(point.id, progress.exercise.id);
+                              }
+                        }
+                      />
+                    )}
+                  </LandscapeChartFrame>
+                </section>
+                <div>
                   <section className="stat-grid" aria-label="Personal bests">
                     <div>
                       <span>Heaviest set</span>
@@ -6506,7 +6547,11 @@ export function ProgressScreen({
                           <button
                             type="button"
                             aria-label={`View ${progress.exercise.name} in workout from ${prettyDate(point.workout_date)}`}
-                            onClick={() => onOpenWorkout(point.workout_id, progress.exercise.id)}
+                            onClick={() =>
+                              browseFirst
+                                ? setSessionId(point.workout_id)
+                                : onOpenWorkout(point.workout_id, progress.exercise.id)
+                            }
                           >
                             <span className="session-date">
                               {shortDate(point.workout_date)}
@@ -8831,6 +8876,7 @@ function HistoryScreen({
   accountActions?: ReactNode;
 }) {
   const weightUnit = useWeightUnit();
+  const [exerciseHeader, setExerciseHeader] = useState<ExerciseDetailHeader | null>(null);
   const { types } = useWorkoutTypes();
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
   const [extraVisibleCount, setExtraVisibleCount] = useState(0);
@@ -8995,54 +9041,76 @@ function HistoryScreen({
   }, [section, openId, visibleCount, targetExerciseId]);
 
   return (
-    <section className="history-screen content-page">
-      <PageHeader
-        eyebrow={
-          section === 'progress'
-            ? 'Exercise charts · records · sessions'
-            : section === 'cardio'
-              ? 'Zone 2 · energy · sessions'
-              : `${totalWorkouts} ${totalWorkouts === 1 ? 'workout' : 'workouts'} logged`
-        }
-        title="Training"
-        onOpenSettings={onOpenSettings}
-        accountActions={accountActions}
-      />
-      <div
-        ref={sectionIndicatorRef}
-        className="segmented-control slide-indicator"
-        role="tablist"
-        aria-label="Training sections"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={section === 'history'}
-          className={section === 'history' ? 'active' : ''}
-          onClick={() => onSectionChange('history')}
-        >
-          Sessions
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={section === 'progress'}
-          className={section === 'progress' ? 'active' : ''}
-          data-guide-target="progress"
-          onClick={() => onSectionChange('progress')}
-        >
-          Exercises
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={section === 'cardio'}
-          className={section === 'cardio' ? 'active' : ''}
-          onClick={() => onSectionChange('cardio')}
-        >
-          Cardio
-        </button>
-      </div>
+    <section
+      className={`history-screen content-page${section === 'progress' && exerciseHeader ? ' exercise-header-view' : ''}`}
+    >
+      {section === 'progress' && exerciseHeader ? (
+        <OverlayScreenHeader
+          title={exerciseHeader.exercise.name}
+          subtitle={[
+            exerciseHeader.exercise.muscle_group,
+            exerciseHeader.exercise.equipment,
+            exerciseHeader.sessionCount === null
+              ? null
+              : `${exerciseHeader.sessionCount} ${exerciseHeader.sessionCount === 1 ? 'session' : 'sessions'}`,
+          ]
+            .filter(Boolean)
+            .join(' \u00b7 ')}
+          onBack={exerciseHeader.onBack}
+          backLabel="Back to exercises"
+          actions={<ExerciseMuscleHelp exercise={exerciseHeader.exercise} />}
+        />
+      ) : (
+        <>
+          <PageHeader
+            eyebrow={
+              section === 'progress'
+                ? 'Exercise charts · records · sessions'
+                : section === 'cardio'
+                  ? 'Zone 2 · energy · sessions'
+                  : `${totalWorkouts} ${totalWorkouts === 1 ? 'workout' : 'workouts'} logged`
+            }
+            title="Training"
+            onOpenSettings={onOpenSettings}
+            accountActions={accountActions}
+          />
+          <div
+            ref={sectionIndicatorRef}
+            className="segmented-control slide-indicator"
+            role="tablist"
+            aria-label="Training sections"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={section === 'history'}
+              className={section === 'history' ? 'active' : ''}
+              onClick={() => onSectionChange('history')}
+            >
+              Sessions
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={section === 'progress'}
+              className={section === 'progress' ? 'active' : ''}
+              data-guide-target="progress"
+              onClick={() => onSectionChange('progress')}
+            >
+              Exercises
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={section === 'cardio'}
+              className={section === 'cardio' ? 'active' : ''}
+              onClick={() => onSectionChange('cardio')}
+            >
+              Cardio
+            </button>
+          </div>
+        </>
+      )}
       {visitedSections.has('progress') && (
         <CachedTabPanel active={section === 'progress'}>
           <ProgressScreen
@@ -9053,6 +9121,7 @@ function HistoryScreen({
             onOpenWorkout={(workoutId, exerciseId) => onOpenWorkout(workoutId, exerciseId)}
             embedded
             browseFirst
+            onDetailChange={setExerciseHeader}
             initialExerciseId={initialExerciseId}
             defaultExerciseId={defaultExerciseId}
             onOpenSettings={onOpenSettings}

@@ -545,6 +545,16 @@ export interface ExerciseProgress {
   personal_best_estimated_1rm: number;
 }
 
+export interface ExerciseLibrarySummary {
+  exercise_id: string;
+  session_count: number;
+  last_date: string;
+  latest_estimated_1rm: number | null;
+  change_kg: number | null;
+  change_percent: number | null;
+  trend: { date: string; estimated_1rm: number }[];
+}
+
 export interface CsvImportResult {
   workouts_created: number;
   workouts_skipped: number;

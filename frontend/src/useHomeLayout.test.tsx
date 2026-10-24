@@ -20,7 +20,7 @@ let container: HTMLDivElement;
 let home: ReturnType<typeof useHomeLayout>;
 const saved: HomeLayout = {
   ...defaultHomeLayout(),
-  widths: { 'daily-check-in': 'compact', workouts: 'full' },
+  widths: { 'combined-check-in': 'compact', workouts: 'full' },
 };
 
 function Harness({ active }: { active: boolean }) {
@@ -96,8 +96,8 @@ describe('account Home layout drafts', () => {
     await act(async () => home.edit());
     expect(home.draft.widths).toEqual(saved.widths);
     expect(home.draft.widths).not.toBe(saved.widths);
-    await act(async () => home.change(toggleHomeSectionWidth(home.draft, 'daily-check-in', 3)));
-    expect(home.draft.widths?.['daily-check-in']).toBe('full');
+    await act(async () => home.change(toggleHomeSectionWidth(home.draft, 'combined-check-in', 3)));
+    expect(home.draft.widths?.['combined-check-in']).toBe('full');
 
     await act(async () => root.render(<Harness active={false} />));
     await act(async () => root.render(<Harness active />));
@@ -133,7 +133,10 @@ describe('account Home layout drafts', () => {
     expect(container.querySelector('.home-layout-toolbar')).toBeNull();
     await click('Hide Workouts');
     await click('Save layout');
-    expect(api.saveHomeLayout).toHaveBeenCalledWith({ ...saved, hidden: ['workouts'] });
+    expect(api.saveHomeLayout).toHaveBeenCalledWith({
+      ...saved,
+      hidden: [...saved.hidden, 'workouts'],
+    });
     expect(home.editing).toBe(false);
     expect(document.activeElement).toBe(home.editButton.current);
 
@@ -143,7 +146,7 @@ describe('account Home layout drafts', () => {
     expect(home.editing).toBe(true);
     expect(api.saveHomeLayout).toHaveBeenCalledTimes(1);
     await click('Cancel layout changes');
-    expect(home.layout.hidden).toEqual(['workouts']);
+    expect(home.layout.hidden).toEqual([...saved.hidden, 'workouts']);
     expect(container.querySelector('.app-tab-navigation')?.hasAttribute('inert')).toBe(false);
 
     await act(async () => home.editButton.current!.click());
@@ -161,8 +164,11 @@ describe('account Home layout drafts', () => {
     await act(async () => home.editButton.current!.click());
     expect(home.editing).toBe(false);
     expect(home.message).toBe('Home layout saved.');
-    expect(home.layout).toEqual({ ...saved, hidden: ['workouts'] });
-    expect(api.saveHomeLayout).toHaveBeenCalledWith({ ...saved, hidden: ['workouts'] });
+    expect(home.layout).toEqual({ ...saved, hidden: [...saved.hidden, 'workouts'] });
+    expect(api.saveHomeLayout).toHaveBeenCalledWith({
+      ...saved,
+      hidden: [...saved.hidden, 'workouts'],
+    });
     expect(container.querySelector('.app-tab-navigation')?.hasAttribute('inert')).toBe(false);
     expect(document.activeElement).toBe(home.editButton.current);
   });
@@ -187,12 +193,12 @@ describe('account Home layout drafts', () => {
     ).toBe(true);
     await act(async () => rejectSave(new Error('offline')));
     expect(home.editing).toBe(true);
-    expect(home.draft.hidden).toEqual(['workouts']);
+    expect(home.draft.hidden).toEqual([...saved.hidden, 'workouts']);
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
       'Use the pencil or green tick to try again',
     );
     await act(async () => home.editButton.current!.click());
     expect(home.editing).toBe(false);
-    expect(home.layout.hidden).toEqual(['workouts']);
+    expect(home.layout.hidden).toEqual([...saved.hidden, 'workouts']);
   });
 });

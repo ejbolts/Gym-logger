@@ -10,13 +10,13 @@
 
 *The calendar, date details, machine filter and session cards stay together in Sessions. Show more reveals older workouts.*
 
-![Training Exercises on a phone with a bounded library and live Pec Deck preview](screenshots/releases/0.9.1-training-exercises.png)
+![Exercises list with search, muscle filters, sorting, and eight-week estimated 1RM trends](screenshots/releases/0.10.0-exercise-list.png)
 
-*Scroll or search the library to update the preview. Range buttons sit beside the value; Open full progress retains the familiar records and session history.*
+*Search or filter the full exercise list, then sort by recent use, name or percentage improvement. Each trained lift shows its latest estimated 1RM and eight-week trend; untrained exercises remain available.*
 
-![Exercise library and progress preview side by side on a wider screen](screenshots/releases/0.9.1-exercise-library-wide.png)
+![Exercise detail with a back-arrow header, metric controls, chart and personal bests](screenshots/releases/0.10.0-exercise-header.png)
 
-*Wider screens keep the searchable library beside the chart. Returning from full progress preserves your search, list position, selected exercise, metric and date range. Previews use synthetic training data.*
+*Tap a lift to replace the Training header and tabs with its name and a back arrow above per-session charts, personal bests and session history. Session rows open completed sets before Open workout. Return to Exercises with the list's search, filters, sort and scroll position intact. These previews use isolated synthetic workouts.*
 
 ![Social Friends tab listing each friend once with a seven-day activity strip, latest session and reaction button](screenshots/releases/0.10.0-social-friends.png)
 
@@ -66,9 +66,13 @@
 
 *Sharing guidance opens from its own question mark without folding the section. The collapsed What you share arrow points down independently of the parent section.*
 
-![Daily check-in with Body weight, Body fat and Combined display options](screenshots/releases/0.10.0-daily-check-in.png)
+![Home with separate Combined, Body weight and Body fat check-in sections](screenshots/releases/0.10.0-home-checkin-sections.png)
 
-*Choose weight, body fat or both on the existing Home card. The account’s choice stays on this device. Weight can be saved without a body-fat value; logging body fat still requires today’s weight.*
+*Add, hide, resize and arrange each check-in independently through Edit Home layout. The existing card becomes Combined in its saved position. Weight needs no body-fat value; logging body fat still requires today’s weight.*
+
+![Past-workout browser with space between exercise cards](screenshots/releases/0.10.0-workout-exercise-spacing.png)
+
+*Past workouts keep a clear gap between each exercise card. These previews use isolated synthetic measurements and workouts.*
 
 ![Recent Friends Activity loads three additional friends inline with a loading spinner](screenshots/releases/0.10.0-friends-load-three.gif)
 
@@ -103,7 +107,7 @@
 ### Training in one place
 
 - **Training:** one bottom tab combines **Sessions**, **Exercises** and **Cardio**. Sessions keeps the full calendar, date details, machine filtering, notes, photos and existing workout actions. Your open session and selected exercise remain when you visit another tab. Sessions initially shows the latest workout week and the two preceding calendar weeks, respecting your week-start preference. Show more reveals older sessions; calendar and exercise links can still open older workouts directly. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
-- **Exercises:** a bounded, searchable library updates a live progress preview below on phones and beside it on wider screens. The 1M, 3M, 9M and 1Y controls sit beside the preview value; All remains available. Open full progress for the existing records and session history, then return with your search, list position, selected lift, metric and range intact. Failed requests offer Retry and old exercise responses cannot replace the current selection. The original History, Progress and Cardio links still open their matching Training views. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
+- **Exercises:** option A replaces the library/preview split with a full exercise list and a focused detail view. Search by exercise or equipment, filter by muscle group, and cycle Recent first, A-Z and Most improved sorting. Rows show recent estimated 1RM, an eight-week trend and change; untrained lifts remain available. Tap a lift for per-session charts, personal bests and session history. Session rows open a set sheet with weight, reps, RPE and an Open workout action. Back to Exercises retains the query, filter, sort, scroll, metric and range. The list loads its account-owned trends in one request, excluding future sessions, warmups and unfinished sets.
 
 ### Friends and workout conversations
 
@@ -127,7 +131,8 @@
 
 ### Daily logging and smaller improvements
 
-- **Daily check-in choices:** select **Body weight**, **Body fat** or **Combined** on the existing Home card. The choice is remembered for your account on this device. Weight entry needs no body-fat value; body-fat entry still requires today’s weight. [#118](https://github.com/ejbolts/Gym-logger/pull/118)
+- **Separate Home check-ins:** **Body weight check-in**, **Body fat check-in** and **Combined check-in** are independently addable sections in **Edit Home layout**. Each can be hidden, resized and arranged. The old card becomes Combined with its saved position, width and visibility; individual alternatives start in Add sections. Weight needs no body-fat value; body-fat entries still require today’s weight. Shared saving and the latest Undo keep multiple visible cards consistent. [#118](https://github.com/ejbolts/Gym-logger/pull/118) [#121](https://github.com/ejbolts/Gym-logger/pull/121)
+- **Past-workout spacing:** exercise cards have a 12 px gap in the view-only workout browser. [#121](https://github.com/ejbolts/Gym-logger/pull/121)
 - **Rest times:** choose **0:00 (no rest)** or swipe left on a rest row to remove it without deleting its set. **Undo** restores the previous duration. Removed rests stay removed through set edits, workout saves and reopening. Edit the set and save **Rest after set** to add one back. Choices include **0:30**; **Settings > Training > Rest timers > Show rest times** hides the rows independently of the automatic countdown. [#109](https://github.com/ejbolts/Gym-logger/pull/109)
 - **Progress:** increases are green, decreases are red, and unchanged values stay neutral for estimated 1RM, top set and volume. [#107](https://github.com/ejbolts/Gym-logger/pull/107)
 - **Consistent account controls:** Notifications and Profile sit beside Settings across Home, Training, Social and Body. The buttons use matching styling and retain the existing inbox, profile photo or initial and administrator feedback badge. Smaller screens wrap the header actions without shrinking the controls. Removed the duplicate blue plus buttons from Training and Body headers; use **Start** for workouts and **Log weigh-in** for bodyweight entries. [#107](https://github.com/ejbolts/Gym-logger/pull/107)

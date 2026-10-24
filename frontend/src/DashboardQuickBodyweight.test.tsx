@@ -3,6 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardQuickBodyweight } from './TodayScreen';
+import { useDailyCheckIns } from './useDailyCheckIns';
 
 let root: Root;
 let container: HTMLDivElement;
@@ -54,10 +55,11 @@ async function clickUndo() {
 }
 
 describe('daily bodyweight check-in', () => {
-  it('switches between weight, fat and combined, remembers the choice, and saves weight without fat', async () => {
+  it('renders independent fixed weight, fat and combined variants without a mode selector', async () => {
     const saveFat = vi.fn().mockResolvedValue(undo);
-    const view = (
+    const view = (mode: 'weight' | 'fat' | 'combined') => (
       <DashboardQuickBodyweight
+        mode={mode}
         latestBodyweight={84.2}
         todayBodyweight={84.2}
         latestBodyFat={18}
@@ -65,28 +67,19 @@ describe('daily bodyweight check-in', () => {
         onSaveBodyFat={saveFat}
       />
     );
-    await act(async () => root.render(view));
-    const choose = async (label: string) =>
-      act(async () => {
-        [...container.querySelectorAll<HTMLButtonElement>('.quick-check-in-modes button')]
-          .find((button) => button.textContent === label)!
-          .click();
-      });
-    await choose('Body weight');
+    await act(async () => root.render(view('weight')));
+    expect(container.querySelector('.quick-check-in-modes')).toBeNull();
     expect(container.querySelector('.body-fat-check-in')).toBeNull();
     await submit();
     expect(save).toHaveBeenCalledExactlyOnceWith(84.2);
     expect(saveFat).not.toHaveBeenCalled();
-    await choose('Body fat');
+    await act(async () => root.render(view('fat')));
     expect(container.querySelector('[aria-label="Body weight check-in"]')).toBeNull();
     await submit();
     expect(saveFat).toHaveBeenCalledExactlyOnceWith(18);
-    await act(async () => root.render(null));
-    await act(async () => root.render(view));
-    expect(container.querySelector('[aria-label="Body weight check-in"]')).toBeNull();
-    expect(container.querySelector('.body-fat-check-in')).not.toBeNull();
-    await choose('Combined');
+    await act(async () => root.render(view('combined')));
     expect(container.querySelectorAll('form')).toHaveLength(2);
+    expect(container.querySelector('.quick-check-in-modes')).toBeNull();
   });
 
   it('logs and undoes fat independently with both rows blocked while saving', async () => {
@@ -238,5 +231,74 @@ describe('daily bodyweight check-in', () => {
     await act(async () => root.render(null));
     expect(toast()).toBeNull();
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('independent Home check-in cards', () => {
+  function Cards({ saveFat }: { saveFat: (fat: number) => Promise<() => Promise<void>> }) {
+    const actions = useDailyCheckIns(save, saveFat);
+    return (
+      <>
+        {(['weight', 'fat', 'combined'] as const).map((mode) => (
+          <DashboardQuickBodyweight
+            key={mode}
+            mode={mode}
+            latestBodyweight={84.2}
+            todayBodyweight={84.2}
+            latestBodyFat={18}
+            {...actions}
+          />
+        ))}
+      </>
+    );
+  }
+  it('renders unique card headings and only exposes the latest save Undo across variants', async () => {
+    const fatUndo = vi.fn().mockResolvedValue(undefined),
+      saveFat = vi.fn().mockResolvedValue(fatUndo);
+    await act(async () => root.render(<Cards saveFat={saveFat} />));
+    expect(container.querySelectorAll('.quick-bodyweight')).toHaveLength(3);
+    expect(new Set([...container.querySelectorAll('h2')].map((title) => title.id)).size).toBe(3);
+    expect(container.querySelector('.quick-check-in-modes')).toBeNull();
+    await submit();
+    expect(toast()?.textContent).toContain('Body weight saved');
+    await act(async () =>
+      container
+        .querySelectorAll('form')[1]
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+    );
+    expect(document.querySelectorAll('.bodyweight-undo-toast')).toHaveLength(1);
+    expect(toast()?.textContent).toContain('Body fat saved');
+    await clickUndo();
+    expect(fatUndo).toHaveBeenCalledOnce();
+    expect(undo).not.toHaveBeenCalled();
+  });
+  it('blocks all variants during saving and preserves a failed shared Undo for retry', async () => {
+    let finish!: (value: () => Promise<void>) => void;
+    const fatUndo = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Try undo again'))
+      .mockResolvedValue(undefined);
+    const saveFat = vi.fn(
+      () =>
+        new Promise<() => Promise<void>>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await act(async () => root.render(<Cards saveFat={saveFat} />));
+    await act(async () =>
+      container
+        .querySelectorAll('form')[1]
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+    );
+    expect([...container.querySelectorAll('input')].every((input) => input.disabled)).toBe(true);
+    await submit();
+    expect(save).not.toHaveBeenCalled();
+    await act(async () => finish(fatUndo));
+    await clickUndo();
+    expect(toast()).not.toBeNull();
+    expect(container.textContent).toContain('Try undo again');
+    await clickUndo();
+    expect(fatUndo).toHaveBeenCalledTimes(2);
+    expect(toast()).toBeNull();
   });
 });
